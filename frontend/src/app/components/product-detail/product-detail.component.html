@@ -1,0 +1,38 @@
+@if (product(); as product) {
+  <div class="detail">
+    <a routerLink="/" class="detail__back">&larr; Back to Shop</a>
+    <div class="detail__layout">
+      <div class="detail__image-wrap">
+        <img [ngSrc]="product.imageUrl" [alt]="product.name" class="detail__image" width="400" height="500" priority />
+      </div>
+      <div class="detail__info">
+        <span class="detail__era">{{ product.era }}</span>
+        <h1 class="detail__name">{{ product.name }}</h1>
+        <p class="detail__price">{{ product.price | currency }}</p>
+        <p class="detail__description">{{ product.description }}</p>
+        <div class="detail__meta">
+          <div class="detail__meta-item">
+            <span class="detail__label">Category</span>
+            <span>{{ product.category | titlecase }}</span>
+          </div>
+          <div class="detail__meta-item">
+            <span class="detail__label">Size</span>
+            <span>{{ product.size }}</span>
+          </div>
+          <div class="detail__meta-item">
+            <span class="detail__label">Condition</span>
+            <span>{{ product.condition | titlecase }}</span>
+          </div>
+        </div>
+        <button class="detail__add-btn" (click)="cartStore.addToCart(product)">
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="detail">
+    <a routerLink="/" class="detail__back">&larr; Back to Shop</a>
+    <p class="detail__not-found">Product not found.</p>
+  </div>
+}

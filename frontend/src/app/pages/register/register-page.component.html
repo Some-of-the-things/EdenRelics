@@ -1,0 +1,56 @@
+<div class="register">
+  <form class="register__card" (ngSubmit)="submit()">
+    <h1 class="register__title">Create Account</h1>
+    <p class="register__subtitle">Join Eden Relics to start shopping.</p>
+    <div class="register__row">
+      <label class="register__field">
+        <span>First Name</span>
+        <input
+          type="text"
+          [(ngModel)]="firstName"
+          name="firstName"
+          autocomplete="given-name"
+          required
+        />
+      </label>
+      <label class="register__field">
+        <span>Last Name</span>
+        <input
+          type="text"
+          [(ngModel)]="lastName"
+          name="lastName"
+          autocomplete="family-name"
+          required
+        />
+      </label>
+    </div>
+    <label class="register__field">
+      <span>Email</span>
+      <input
+        type="email"
+        [(ngModel)]="email"
+        name="email"
+        autocomplete="email"
+        required
+      />
+    </label>
+    <label class="register__field">
+      <span>Password</span>
+      <input
+        type="password"
+        [(ngModel)]="password"
+        name="password"
+        autocomplete="new-password"
+        required
+      />
+    </label>
+    @if (error()) {
+      <p class="register__error" role="alert">{{ error() }}</p>
+    }
+    <button type="submit" class="register__btn">Create Account</button>
+    <app-social-login (tokenReceived)="onSocialLogin($event)" />
+    <p class="register__link">
+      Already have an account? <a routerLink="/login">Sign in</a>
+    </p>
+  </form>
+</div>

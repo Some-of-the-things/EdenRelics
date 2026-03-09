@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Eden Relics BE.csproj">
+    <Build />
+  </Project>
+  <Properties>
+    <StartupProject>Eden Relics BE.csproj</StartupProject>
+  </Properties>
+</Solution>

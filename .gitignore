@@ -1,0 +1,26 @@
+# Backend
+backend/bin/
+backend/obj/
+backend/.vs/
+backend/*.csproj.user
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Misc
+lighthouse-perf.json

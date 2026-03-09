@@ -1,0 +1,37 @@
+<div class="verify">
+  <form class="verify__card" (ngSubmit)="submit()">
+    @if (!done()) {
+      <h1 class="verify__title">Verify Email</h1>
+      <p class="verify__subtitle">Enter the verification token sent to your email.</p>
+      <label class="verify__field">
+        <span>Email</span>
+        <input
+          type="email"
+          [(ngModel)]="email"
+          name="email"
+          autocomplete="email"
+          required
+        />
+      </label>
+      <label class="verify__field">
+        <span>Verification Token</span>
+        <input
+          type="text"
+          [(ngModel)]="tokenValue"
+          name="token"
+          required
+        />
+      </label>
+      @if (error()) {
+        <p class="verify__error" role="alert">{{ error() }}</p>
+      }
+      <button type="submit" class="verify__btn" [disabled]="processing()">
+        {{ processing() ? 'Verifying...' : 'Verify Email' }}
+      </button>
+    } @else {
+      <h1 class="verify__title">Email Verified</h1>
+      <p class="verify__subtitle">Your email has been successfully verified.</p>
+      <a routerLink="/account" class="verify__btn verify__btn--link">Go to Account</a>
+    }
+  </form>
+</div>

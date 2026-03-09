@@ -1,0 +1,38 @@
+<Project>
+  <UsingTask TaskName="FixDebuggeeArgs" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <FilePath ParameterType="System.String" Required="true" />
+      <DllPath ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs">
+        if (System.IO.File.Exists(FilePath))
+        {
+            var content = System.IO.File.ReadAllText(FilePath);
+            // File contains literal: \"\"  (backslash-quote-backslash-quote = empty DLL path)
+            // Replace with: \"DllPath\"
+            var find = "\\\"\\\"";
+            var replace = "\\\"" + DllPath + "\\\"";
+            if (content.Contains(find))
+            {
+                content = content.Replace(find, replace);
+                System.IO.File.WriteAllText(FilePath, content);
+                Log.LogMessage(MessageImportance.High, "Fixed debuggee DLL path to: " + DllPath);
+            }
+        }
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="FixDockerDebuggeePath"
+          AfterTargets="DockerUpdateComposeVsGeneratedFiles"
+          Condition="'$(DockerComposeProjectPath)' != ''">
+    <PropertyGroup>
+      <_DockerDir>$([System.IO.Path]::GetDirectoryName($(DockerComposeProjectPath)))\obj\Docker</_DockerDir>
+      <_DllPath>/app/bin/Debug/$(TargetFramework)/$(TargetFileName)</_DllPath>
+    </PropertyGroup>
+    <FixDebuggeeArgs FilePath="$(_DockerDir)\docker-compose.vs.debug.partial.g.yml" DllPath="$(_DllPath)" />
+    <Copy SourceFiles="$(_DockerDir)\docker-compose.vs.debug.partial.g.yml"
+          DestinationFiles="$(_DockerDir)\docker-compose.vs.debug.g.yml" />
+  </Target>
+</Project>

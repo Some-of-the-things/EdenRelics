@@ -1,0 +1,42 @@
+@if (order(); as order) {
+  <div class="confirm">
+    <div class="confirm__icon">&#10003;</div>
+    <h1 class="confirm__title">Order Confirmed</h1>
+    <p class="confirm__subtitle">Thank you for your purchase!</p>
+
+    <div class="confirm__card">
+      <div class="confirm__row">
+        <span class="confirm__label">Order ID</span>
+        <span class="confirm__value">{{ order.id.slice(0, 8) }}...</span>
+      </div>
+      <div class="confirm__row">
+        <span class="confirm__label">Date</span>
+        <span class="confirm__value">{{ order.createdAtUtc | date:'medium' }}</span>
+      </div>
+      <div class="confirm__row">
+        <span class="confirm__label">Status</span>
+        <span class="confirm__value">{{ order.status }}</span>
+      </div>
+
+      <div class="confirm__items">
+        @for (item of order.items; track item.productId) {
+          <div class="confirm__item">
+            <span>{{ item.productName }} &times; {{ item.quantity }}</span>
+            <span>{{ item.unitPrice * item.quantity | currency }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="confirm__total">
+        <span>Total</span>
+        <span>{{ order.total | currency }}</span>
+      </div>
+    </div>
+
+    <a routerLink="/" class="confirm__link">Continue Shopping</a>
+  </div>
+} @else {
+  <div class="confirm">
+    <p class="confirm__loading">Loading order details...</p>
+  </div>
+}

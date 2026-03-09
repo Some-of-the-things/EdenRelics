@@ -1,0 +1,60 @@
+@if (auth.currentUser(); as user) {
+  <div class="account">
+    <h1 class="account__title">My Account</h1>
+    <div class="account__card">
+      <div class="account__detail">
+        <span class="account__label">Name</span>
+        <span>{{ user.firstName }} {{ user.lastName }}</span>
+      </div>
+      <div class="account__detail">
+        <span class="account__label">Email</span>
+        <span>{{ user.email }}</span>
+      </div>
+      @if (profile(); as p) {
+        <div class="account__detail">
+          <span class="account__label">Status</span>
+          @if (p.emailVerified) {
+            <span class="account__verified">Verified</span>
+          } @else {
+            <span class="account__unverified">
+              Unverified
+              @if (resendDone()) {
+                &mdash; check your email
+              } @else {
+                &mdash;
+                <button class="account__resend" (click)="resendVerification()" [disabled]="resending()">
+                  {{ resending() ? 'Sending...' : 'Resend' }}
+                </button>
+                or
+                <a routerLink="/verify-email" class="account__add-link">enter token</a>
+              }
+            </span>
+          }
+        </div>
+      }
+      @if (isDev) {
+        <div class="account__detail">
+          <span class="account__label">Role</span>
+          <span>{{ user.role }}</span>
+        </div>
+      }
+      @if (profile(); as p) {
+        <div class="account__detail">
+          <span class="account__label">Address</span>
+          @if (p.deliveryAddress.addressLine1) {
+            <span class="account__address">
+              {{ p.deliveryAddress.addressLine1 }}@if (p.deliveryAddress.addressLine2) {, {{ p.deliveryAddress.addressLine2 }}}@if (p.deliveryAddress.city) {, {{ p.deliveryAddress.city }}}@if (p.deliveryAddress.postcode) {, {{ p.deliveryAddress.postcode }}}
+            </span>
+          } @else {
+            <a routerLink="/settings" class="account__add-link">Add address</a>
+          }
+        </div>
+      }
+    </div>
+    <a routerLink="/settings" class="account__settings-link">Settings</a>
+    @if (auth.isAdmin()) {
+      <a routerLink="/admin" class="account__admin-link">Go to Admin Panel</a>
+    }
+    <button class="account__logout" (click)="logout()">Sign Out</button>
+  </div>
+}

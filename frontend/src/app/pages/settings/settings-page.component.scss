@@ -1,0 +1,180 @@
+.settings {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.settings__title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.settings__back {
+  display: inline-block;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.85rem;
+  margin-bottom: 2rem;
+  &:hover { text-decoration: underline; }
+}
+
+.settings__section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1rem;
+}
+
+.settings__section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition);
+  &:hover { background: var(--bg-primary); }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+}
+
+.settings__toggle {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+}
+
+.settings__form {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+
+  span {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  input, select {
+    border: 1px solid var(--border-color);
+    padding: 0.6rem 0.65rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: border-color var(--transition);
+    &:focus { outline: none; border-color: var(--accent); }
+  }
+}
+
+.settings__row {
+  display: flex;
+  gap: 1rem;
+  .settings__field { flex: 1; }
+}
+
+.settings__hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+  line-height: 1.4;
+}
+
+.settings__message {
+  font-size: 0.825rem;
+  margin: 0 0 1rem;
+  color: var(--accent);
+  &--error { color: var(--accent-sale); }
+}
+
+.settings__btn {
+  width: 100%;
+  background: var(--accent);
+  color: var(--text-inverse);
+  border: none;
+  padding: 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--transition);
+  &:hover { background: var(--accent-hover); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  &--danger {
+    background: var(--accent-sale);
+    &:hover { opacity: 0.9; }
+  }
+}
+
+.settings__qr {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+  img { image-rendering: pixelated; }
+}
+
+.settings__passkey-list {
+  margin-bottom: 1rem;
+}
+
+.settings__passkey-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border-color);
+  &:last-child { border-bottom: none; }
+}
+
+.settings__passkey-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.settings__passkey-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.settings__passkey-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.settings__passkey-remove {
+  background: none;
+  border: none;
+  color: var(--accent-sale);
+  font-size: 0.8rem;
+  cursor: pointer;
+  &:hover { text-decoration: underline; }
+}
+
+.settings__secret {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0 0 1rem;
+  word-break: break-all;
+  code {
+    font-family: monospace;
+    font-size: 0.75rem;
+    background: var(--bg-primary);
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--border-color);
+  }
+}

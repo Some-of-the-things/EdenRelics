@@ -1,0 +1,23 @@
+<header class="header">
+  <div class="header__container">
+    <a routerLink="/" class="header__logo">
+      <img src="logo.svg" alt="Eden Relics — Vintage Clothing" class="header__logo-img" width="166" height="48" fetchpriority="high" />
+    </a>
+    <nav class="header__nav" aria-label="Main navigation">
+      @if (auth.isAdmin()) {
+        <a routerLink="/admin" class="header__link">Admin</a>
+      }
+      <a routerLink="/cart" class="header__link header__cart">
+        Cart
+        @if (cartStore.totalItems() > 0) {
+          <span class="header__badge">{{ cartStore.totalItems() }}</span>
+        }
+      </a>
+      @if (auth.isAuthenticated()) {
+        <a routerLink="/account" class="header__link">Account</a>
+      } @else {
+        <a routerLink="/login" class="header__link">Sign In</a>
+      }
+    </nav>
+  </div>
+</header>

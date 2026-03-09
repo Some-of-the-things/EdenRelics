@@ -1,0 +1,95 @@
+<div class="cart">
+  <h1 class="cart__title">Your Cart</h1>
+
+  @if (cartStore.isEmpty()) {
+    <div class="cart__empty">
+      <p>Your cart is empty.</p>
+      <a routerLink="/" class="cart__shop-link">Continue Shopping</a>
+    </div>
+  } @else {
+    <div class="cart__items">
+      @for (item of cartStore.items(); track item.product.id) {
+        <div class="cart-item">
+          <img [src]="item.product.imageUrl" [alt]="item.product.name" class="cart-item__image" />
+          <div class="cart-item__info">
+            <h3 class="cart-item__name">
+              <a [routerLink]="['/product', item.product.id]">{{ item.product.name }}</a>
+            </h3>
+            <p class="cart-item__era">{{ item.product.era }} &middot; Size {{ item.product.size }}</p>
+          </div>
+          <div class="cart-item__quantity">
+            <button class="cart-item__qty-btn" (click)="cartStore.updateQuantity(item.product.id, item.quantity - 1)" aria-label="Decrease quantity of {{ item.product.name }}">
+              &minus;
+            </button>
+            <span class="cart-item__qty-value">{{ item.quantity }}</span>
+            <button class="cart-item__qty-btn" (click)="cartStore.updateQuantity(item.product.id, item.quantity + 1)" aria-label="Increase quantity of {{ item.product.name }}">
+              +
+            </button>
+          </div>
+          <span class="cart-item__price">{{ item.product.price * item.quantity | currency }}</span>
+          <button class="cart-item__remove" (click)="cartStore.removeFromCart(item.product.id)" aria-label="Remove {{ item.product.name }} from cart">
+            &times;
+          </button>
+        </div>
+      }
+    </div>
+
+    <div class="cart__summary">
+      <div class="cart__total">
+        <span>Total</span>
+        <span class="cart__total-price">{{ cartStore.totalPrice() | currency }}</span>
+      </div>
+
+      @if (error()) {
+        <p class="cart__error" role="alert">{{ error() }}</p>
+      }
+
+      @if (!showCheckoutOptions()) {
+        <button class="cart__checkout-btn" (click)="beginCheckout()">Checkout</button>
+      } @else if (!auth.isAuthenticated()) {
+        <div class="cart__options">
+          <p class="cart__options-title">How would you like to checkout?</p>
+          <div class="cart__options-buttons">
+            <a routerLink="/login" class="cart__option-btn">Sign In</a>
+            <a routerLink="/register" class="cart__option-btn">Create Account</a>
+            <button class="cart__option-btn cart__option-btn--guest" (click)="showGuestForm.set(true)">
+              Guest Checkout
+            </button>
+          </div>
+          @if (showGuestForm()) {
+            <form class="cart__guest-form" (ngSubmit)="checkoutAsGuest()">
+              <label class="cart__guest-label">
+                <span>Email for order confirmation</span>
+                <input
+                  type="email"
+                  [(ngModel)]="guestEmail"
+                  name="guestEmail"
+                  required
+                  placeholder="your@email.com"
+                  class="cart__guest-input"
+                />
+              </label>
+              <button
+                type="submit"
+                class="cart__checkout-btn"
+                [disabled]="processing()"
+              >
+                {{ processing() ? 'Processing...' : 'Place Order' }}
+              </button>
+            </form>
+          }
+        </div>
+      } @else {
+        <button
+          class="cart__checkout-btn"
+          [disabled]="processing()"
+          (click)="checkoutAuthenticated()"
+        >
+          {{ processing() ? 'Processing...' : 'Place Order' }}
+        </button>
+      }
+
+      <a routerLink="/" class="cart__continue">Continue Shopping</a>
+    </div>
+  }
+</div>

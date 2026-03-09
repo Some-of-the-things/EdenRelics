@@ -1,0 +1,278 @@
+<div class="settings">
+  <h1 class="settings__title">Settings</h1>
+  <a routerLink="/account" class="settings__back">&larr; Back to Account</a>
+
+  <!-- Name -->
+  <section class="settings__section">
+    <div class="settings__section-header" role="button" tabindex="0" [attr.aria-expanded]="active() === 'name'" (click)="toggle('name')" (keydown.enter)="toggle('name')" (keydown.space)="toggle('name'); $event.preventDefault()">
+      <h2>Name</h2>
+      <span class="settings__toggle" aria-hidden="true">{{ active() === 'name' ? '−' : '+' }}</span>
+    </div>
+    @if (active() === 'name') {
+      <form class="settings__form" (ngSubmit)="saveName()">
+        <label class="settings__field">
+          <span>First Name</span>
+          <input type="text" [(ngModel)]="firstName" name="firstName" required />
+        </label>
+        <label class="settings__field">
+          <span>Last Name</span>
+          <input type="text" [(ngModel)]="lastName" name="lastName" required />
+        </label>
+        @if (message()) {
+          <p class="settings__message" [class.settings__message--error]="isError()" role="status">{{ message() }}</p>
+        }
+        <button type="submit" class="settings__btn" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Save' }}
+        </button>
+      </form>
+    }
+  </section>
+
+  <!-- Delivery Address -->
+  <section class="settings__section">
+    <div class="settings__section-header" role="button" tabindex="0" [attr.aria-expanded]="active() === 'delivery'" (click)="toggle('delivery')" (keydown.enter)="toggle('delivery')" (keydown.space)="toggle('delivery'); $event.preventDefault()">
+      <h2>Delivery Address</h2>
+      <span class="settings__toggle" aria-hidden="true">{{ active() === 'delivery' ? '−' : '+' }}</span>
+    </div>
+    @if (active() === 'delivery') {
+      <form class="settings__form" (ngSubmit)="saveDeliveryAddress()">
+        <label class="settings__field">
+          <span>Address Line 1</span>
+          <input type="text" [(ngModel)]="deliveryLine1" name="deliveryLine1" />
+        </label>
+        <label class="settings__field">
+          <span>Address Line 2</span>
+          <input type="text" [(ngModel)]="deliveryLine2" name="deliveryLine2" />
+        </label>
+        <label class="settings__field">
+          <span>City</span>
+          <input type="text" [(ngModel)]="deliveryCity" name="deliveryCity" />
+        </label>
+        <label class="settings__field">
+          <span>County</span>
+          <input type="text" [(ngModel)]="deliveryCounty" name="deliveryCounty" />
+        </label>
+        <div class="settings__row">
+          <label class="settings__field">
+            <span>Postcode</span>
+            <input type="text" [(ngModel)]="deliveryPostcode" name="deliveryPostcode" />
+          </label>
+          <label class="settings__field">
+            <span>Country</span>
+            <input type="text" [(ngModel)]="deliveryCountry" name="deliveryCountry" />
+          </label>
+        </div>
+        @if (message()) {
+          <p class="settings__message" [class.settings__message--error]="isError()" role="status">{{ message() }}</p>
+        }
+        <button type="submit" class="settings__btn" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Save' }}
+        </button>
+      </form>
+    }
+  </section>
+
+  <!-- Billing Address -->
+  <section class="settings__section">
+    <div class="settings__section-header" role="button" tabindex="0" [attr.aria-expanded]="active() === 'billing'" (click)="toggle('billing')" (keydown.enter)="toggle('billing')" (keydown.space)="toggle('billing'); $event.preventDefault()">
+      <h2>Billing Address</h2>
+      <span class="settings__toggle" aria-hidden="true">{{ active() === 'billing' ? '−' : '+' }}</span>
+    </div>
+    @if (active() === 'billing') {
+      <form class="settings__form" (ngSubmit)="saveBillingAddress()">
+        <label class="settings__field">
+          <span>Address Line 1</span>
+          <input type="text" [(ngModel)]="billingLine1" name="billingLine1" />
+        </label>
+        <label class="settings__field">
+          <span>Address Line 2</span>
+          <input type="text" [(ngModel)]="billingLine2" name="billingLine2" />
+        </label>
+        <label class="settings__field">
+          <span>City</span>
+          <input type="text" [(ngModel)]="billingCity" name="billingCity" />
+        </label>
+        <label class="settings__field">
+          <span>County</span>
+          <input type="text" [(ngModel)]="billingCounty" name="billingCounty" />
+        </label>
+        <div class="settings__row">
+          <label class="settings__field">
+            <span>Postcode</span>
+            <input type="text" [(ngModel)]="billingPostcode" name="billingPostcode" />
+          </label>
+          <label class="settings__field">
+            <span>Country</span>
+            <input type="text" [(ngModel)]="billingCountry" name="billingCountry" />
+          </label>
+        </div>
+        @if (message()) {
+          <p class="settings__message" [class.settings__message--error]="isError()" role="status">{{ message() }}</p>
+        }
+        <button type="submit" class="settings__btn" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Save' }}
+        </button>
+      </form>
+    }
+  </section>
+
+  <!-- Payment Details -->
+  <section class="settings__section">
+    <div class="settings__section-header" role="button" tabindex="0" [attr.aria-expanded]="active() === 'payment'" (click)="toggle('payment')" (keydown.enter)="toggle('payment')" (keydown.space)="toggle('payment'); $event.preventDefault()">
+      <h2>Payment Details</h2>
+      <span class="settings__toggle" aria-hidden="true">{{ active() === 'payment' ? '−' : '+' }}</span>
+    </div>
+    @if (active() === 'payment') {
+      <form class="settings__form" (ngSubmit)="savePayment()">
+        <p class="settings__hint">Card details are stored for display only. Full payment integration coming soon.</p>
+        <label class="settings__field">
+          <span>Cardholder Name</span>
+          <input type="text" [(ngModel)]="cardholderName" name="cardholderName" />
+        </label>
+        <label class="settings__field">
+          <span>Card Number (last 4 digits)</span>
+          <input type="text" [(ngModel)]="cardLast4" name="cardLast4" maxlength="4" pattern="[0-9]{4}" />
+        </label>
+        <label class="settings__field">
+          <span>Card Brand</span>
+          <select [(ngModel)]="cardBrand" name="cardBrand">
+            <option value="">Select...</option>
+            <option value="Visa">Visa</option>
+            <option value="Mastercard">Mastercard</option>
+            <option value="Amex">Amex</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+        <div class="settings__row">
+          <label class="settings__field">
+            <span>Expiry Month</span>
+            <input type="number" [(ngModel)]="expiryMonth" name="expiryMonth" min="1" max="12" />
+          </label>
+          <label class="settings__field">
+            <span>Expiry Year</span>
+            <input type="number" [(ngModel)]="expiryYear" name="expiryYear" min="2024" max="2040" />
+          </label>
+        </div>
+        @if (message()) {
+          <p class="settings__message" [class.settings__message--error]="isError()" role="status">{{ message() }}</p>
+        }
+        <button type="submit" class="settings__btn" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Save' }}
+        </button>
+      </form>
+    }
+  </section>
+
+  <!-- Change Password -->
+  <section class="settings__section">
+    <div class="settings__section-header" role="button" tabindex="0" [attr.aria-expanded]="active() === 'password'" (click)="toggle('password')" (keydown.enter)="toggle('password')" (keydown.space)="toggle('password'); $event.preventDefault()">
+      <h2>Change Password</h2>
+      <span class="settings__toggle" aria-hidden="true">{{ active() === 'password' ? '−' : '+' }}</span>
+    </div>
+    @if (active() === 'password') {
+      <form class="settings__form" (ngSubmit)="changePassword()">
+        <label class="settings__field">
+          <span>Current Password</span>
+          <input type="password" [(ngModel)]="currentPassword" name="currentPassword" autocomplete="current-password" required />
+        </label>
+        <label class="settings__field">
+          <span>New Password</span>
+          <input type="password" [(ngModel)]="newPassword" name="newPassword" autocomplete="new-password" required />
+        </label>
+        <label class="settings__field">
+          <span>Confirm New Password</span>
+          <input type="password" [(ngModel)]="confirmNewPassword" name="confirmNewPassword" autocomplete="new-password" required />
+        </label>
+        @if (message()) {
+          <p class="settings__message" [class.settings__message--error]="isError()" role="status">{{ message() }}</p>
+        }
+        <button type="submit" class="settings__btn" [disabled]="saving()">
+          {{ saving() ? 'Changing...' : 'Change Password' }}
+        </button>
+      </form>
+    }
+  </section>
+
+  <!-- Two-Factor Authentication -->
+  <section class="settings__section">
+    <div class="settings__section-header" role="button" tabindex="0" [attr.aria-expanded]="active() === 'mfa'" (click)="toggle('mfa')" (keydown.enter)="toggle('mfa')" (keydown.space)="toggle('mfa'); $event.preventDefault()">
+      <h2>Two-Factor Authentication</h2>
+      <span class="settings__toggle" aria-hidden="true">{{ active() === 'mfa' ? '−' : '+' }}</span>
+    </div>
+    @if (active() === 'mfa') {
+      <div class="settings__form">
+        @if (mfaEnabled()) {
+          <p class="settings__hint">Two-factor authentication is currently <strong>enabled</strong>. Enter a code from your authenticator app to disable it.</p>
+          <label class="settings__field">
+            <span>Authenticator Code</span>
+            <input type="text" [(ngModel)]="mfaDisableCode" name="mfaDisableCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+          </label>
+          @if (message()) {
+            <p class="settings__message" [class.settings__message--error]="isError()" role="status">{{ message() }}</p>
+          }
+          <button type="button" class="settings__btn settings__btn--danger" (click)="disableMfa()" [disabled]="saving()">
+            {{ saving() ? 'Disabling...' : 'Disable MFA' }}
+          </button>
+        } @else if (!mfaSetupSecret()) {
+          <p class="settings__hint">Add an extra layer of security to your account by enabling two-factor authentication with an authenticator app.</p>
+          @if (message()) {
+            <p class="settings__message" [class.settings__message--error]="isError()" role="status">{{ message() }}</p>
+          }
+          <button type="button" class="settings__btn" (click)="startMfaSetup()" [disabled]="saving()">
+            {{ saving() ? 'Setting up...' : 'Set Up MFA' }}
+          </button>
+        } @else {
+          <p class="settings__hint">Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.), then enter the 6-digit code below to confirm.</p>
+          <div class="settings__qr">
+            <img [src]="mfaQrUrl()" alt="MFA QR Code" width="200" height="200" />
+          </div>
+          <p class="settings__secret">Or enter manually: <code>{{ mfaSetupSecret() }}</code></p>
+          <label class="settings__field">
+            <span>Verification Code</span>
+            <input type="text" [(ngModel)]="mfaSetupCode" name="mfaSetupCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+          </label>
+          @if (message()) {
+            <p class="settings__message" [class.settings__message--error]="isError()" role="status">{{ message() }}</p>
+          }
+          <button type="button" class="settings__btn" (click)="confirmMfaSetup()" [disabled]="saving()">
+            {{ saving() ? 'Verifying...' : 'Verify & Enable' }}
+          </button>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- Passkeys -->
+  @if (passkeySupported()) {
+  <section class="settings__section">
+    <div class="settings__section-header" role="button" tabindex="0" [attr.aria-expanded]="active() === 'passkeys'" (click)="toggle('passkeys')" (keydown.enter)="toggle('passkeys')" (keydown.space)="toggle('passkeys'); $event.preventDefault()">
+      <h2>Passkeys</h2>
+      <span class="settings__toggle" aria-hidden="true">{{ active() === 'passkeys' ? '−' : '+' }}</span>
+    </div>
+    @if (active() === 'passkeys') {
+      <div class="settings__form">
+        <p class="settings__hint">Sign in with your fingerprint, face, or device PIN. No password needed.</p>
+        @if (passkeys().length > 0) {
+          <div class="settings__passkey-list">
+            @for (pk of passkeys(); track pk.id) {
+              <div class="settings__passkey-item">
+                <div class="settings__passkey-info">
+                  <span class="settings__passkey-name">{{ pk.nickname || 'Passkey' }}</span>
+                  <span class="settings__passkey-date">Added {{ pk.createdAt | date:'mediumDate' }}</span>
+                </div>
+                <button type="button" class="settings__passkey-remove" (click)="removePasskey(pk.id)">Remove</button>
+              </div>
+            }
+          </div>
+        }
+        @if (message()) {
+          <p class="settings__message" [class.settings__message--error]="isError()" role="status">{{ message() }}</p>
+        }
+        <button type="button" class="settings__btn" (click)="addPasskey()" [disabled]="saving()">
+          {{ saving() ? 'Registering...' : 'Add a Passkey' }}
+        </button>
+      </div>
+    }
+  </section>
+  }
+</div>
