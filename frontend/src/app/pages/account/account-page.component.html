@@ -10,6 +10,9 @@
         <span class="account__label">Email</span>
         <span>{{ user.email }}</span>
       </div>
+      @if (profileError()) {
+        <p class="account__error">Could not load profile details.</p>
+      }
       @if (profile(); as p) {
         <div class="account__detail">
           <span class="account__label">Status</span>

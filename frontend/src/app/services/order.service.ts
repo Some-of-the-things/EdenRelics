@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export interface CreateOrderItem {
   productId: string;
@@ -32,7 +33,7 @@ export interface CheckoutResponse {
 export class OrderService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
-  private readonly apiUrl = 'http://localhost:5260/api/orders';
+  private readonly apiUrl = `${environment.apiUrl}/api/orders`;
 
   private get authHeaders(): HttpHeaders {
     const token = this.auth.getToken();

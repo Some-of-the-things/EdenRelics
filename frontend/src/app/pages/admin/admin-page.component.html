@@ -7,6 +7,10 @@
     </div>
   </div>
 
+  @if (store.error()) {
+    <p class="admin__error" role="alert">{{ store.error() }}</p>
+  }
+
   @if (showForm()) {
     <div class="admin__overlay" (click)="closeForm()"></div>
     <div class="admin__form-panel" role="dialog" aria-modal="true" [attr.aria-label]="editingId() ? 'Edit Product' : 'New Product'">

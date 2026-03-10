@@ -35,6 +35,11 @@
 
     <a routerLink="/" class="confirm__link">Continue Shopping</a>
   </div>
+} @else if (error()) {
+  <div class="confirm">
+    <p class="confirm__error">{{ error() }}</p>
+    <a routerLink="/" class="confirm__link">Return to Shop</a>
+  </div>
 } @else {
   <div class="confirm">
     <p class="confirm__loading">Loading order details...</p>

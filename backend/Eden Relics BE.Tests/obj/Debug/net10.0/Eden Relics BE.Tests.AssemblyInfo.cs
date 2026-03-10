@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Eden Relics BE.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4bb620d732069bf17dd41811aeabb2186ff2760b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+67aa11204faccebf494573ac8b0e6558b0de2ffc")]
 [assembly: System.Reflection.AssemblyProductAttribute("Eden Relics BE.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Eden Relics BE.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

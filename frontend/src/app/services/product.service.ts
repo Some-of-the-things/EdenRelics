@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, catchError } from 'rxjs';
 import { Product } from '../models/product.model';
+import { environment } from '../../environments/environment';
 
 const MOCK_PRODUCTS: Product[] = [
   {
@@ -129,7 +130,7 @@ const MOCK_PRODUCTS: Product[] = [
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:5260/api/products';
+  private readonly apiUrl = `${environment.apiUrl}/api/products`;
 
   getAll(): Observable<Product[]> {
     return this.http.get<Product[]>(this.apiUrl).pipe(

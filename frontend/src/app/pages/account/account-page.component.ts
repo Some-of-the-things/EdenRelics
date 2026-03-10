@@ -18,8 +18,13 @@ export class AccountPageComponent implements OnInit {
   readonly resending = signal(false);
   readonly resendDone = signal(false);
 
+  readonly profileError = signal(false);
+
   ngOnInit(): void {
-    this.auth.getProfile().subscribe(p => this.profile.set(p));
+    this.auth.getProfile().subscribe({
+      next: (p) => this.profile.set(p),
+      error: () => this.profileError.set(true),
+    });
   }
 
   resendVerification(): void {

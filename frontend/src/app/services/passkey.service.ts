@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, from, switchMap, tap } from 'rxjs';
 import { AuthService, AuthResponse } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export interface PasskeyInfo {
   id: string;
@@ -15,7 +16,7 @@ export class PasskeyService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
-  private readonly apiUrl = 'http://localhost:5260/api/passkey';
+  private readonly apiUrl = `${environment.apiUrl}/api/passkey`;
 
   private authHeaders() {
     const token = this.auth.getToken();

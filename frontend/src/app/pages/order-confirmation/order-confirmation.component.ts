@@ -13,10 +13,12 @@ export class OrderConfirmationComponent implements OnInit {
   readonly id = input.required<string>();
   private readonly orderService = inject(OrderService);
   readonly order = signal<OrderDto | null>(null);
+  readonly error = signal('');
 
   ngOnInit(): void {
-    this.orderService.getById(this.id()).subscribe((order) => {
-      this.order.set(order);
+    this.orderService.getById(this.id()).subscribe({
+      next: (order) => this.order.set(order),
+      error: () => this.error.set('Could not load order details. Please check the link and try again.'),
     });
   }
 }

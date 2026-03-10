@@ -2,6 +2,7 @@ import { Injectable, inject, signal, computed, PLATFORM_ID } from '@angular/core
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface UserDto {
   id: string;
@@ -62,7 +63,7 @@ export type LoginResponse = AuthResponse | MfaRequiredResponse;
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
-  private readonly apiUrl = 'http://localhost:5260/api/auth';
+  private readonly apiUrl = `${environment.apiUrl}/api/auth`;
 
   readonly currentUser = signal<UserDto | null>(null);
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
@@ -134,7 +135,7 @@ export class AuthService {
       .pipe(tap(res => this.setSession(res)));
   }
 
-  private readonly accountUrl = 'http://localhost:5260/api/account';
+  private readonly accountUrl = `${environment.apiUrl}/api/account`;
 
   private authHeaders() {
     const token = this.getToken();

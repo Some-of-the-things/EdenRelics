@@ -1,4 +1,4 @@
-import { computed, inject } from '@angular/core';
+import { computed, inject, signal } from '@angular/core';
 import {
   patchState,
   signalStore,
@@ -17,6 +17,7 @@ interface ProductState {
   selectedCategory: Product['category'] | 'all';
   searchQuery: string;
   isLoading: boolean;
+  error: string;
 }
 
 const initialState: ProductState = {
@@ -24,6 +25,7 @@ const initialState: ProductState = {
   selectedCategory: 'all',
   searchQuery: '',
   isLoading: false,
+  error: '',
 };
 
 export const ProductStore = signalStore(
@@ -77,22 +79,49 @@ export const ProductStore = signalStore(
       patchState(store, { searchQuery: query });
     },
     addProduct(product: Omit<Product, 'id'>): void {
-      productService.add(product).subscribe((created) => {
-        patchState(store, { products: [...store.products(), created] });
+      patchState(store, { error: '' });
+      productService.add(product).subscribe({
+        next: (created) => {
+          patchState(store, { products: [...store.products(), created] });
+        },
+        error: (err) => {
+          const msg = err.status === 403
+            ? 'You do not have permission to add products.'
+            : err.error?.message ?? 'Failed to add product.';
+          patchState(store, { error: msg });
+        },
       });
     },
     updateProduct(id: string, changes: Partial<Omit<Product, 'id'>>): void {
-      productService.update(id, changes).subscribe((updated) => {
-        patchState(store, {
-          products: store.products().map((p) => (p.id === id ? updated : p)),
-        });
+      patchState(store, { error: '' });
+      productService.update(id, changes).subscribe({
+        next: (updated) => {
+          patchState(store, {
+            products: store.products().map((p) => (p.id === id ? updated : p)),
+          });
+        },
+        error: (err) => {
+          const msg = err.status === 403
+            ? 'You do not have permission to edit products.'
+            : err.error?.message ?? 'Failed to update product.';
+          patchState(store, { error: msg });
+        },
       });
     },
     removeProduct(id: string): void {
-      productService.remove(id).subscribe(() => {
-        patchState(store, {
-          products: store.products().filter((p) => p.id !== id),
-        });
+      patchState(store, { error: '' });
+      productService.remove(id).subscribe({
+        next: () => {
+          patchState(store, {
+            products: store.products().filter((p) => p.id !== id),
+          });
+        },
+        error: (err) => {
+          const msg = err.status === 403
+            ? 'You do not have permission to delete products.'
+            : err.error?.message ?? 'Failed to delete product.';
+          patchState(store, { error: msg });
+        },
       });
     },
   })),

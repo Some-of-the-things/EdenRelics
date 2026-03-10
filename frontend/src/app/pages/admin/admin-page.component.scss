@@ -4,6 +4,15 @@
   padding: 2rem 1.5rem 4rem;
 }
 
+.admin__error {
+  background: #fde8e8;
+  color: #c53030;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
 .admin__header {
   display: flex;
   justify-content: space-between;
