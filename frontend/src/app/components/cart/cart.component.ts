@@ -50,9 +50,9 @@ export class CartComponent {
     }));
 
     this.orderService.checkout(items, guestEmail).subscribe({
-      next: (order) => {
+      next: (res) => {
         this.cartStore.clearCart();
-        this.router.navigate(['/order-confirmation', order.id]);
+        window.location.href = res.checkoutUrl;
       },
       error: () => {
         this.processing.set(false);

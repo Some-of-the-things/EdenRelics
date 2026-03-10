@@ -23,6 +23,11 @@ export interface OrderDto {
   items: OrderItemDto[];
 }
 
+export interface CheckoutResponse {
+  orderId: string;
+  checkoutUrl: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class OrderService {
   private readonly http = inject(HttpClient);
@@ -36,8 +41,8 @@ export class OrderService {
       : new HttpHeaders();
   }
 
-  checkout(items: CreateOrderItem[], guestEmail?: string): Observable<OrderDto> {
-    return this.http.post<OrderDto>(
+  checkout(items: CreateOrderItem[], guestEmail?: string): Observable<CheckoutResponse> {
+    return this.http.post<CheckoutResponse>(
       this.apiUrl,
       { items, guestEmail: guestEmail ?? null },
       { headers: this.authHeaders }

@@ -130,7 +130,7 @@
                 {{ product.condition | titlecase }}
               </span>
             </td>
-            <td>{{ product.price | currency }}</td>
+            <td>{{ product.price | currency:'GBP' }}</td>
             <td>{{ product.inStock ? 'Yes' : 'No' }}</td>
             <td class="admin__cell-actions">
               <button class="admin__edit-btn" (click)="edit(product)">Edit</button>

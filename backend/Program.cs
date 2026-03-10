@@ -19,7 +19,7 @@ builder.Services.AddResponseCompression(options =>
 // Database
 string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<EdenRelicsDbContext>(options =>
-    options.UseMySQL(connectionString!));
+    options.UseNpgsql(connectionString!));
 
 // Repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -86,11 +86,14 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Auto-apply migrations
+// Auto-apply migrations (skip for InMemory/test databases)
 using (IServiceScope scope = app.Services.CreateScope())
 {
     EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
-    db.Database.Migrate();
+    if (db.Database.IsRelational())
+        db.Database.Migrate();
+    else
+        db.Database.EnsureCreated();
 }
 
 // Optimize any uncompressed uploaded images
@@ -110,3 +113,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

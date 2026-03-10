@@ -7,6 +7,7 @@ public class Order : BaseEntity
     public string? GuestEmail { get; set; }
     public string Status { get; set; } = "Pending";
     public decimal Total { get; set; }
+    public string? StripeSessionId { get; set; }
     public List<OrderItem> Items { get; set; } = [];
 }
 

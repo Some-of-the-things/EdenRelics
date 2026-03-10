@@ -60,7 +60,7 @@
             </span>
           </div>
           <div class="product-card__footer">
-            <span class="product-card__price">{{ product.price | currency }}</span>
+            <span class="product-card__price">{{ product.price | currency:'GBP' }}</span>
             <button class="product-card__add-btn" (click)="addToCart(product)">
               Add to Cart
             </button>

@@ -22,14 +22,14 @@
         @for (item of order.items; track item.productId) {
           <div class="confirm__item">
             <span>{{ item.productName }} &times; {{ item.quantity }}</span>
-            <span>{{ item.unitPrice * item.quantity | currency }}</span>
+            <span>{{ item.unitPrice * item.quantity | currency:'GBP' }}</span>
           </div>
         }
       </div>
 
       <div class="confirm__total">
         <span>Total</span>
-        <span>{{ order.total | currency }}</span>
+        <span>{{ order.total | currency:'GBP' }}</span>
       </div>
     </div>
 

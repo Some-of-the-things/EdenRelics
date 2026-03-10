@@ -1,6 +1,7 @@
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
 using Eden_Relics_BE.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
@@ -44,6 +45,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ProductDto>> Create(CreateProductDto dto)
     {
         Product product = new()
@@ -64,6 +66,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ProductDto>> Update(Guid id, UpdateProductDto dto)
     {
         Product? product = await _repository.GetByIdAsync(id);
@@ -84,6 +87,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("upload-image")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<object>> UploadImage([FromForm] IFormFile file)
     {
         string[] allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
@@ -126,6 +130,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
         Product? product = await _repository.GetByIdAsync(id);

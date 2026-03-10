@@ -26,7 +26,7 @@
               +
             </button>
           </div>
-          <span class="cart-item__price">{{ item.product.price * item.quantity | currency }}</span>
+          <span class="cart-item__price">{{ item.product.price * item.quantity | currency:'GBP' }}</span>
           <button class="cart-item__remove" (click)="cartStore.removeFromCart(item.product.id)" aria-label="Remove {{ item.product.name }} from cart">
             &times;
           </button>
@@ -37,7 +37,7 @@
     <div class="cart__summary">
       <div class="cart__total">
         <span>Total</span>
-        <span class="cart__total-price">{{ cartStore.totalPrice() | currency }}</span>
+        <span class="cart__total-price">{{ cartStore.totalPrice() | currency:'GBP' }}</span>
       </div>
 
       @if (error()) {

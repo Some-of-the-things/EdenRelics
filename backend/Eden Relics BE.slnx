@@ -2,6 +2,9 @@
   <Project Path="Eden Relics BE.csproj">
     <Build />
   </Project>
+  <Project Path="Eden Relics BE.Tests\Eden Relics BE.Tests.csproj">
+    <Build />
+  </Project>
   <Properties>
     <StartupProject>Eden Relics BE.csproj</StartupProject>
   </Properties>

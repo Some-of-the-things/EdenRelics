@@ -1,16 +1,15 @@
 services:
-  mysql:
-    image: mysql:8.0
-    command: --default-authentication-plugin=mysql_native_password
+  postgres:
+    image: postgres:16-alpine
     environment:
-      MYSQL_ROOT_PASSWORD: EdenRelics2026!
-      MYSQL_DATABASE: EdenRelics
+      POSTGRES_PASSWORD: EdenRelics2026!
+      POSTGRES_DB: edenrelics
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,11 +21,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
-      - ConnectionStrings__DefaultConnection=Server=mysql;Database=EdenRelics;User=root;Password=EdenRelics2026!;
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=edenrelics;Username=postgres;Password=EdenRelics2026!
     ports:
       - "5260:8080"
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
 
   frontend:
@@ -41,4 +40,4 @@ services:
       - api
 
 volumes:
-  mysql_data:
+  postgres_data:

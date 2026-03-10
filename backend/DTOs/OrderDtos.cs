@@ -24,3 +24,8 @@ public record OrderItemDto(
     decimal UnitPrice,
     int Quantity
 );
+
+public record CheckoutResponseDto(
+    Guid OrderId,
+    string CheckoutUrl
+);

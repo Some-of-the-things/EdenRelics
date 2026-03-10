@@ -72,6 +72,7 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(o => o.Status).HasMaxLength(20);
             entity.Property(o => o.Total).HasPrecision(10, 2);
             entity.Property(o => o.GuestEmail).HasMaxLength(256);
+            entity.Property(o => o.StripeSessionId).HasMaxLength(256);
             entity.HasOne(o => o.User).WithMany().HasForeignKey(o => o.UserId).IsRequired(false);
             entity.HasMany(o => o.Items).WithOne(i => i.Order).HasForeignKey(i => i.OrderId);
         });
