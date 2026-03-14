@@ -1,15 +1,19 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { CurrencyPipe, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
+import {
+  OrderAdminService,
+  AdminOrder,
+} from '../../services/order-admin.service';
 
 @Component({
   selector: 'app-admin-page',
-  imports: [FormsModule, CurrencyPipe, TitleCasePipe],
+  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
@@ -17,14 +21,64 @@ export class AdminPageComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
+  private readonly orderService = inject(OrderAdminService);
   readonly store = inject(ProductStore);
+
+  readonly activeTab = signal<'products' | 'orders'>('products');
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly imagePreview = signal<string | null>(null);
   readonly uploading = signal(false);
   readonly uploadError = signal('');
 
+  // Orders
+  readonly orders = signal<AdminOrder[]>([]);
+  readonly ordersLoading = signal(false);
+  readonly ordersError = signal('');
+  readonly statusFilter = signal<string>('all');
+
+  readonly statuses = ['Pending', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+
   form: Omit<Product, 'id'> = this.emptyForm();
+
+  switchTab(tab: 'products' | 'orders'): void {
+    this.activeTab.set(tab);
+    if (tab === 'orders' && this.orders().length === 0) {
+      this.loadOrders();
+    }
+  }
+
+  loadOrders(): void {
+    this.ordersLoading.set(true);
+    this.ordersError.set('');
+    this.orderService.getAll().subscribe({
+      next: (orders) => {
+        this.orders.set(orders);
+        this.ordersLoading.set(false);
+      },
+      error: () => {
+        this.ordersError.set('Failed to load orders.');
+        this.ordersLoading.set(false);
+      },
+    });
+  }
+
+  get filteredOrders(): AdminOrder[] {
+    const filter = this.statusFilter();
+    if (filter === 'all') return this.orders();
+    return this.orders().filter((o) => o.status === filter);
+  }
+
+  updateOrderStatus(order: AdminOrder, status: string): void {
+    this.orderService.updateStatus(order.id, status).subscribe({
+      next: (updated) => {
+        this.orders.update((orders) =>
+          orders.map((o) => (o.id === updated.id ? updated : o))
+        );
+      },
+      error: () => this.ordersError.set('Failed to update order status.'),
+    });
+  }
 
   openForm(): void {
     this.editingId.set(null);
@@ -69,7 +123,9 @@ export class AdminPageComponent {
       error: (err) => {
         this.uploading.set(false);
         this.imagePreview.set(null);
-        this.uploadError.set(err.error?.error ?? 'Upload failed. Please try again.');
+        this.uploadError.set(
+          err.error?.error ?? 'Upload failed. Please try again.'
+        );
       },
     });
   }

@@ -41,16 +41,19 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .footer__link {
   font-size: 0.85rem;
-  color: #B0AEAB;
+  color: #D0CECC;
   text-decoration: none;
+  text-underline-offset: 3px;
   transition: color var(--transition);
 
   &:hover {
     color: var(--text-inverse);
+    text-decoration: underline;
   }
 }
 

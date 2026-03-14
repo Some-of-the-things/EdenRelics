@@ -1,152 +1,258 @@
 <div class="admin">
   <div class="admin__header">
-    <h1 class="admin__title">Manage Products</h1>
+    <h1 class="admin__title">Admin</h1>
     <div class="admin__header-actions">
-      <button class="admin__add-btn" (click)="openForm()">+ Add Product</button>
+      @if (activeTab() === 'products') {
+        <button class="admin__add-btn" (click)="openForm()">+ Add Product</button>
+      }
+      @if (activeTab() === 'orders') {
+        <button class="admin__add-btn" (click)="loadOrders()">Refresh</button>
+      }
       <button class="admin__logout-btn" (click)="logout()">Logout</button>
     </div>
   </div>
 
-  @if (store.error()) {
-    <p class="admin__error" role="alert">{{ store.error() }}</p>
-  }
+  <div class="admin__tabs">
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'products'"
+      (click)="switchTab('products')"
+    >
+      Products
+    </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'orders'"
+      (click)="switchTab('orders')"
+    >
+      Orders
+    </button>
+  </div>
 
-  @if (showForm()) {
-    <div class="admin__overlay" (click)="closeForm()"></div>
-    <div class="admin__form-panel" role="dialog" aria-modal="true" [attr.aria-label]="editingId() ? 'Edit Product' : 'New Product'">
-      <h2 class="admin__form-title">{{ editingId() ? 'Edit' : 'New' }} Product</h2>
-      <form (ngSubmit)="save()" class="admin__form">
-        <label class="admin__field">
-          <span>Name</span>
-          <input type="text" [(ngModel)]="form.name" name="name" required />
-        </label>
-        <label class="admin__field">
-          <span>Description</span>
-          <textarea [(ngModel)]="form.description" name="description" rows="3" required></textarea>
-        </label>
-        <div class="admin__row">
+  @if (activeTab() === 'products') {
+    @if (store.error()) {
+      <p class="admin__error" role="alert">{{ store.error() }}</p>
+    }
+
+    @if (showForm()) {
+      <div class="admin__overlay" (click)="closeForm()"></div>
+      <div class="admin__form-panel" role="dialog" aria-modal="true" [attr.aria-label]="editingId() ? 'Edit Product' : 'New Product'">
+        <h2 class="admin__form-title">{{ editingId() ? 'Edit' : 'New' }} Product</h2>
+        <form (ngSubmit)="save()" class="admin__form">
           <label class="admin__field">
-            <span>Price</span>
-            <input type="number" [(ngModel)]="form.price" name="price" min="0" step="0.01" required />
+            <span>Name</span>
+            <input type="text" [(ngModel)]="form.name" name="name" required />
           </label>
           <label class="admin__field">
-            <span>Era</span>
-            <input type="text" [(ngModel)]="form.era" name="era" required />
+            <span>Description</span>
+            <textarea [(ngModel)]="form.description" name="description" rows="3" required></textarea>
           </label>
-        </div>
-        <div class="admin__row">
-          <label class="admin__field">
-            <span>Category</span>
-            <select [(ngModel)]="form.category" name="category" required>
-              @for (cat of store.categories(); track cat) {
-                <option [value]="cat">{{ cat }}</option>
-              }
-            </select>
-          </label>
-          <label class="admin__field">
-            <span>Size</span>
-            <select [(ngModel)]="form.size" name="size" required>
-              <option value="6">6</option>
-              <option value="8">8</option>
-              <option value="10">10</option>
-              <option value="12">12</option>
-              <option value="14">14</option>
-              <option value="16">16</option>
-            </select>
-          </label>
-        </div>
-        <div class="admin__row">
-          <label class="admin__field">
-            <span>Condition</span>
-            <select [(ngModel)]="form.condition" name="condition" required>
-              <option value="mint">Mint</option>
-              <option value="excellent">Excellent</option>
-              <option value="good">Good</option>
-              <option value="fair">Fair</option>
-            </select>
-          </label>
-          <label class="admin__field">
-            <span>In Stock</span>
-            <select [(ngModel)]="form.inStock" name="inStock">
-              <option [ngValue]="true">Yes</option>
-              <option [ngValue]="false">No</option>
-            </select>
-          </label>
-        </div>
-        <div class="admin__field">
-          <span>Image</span>
-          <div class="admin__image-upload">
-            @if (imagePreview() || form.imageUrl) {
-              <img [src]="imagePreview() || form.imageUrl" alt="Preview" class="admin__image-preview" />
-            }
-            <label class="admin__file-btn">
-              Choose File
-              <input type="file" accept="image/*" (change)="onFileSelected($event)" hidden />
+          <div class="admin__row">
+            <label class="admin__field">
+              <span>Price</span>
+              <input type="number" [(ngModel)]="form.price" name="price" min="0" step="0.01" required />
             </label>
-            @if (uploading()) {
-              <span class="admin__uploading">Uploading...</span>
-            }
-            @if (uploadError()) {
-              <span class="admin__upload-error">{{ uploadError() }}</span>
-            }
-            <input
-              type="text"
-              [(ngModel)]="form.imageUrl"
-              name="imageUrl"
-              placeholder="Or paste image URL"
-              class="admin__url-input"
-            />
+            <label class="admin__field">
+              <span>Era</span>
+              <input type="text" [(ngModel)]="form.era" name="era" required />
+            </label>
           </div>
-        </div>
-        <div class="admin__actions">
-          <button type="button" class="admin__cancel-btn" (click)="closeForm()">Cancel</button>
-          <button type="submit" class="admin__save-btn">{{ editingId() ? 'Update' : 'Create' }}</button>
-        </div>
-      </form>
+          <div class="admin__row">
+            <label class="admin__field">
+              <span>Category</span>
+              <select [(ngModel)]="form.category" name="category" required>
+                @for (cat of store.categories(); track cat) {
+                  <option [value]="cat">{{ cat }}</option>
+                }
+              </select>
+            </label>
+            <label class="admin__field">
+              <span>Size</span>
+              <select [(ngModel)]="form.size" name="size" required>
+                <option value="6">6</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+                <option value="12">12</option>
+                <option value="14">14</option>
+                <option value="16">16</option>
+              </select>
+            </label>
+          </div>
+          <div class="admin__row">
+            <label class="admin__field">
+              <span>Condition</span>
+              <select [(ngModel)]="form.condition" name="condition" required>
+                <option value="mint">Mint</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+              </select>
+            </label>
+            <label class="admin__field">
+              <span>In Stock</span>
+              <select [(ngModel)]="form.inStock" name="inStock">
+                <option [ngValue]="true">Yes</option>
+                <option [ngValue]="false">No</option>
+              </select>
+            </label>
+          </div>
+          <div class="admin__field">
+            <span>Image</span>
+            <div class="admin__image-upload">
+              @if (imagePreview() || form.imageUrl) {
+                <img [src]="imagePreview() || form.imageUrl" alt="Preview" class="admin__image-preview" />
+              }
+              <label class="admin__file-btn">
+                Choose File
+                <input type="file" accept="image/*" (change)="onFileSelected($event)" hidden />
+              </label>
+              @if (uploading()) {
+                <span class="admin__uploading">Uploading...</span>
+              }
+              @if (uploadError()) {
+                <span class="admin__upload-error">{{ uploadError() }}</span>
+              }
+              <input
+                type="text"
+                [(ngModel)]="form.imageUrl"
+                name="imageUrl"
+                placeholder="Or paste image URL"
+                class="admin__url-input"
+              />
+            </div>
+          </div>
+          <div class="admin__actions">
+            <button type="button" class="admin__cancel-btn" (click)="closeForm()">Cancel</button>
+            <button type="submit" class="admin__save-btn">{{ editingId() ? 'Update' : 'Create' }}</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <div class="admin__table-wrap">
+      <table class="admin__table">
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Era</th>
+            <th>Category</th>
+            <th>Size</th>
+            <th>Condition</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (product of store.products(); track product.id) {
+            <tr>
+              <td><img [src]="product.imageUrl" [alt]="product.name" class="admin__thumb" /></td>
+              <td class="admin__name">{{ product.name }}</td>
+              <td>{{ product.era }}</td>
+              <td>{{ product.category }}</td>
+              <td>{{ product.size }}</td>
+              <td>
+                <span class="admin__condition" [attr.data-condition]="product.condition">
+                  {{ product.condition | titlecase }}
+                </span>
+              </td>
+              <td>{{ product.price | currency:'GBP' }}</td>
+              <td>
+                <span class="admin__stock" [class.admin__stock--out]="!product.inStock">
+                  {{ product.inStock ? 'In Stock' : 'Sold' }}
+                </span>
+              </td>
+              <td class="admin__cell-actions">
+                <button class="admin__edit-btn" (click)="edit(product)">Edit</button>
+                <button class="admin__delete-btn" (click)="remove(product.id)">Delete</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9" class="admin__empty">No products found.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
   }
 
-  <div class="admin__table-wrap">
-    <table class="admin__table">
-      <thead>
-        <tr>
-          <th>Image</th>
-          <th>Name</th>
-          <th>Era</th>
-          <th>Category</th>
-          <th>Size</th>
-          <th>Condition</th>
-          <th>Price</th>
-          <th>Stock</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (product of store.products(); track product.id) {
-          <tr>
-            <td><img [src]="product.imageUrl" [alt]="product.name" class="admin__thumb" /></td>
-            <td class="admin__name">{{ product.name }}</td>
-            <td>{{ product.era }}</td>
-            <td>{{ product.category }}</td>
-            <td>{{ product.size }}</td>
-            <td>
-              <span class="admin__condition" [attr.data-condition]="product.condition">
-                {{ product.condition | titlecase }}
-              </span>
-            </td>
-            <td>{{ product.price | currency:'GBP' }}</td>
-            <td>{{ product.inStock ? 'Yes' : 'No' }}</td>
-            <td class="admin__cell-actions">
-              <button class="admin__edit-btn" (click)="edit(product)">Edit</button>
-              <button class="admin__delete-btn" (click)="remove(product.id)">Delete</button>
-            </td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="9" class="admin__empty">No products found.</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+  @if (activeTab() === 'orders') {
+    @if (ordersError()) {
+      <p class="admin__error" role="alert">{{ ordersError() }}</p>
+    }
+
+    <div class="admin__filters">
+      <label class="admin__filter-label">
+        <span>Status</span>
+        <select [(ngModel)]="statusFilter" (ngModelChange)="statusFilter.set($event)">
+          <option value="all">All</option>
+          @for (s of statuses; track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
+      </label>
+      <span class="admin__order-count">{{ filteredOrders.length }} orders</span>
+    </div>
+
+    @if (ordersLoading()) {
+      <p class="admin__loading">Loading orders...</p>
+    } @else {
+      <div class="admin__table-wrap">
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (order of filteredOrders; track order.id) {
+              <tr>
+                <td class="admin__order-id">{{ order.id.slice(0, 8) }}...</td>
+                <td>{{ order.createdAtUtc | date:'d MMM y, HH:mm' }}</td>
+                <td>
+                  <div class="admin__customer">
+                    @if (order.customerName) {
+                      <span class="admin__customer-name">{{ order.customerName }}</span>
+                    }
+                    <span class="admin__customer-email">{{ order.customerEmail }}</span>
+                  </div>
+                </td>
+                <td>
+                  <ul class="admin__order-items">
+                    @for (item of order.items; track item.productId) {
+                      <li>{{ item.productName }} x{{ item.quantity }}</li>
+                    }
+                  </ul>
+                </td>
+                <td>{{ order.total | currency:'GBP' }}</td>
+                <td>
+                  <select
+                    class="admin__status-select"
+                    [attr.data-status]="order.status"
+                    [ngModel]="order.status"
+                    (ngModelChange)="updateOrderStatus(order, $event)"
+                  >
+                    @for (s of statuses; track s) {
+                      <option [value]="s">{{ s }}</option>
+                    }
+                  </select>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="admin__empty">No orders found.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
 </div>

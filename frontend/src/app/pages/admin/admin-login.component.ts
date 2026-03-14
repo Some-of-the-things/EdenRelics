@@ -30,7 +30,7 @@ export class AdminLoginComponent {
   submit(): void {
     if (this.mfaToken()) {
       this.auth.mfaVerify(this.mfaToken(), this.mfaCode).subscribe({
-        next: () => this.router.navigate(['/account']),
+        next: () => this.navigateAfterLogin(),
         error: (err) => this.error.set(err.error?.message ?? 'Invalid code.'),
       });
       return;
@@ -43,7 +43,7 @@ export class AdminLoginComponent {
           this.mfaToken.set(res.mfaToken);
           this.error.set('');
         } else {
-          this.router.navigate(['/account']);
+          this.navigateAfterLogin();
         }
       },
       error: () => this.error.set('Invalid email or password.'),
@@ -52,7 +52,7 @@ export class AdminLoginComponent {
 
   onSocialLogin(event: { provider: string; idToken: string }): void {
     this.auth.externalLogin(event.provider, event.idToken).subscribe({
-      next: () => this.router.navigate(['/account']),
+      next: () => this.navigateAfterLogin(),
       error: () => this.error.set('Social login failed. Please try again.'),
     });
   }
@@ -60,8 +60,12 @@ export class AdminLoginComponent {
   loginWithPasskey(): void {
     this.error.set('');
     this.passkey.loginWithPasskey(this.email || undefined).subscribe({
-      next: () => this.router.navigate(['/account']),
+      next: () => this.navigateAfterLogin(),
       error: () => this.error.set('Passkey login failed. Please try again.'),
     });
+  }
+
+  private navigateAfterLogin(): void {
+    this.router.navigate([this.auth.isAdmin() ? '/admin' : '/account']);
   }
 }

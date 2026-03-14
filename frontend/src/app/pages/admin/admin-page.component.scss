@@ -344,3 +344,135 @@
   color: var(--text-muted);
   padding: 3rem 1rem !important;
 }
+
+/* Tabs */
+.admin__tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+
+.admin__tab {
+  background: none;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color var(--transition), border-color var(--transition);
+
+  &:hover {
+    color: var(--text-primary);
+  }
+
+  &--active {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent);
+  }
+}
+
+/* Stock badge */
+.admin__stock {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #2d7a3a;
+
+  &--out {
+    color: var(--accent-sale);
+  }
+}
+
+/* Orders */
+.admin__filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin__filter-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+
+  select {
+    border: 1px solid var(--border-color);
+    padding: 0.4rem 0.5rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+}
+
+.admin__order-count {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+}
+
+.admin__loading {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 3rem 1rem;
+}
+
+.admin__order-id {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.admin__customer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.admin__customer-name {
+  font-weight: 500;
+}
+
+.admin__customer-email {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.admin__order-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.825rem;
+
+  li {
+    white-space: nowrap;
+  }
+}
+
+.admin__status-select {
+  border: 1px solid var(--border-color);
+  padding: 0.35rem 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+
+  &[data-status='Paid'] { color: #2d7a3a; }
+  &[data-status='Processing'] { color: #8a6508; }
+  &[data-status='Shipped'] { color: #2563eb; }
+  &[data-status='Delivered'] { color: #2d7a3a; }
+  &[data-status='Cancelled'] { color: var(--accent-sale); }
+  &[data-status='Pending'] { color: var(--text-muted); }
+}
