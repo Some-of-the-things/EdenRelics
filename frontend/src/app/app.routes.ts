@@ -112,5 +112,12 @@ export const routes: Routes = [
         (m) => m.VerifyEmailComponent
       ),
   },
+  {
+    path: 'contact',
+    loadComponent: () =>
+      import('./pages/contact/contact-page.component').then(
+        (m) => m.ContactPageComponent
+      ),
+  },
   { path: '**', redirectTo: '' },
 ];

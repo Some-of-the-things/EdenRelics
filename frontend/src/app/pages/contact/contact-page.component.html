@@ -1,0 +1,57 @@
+<div class="contact">
+  <form class="contact__card" (ngSubmit)="submit()">
+    @if (!sent()) {
+      <h1 class="contact__title">Get in Touch</h1>
+      <p class="contact__subtitle">Have a question or want to know more? Drop us a message.</p>
+      <label class="contact__field">
+        <span>Name</span>
+        <input
+          type="text"
+          [(ngModel)]="name"
+          name="name"
+          autocomplete="name"
+          required
+        />
+      </label>
+      <label class="contact__field">
+        <span>Email</span>
+        <input
+          type="email"
+          [(ngModel)]="email"
+          name="email"
+          autocomplete="email"
+          required
+        />
+      </label>
+      <label class="contact__field">
+        <span>Subject</span>
+        <input
+          type="text"
+          [(ngModel)]="subject"
+          name="subject"
+          required
+        />
+      </label>
+      <label class="contact__field">
+        <span>Message</span>
+        <textarea
+          [(ngModel)]="message"
+          name="message"
+          rows="5"
+          required
+        ></textarea>
+      </label>
+      @if (error()) {
+        <p class="contact__error" role="alert">{{ error() }}</p>
+      }
+      <button type="submit" class="contact__btn" [disabled]="processing()">
+        {{ processing() ? 'Sending...' : 'Send Message' }}
+      </button>
+    } @else {
+      <h1 class="contact__title">Message Sent</h1>
+      <p class="contact__subtitle">
+        Thanks for getting in touch, {{ name }}. We'll get back to you as soon as we can.
+      </p>
+    }
+  </form>
+</div>
