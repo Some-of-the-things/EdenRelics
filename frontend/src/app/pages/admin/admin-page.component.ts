@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
@@ -181,6 +181,50 @@ export class AdminPageComponent {
   readonly brandingError = signal('');
   readonly logoUploading = signal(false);
   readonly logoPreview = signal<string | null>(null);
+  readonly contrastCheckTrigger = signal(0);
+
+  readonly contrastErrors = computed(() => {
+    this.contrastCheckTrigger();
+    const f = this.brandingForm;
+    const pairs: { fg: string; bg: string; label: string }[] = [
+      { fg: f.textPrimary, bg: f.bgPrimary, label: 'Text Primary on Background Primary' },
+      { fg: f.textSecondary, bg: f.bgPrimary, label: 'Text Secondary on Background Primary' },
+      { fg: f.textMuted, bg: f.bgPrimary, label: 'Text Muted on Background Primary' },
+      { fg: f.textPrimary, bg: f.bgCard, label: 'Text Primary on Card Background' },
+      { fg: f.textSecondary, bg: f.bgCard, label: 'Text Secondary on Card Background' },
+      { fg: f.textMuted, bg: f.bgCard, label: 'Text Muted on Card Background' },
+      { fg: f.textPrimary, bg: f.bgSecondary, label: 'Text Primary on Background Secondary' },
+      { fg: f.textSecondary, bg: f.bgSecondary, label: 'Text Secondary on Background Secondary' },
+      { fg: f.textInverse, bg: f.bgDark, label: 'Text Inverse on Dark Background' },
+      { fg: f.accent, bg: f.bgPrimary, label: 'Accent on Background Primary' },
+      { fg: f.accent, bg: f.bgCard, label: 'Accent on Card Background' },
+    ];
+    const errors: string[] = [];
+    for (const { fg, bg, label } of pairs) {
+      const ratio = this.contrastRatio(fg, bg);
+      if (ratio < 4.5) {
+        errors.push(`${label}: ${ratio.toFixed(1)}:1 (requires 4.5:1)`);
+      }
+    }
+    return errors;
+  });
+
+  private luminance(hex: string): number {
+    const rgb = [hex.slice(1, 3), hex.slice(3, 5), hex.slice(5, 7)]
+      .map(c => {
+        const v = parseInt(c, 16) / 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+  }
+
+  private contrastRatio(fg: string, bg: string): number {
+    const l1 = this.luminance(fg);
+    const l2 = this.luminance(bg);
+    const lighter = Math.max(l1, l2);
+    const darker = Math.min(l1, l2);
+    return (lighter + 0.05) / (darker + 0.05);
+  }
 
   readonly fontOptions = [
     'Playfair Display', 'Work Sans', 'Inter', 'Lora', 'Merriweather',
@@ -490,6 +534,10 @@ export class AdminPageComponent {
   }
 
   saveBranding(): void {
+    if (this.contrastErrors().length > 0) {
+      this.brandingError.set('Cannot save: colour combinations do not meet WCAG AA contrast requirements.');
+      return;
+    }
     this.brandingSaving.set(true);
     this.brandingError.set('');
     this.brandingSuccess.set('');
@@ -534,6 +582,7 @@ export class AdminPageComponent {
 
   previewBranding(): void {
     this.brandingService.apply(this.brandingForm);
+    this.contrastCheckTrigger.update(v => v + 1);
   }
 
   checkInstagramStatus(): void {

@@ -1141,6 +1141,16 @@
             </div>
           </label>
         </div>
+        @if (contrastErrors().length > 0) {
+          <div class="brand__contrast-errors" role="alert">
+            <p class="brand__contrast-title">WCAG AA contrast failures:</p>
+            <ul class="brand__contrast-list">
+              @for (err of contrastErrors(); track err) {
+                <li>{{ err }}</li>
+              }
+            </ul>
+          </div>
+        }
       </div>
 
       <!-- Fonts -->

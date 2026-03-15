@@ -1208,6 +1208,30 @@
   max-width: 560px;
 }
 
+.brand__contrast-errors {
+  background: #fde8e8;
+  border: 1px solid #e2b8b8;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+
+.brand__contrast-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #b52a2a;
+  margin: 0 0 0.5rem;
+}
+
+.brand__contrast-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.8rem;
+  color: #b52a2a;
+
+  li { margin-bottom: 0.25rem; }
+}
+
 .brand__actions {
   display: flex;
   gap: 0.75rem;
