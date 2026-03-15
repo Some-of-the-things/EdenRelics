@@ -48,7 +48,9 @@ public class ImageStorageService
     public async Task<string> UploadAsync(Stream stream, string fileName, string contentType)
     {
         if (!_configured || _client is null)
+        {
             throw new InvalidOperationException("R2 is not configured.");
+        }
 
         var request = new PutObjectRequest
         {
@@ -66,7 +68,7 @@ public class ImageStorageService
 
     public async Task DeleteAsync(string fileName)
     {
-        if (!_configured || _client is null) return;
+        if (!_configured || _client is null) { return; }
 
         try
         {

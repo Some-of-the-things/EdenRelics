@@ -37,8 +37,8 @@ public partial class BlogController(EdenRelicsDbContext context, IWebHostEnviron
     {
         BlogPost? post = await context.BlogPosts
             .FirstOrDefaultAsync(p => p.Slug == slug);
-        if (post is null) return NotFound();
-        if (!post.Published) return NotFound();
+        if (post is null) { return NotFound(); }
+        if (!post.Published) { return NotFound(); }
         return Ok(ToDto(post));
     }
 
@@ -47,7 +47,7 @@ public partial class BlogController(EdenRelicsDbContext context, IWebHostEnviron
     public async Task<ActionResult<BlogPostDto>> GetByIdAdmin(Guid id)
     {
         BlogPost? post = await context.BlogPosts.FindAsync(id);
-        if (post is null) return NotFound();
+        if (post is null) { return NotFound(); }
         return Ok(ToDto(post));
     }
 
@@ -86,19 +86,21 @@ public partial class BlogController(EdenRelicsDbContext context, IWebHostEnviron
     public async Task<ActionResult<BlogPostDto>> Update(Guid id, [FromBody] UpdateBlogPostDto dto)
     {
         BlogPost? post = await context.BlogPosts.FindAsync(id);
-        if (post is null) return NotFound();
+        if (post is null) { return NotFound(); }
 
-        if (dto.Title is not null) post.Title = dto.Title;
-        if (dto.Content is not null) post.Content = dto.Content;
-        if (dto.Excerpt is not null) post.Excerpt = dto.Excerpt;
-        if (dto.FeaturedImageUrl is not null) post.FeaturedImageUrl = dto.FeaturedImageUrl;
-        if (dto.Author is not null) post.Author = dto.Author;
+        if (dto.Title is not null) { post.Title = dto.Title; }
+        if (dto.Content is not null) { post.Content = dto.Content; }
+        if (dto.Excerpt is not null) { post.Excerpt = dto.Excerpt; }
+        if (dto.FeaturedImageUrl is not null) { post.FeaturedImageUrl = dto.FeaturedImageUrl; }
+        if (dto.Author is not null) { post.Author = dto.Author; }
         if (dto.Published.HasValue)
         {
             bool wasPublished = post.Published;
             post.Published = dto.Published.Value;
             if (!wasPublished && dto.Published.Value)
+            {
                 post.PublishedAtUtc = DateTime.UtcNow;
+            }
         }
 
         await context.SaveChangesAsync();
@@ -110,7 +112,7 @@ public partial class BlogController(EdenRelicsDbContext context, IWebHostEnviron
     public async Task<IActionResult> Delete(Guid id)
     {
         BlogPost? post = await context.BlogPosts.FindAsync(id);
-        if (post is null) return NotFound();
+        if (post is null) { return NotFound(); }
         context.BlogPosts.Remove(post);
         await context.SaveChangesAsync();
         return NoContent();
@@ -124,10 +126,14 @@ public partial class BlogController(EdenRelicsDbContext context, IWebHostEnviron
         string extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
         if (!allowedExtensions.Contains(extension))
+        {
             return BadRequest(new { error = "Only image files are allowed." });
+        }
 
         if (file.Length > 10 * 1024 * 1024)
+        {
             return BadRequest(new { error = "File size must be under 10MB." });
+        }
 
         string imageUrl = await ImageUploadHelper.ProcessAndUploadAsync(
             file.OpenReadStream(), storage, env, Request, "blog", maxWidth: 1200, maxHeight: 2000, quality: 80);

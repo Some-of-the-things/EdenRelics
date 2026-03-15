@@ -75,58 +75,98 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
 
         // Title
         if (string.IsNullOrWhiteSpace(title))
+        {
             issues.Add("Missing <title> tag.");
+        }
         else if (title.Length < 30)
+        {
             warnings.Add($"Title is short ({title.Length} chars). Aim for 50-60.");
+        }
         else if (title.Length > 60)
+        {
             warnings.Add($"Title is long ({title.Length} chars). Aim for 50-60.");
+        }
         else
+        {
             passed.Add($"Title length is good ({title.Length} chars).");
+        }
 
         // Meta description
         if (string.IsNullOrWhiteSpace(metaDescription))
+        {
             issues.Add("Missing meta description.");
+        }
         else if (metaDescription.Length < 120)
+        {
             warnings.Add($"Meta description is short ({metaDescription.Length} chars). Aim for 150-160.");
+        }
         else if (metaDescription.Length > 160)
+        {
             warnings.Add($"Meta description is long ({metaDescription.Length} chars). Aim for 150-160.");
+        }
         else
+        {
             passed.Add($"Meta description length is good ({metaDescription.Length} chars).");
+        }
 
         // H1
         int h1Count = headings.Count(h => h.Level == 1);
         if (h1Count == 0)
+        {
             issues.Add("No H1 tag found.");
+        }
         else if (h1Count > 1)
+        {
             warnings.Add($"Multiple H1 tags found ({h1Count}). Use only one.");
+        }
         else
+        {
             passed.Add("Single H1 tag present.");
+        }
 
         // Images
         if (imagesMissingAlt > 0)
+        {
             warnings.Add($"{imagesMissingAlt} image(s) missing alt text.");
+        }
         else if (imageCount > 0)
+        {
             passed.Add($"All {imageCount} images have alt text.");
+        }
 
         // Word count
         if (wordCount < 300)
+        {
             warnings.Add($"Low word count ({wordCount}). Aim for 300+ words.");
+        }
         else
+        {
             passed.Add($"Word count is good ({wordCount} words).");
+        }
 
         // Open Graph
         if (string.IsNullOrWhiteSpace(ogTitle))
+        {
             warnings.Add("Missing og:title meta tag.");
+        }
         if (string.IsNullOrWhiteSpace(ogDescription))
+        {
             warnings.Add("Missing og:description meta tag.");
+        }
         if (string.IsNullOrWhiteSpace(ogImage))
+        {
             warnings.Add("Missing og:image meta tag.");
+        }
 
         // Canonical
         if (string.IsNullOrWhiteSpace(canonical))
+        {
             warnings.Add("Missing canonical link.");
+        }
         else
+        {
             passed.Add("Canonical URL present.");
+        }
 
         List<KeywordSuggestion> suggestedKeywords = ExtractKeywords(html, title, metaDescription, headings);
 

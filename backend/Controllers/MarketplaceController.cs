@@ -27,7 +27,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
     public async Task<ActionResult<ProductListingDto>> AddListing([FromBody] CreateListingDto dto)
     {
         Product? product = await context.Products.FindAsync(dto.ProductId);
-        if (product is null) return NotFound(new { message = "Product not found." });
+        if (product is null) { return NotFound(new { message = "Product not found." }); }
 
         ProductListing listing = new()
         {
@@ -49,7 +49,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
             .Include(l => l.Product)
             .ThenInclude(p => p.Listings)
             .FirstOrDefaultAsync(l => l.Id == id);
-        if (listing is null) return NotFound();
+        if (listing is null) { return NotFound(); }
 
         listing.Status = dto.Status;
 
@@ -71,7 +71,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
     public async Task<IActionResult> RemoveListing(Guid id)
     {
         ProductListing? listing = await context.ProductListings.FindAsync(id);
-        if (listing is null) return NotFound();
+        if (listing is null) { return NotFound(); }
         listing.Status = "Removed";
         await context.SaveChangesAsync();
         return NoContent();
@@ -85,7 +85,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
         Product? product = await context.Products
             .Include(p => p.Listings)
             .FirstOrDefaultAsync(p => p.Id == productId);
-        if (product is null) return NotFound();
+        if (product is null) { return NotFound(); }
 
         product.InStock = false;
 
@@ -129,7 +129,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
     public async Task<IActionResult> AcknowledgeRemoval(Guid id)
     {
         ProductListing? listing = await context.ProductListings.FindAsync(id);
-        if (listing is null) return NotFound();
+        if (listing is null) { return NotFound(); }
         listing.Status = "Removed";
         await context.SaveChangesAsync();
         return Ok();
@@ -145,10 +145,12 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
         string? shopId = configuration["Etsy:ShopId"];
 
         if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(shopId))
+        {
             return BadRequest(new { message = "Etsy is not configured. Set Etsy:ApiKey, Etsy:AccessToken, and Etsy:ShopId." });
+        }
 
         Product? product = await context.Products.FindAsync(dto.ProductId);
-        if (product is null) return NotFound(new { message = "Product not found." });
+        if (product is null) { return NotFound(new { message = "Product not found." }); }
 
         HttpClient client = httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.Add("x-api-key", apiKey);
@@ -211,7 +213,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
     public async Task<ActionResult<GeneratedListingDto>> GenerateListingText(Guid productId, [FromQuery] string platform)
     {
         Product? product = await context.Products.FindAsync(productId);
-        if (product is null) return NotFound();
+        if (product is null) { return NotFound(); }
 
         string title;
         string description;
@@ -242,7 +244,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
     {
         string? apiKey = configuration["Etsy:ApiKey"];
         string? accessToken = configuration["Etsy:AccessToken"];
-        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(accessToken)) return;
+        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(accessToken)) { return; }
 
         try
         {
@@ -275,7 +277,9 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
         {
             using JsonDocument doc = JsonDocument.Parse(json);
             if (doc.RootElement.TryGetProperty("error", out JsonElement err))
+            {
                 return err.GetString() ?? json;
+            }
         }
         catch { }
         return json;
