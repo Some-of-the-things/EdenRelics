@@ -69,6 +69,7 @@ public class ProductsController : ControllerBase
             Description = dto.Description,
             Price = dto.Price,
             CostPrice = dto.CostPrice,
+            Supplier = dto.Supplier,
             Era = dto.Era,
             Category = dto.Category,
             Size = dto.Size,
@@ -95,6 +96,7 @@ public class ProductsController : ControllerBase
         if (dto.Description is not null) { product.Description = dto.Description; }
         if (dto.Price.HasValue) { product.Price = dto.Price.Value; }
         if (dto.CostPrice.HasValue) { product.CostPrice = dto.CostPrice.Value; }
+        if (dto.Supplier is not null) { product.Supplier = dto.Supplier; }
         if (dto.Era is not null) { product.Era = dto.Era; }
         if (dto.Category is not null) { product.Category = dto.Category; }
         if (dto.Size is not null) { product.Size = dto.Size; }
@@ -169,7 +171,7 @@ public class ProductsController : ControllerBase
     );
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
-        p.Id, p.Name, p.Description, p.Price, p.CostPrice, p.Era,
+        p.Id, p.Name, p.Description, p.Price, p.CostPrice, p.Supplier, p.Era,
         p.Category, p.Size, p.Condition, p.ImageUrl, p.InStock
     );
 }
