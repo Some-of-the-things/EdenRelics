@@ -10,6 +10,6 @@ test.describe('Order Confirmation', () => {
   test('shows return to shop link on error', async ({ page }) => {
     await page.goto('/order-confirmation/00000000-0000-0000-0000-000000000000');
     await expect(page.getByText(/could not load|not found|error/i)).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('link', { name: /shop|home|return/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Return to Shop' })).toBeVisible();
   });
 });
