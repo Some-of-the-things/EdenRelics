@@ -1,3 +1,39 @@
+/* Self-hosted fonts — eliminates Google Fonts critical chain */
+@font-face {
+  font-family: 'Work Sans';
+  src: url('/fonts/work-sans-latin.woff2') format('woff2');
+  font-weight: 300 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair-display-latin.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fallback fonts sized to match web fonts — prevents layout shift on swap */
+@font-face {
+  font-family: 'Work Sans Fallback';
+  src: local('Arial');
+  size-adjust: 111%;
+  ascent-override: 80%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Playfair Display Fallback';
+  src: local('Georgia');
+  size-adjust: 112%;
+  ascent-override: 82%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
 *,
 *::before,
 *::after {
@@ -23,8 +59,8 @@
   --border-color: #E1E1E1;
   --border-dark: #D0CCC7;
 
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body: 'Work Sans', system-ui, sans-serif;
+  --font-display: 'Playfair Display', 'Playfair Display Fallback', Georgia, serif;
+  --font-body: 'Work Sans', 'Work Sans Fallback', system-ui, sans-serif;
 
   --transition: 250ms ease;
 }

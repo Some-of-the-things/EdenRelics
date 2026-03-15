@@ -1,10 +1,29 @@
 <div class="home">
   <section class="hero">
-    <p class="hero__eyebrow">Carefully Sourced & Lovingly Preserved</p>
-    <h1 class="hero__title">Curated Vintage</h1>
-    <p class="hero__subtitle">
-      Timeless pieces from decades past.
-    </p>
+    <p class="hero__eyebrow">{{ cms.get('home.hero.eyebrow', 'Carefully Sourced & Lovingly Preserved') }}</p>
+    <h1 class="hero__title">{{ cms.get('home.hero.title', 'Curated Vintage') }}</h1>
+    <p class="hero__subtitle">{{ cms.get('home.hero.subtitle', 'Timeless pieces from decades past.') }}</p>
   </section>
   <app-product-list />
+  <section class="home__about">
+    <h2 class="home__about-title">{{ cms.get('home.about.title', 'Why Eden Relics?') }}</h2>
+    <div class="home__about-grid">
+      <div class="home__about-card">
+        <h3>{{ cms.get('home.about.card1.title', 'Authentically Vintage') }}</h3>
+        <p>{{ cms.get('home.about.card1.text', '') }}</p>
+      </div>
+      <div class="home__about-card">
+        <h3>{{ cms.get('home.about.card2.title', 'Quality Assured') }}</h3>
+        <p>{{ cms.get('home.about.card2.text', '') }}</p>
+      </div>
+      <div class="home__about-card">
+        <h3>{{ cms.get('home.about.card3.title', 'Sustainable Fashion') }}</h3>
+        <p>{{ cms.get('home.about.card3.text', '') }}</p>
+      </div>
+      <div class="home__about-card">
+        <h3>{{ cms.get('home.about.card4.title', 'Spanning the Decades') }}</h3>
+        <p>{{ cms.get('home.about.card4.text', '') }}</p>
+      </div>
+    </div>
+  </section>
 </div>

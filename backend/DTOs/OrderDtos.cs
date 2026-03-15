@@ -29,3 +29,17 @@ public record CheckoutResponseDto(
     Guid OrderId,
     string CheckoutUrl
 );
+
+public record AdminOrderDto(
+    Guid Id,
+    string Status,
+    decimal Total,
+    DateTime CreatedAtUtc,
+    string CustomerEmail,
+    string? CustomerName,
+    List<OrderItemDto> Items
+);
+
+public record UpdateOrderStatusDto(
+    string Status
+);

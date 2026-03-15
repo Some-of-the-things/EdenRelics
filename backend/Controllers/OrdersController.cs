@@ -169,11 +169,53 @@ public class OrdersController : ControllerBase
         return Ok(ToDto(order));
     }
 
+    [HttpGet("admin/all")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IEnumerable<AdminOrderDto>>> GetAllOrders()
+    {
+        List<Order> orders = await _context.Orders
+            .Include(o => o.Items)
+            .Include(o => o.User)
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .ToListAsync();
+
+        return Ok(orders.Select(ToAdminDto));
+    }
+
+    [HttpPut("admin/{id:guid}/status")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<AdminOrderDto>> UpdateStatus(Guid id, UpdateOrderStatusDto dto)
+    {
+        Order? order = await _context.Orders
+            .Include(o => o.Items)
+            .Include(o => o.User)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order is null) return NotFound();
+
+        order.Status = dto.Status;
+        await _context.SaveChangesAsync();
+
+        return Ok(ToAdminDto(order));
+    }
+
     private static OrderDto ToDto(Order o) => new(
         o.Id,
         o.Status,
         o.Total,
         o.CreatedAtUtc,
+        o.Items.Select(i => new OrderItemDto(
+            i.ProductId, i.ProductName, i.UnitPrice, i.Quantity
+        )).ToList()
+    );
+
+    private static AdminOrderDto ToAdminDto(Order o) => new(
+        o.Id,
+        o.Status,
+        o.Total,
+        o.CreatedAtUtc,
+        o.User?.Email ?? o.GuestEmail ?? "Unknown",
+        o.User is not null ? $"{o.User.FirstName} {o.User.LastName}" : null,
         o.Items.Select(i => new OrderItemDto(
             i.ProductId, i.ProductName, i.UnitPrice, i.Quantity
         )).ToList()

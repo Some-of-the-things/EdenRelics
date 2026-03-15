@@ -1,6 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { ProductListComponent } from '../../components/product-list/product-list.component';
 import { SeoService } from '../../services/seo.service';
+import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-home',
@@ -10,6 +11,7 @@ import { SeoService } from '../../services/seo.service';
 })
 export class HomeComponent implements OnInit {
   private readonly seo = inject(SeoService);
+  readonly cms = inject(ContentService);
 
   ngOnInit(): void {
     this.seo.updateTags({

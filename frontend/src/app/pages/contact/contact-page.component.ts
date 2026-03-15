@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-contact-page',
@@ -11,6 +12,7 @@ import { environment } from '../../../environments/environment';
 })
 export class ContactPageComponent {
   private readonly http = inject(HttpClient);
+  readonly cms = inject(ContentService);
 
   name = '';
   email = '';
