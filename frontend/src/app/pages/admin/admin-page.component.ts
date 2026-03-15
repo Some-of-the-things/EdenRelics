@@ -91,7 +91,7 @@ export class AdminPageComponent {
 
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
-  readonly activeTab = signal<'products' | 'orders' | 'accounts' | 'seo' | 'instagram' | 'branding' | 'content'>('products');
+  readonly activeTab = signal<'products' | 'orders' | 'accounts' | 'seo' | 'instagram' | 'branding' | 'content' | 'marketplace' | 'blog'>('products');
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly imagePreview = signal<string | null>(null);
@@ -196,6 +196,25 @@ export class AdminPageComponent {
   readonly igResult = signal<string | null>(null);
   readonly igError = signal('');
   readonly igConfigured = signal<boolean | null>(null);
+  // Blog
+  readonly blogPosts = signal<{ id: string; title: string; slug: string; published: boolean; publishedAtUtc: string | null; createdAtUtc: string }[]>([]);
+  readonly blogLoading = signal(false);
+  readonly showBlogForm = signal(false);
+  readonly editingBlogId = signal<string | null>(null);
+  readonly blogUploading = signal(false);
+  readonly blogError = signal('');
+  readonly blogSuccess = signal('');
+  blogForm = { title: '', content: '', excerpt: '', featuredImageUrl: '', author: 'Teodora Carter', published: false };
+
+  // Marketplace
+  readonly pendingRemovals = signal<{ listingId: string; productId: string; productName: string; platform: string; externalUrl: string | null }[]>([]);
+  readonly marketplaceProducts = signal<{ product: Product; listings: { id: string; platform: string; status: string; externalUrl: string | null }[] }[]>([]);
+  readonly marketplaceLoading = signal(false);
+  readonly generatedListing = signal<{ title: string; description: string; price: number; imageUrl: string } | null>(null);
+  readonly etsyConfigured = signal<boolean | null>(null);
+  readonly marketplaceError = signal('');
+  readonly marketplaceSuccess = signal('');
+
   // Accounts
   readonly accountsSummary = signal<AccountsSummary | null>(null);
   readonly accountsLoading = signal(false);
@@ -205,7 +224,7 @@ export class AdminPageComponent {
 
   form: Omit<Product, 'id'> = this.emptyForm();
 
-  switchTab(tab: 'products' | 'orders' | 'accounts' | 'seo' | 'instagram' | 'branding' | 'content'): void {
+  switchTab(tab: 'products' | 'orders' | 'accounts' | 'seo' | 'instagram' | 'branding' | 'content' | 'marketplace' | 'blog'): void {
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
       this.loadOrders();
@@ -225,6 +244,199 @@ export class AdminPageComponent {
     if (tab === 'content') {
       this.loadContent();
     }
+    if (tab === 'marketplace') {
+      this.loadMarketplace();
+    }
+    if (tab === 'blog') {
+      this.loadBlogPosts();
+    }
+  }
+
+  loadBlogPosts(): void {
+    this.blogLoading.set(true);
+    this.http.get<any[]>(`${environment.apiUrl}/api/blog/admin/all`).subscribe({
+      next: (posts) => {
+        this.blogPosts.set(posts);
+        this.blogLoading.set(false);
+      },
+      error: () => this.blogLoading.set(false),
+    });
+  }
+
+  openBlogForm(): void {
+    this.editingBlogId.set(null);
+    this.blogForm = { title: '', content: '', excerpt: '', featuredImageUrl: '', author: 'Teodora Carter', published: false };
+    this.blogError.set('');
+    this.blogSuccess.set('');
+    this.showBlogForm.set(true);
+  }
+
+  editBlogPost(id: string): void {
+    this.http.get<any>(`${environment.apiUrl}/api/blog/admin/${id}`).subscribe({
+      next: (post) => {
+        this.editingBlogId.set(id);
+        this.blogForm = {
+          title: post.title,
+          content: post.content,
+          excerpt: post.excerpt ?? '',
+          featuredImageUrl: post.featuredImageUrl ?? '',
+          author: post.author ?? '',
+          published: post.published,
+        };
+        this.blogError.set('');
+        this.blogSuccess.set('');
+        this.showBlogForm.set(true);
+      },
+    });
+  }
+
+  saveBlogPost(): void {
+    this.blogError.set('');
+    const id = this.editingBlogId();
+    const req = id
+      ? this.http.put(`${environment.apiUrl}/api/blog/${id}`, this.blogForm)
+      : this.http.post(`${environment.apiUrl}/api/blog`, this.blogForm);
+
+    req.subscribe({
+      next: () => {
+        this.blogSuccess.set(id ? 'Post updated.' : 'Post created.');
+        this.showBlogForm.set(false);
+        this.loadBlogPosts();
+      },
+      error: (err) => this.blogError.set(err.error?.message ?? 'Failed to save post.'),
+    });
+  }
+
+  deleteBlogPost(id: string): void {
+    if (!confirm('Delete this post?')) return;
+    this.http.delete(`${environment.apiUrl}/api/blog/${id}`).subscribe({
+      next: () => this.loadBlogPosts(),
+    });
+  }
+
+  onBlogImageUpload(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.blogUploading.set(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    this.http.post<{ imageUrl: string }>(`${environment.apiUrl}/api/blog/upload-image`, formData).subscribe({
+      next: (res) => {
+        this.blogForm.content += `\n<img src="${res.imageUrl}" alt="" />\n`;
+        this.blogUploading.set(false);
+      },
+      error: () => this.blogUploading.set(false),
+    });
+  }
+
+  onFeaturedImageUpload(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.blogUploading.set(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    this.http.post<{ imageUrl: string }>(`${environment.apiUrl}/api/blog/upload-image`, formData).subscribe({
+      next: (res) => {
+        this.blogForm.featuredImageUrl = res.imageUrl;
+        this.blogUploading.set(false);
+      },
+      error: () => this.blogUploading.set(false),
+    });
+  }
+
+  insertHeading(level: 2 | 3): void {
+    this.blogForm.content += `\n<h${level}>Heading</h${level}>\n`;
+  }
+
+  loadMarketplace(): void {
+    this.marketplaceLoading.set(true);
+    this.marketplaceError.set('');
+
+    // Load pending removals, product listings, and Etsy status in parallel
+    this.http.get<any[]>(`${environment.apiUrl}/api/marketplace/pending-removals`).subscribe({
+      next: (r) => this.pendingRemovals.set(r),
+    });
+
+    this.http.get<{ configured: boolean }>(`${environment.apiUrl}/api/marketplace/etsy/status`).subscribe({
+      next: (r) => this.etsyConfigured.set(r.configured),
+    });
+
+    // Load listings for all products
+    const products = this.store.products();
+    if (products.length === 0) {
+      this.marketplaceLoading.set(false);
+      return;
+    }
+
+    let loaded = 0;
+    const result: { product: Product; listings: any[] }[] = [];
+    for (const product of products) {
+      this.http.get<any[]>(`${environment.apiUrl}/api/marketplace/listings/${product.id}`).subscribe({
+        next: (listings) => {
+          result.push({ product, listings });
+          loaded++;
+          if (loaded === products.length) {
+            this.marketplaceProducts.set(result.sort((a, b) => a.product.name.localeCompare(b.product.name)));
+            this.marketplaceLoading.set(false);
+          }
+        },
+        error: () => {
+          loaded++;
+          if (loaded === products.length) {
+            this.marketplaceProducts.set(result);
+            this.marketplaceLoading.set(false);
+          }
+        },
+      });
+    }
+  }
+
+  listOnPlatform(productId: string, platform: string): void {
+    if (platform === 'Etsy') {
+      this.http.post<any>(`${environment.apiUrl}/api/marketplace/etsy/create-listing`, { productId }).subscribe({
+        next: () => {
+          this.marketplaceSuccess.set(`Listed on Etsy successfully.`);
+          this.loadMarketplace();
+        },
+        error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to list on Etsy.'),
+      });
+    } else {
+      // For Depop/Vinted, mark as listed manually and show copy text
+      this.http.post<any>(`${environment.apiUrl}/api/marketplace/listings`, {
+        productId, platform, externalListingId: null, externalUrl: null,
+      }).subscribe({
+        next: () => this.loadMarketplace(),
+      });
+    }
+  }
+
+  generateListing(productId: string, platform: string): void {
+    this.generatedListing.set(null);
+    this.http.get<any>(`${environment.apiUrl}/api/marketplace/generate-listing/${productId}?platform=${platform}`).subscribe({
+      next: (r) => this.generatedListing.set(r),
+    });
+  }
+
+  markSoldOn(productId: string, platform: string): void {
+    this.http.post<any>(`${environment.apiUrl}/api/marketplace/mark-sold/${productId}`, { soldOn: platform }).subscribe({
+      next: (r) => {
+        this.marketplaceSuccess.set(r.message);
+        this.loadMarketplace();
+      },
+      error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to mark as sold.'),
+    });
+  }
+
+  acknowledgeRemoval(listingId: string): void {
+    this.http.post(`${environment.apiUrl}/api/marketplace/acknowledge-removal/${listingId}`, {}).subscribe({
+      next: () => {
+        this.pendingRemovals.update(list => list.filter(r => r.listingId !== listingId));
+      },
+    });
+  }
+
+  copyToClipboard(text: string): void {
+    navigator.clipboard.writeText(text);
   }
 
   loadAccounts(): void {
@@ -501,6 +713,7 @@ export class AdminPageComponent {
       size: product.size,
       condition: product.condition,
       imageUrl: product.imageUrl,
+      additionalImageUrls: [...(product.additionalImageUrls ?? [])],
       inStock: product.inStock,
     };
     this.showForm.set(true);
@@ -572,7 +785,26 @@ export class AdminPageComponent {
       size: '10',
       condition: 'good',
       imageUrl: '',
+      additionalImageUrls: [] as string[],
       inStock: true,
     };
+  }
+
+  onAdditionalImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.uploading.set(true);
+    this.productService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.form.additionalImageUrls = [...(this.form.additionalImageUrls ?? []), res.imageUrl];
+        this.uploading.set(false);
+      },
+      error: () => this.uploading.set(false),
+    });
+  }
+
+  removeAdditionalImage(index: number): void {
+    this.form.additionalImageUrls = this.form.additionalImageUrls?.filter((_, i) => i !== index) ?? [];
   }
 }

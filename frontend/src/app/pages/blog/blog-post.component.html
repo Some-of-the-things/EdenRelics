@@ -1,0 +1,27 @@
+@if (post(); as post) {
+  <article class="blog-post">
+    @if (post.featuredImageUrl) {
+      <img [src]="post.featuredImageUrl" [alt]="post.title" class="blog-post__hero" />
+    }
+    <h1 class="blog-post__title">{{ post.title }}</h1>
+    <div class="blog-post__meta">
+      @if (post.author) {
+        <span>By {{ post.author }}</span>
+      }
+      @if (post.publishedAtUtc) {
+        <span>{{ post.publishedAtUtc | date:'d MMMM y' }}</span>
+      }
+    </div>
+    <div class="blog-post__content" [innerHTML]="post.content"></div>
+    <a routerLink="/blog" class="blog-post__back">Back to Blog</a>
+  </article>
+} @else if (error()) {
+  <div class="blog-post blog-post--error">
+    <p>Post not found.</p>
+    <a routerLink="/blog" class="blog-post__back">Back to Blog</a>
+  </div>
+} @else {
+  <div class="blog-post">
+    <p class="blog-post__loading">Loading...</p>
+  </div>
+}

@@ -1,9 +1,11 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Repositories;
 using Eden_Relics_BE.Services;
 using Fido2NetLib;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -11,6 +13,48 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = ctx =>
+    {
+        ctx.ProblemDetails.Extensions.Remove("traceId");
+    };
+});
+
+// Rate limiting (disabled in Testing environment)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = 429;
+    bool isTesting = builder.Environment.EnvironmentName == "Testing";
+    options.AddPolicy("auth", httpContext =>
+        isTesting
+            ? RateLimitPartition.GetNoLimiter("none")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.Request.Headers["Fly-Client-IP"].FirstOrDefault()
+                    ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim()
+                    ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+    options.AddPolicy("contact", httpContext =>
+        isTesting
+            ? RateLimitPartition.GetNoLimiter("none")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.Request.Headers["Fly-Client-IP"].FirstOrDefault()
+                    ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim()
+                    ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 3,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+});
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -27,8 +71,9 @@ builder.Services.AddDbContext<EdenRelicsDbContext>(options =>
 // Repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-// Image optimization
+// Image optimization & storage
 builder.Services.AddSingleton<ImageOptimizationService>();
+builder.Services.AddSingleton<ImageStorageService>();
 
 // SEO rank checking
 builder.Services.AddScoped<RankCheckerService>();
@@ -110,6 +155,18 @@ using (IServiceScope scope = app.Services.CreateScope())
 // Optimize any uncompressed uploaded images
 await app.Services.GetRequiredService<ImageOptimizationService>().OptimizeExistingImagesAsync();
 
+// Security headers
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
+    await next();
+});
+
 app.UseResponseCompression();
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -118,6 +175,7 @@ app.UseStaticFiles(new StaticFileOptions
         ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
     }
 });
+app.UseRateLimiter();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();

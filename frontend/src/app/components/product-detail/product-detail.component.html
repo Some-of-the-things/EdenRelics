@@ -3,7 +3,20 @@
     <a routerLink="/" class="detail__back">&larr; Back to Shop</a>
     <div class="detail__layout">
       <div class="detail__image-wrap">
-        <img [ngSrc]="product.imageUrl" [alt]="product.name" class="detail__image" width="400" height="500" priority />
+        <img [src]="currentImage()" [alt]="product.name" class="detail__image" />
+        @if (allImages().length > 1) {
+          <div class="detail__thumbs">
+            @for (img of allImages(); track img) {
+              <button
+                class="detail__thumb"
+                [class.detail__thumb--active]="currentImage() === img"
+                (click)="selectImage(img)"
+              >
+                <img [src]="img" [alt]="product.name" />
+              </button>
+            }
+          </div>
+        }
       </div>
       <div class="detail__info">
         <span class="detail__era">{{ product.era }}</span>

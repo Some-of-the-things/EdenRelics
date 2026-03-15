@@ -1,17 +1,15 @@
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
+using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Processing;
 
 namespace Eden_Relics_BE.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BrandingController(EdenRelicsDbContext context, IWebHostEnvironment env) : ControllerBase
+public class BrandingController(EdenRelicsDbContext context, IWebHostEnvironment env, ImageStorageService storage) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<BrandingDto>> Get()
@@ -63,56 +61,10 @@ public class BrandingController(EdenRelicsDbContext context, IWebHostEnvironment
         if (file.Length > 5 * 1024 * 1024)
             return BadRequest(new { error = "File size must be under 5MB." });
 
-        string uploadsDir = Path.Combine(env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot"), "uploads");
-        Directory.CreateDirectory(uploadsDir);
+        string logoUrl = await ImageUploadHelper.ProcessAndUploadAsync(
+            file.OpenReadStream(), storage, env, Request, "branding", maxWidth: 400, maxHeight: 200, quality: 85);
 
-        // Save as WebP for the logo
-        string logoName = $"logo-{Guid.NewGuid():N}.webp";
-        string logoPath = Path.Combine(uploadsDir, logoName);
-
-        if (extension == ".svg")
-        {
-            // SVG: just save as-is with a different name
-            logoName = $"logo-{Guid.NewGuid():N}.svg";
-            logoPath = Path.Combine(uploadsDir, logoName);
-            await using FileStream fs = new(logoPath, FileMode.Create);
-            await file.CopyToAsync(fs);
-        }
-        else
-        {
-            using var image = await Image.LoadAsync(file.OpenReadStream());
-            image.Mutate(x => x.AutoOrient());
-
-            const int maxHeight = 200;
-            if (image.Height > maxHeight)
-            {
-                image.Mutate(x => x.Resize(0, maxHeight));
-            }
-
-            await image.SaveAsync(logoPath, new WebpEncoder { Quality = 85 });
-        }
-
-        // Also generate a favicon
-        string faviconName = $"favicon-{Guid.NewGuid():N}.png";
-        string faviconPath = Path.Combine(uploadsDir, faviconName);
-
-        if (extension != ".svg")
-        {
-            using var faviconImage = await Image.LoadAsync(file.OpenReadStream());
-            faviconImage.Mutate(x => x.AutoOrient().Resize(new ResizeOptions
-            {
-                Size = new Size(64, 64),
-                Mode = ResizeMode.Max
-            }));
-            await faviconImage.SaveAsPngAsync(faviconPath);
-        }
-
-        string logoUrl = $"{Request.Scheme}://{Request.Host}/uploads/{logoName}";
-        string? faviconUrl = extension != ".svg"
-            ? $"{Request.Scheme}://{Request.Host}/uploads/{faviconName}"
-            : null;
-
-        return Ok(new { logoUrl, faviconUrl });
+        return Ok(new { logoUrl, faviconUrl = (string?)null });
     }
 
     private static BrandingDto ToDto(SiteBranding? b) => new(

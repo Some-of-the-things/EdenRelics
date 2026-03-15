@@ -126,10 +126,29 @@ public class OrdersController : ControllerBase
                 if (session?.Metadata.TryGetValue("order_id", out string? orderIdStr) == true
                     && Guid.TryParse(orderIdStr, out Guid orderId))
                 {
-                    Order? order = await _context.Orders.FindAsync(orderId);
+                    Order? order = await _context.Orders
+                        .Include(o => o.Items)
+                        .FirstOrDefaultAsync(o => o.Id == orderId);
                     if (order is not null)
                     {
                         order.Status = "Paid";
+
+                        // Mark sold products and flag marketplace listings for removal
+                        foreach (OrderItem item in order.Items)
+                        {
+                            Product? product = await _context.Products
+                                .Include(p => p.Listings)
+                                .FirstOrDefaultAsync(p => p.Id == item.ProductId);
+                            if (product is not null)
+                            {
+                                product.InStock = false;
+                                foreach (ProductListing listing in product.Listings.Where(l => l.Status == "Active"))
+                                {
+                                    listing.Status = listing.Platform == "Website" ? "Sold" : "PendingRemoval";
+                                }
+                            }
+                        }
+
                         await _context.SaveChangesAsync();
                     }
                 }

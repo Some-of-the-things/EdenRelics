@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CurrencyPipe, NgOptimizedImage, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
@@ -17,9 +17,25 @@ export class ProductDetailComponent {
   readonly cartStore = inject(CartStore);
   private readonly seo = inject(SeoService);
 
+  readonly selectedImage = signal<string | null>(null);
+
   readonly product = computed(() =>
     this.productStore.products().find(p => p.id === this.id())
   );
+
+  readonly allImages = computed(() => {
+    const p = this.product();
+    if (!p) return [];
+    return [p.imageUrl, ...(p.additionalImageUrls ?? [])];
+  });
+
+  readonly currentImage = computed(() =>
+    this.selectedImage() ?? this.product()?.imageUrl ?? ''
+  );
+
+  selectImage(url: string): void {
+    this.selectedImage.set(url);
+  }
 
   constructor() {
     effect(() => {

@@ -58,6 +58,7 @@ public class ApiFactory : WebApplicationFactory<Program>
             if (emailDescriptor is not null)
                 services.Remove(emailDescriptor);
             services.AddTransient<IEmailService, FakeEmailService>();
+
         });
     }
 }

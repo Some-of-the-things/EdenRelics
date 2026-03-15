@@ -11,6 +11,9 @@
       @if (activeTab() === 'accounts') {
         <button class="admin__add-btn" (click)="loadAccounts()">Refresh</button>
       }
+      @if (activeTab() === 'blog') {
+        <button class="admin__add-btn" (click)="openBlogForm()">+ New Post</button>
+      }
       <button class="admin__logout-btn" (click)="logout()">Logout</button>
     </div>
   </div>
@@ -35,7 +38,7 @@
       [class.admin__tab--active]="activeTab() === 'accounts'"
       (click)="switchTab('accounts')"
     >
-      Accounts
+      Accounting
     </button>
     <button
       class="admin__tab"
@@ -50,6 +53,20 @@
       (click)="switchTab('instagram')"
     >
       Instagram
+    </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'blog'"
+      (click)="switchTab('blog')"
+    >
+      Blog
+    </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'marketplace'"
+      (click)="switchTab('marketplace')"
+    >
+      Marketplace
     </button>
     <button
       class="admin__tab"
@@ -118,9 +135,13 @@
               <span>Size</span>
               <select [(ngModel)]="form.size" name="size" required>
                 <option value="6">6</option>
+                <option value="6/8">6/8</option>
                 <option value="8">8</option>
+                <option value="8/10">8/10</option>
                 <option value="10">10</option>
+                <option value="10/12">10/12</option>
                 <option value="12">12</option>
+                <option value="12/14">12/14</option>
                 <option value="14">14</option>
                 <option value="16">16</option>
               </select>
@@ -167,6 +188,21 @@
                 placeholder="Or paste image URL"
                 class="admin__url-input"
               />
+            </div>
+          </div>
+          <div class="admin__field">
+            <span>Additional Images</span>
+            <div class="admin__additional-images">
+              @for (img of form.additionalImageUrls; track $index) {
+                <div class="admin__additional-image">
+                  <img [src]="img" alt="Additional" class="admin__image-preview" />
+                  <button type="button" class="admin__delete-btn" (click)="removeAdditionalImage($index)">&times;</button>
+                </div>
+              }
+              <label class="admin__file-btn">
+                + Add Image
+                <input type="file" accept="image/*" (change)="onAdditionalImageSelected($event)" hidden />
+              </label>
             </div>
           </div>
           @if (!editingId()) {
@@ -755,6 +791,251 @@
         </div>
       }
     </div>
+  }
+
+  @if (activeTab() === 'marketplace') {
+    <div class="mkt">
+      @if (marketplaceSuccess()) {
+        <p class="ig__success">{{ marketplaceSuccess() }}</p>
+      }
+      @if (marketplaceError()) {
+        <p class="admin__error" role="alert">{{ marketplaceError() }}</p>
+      }
+
+      <!-- Pending removals alert -->
+      @if (pendingRemovals().length) {
+        <div class="mkt__alert">
+          <h3 class="mkt__alert-title">Action Required: Remove Sold Items</h3>
+          <p class="mkt__alert-text">These items have been sold and need to be removed from other platforms:</p>
+          @for (r of pendingRemovals(); track r.listingId) {
+            <div class="mkt__alert-item">
+              <span><strong>{{ r.productName }}</strong> on <strong>{{ r.platform }}</strong></span>
+              @if (r.externalUrl) {
+                <a [href]="r.externalUrl" target="_blank" class="mkt__alert-link">Open Listing</a>
+              }
+              <button class="admin__edit-btn" (click)="acknowledgeRemoval(r.listingId)">Done</button>
+            </div>
+          }
+        </div>
+      }
+
+      @if (marketplaceLoading()) {
+        <p class="admin__loading">Loading marketplace data...</p>
+      } @else {
+        <!-- Product listings table -->
+        <div class="admin__table-wrap">
+          <table class="admin__table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Website</th>
+                <th>Etsy</th>
+                <th>Depop</th>
+                <th>Vinted</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of marketplaceProducts(); track item.product.id) {
+                <tr>
+                  <td class="admin__name">{{ item.product.name }}</td>
+                  @for (platform of ['Website', 'Etsy', 'Depop', 'Vinted']; track platform) {
+                    @let listing = item.listings.find(l => l.platform === platform);
+                    <td>
+                      @if (listing) {
+                        <span class="mkt__status" [attr.data-status]="listing.status">
+                          {{ listing.status }}
+                        </span>
+                      } @else if (item.product.inStock) {
+                        @if (platform === 'Etsy' && etsyConfigured()) {
+                          <button class="mkt__list-btn" (click)="listOnPlatform(item.product.id, platform)">List</button>
+                        } @else if (platform === 'Depop' || platform === 'Vinted') {
+                          <button class="mkt__list-btn" (click)="generateListing(item.product.id, platform); listOnPlatform(item.product.id, platform)">List</button>
+                        } @else if (platform === 'Website') {
+                          <span class="mkt__status" data-status="Active">Active</span>
+                        } @else {
+                          <span class="mkt__na">—</span>
+                        }
+                      } @else {
+                        <span class="mkt__na">Sold</span>
+                      }
+                    </td>
+                  }
+                  <td class="admin__cell-actions">
+                    @if (item.product.inStock) {
+                      <select class="mkt__sold-select" (change)="markSoldOn(item.product.id, $any($event.target).value); $any($event.target).value = ''">
+                        <option value="" disabled selected>Mark sold on...</option>
+                        <option value="Website">Website</option>
+                        <option value="Etsy">Etsy</option>
+                        <option value="Depop">Depop</option>
+                        <option value="Vinted">Vinted</option>
+                      </select>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="admin__empty">No products found.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- Generated listing for copy/paste -->
+      @if (generatedListing(); as gen) {
+        <div class="mkt__generated">
+          <h3 class="mkt__section-title">Copy This Listing</h3>
+          <div class="mkt__gen-field">
+            <label>Title</label>
+            <div class="mkt__gen-row">
+              <input type="text" [value]="gen.title" readonly class="mkt__gen-input" />
+              <button class="admin__edit-btn" (click)="copyToClipboard(gen.title)">Copy</button>
+            </div>
+          </div>
+          <div class="mkt__gen-field">
+            <label>Description</label>
+            <div class="mkt__gen-row">
+              <textarea [value]="gen.description" readonly rows="6" class="mkt__gen-textarea"></textarea>
+              <button class="admin__edit-btn" (click)="copyToClipboard(gen.description)">Copy</button>
+            </div>
+          </div>
+          <div class="mkt__gen-field">
+            <label>Price</label>
+            <span>{{ gen.price | currency:'GBP' }}</span>
+          </div>
+          <div class="mkt__gen-field">
+            <label>Image</label>
+            <div class="mkt__gen-row">
+              <input type="text" [value]="gen.imageUrl" readonly class="mkt__gen-input" />
+              <button class="admin__edit-btn" (click)="copyToClipboard(gen.imageUrl)">Copy</button>
+            </div>
+          </div>
+          <button class="admin__cancel-btn" (click)="generatedListing.set(null)">Close</button>
+        </div>
+      }
+
+      <!-- Etsy setup hint -->
+      @if (etsyConfigured() === false) {
+        <div class="ig__setup">
+          <h3 class="ig__setup-title">Etsy Not Configured</h3>
+          <p class="ig__setup-text">To enable automatic Etsy listings, set these Fly secrets:</p>
+          <code class="ig__setup-code">fly secrets set "Etsy__ApiKey=YOUR_KEY" "Etsy__AccessToken=YOUR_TOKEN" "Etsy__ShopId=YOUR_SHOP_ID" --app eden-relics-api</code>
+          <p class="ig__setup-text">You need an Etsy developer app registered at <strong>developers.etsy.com</strong>.</p>
+        </div>
+      }
+    </div>
+  }
+
+  @if (activeTab() === 'blog') {
+    @if (blogSuccess()) {
+      <p class="ig__success">{{ blogSuccess() }}</p>
+    }
+    @if (blogError()) {
+      <p class="admin__error" role="alert">{{ blogError() }}</p>
+    }
+
+    @if (showBlogForm()) {
+      <div class="admin__overlay" (click)="showBlogForm.set(false)"></div>
+      <div class="admin__form-panel blog-editor" role="dialog" aria-modal="true">
+        <h2 class="admin__form-title">{{ editingBlogId() ? 'Edit' : 'New' }} Post</h2>
+        <form (ngSubmit)="saveBlogPost()" class="admin__form">
+          <label class="admin__field">
+            <span>Title</span>
+            <input type="text" [(ngModel)]="blogForm.title" name="blogTitle" required />
+          </label>
+          <label class="admin__field">
+            <span>Excerpt</span>
+            <input type="text" [(ngModel)]="blogForm.excerpt" name="blogExcerpt" placeholder="Short summary for listings..." />
+          </label>
+          <div class="admin__row">
+            <label class="admin__field">
+              <span>Author</span>
+              <input type="text" [(ngModel)]="blogForm.author" name="blogAuthor" />
+            </label>
+            <label class="admin__field">
+              <span>Published</span>
+              <select [(ngModel)]="blogForm.published" name="blogPublished">
+                <option [ngValue]="false">Draft</option>
+                <option [ngValue]="true">Published</option>
+              </select>
+            </label>
+          </div>
+          <div class="admin__field">
+            <span>Featured Image</span>
+            <div class="admin__image-upload">
+              @if (blogForm.featuredImageUrl) {
+                <img [src]="blogForm.featuredImageUrl" alt="Featured" class="admin__image-preview" />
+              }
+              <label class="admin__file-btn">
+                Choose Image
+                <input type="file" accept="image/*" (change)="onFeaturedImageUpload($event)" hidden />
+              </label>
+            </div>
+          </div>
+          <div class="admin__field">
+            <span>Content</span>
+            <div class="blog-editor__toolbar">
+              <button type="button" class="blog-editor__tool" (click)="insertHeading(2)" title="Heading 2">H2</button>
+              <button type="button" class="blog-editor__tool" (click)="insertHeading(3)" title="Heading 3">H3</button>
+              <label class="blog-editor__tool" title="Insert Image">
+                IMG
+                <input type="file" accept="image/*" (change)="onBlogImageUpload($event)" hidden />
+              </label>
+              @if (blogUploading()) {
+                <span class="admin__uploading">Uploading...</span>
+              }
+            </div>
+            <textarea [(ngModel)]="blogForm.content" name="blogContent" rows="16" required class="blog-editor__content"></textarea>
+          </div>
+          <div class="admin__actions">
+            <button type="button" class="admin__cancel-btn" (click)="showBlogForm.set(false)">Cancel</button>
+            <button type="submit" class="admin__save-btn">{{ editingBlogId() ? 'Update' : 'Create' }}</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (blogLoading()) {
+      <p class="admin__loading">Loading posts...</p>
+    } @else {
+      <div class="admin__table-wrap">
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Published</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (post of blogPosts(); track post.id) {
+              <tr>
+                <td class="admin__name">{{ post.title }}</td>
+                <td>
+                  <span class="mkt__status" [attr.data-status]="post.published ? 'Active' : 'Draft'">
+                    {{ post.published ? 'Published' : 'Draft' }}
+                  </span>
+                </td>
+                <td>{{ post.publishedAtUtc ? (post.publishedAtUtc | date:'d MMM y') : '—' }}</td>
+                <td>{{ post.createdAtUtc | date:'d MMM y' }}</td>
+                <td class="admin__cell-actions">
+                  <button class="admin__edit-btn" (click)="editBlogPost(post.id)">Edit</button>
+                  <button class="admin__delete-btn" (click)="deleteBlogPost(post.id)">Delete</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="admin__empty">No blog posts yet.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   }
 
   @if (activeTab() === 'branding') {

@@ -1,0 +1,28 @@
+<div class="blog">
+  <h1 class="blog__title">Blog</h1>
+  <div class="blog__grid">
+    @for (post of posts(); track post.id) {
+      <a [routerLink]="['/blog', post.slug]" class="blog__card">
+        @if (post.featuredImageUrl) {
+          <img [src]="post.featuredImageUrl" [alt]="post.title" class="blog__card-image" />
+        }
+        <div class="blog__card-body">
+          <h2 class="blog__card-title">{{ post.title }}</h2>
+          @if (post.excerpt) {
+            <p class="blog__card-excerpt">{{ post.excerpt }}</p>
+          }
+          <div class="blog__card-meta">
+            @if (post.author) {
+              <span>{{ post.author }}</span>
+            }
+            @if (post.publishedAtUtc) {
+              <span>{{ post.publishedAtUtc | date:'d MMM y' }}</span>
+            }
+          </div>
+        </div>
+      </a>
+    } @empty {
+      <p class="blog__empty">No posts yet. Check back soon!</p>
+    }
+  </div>
+</div>

@@ -84,6 +84,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'returns-policy',
+    loadComponent: () =>
+      import('./pages/policies/returns-policy.component').then(
+        (m) => m.ReturnsPolicyComponent
+      ),
+  },
+  {
     path: 'settings',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -110,6 +117,20 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/verify-email/verify-email.component').then(
         (m) => m.VerifyEmailComponent
+      ),
+  },
+  {
+    path: 'blog',
+    loadComponent: () =>
+      import('./pages/blog/blog-list.component').then(
+        (m) => m.BlogListComponent
+      ),
+  },
+  {
+    path: 'blog/:slug',
+    loadComponent: () =>
+      import('./pages/blog/blog-post.component').then(
+        (m) => m.BlogPostComponent
       ),
   },
   {

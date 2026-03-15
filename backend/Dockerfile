@@ -27,4 +27,10 @@ RUN dotnet publish "./Eden Relics BE.csproj" -c $BUILD_CONFIGURATION -o /app/pub
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Create writable uploads directory
+USER root
+RUN mkdir -p /app/wwwroot/uploads && chown -R $APP_UID:$APP_UID /app/wwwroot/uploads
+USER $APP_UID
+
 ENTRYPOINT ["dotnet", "Eden Relics BE.dll"]

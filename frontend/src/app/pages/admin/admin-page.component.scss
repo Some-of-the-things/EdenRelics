@@ -857,6 +857,215 @@
   display: block;
 }
 
+.admin__additional-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.admin__additional-image {
+  position: relative;
+
+  .admin__image-preview {
+    width: 64px;
+    height: 80px;
+  }
+
+  .admin__delete-btn {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    font-size: 0.75rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-sale);
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+}
+
+/* Blog editor */
+.blog-editor {
+  max-width: 700px;
+  max-height: 95vh;
+}
+
+.blog-editor__toolbar {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.blog-editor__tool {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.3rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+
+  input[type="file"] { display: none; }
+
+  &:hover {
+    background: var(--border-color);
+  }
+}
+
+.blog-editor__content {
+  width: 100%;
+  min-height: 300px;
+  border: 1px solid var(--border-color);
+  padding: 0.75rem;
+  font-family: monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+}
+
+/* Marketplace */
+.mkt__alert {
+  background: rgba(214, 158, 46, 0.08);
+  border: 1px solid #d69e2e;
+  border-left: 3px solid #d69e2e;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.mkt__alert-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+  color: #8a6508;
+}
+
+.mkt__alert-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.75rem;
+}
+
+.mkt__alert-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  font-size: 0.875rem;
+}
+
+.mkt__alert-link {
+  color: var(--accent);
+  font-size: 0.8rem;
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; }
+}
+
+.mkt__status {
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  &[data-status='Active'] { color: #2d7a3a; }
+  &[data-status='Sold'] { color: var(--text-muted); }
+  &[data-status='PendingRemoval'] { color: #d69e2e; }
+  &[data-status='Removed'] { color: var(--text-muted); }
+}
+
+.mkt__na {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.mkt__list-btn {
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 0.25rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  &:hover { background: var(--accent); color: var(--text-inverse); }
+}
+
+.mkt__sold-select {
+  border: 1px solid var(--border-color);
+  padding: 0.3rem 0.4rem;
+  font-size: 0.75rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.mkt__generated {
+  margin-top: 1.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  max-width: 600px;
+}
+
+.mkt__section-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0 0 1rem;
+}
+
+.mkt__gen-field {
+  margin-bottom: 0.75rem;
+
+  label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+  }
+}
+
+.mkt__gen-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.mkt__gen-input,
+.mkt__gen-textarea {
+  flex: 1;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.65rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  resize: vertical;
+}
+
 /* Content */
 .cms__section {
   margin-bottom: 2rem;

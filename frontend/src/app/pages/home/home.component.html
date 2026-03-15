@@ -26,4 +26,24 @@
       </div>
     </div>
   </section>
+
+  <section class="home__mailing">
+    @if (!mailingSubscribed()) {
+      <h2 class="home__mailing-title">New Arrivals, Straight to Your Inbox</h2>
+      <p class="home__mailing-text">Join our mailing list and be the first to see new vintage pieces as they land.</p>
+      <form class="home__mailing-form" (ngSubmit)="subscribeToMailingList()">
+        <input
+          type="email"
+          [(ngModel)]="mailingEmail"
+          name="mailingEmail"
+          placeholder="Your email address"
+          required
+          class="home__mailing-input"
+        />
+        <button type="submit" class="home__mailing-btn">Subscribe</button>
+      </form>
+    } @else {
+      <p class="home__mailing-done">You're on the list! We'll let you know when new pieces arrive.</p>
+    }
+  </section>
 </div>

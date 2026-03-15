@@ -1,11 +1,9 @@
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
 using Eden_Relics_BE.Repositories;
+using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Formats.Webp;
 
 namespace Eden_Relics_BE.Controllers;
 
@@ -15,11 +13,13 @@ public class ProductsController : ControllerBase
 {
     private readonly IRepository<Product> _repository;
     private readonly IWebHostEnvironment _env;
+    private readonly ImageStorageService _storage;
 
-    public ProductsController(IRepository<Product> repository, IWebHostEnvironment env)
+    public ProductsController(IRepository<Product> repository, IWebHostEnvironment env, ImageStorageService storage)
     {
         _repository = repository;
         _env = env;
+        _storage = storage;
     }
 
     [HttpGet]
@@ -75,6 +75,7 @@ public class ProductsController : ControllerBase
             Size = dto.Size,
             Condition = dto.Condition,
             ImageUrl = dto.ImageUrl,
+            AdditionalImageUrls = dto.AdditionalImageUrls ?? [],
             InStock = dto.InStock
         };
 
@@ -102,6 +103,7 @@ public class ProductsController : ControllerBase
         if (dto.Size is not null) { product.Size = dto.Size; }
         if (dto.Condition is not null) { product.Condition = dto.Condition; }
         if (dto.ImageUrl is not null) { product.ImageUrl = dto.ImageUrl; }
+        if (dto.AdditionalImageUrls is not null) { product.AdditionalImageUrls = dto.AdditionalImageUrls; }
         if (dto.InStock.HasValue) { product.InStock = dto.InStock.Value; }
 
         await _repository.UpdateAsync(product);
@@ -116,38 +118,13 @@ public class ProductsController : ControllerBase
         string extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
         if (!allowedExtensions.Contains(extension))
-        {
             return BadRequest(new { error = "Only image files (jpg, png, webp, gif) are allowed." });
-        }
 
         if (file.Length > 10 * 1024 * 1024)
-        {
             return BadRequest(new { error = "File size must be under 10MB." });
-        }
 
-        string uploadsDir = Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), "uploads");
-        Directory.CreateDirectory(uploadsDir);
-
-        string fileName = $"{Guid.NewGuid()}.webp";
-        string filePath = Path.Combine(uploadsDir, fileName);
-
-        using var image = await Image.LoadAsync(file.OpenReadStream());
-        image.Mutate(x => x.AutoOrient());
-
-        const int maxWidth = 800;
-        const int maxHeight = 1000;
-        if (image.Width > maxWidth || image.Height > maxHeight)
-        {
-            image.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Size = new Size(maxWidth, maxHeight),
-                Mode = ResizeMode.Max,
-            }));
-        }
-
-        await image.SaveAsync(filePath, new WebpEncoder { Quality = 75 });
-
-        string imageUrl = $"{Request.Scheme}://{Request.Host}/uploads/{fileName}";
+        string imageUrl = await ImageUploadHelper.ProcessAndUploadAsync(
+            file.OpenReadStream(), _storage, _env, Request, "products");
         return Ok(new { imageUrl });
     }
 
@@ -167,11 +144,11 @@ public class ProductsController : ControllerBase
 
     private static ProductDto ToDto(Product p) => new(
         p.Id, p.Name, p.Description, p.Price, p.Era,
-        p.Category, p.Size, p.Condition, p.ImageUrl, p.InStock
+        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.InStock
     );
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
         p.Id, p.Name, p.Description, p.Price, p.CostPrice, p.Supplier, p.Era,
-        p.Category, p.Size, p.Condition, p.ImageUrl, p.InStock
+        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.InStock
     );
 }

@@ -33,6 +33,27 @@
       </div>
     </div>
 
+    <!-- Mailing list signup -->
+    <div class="confirm__mailing">
+      @if (!mailingSubscribed()) {
+        <h2 class="confirm__mailing-title">Stay in the Loop</h2>
+        <p class="confirm__mailing-text">Be the first to know when new vintage pieces arrive. No spam, just beautiful dresses.</p>
+        <form class="confirm__mailing-form" (ngSubmit)="subscribeToMailingList()">
+          <input
+            type="email"
+            [(ngModel)]="mailingEmail"
+            name="mailingEmail"
+            placeholder="Your email address"
+            required
+            class="confirm__mailing-input"
+          />
+          <button type="submit" class="confirm__mailing-btn">Subscribe</button>
+        </form>
+      } @else {
+        <p class="confirm__mailing-done">You're on the list! We'll let you know when new pieces drop.</p>
+      }
+    </div>
+
     <a routerLink="/" class="confirm__link">Continue Shopping</a>
   </div>
 } @else if (error()) {

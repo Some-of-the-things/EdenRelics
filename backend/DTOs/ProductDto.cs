@@ -10,6 +10,7 @@ public record ProductDto(
     string Size,
     string Condition,
     string ImageUrl,
+    List<string> AdditionalImageUrls,
     bool InStock
 );
 
@@ -25,6 +26,7 @@ public record ProductAdminDto(
     string Size,
     string Condition,
     string ImageUrl,
+    List<string> AdditionalImageUrls,
     bool InStock
 );
 
@@ -39,6 +41,7 @@ public record CreateProductDto(
     string Size,
     string Condition,
     string ImageUrl,
+    List<string>? AdditionalImageUrls,
     bool InStock
 );
 
@@ -53,5 +56,6 @@ public record UpdateProductDto(
     string? Size,
     string? Condition,
     string? ImageUrl,
+    List<string>? AdditionalImageUrls,
     bool? InStock
 );

@@ -3,6 +3,7 @@ using System;
 using Eden_Relics_BE.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Eden_Relics_BE.Migrations
 {
     [DbContext(typeof(EdenRelicsDbContext))]
-    partial class EdenRelicsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260315153452_AddProductListings")]
+    partial class AddProductListings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,101 +24,6 @@ namespace Eden_Relics_BE.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.BlogPost", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Author")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Excerpt")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("FeaturedImageUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("Published")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("PublishedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Slug")
-                        .IsUnique();
-
-                    b.ToTable("BlogPosts");
-                });
-
-            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.MailingListSubscriber", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("FirstName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.Property<bool>("Unsubscribed")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.ToTable("MailingListSubscribers");
-                });
 
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Order", b =>
                 {
@@ -198,10 +106,6 @@ namespace Eden_Relics_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.PrimitiveCollection<string>("AdditionalImageUrls")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -268,7 +172,6 @@ namespace Eden_Relics_BE.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-0001-0000-0000-000000000001"),
-                            AdditionalImageUrls = "[]",
                             Category = "70s",
                             Condition = "good",
                             CostPrice = 0m,
@@ -286,7 +189,6 @@ namespace Eden_Relics_BE.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-0002-0000-0000-000000000002"),
-                            AdditionalImageUrls = "[]",
                             Category = "70s",
                             Condition = "excellent",
                             CostPrice = 0m,
@@ -304,7 +206,6 @@ namespace Eden_Relics_BE.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-0003-0000-0000-000000000003"),
-                            AdditionalImageUrls = "[]",
                             Category = "80s",
                             Condition = "excellent",
                             CostPrice = 0m,
@@ -322,7 +223,6 @@ namespace Eden_Relics_BE.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-0004-0000-0000-000000000004"),
-                            AdditionalImageUrls = "[]",
                             Category = "80s",
                             Condition = "good",
                             CostPrice = 0m,
@@ -340,7 +240,6 @@ namespace Eden_Relics_BE.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-0005-0000-0000-000000000005"),
-                            AdditionalImageUrls = "[]",
                             Category = "90s",
                             Condition = "mint",
                             CostPrice = 0m,
@@ -358,7 +257,6 @@ namespace Eden_Relics_BE.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-0006-0000-0000-000000000006"),
-                            AdditionalImageUrls = "[]",
                             Category = "90s",
                             Condition = "good",
                             CostPrice = 0m,
@@ -376,7 +274,6 @@ namespace Eden_Relics_BE.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-0007-0000-0000-000000000007"),
-                            AdditionalImageUrls = "[]",
                             Category = "y2k",
                             Condition = "excellent",
                             CostPrice = 0m,
@@ -394,7 +291,6 @@ namespace Eden_Relics_BE.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-0008-0000-0000-000000000008"),
-                            AdditionalImageUrls = "[]",
                             Category = "y2k",
                             Condition = "excellent",
                             CostPrice = 0m,
@@ -412,7 +308,6 @@ namespace Eden_Relics_BE.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-0009-0000-0000-000000000009"),
-                            AdditionalImageUrls = "[]",
                             Category = "modern",
                             Condition = "mint",
                             CostPrice = 0m,
@@ -430,7 +325,6 @@ namespace Eden_Relics_BE.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-0010-0000-0000-000000000010"),
-                            AdditionalImageUrls = "[]",
                             Category = "modern",
                             Condition = "mint",
                             CostPrice = 0m,

@@ -253,3 +253,19 @@
     border-color: var(--accent);
   }
 }
+
+.cart__policy-link {
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 1rem 0 0;
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

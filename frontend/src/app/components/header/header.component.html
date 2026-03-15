@@ -4,6 +4,7 @@
       <img [src]="logoUrl()" alt="Eden Relics — Vintage Clothing" class="header__logo-img" width="56" height="72" fetchpriority="high" />
     </a>
     <nav class="header__nav" aria-label="Main navigation">
+      <a routerLink="/blog" class="header__link">Blog</a>
       @if (auth.isAdmin()) {
         <a routerLink="/admin" class="header__link">Admin</a>
       }

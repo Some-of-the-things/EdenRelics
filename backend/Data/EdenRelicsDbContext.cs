@@ -16,6 +16,9 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<TrackedKeyword> TrackedKeywords => Set<TrackedKeyword>();
     public DbSet<SiteBranding> SiteBranding => Set<SiteBranding>();
     public DbSet<SiteContent> SiteContent => Set<SiteContent>();
+    public DbSet<ProductListing> ProductListings => Set<ProductListing>();
+    public DbSet<MailingListSubscriber> MailingListSubscribers => Set<MailingListSubscriber>();
+    public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -120,6 +123,36 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(b => b.FontBody).HasMaxLength(100);
         });
 
+        modelBuilder.Entity<BlogPost>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(b => b.Title).HasMaxLength(300);
+            entity.Property(b => b.Slug).HasMaxLength(300);
+            entity.HasIndex(b => b.Slug).IsUnique();
+            entity.Property(b => b.Excerpt).HasMaxLength(500);
+            entity.Property(b => b.FeaturedImageUrl).HasMaxLength(500);
+            entity.Property(b => b.Author).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<MailingListSubscriber>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(m => m.Email).HasMaxLength(256);
+            entity.HasIndex(m => m.Email).IsUnique();
+            entity.Property(m => m.FirstName).HasMaxLength(100);
+            entity.Property(m => m.Source).HasMaxLength(30);
+        });
+
+        modelBuilder.Entity<ProductListing>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(l => l.Platform).HasMaxLength(20);
+            entity.Property(l => l.ExternalListingId).HasMaxLength(200);
+            entity.Property(l => l.ExternalUrl).HasMaxLength(500);
+            entity.Property(l => l.Status).HasMaxLength(20);
+            entity.HasOne(l => l.Product).WithMany(p => p.Listings).HasForeignKey(l => l.ProductId);
+        });
+
         modelBuilder.Entity<Product>(entity =>
         {
             entity.Property(p => p.Price).HasPrecision(10, 2);
@@ -131,6 +164,7 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(p => p.Size).HasMaxLength(20);
             entity.Property(p => p.Condition).HasMaxLength(20);
             entity.Property(p => p.ImageUrl).HasMaxLength(500);
+            entity.Property(p => p.AdditionalImageUrls).HasColumnType("jsonb");
 
             DateTime seededAt = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
