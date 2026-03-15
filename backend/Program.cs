@@ -25,7 +25,7 @@ builder.Services.AddProblemDetails(options =>
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = 429;
-    bool isTesting = builder.Environment.EnvironmentName == "Testing";
+    bool isTesting = builder.Environment.EnvironmentName is "Testing" or "Development";
     options.AddPolicy("auth", httpContext =>
         isTesting
             ? RateLimitPartition.GetNoLimiter("none")
