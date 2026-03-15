@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { CurrencyPipe, DatePipe, DecimalPipe, PercentPipe, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
@@ -77,7 +77,7 @@ interface SeoResult {
 
 @Component({
   selector: 'app-admin-page',
-  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe, DecimalPipe, PercentPipe],
+  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })

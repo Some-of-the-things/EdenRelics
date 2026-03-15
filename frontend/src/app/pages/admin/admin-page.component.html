@@ -196,7 +196,7 @@
               @for (img of form.additionalImageUrls; track $index) {
                 <div class="admin__additional-image">
                   <img [src]="img" alt="Additional" class="admin__image-preview" />
-                  <button type="button" class="admin__delete-btn" (click)="removeAdditionalImage($index)">&times;</button>
+                  <button type="button" class="admin__delete-btn" (click)="removeAdditionalImage($index)" aria-label="Remove image">&times;</button>
                 </div>
               }
               <label class="admin__file-btn">
@@ -223,17 +223,17 @@
       <table class="admin__table">
         <thead>
           <tr>
-            <th>Image</th>
-            <th>Name</th>
-            <th>Era</th>
-            <th>Category</th>
-            <th>Size</th>
-            <th>Condition</th>
-            <th>Price</th>
-            <th>Cost</th>
-            <th>Supplier</th>
-            <th>Stock</th>
-            <th>Actions</th>
+            <th scope="col">Image</th>
+            <th scope="col">Name</th>
+            <th scope="col">Era</th>
+            <th scope="col">Category</th>
+            <th scope="col">Size</th>
+            <th scope="col">Condition</th>
+            <th scope="col">Price</th>
+            <th scope="col">Cost</th>
+            <th scope="col">Supplier</th>
+            <th scope="col">Stock</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -297,12 +297,12 @@
         <table class="admin__table">
           <thead>
             <tr>
-              <th>Order ID</th>
-              <th>Date</th>
-              <th>Customer</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Status</th>
+              <th scope="col">Order ID</th>
+              <th scope="col">Date</th>
+              <th scope="col">Customer</th>
+              <th scope="col">Items</th>
+              <th scope="col">Total</th>
+              <th scope="col">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -401,12 +401,12 @@
               <table class="admin__table">
                 <thead>
                   <tr>
-                    <th>Month</th>
-                    <th>Revenue</th>
-                    <th>Cost</th>
-                    <th>Profit</th>
-                    <th>Orders</th>
-                    <th>Items</th>
+                    <th scope="col">Month</th>
+                    <th scope="col">Revenue</th>
+                    <th scope="col">Cost</th>
+                    <th scope="col">Profit</th>
+                    <th scope="col">Orders</th>
+                    <th scope="col">Items</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -435,10 +435,10 @@
                 <table class="admin__table">
                   <thead>
                     <tr>
-                      <th>Category</th>
-                      <th>Revenue</th>
-                      <th>Profit</th>
-                      <th>Items</th>
+                      <th scope="col">Category</th>
+                      <th scope="col">Revenue</th>
+                      <th scope="col">Profit</th>
+                      <th scope="col">Items</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -463,10 +463,10 @@
                 <table class="admin__table">
                   <thead>
                     <tr>
-                      <th>Era</th>
-                      <th>Revenue</th>
-                      <th>Profit</th>
-                      <th>Items</th>
+                      <th scope="col">Era</th>
+                      <th scope="col">Revenue</th>
+                      <th scope="col">Profit</th>
+                      <th scope="col">Items</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -706,10 +706,10 @@
             <table class="admin__table">
               <thead>
                 <tr>
-                  <th>Keyword</th>
-                  <th>Position</th>
-                  <th>Last Checked</th>
-                  <th>Actions</th>
+                  <th scope="col">Keyword</th>
+                  <th scope="col">Position</th>
+                  <th scope="col">Last Checked</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -827,12 +827,12 @@
           <table class="admin__table">
             <thead>
               <tr>
-                <th>Product</th>
-                <th>Website</th>
-                <th>Etsy</th>
-                <th>Depop</th>
-                <th>Vinted</th>
-                <th>Actions</th>
+                <th scope="col">Product</th>
+                <th scope="col">Website</th>
+                <th scope="col">Etsy</th>
+                <th scope="col">Depop</th>
+                <th scope="col">Vinted</th>
+                <th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1004,11 +1004,11 @@
         <table class="admin__table">
           <thead>
             <tr>
-              <th>Title</th>
-              <th>Status</th>
-              <th>Published</th>
-              <th>Created</th>
-              <th>Actions</th>
+              <th scope="col">Title</th>
+              <th scope="col">Status</th>
+              <th scope="col">Published</th>
+              <th scope="col">Created</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>

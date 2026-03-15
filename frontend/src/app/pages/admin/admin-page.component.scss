@@ -237,10 +237,10 @@
   font-size: 0.75rem;
   font-weight: 500;
 
-  &[data-condition='mint'] { color: #2d7a3a; }
-  &[data-condition='excellent'] { color: #4a8c3f; }
-  &[data-condition='good'] { color: #8a6508; }
-  &[data-condition='fair'] { color: #c96226; }
+  &[data-condition='mint'] { color: #1b6327; }
+  &[data-condition='excellent'] { color: #306b28; }
+  &[data-condition='good'] { color: #6e5100; }
+  &[data-condition='fair'] { color: #8b3f0e; }
 }
 
 .admin__cell-actions {
