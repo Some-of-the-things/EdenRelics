@@ -167,6 +167,34 @@ export class AdminPageComponent {
         { key: 'contact.subtitle', label: 'Subtitle', type: 'text' },
       ],
     },
+    {
+      title: 'Privacy Policy',
+      fields: [
+        { key: 'policy.privacy.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.privacy.content', label: 'Content (HTML)', type: 'html' },
+      ],
+    },
+    {
+      title: 'Returns Policy',
+      fields: [
+        { key: 'policy.returns.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.returns.content', label: 'Content (HTML)', type: 'html' },
+      ],
+    },
+    {
+      title: 'Supply Chain Policy',
+      fields: [
+        { key: 'policy.supply-chain.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.supply-chain.content', label: 'Content (HTML)', type: 'html' },
+      ],
+    },
+    {
+      title: 'Modern Slavery Policy',
+      fields: [
+        { key: 'policy.modern-slavery.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.modern-slavery.content', label: 'Content (HTML)', type: 'html' },
+      ],
+    },
   ];
 
   // Branding

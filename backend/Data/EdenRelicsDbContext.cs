@@ -93,7 +93,7 @@ public class EdenRelicsDbContext : DbContext
         {
             entity.HasQueryFilter(e => !e.IsDeleted);
             entity.Property(c => c.Key).HasMaxLength(100);
-            entity.Property(c => c.Value).HasMaxLength(2000);
+            entity.Property(c => c.Value).HasMaxLength(10000);
             entity.HasIndex(c => c.Key).IsUnique();
         });
 

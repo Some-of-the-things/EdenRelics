@@ -1115,6 +1115,14 @@
   }
 }
 
+.cms__html-editor {
+  font-family: monospace !important;
+  font-size: 0.8rem !important;
+  line-height: 1.5;
+  max-width: 100%;
+  min-height: 200px;
+}
+
 /* Branding */
 .brand__section {
   margin-bottom: 2rem;

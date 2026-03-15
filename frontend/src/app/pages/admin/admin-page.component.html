@@ -1200,7 +1200,15 @@
           @for (field of section.fields; track field.key) {
             <label class="cms__field">
               <span>{{ field.label }}</span>
-              @if (field.type === 'textarea') {
+              @if (field.type === 'html') {
+                <textarea
+                  [ngModel]="contentForm[field.key] ?? ''"
+                  (ngModelChange)="contentForm[field.key] = $event"
+                  [name]="field.key"
+                  rows="12"
+                  class="cms__html-editor"
+                ></textarea>
+              } @else if (field.type === 'textarea') {
                 <textarea
                   [ngModel]="contentForm[field.key] ?? ''"
                   (ngModelChange)="contentForm[field.key] = $event"

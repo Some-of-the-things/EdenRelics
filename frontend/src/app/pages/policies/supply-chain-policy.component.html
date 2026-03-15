@@ -1,29 +1,5 @@
 <div class="policy">
   <h1 class="policy__title">Supply Chain Policy</h1>
-  <p class="policy__updated">Last updated: March 2026</p>
-
-  <section class="policy__section">
-    <h2>1. Introduction</h2>
-    <p>DCPNET LTD is committed to responsible and ethical sourcing across our entire supply chain. This policy outlines our standards and expectations for all suppliers and partners.</p>
-  </section>
-
-  <section class="policy__section">
-    <h2>2. Ethical Sourcing</h2>
-    <p>We source vintage garments through trusted networks of dealers, estate sales, and verified second-hand suppliers. We prioritise transparency and traceability in all sourcing activities.</p>
-  </section>
-
-  <section class="policy__section">
-    <h2>3. Environmental Responsibility</h2>
-    <p>By specialising in vintage and pre-owned clothing, we actively contribute to reducing textile waste and the environmental impact of the fashion industry. We encourage sustainable practices throughout our supply chain.</p>
-  </section>
-
-  <section class="policy__section">
-    <h2>4. Supplier Standards</h2>
-    <p>All suppliers are expected to comply with applicable laws and regulations, maintain fair labour practices, and uphold standards consistent with our values of integrity and respect.</p>
-  </section>
-
-  <section class="policy__section">
-    <h2>5. Monitoring &amp; Review</h2>
-    <p>We regularly review our supply chain practices and supplier relationships to ensure ongoing compliance with this policy. Concerns can be raised at info&#64;dcpnet.co.uk.</p>
-  </section>
+  <p class="policy__updated">Last updated: {{ content.get('policy.supply-chain.updated', 'March 2026') }}</p>
+  <div [innerHTML]="content.get('policy.supply-chain.content')"></div>
 </div>
