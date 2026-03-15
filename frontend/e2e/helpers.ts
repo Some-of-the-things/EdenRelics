@@ -38,14 +38,15 @@ export async function setAuthInBrowser(
   token: string,
   email: string,
   firstName = 'Test',
-  lastName = 'User'
+  lastName = 'User',
+  role = 'Customer'
 ): Promise<void> {
   const user = {
     id: parseJwtSub(token),
     email,
     firstName,
     lastName,
-    role: 'Customer',
+    role,
     emailVerified: false,
   };
   await page.addInitScript(
@@ -55,6 +56,20 @@ export async function setAuthInBrowser(
     },
     { token, user }
   );
+}
+
+/** Register a user, promote to Admin (dev only), and return the admin token */
+export async function registerAdmin(
+  page: Page,
+  email: string,
+  password = 'TestPass123!'
+): Promise<string> {
+  const userToken = await registerUser(page, email, password);
+  const res = await page.request.post(`${API}/auth/promote-admin`, {
+    headers: { Authorization: `Bearer ${userToken}` },
+  });
+  const body = await res.json();
+  return body.token;
 }
 
 /** Crude JWT sub extraction (no verification needed for tests) */

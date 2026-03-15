@@ -28,12 +28,15 @@ public class AuthController : ControllerBase
     private readonly IEmailService _emailService;
     private readonly PasswordHasher<User> _passwordHasher = new();
 
-    public AuthController(IRepository<User> userRepository, IConfiguration configuration, IHttpClientFactory httpClientFactory, IEmailService emailService)
+    private readonly IWebHostEnvironment _environment;
+
+    public AuthController(IRepository<User> userRepository, IConfiguration configuration, IHttpClientFactory httpClientFactory, IEmailService emailService, IWebHostEnvironment environment)
     {
         _userRepository = userRepository;
         _configuration = configuration;
         _httpClientFactory = httpClientFactory;
         _emailService = emailService;
+        _environment = environment;
     }
 
     [HttpPost("register")]
@@ -443,6 +446,27 @@ public class AuthController : ControllerBase
         {
             return null;
         }
+    }
+
+    [HttpPost("promote-admin")]
+    [Authorize]
+    public async Task<ActionResult<AuthResponseDto>> PromoteToAdmin()
+    {
+        if (!_environment.IsDevelopment())
+        {
+            return NotFound();
+        }
+
+        string userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        IEnumerable<User> users = await _userRepository.FindAsync(u => u.Id == Guid.Parse(userId));
+        User? user = users.FirstOrDefault();
+        if (user is null) { return NotFound(); }
+
+        user.Role = "Admin";
+        await _userRepository.UpdateAsync(user);
+
+        string token = GenerateToken(user);
+        return Ok(new AuthResponseDto(token, ToDto(user)));
     }
 
     private static UserDto ToDto(User u) => new(u.Id, u.Email, u.FirstName, u.LastName, u.Role, u.EmailVerified);

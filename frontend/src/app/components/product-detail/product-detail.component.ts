@@ -1,13 +1,13 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CurrencyPipe, NgOptimizedImage, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
 import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, CurrencyPipe, TitleCasePipe, NgOptimizedImage],
+  imports: [RouterLink, CurrencyPipe, TitleCasePipe],
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })
