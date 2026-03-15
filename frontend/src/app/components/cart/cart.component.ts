@@ -46,7 +46,7 @@ export class CartComponent {
 
     const items = this.cartStore.items().map(item => ({
       productId: item.product.id,
-      quantity: item.quantity,
+      quantity: 1,
     }));
 
     this.orderService.checkout(items, guestEmail).subscribe({

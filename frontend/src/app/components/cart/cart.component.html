@@ -17,16 +17,7 @@
             </h3>
             <p class="cart-item__era">{{ item.product.era }} &middot; Size {{ item.product.size }}</p>
           </div>
-          <div class="cart-item__quantity">
-            <button class="cart-item__qty-btn" (click)="cartStore.updateQuantity(item.product.id, item.quantity - 1)" aria-label="Decrease quantity of {{ item.product.name }}">
-              &minus;
-            </button>
-            <span class="cart-item__qty-value">{{ item.quantity }}</span>
-            <button class="cart-item__qty-btn" (click)="cartStore.updateQuantity(item.product.id, item.quantity + 1)" aria-label="Increase quantity of {{ item.product.name }}">
-              +
-            </button>
-          </div>
-          <span class="cart-item__price">{{ item.product.price * item.quantity | currency:'GBP' }}</span>
+          <span class="cart-item__price">{{ item.product.price | currency:'GBP' }}</span>
           <button class="cart-item__remove" (click)="cartStore.removeFromCart(item.product.id)" aria-label="Remove {{ item.product.name }} from cart">
             &times;
           </button>

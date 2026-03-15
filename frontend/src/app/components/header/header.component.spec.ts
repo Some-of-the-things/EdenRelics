@@ -15,11 +15,12 @@ describe('HeaderComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should display Eden Relics logo text', () => {
+  it('should display Eden Relics logo', () => {
     const fixture = TestBed.createComponent(HeaderComponent);
     fixture.detectChanges();
-    const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Eden Relics');
+    const img = fixture.nativeElement.querySelector('.header__logo-img') as HTMLImageElement;
+    expect(img).toBeTruthy();
+    expect(img.alt).toContain('Eden Relics');
   });
 
   it('should show cart badge when items in cart', () => {
@@ -27,7 +28,7 @@ describe('HeaderComponent', () => {
     const component = fixture.componentInstance;
     component.cartStore.addToCart({
       id: '1', name: 'Test', description: '', price: 10,
-      era: '1970s', category: '70s', size: 'M',
+      era: '1970s', category: '70s', size: '10',
       condition: 'good', imageUrl: '', inStock: true,
     });
     fixture.detectChanges();

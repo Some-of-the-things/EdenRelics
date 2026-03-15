@@ -12,7 +12,7 @@ describe('CartStore', () => {
     price: 100,
     era: '1960s',
     category: '70s',
-    size: 'S',
+    size: '8',
     condition: 'excellent',
     imageUrl: 'test.jpg',
     inStock: true,
@@ -41,29 +41,25 @@ describe('CartStore', () => {
   it('should add a product to the cart', () => {
     store.addToCart(mockProduct);
     expect(store.items().length).toBe(1);
-    expect(store.items()[0].quantity).toBe(1);
     expect(store.isEmpty()).toBe(false);
   });
 
-  it('should increment quantity when adding the same product', () => {
+  it('should not add the same product twice', () => {
     store.addToCart(mockProduct);
     store.addToCart(mockProduct);
     expect(store.items().length).toBe(1);
-    expect(store.items()[0].quantity).toBe(2);
   });
 
   it('should calculate total items correctly', () => {
     store.addToCart(mockProduct);
-    store.addToCart(mockProduct);
     store.addToCart(mockProduct2);
-    expect(store.totalItems()).toBe(3);
+    expect(store.totalItems()).toBe(2);
   });
 
   it('should calculate total price correctly', () => {
     store.addToCart(mockProduct); // 100
-    store.addToCart(mockProduct); // 100
     store.addToCart(mockProduct2); // 200
-    expect(store.totalPrice()).toBe(400);
+    expect(store.totalPrice()).toBe(300);
   });
 
   it('should remove a product from the cart', () => {
@@ -72,18 +68,6 @@ describe('CartStore', () => {
     store.removeFromCart('1');
     expect(store.items().length).toBe(1);
     expect(store.items()[0].product.id).toBe('2');
-  });
-
-  it('should update quantity', () => {
-    store.addToCart(mockProduct);
-    store.updateQuantity('1', 5);
-    expect(store.items()[0].quantity).toBe(5);
-  });
-
-  it('should remove item when quantity is set to 0', () => {
-    store.addToCart(mockProduct);
-    store.updateQuantity('1', 0);
-    expect(store.items().length).toBe(0);
   });
 
   it('should clear the cart', () => {
