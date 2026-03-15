@@ -15,17 +15,24 @@ builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
 });
+builder.Services.AddHealthChecks();
 
-// Database
-string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Database — prefer DATABASE_URL (Fly Postgres), fall back to ConnectionStrings:DefaultConnection
+string connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") is { Length: > 0 } databaseUrl
+    ? ConvertPostgresUrl(databaseUrl)
+    : builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Services.AddDbContext<EdenRelicsDbContext>(options =>
-    options.UseNpgsql(connectionString!));
+    options.UseNpgsql(connectionString));
 
 // Repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 // Image optimization
 builder.Services.AddSingleton<ImageOptimizationService>();
+
+// SEO rank checking
+builder.Services.AddScoped<RankCheckerService>();
+builder.Services.AddHostedService<RankCheckBackgroundService>();
 
 // HttpClient for external OAuth token verification
 builder.Services.AddHttpClient();
@@ -68,12 +75,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // CORS
+string[] allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["https://edenrelics.co.uk"];
+// Ensure production origin is always included
+if (!allowedOrigins.Contains("https://edenrelics.co.uk"))
+    allowedOrigins = [..allowedOrigins, "https://edenrelics.co.uk"];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:4200"])
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -111,7 +122,22 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/healthz");
 
 app.Run();
+
+static string ConvertPostgresUrl(string url)
+{
+    Uri uri = new(url);
+    string[] userInfo = uri.UserInfo.Split(':');
+    string query = uri.Query?.TrimStart('?') ?? "";
+    bool isFlyInternal = uri.Host.EndsWith(".flycast") || uri.Host.EndsWith(".internal");
+    string sslMode = isFlyInternal ? "SSL Mode=Disable" : "SSL Mode=Require;Trust Server Certificate=true";
+    string baseConn = $"Host={uri.Host};Port={(uri.Port > 0 ? uri.Port : 5432)};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};{sslMode}";
+    // Strip any sslmode from the query params to avoid conflicts
+    string extraParams = string.Join("&", (query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        .Where(p => !p.StartsWith("sslmode", StringComparison.OrdinalIgnoreCase)));
+    return string.IsNullOrEmpty(extraParams) ? baseConn : $"{baseConn};{extraParams}";
+}
 
 public partial class Program { }

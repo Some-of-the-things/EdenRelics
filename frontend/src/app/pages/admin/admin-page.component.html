@@ -27,6 +27,27 @@
     >
       Orders
     </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'seo'"
+      (click)="switchTab('seo')"
+    >
+      SEO
+    </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'instagram'"
+      (click)="switchTab('instagram')"
+    >
+      Instagram
+    </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'branding'"
+      (click)="switchTab('branding')"
+    >
+      Branding
+    </button>
   </div>
 
   @if (activeTab() === 'products') {
@@ -121,6 +142,12 @@
               />
             </div>
           </div>
+          @if (!editingId()) {
+            <label class="admin__checkbox">
+              <input type="checkbox" [(ngModel)]="postToInstagram" name="postToInstagram" />
+              Post to Instagram
+            </label>
+          }
           <div class="admin__actions">
             <button type="button" class="admin__cancel-btn" (click)="closeForm()">Cancel</button>
             <button type="submit" class="admin__save-btn">{{ editingId() ? 'Update' : 'Create' }}</button>
@@ -254,5 +281,418 @@
         </table>
       </div>
     }
+  }
+
+  @if (activeTab() === 'seo') {
+    <div class="seo">
+      <form class="seo__url-bar" (ngSubmit)="analyseSeo()">
+        <input
+          type="url"
+          [(ngModel)]="seoUrl"
+          name="seoUrl"
+          placeholder="https://edenrelics.co.uk/..."
+          required
+          class="seo__url-input"
+        />
+        <button type="submit" class="admin__add-btn" [disabled]="seoLoading()">
+          {{ seoLoading() ? 'Analysing...' : 'Analyse' }}
+        </button>
+      </form>
+
+      @if (seoError()) {
+        <p class="admin__error" role="alert">{{ seoError() }}</p>
+      }
+
+      @if (seoResult(); as result) {
+        <div class="seo__results">
+          <!-- Score summary -->
+          <div class="seo__summary">
+            <div class="seo__stat seo__stat--issues">
+              <span class="seo__stat-count">{{ result.issues.length }}</span>
+              <span class="seo__stat-label">Issues</span>
+            </div>
+            <div class="seo__stat seo__stat--warnings">
+              <span class="seo__stat-count">{{ result.warnings.length }}</span>
+              <span class="seo__stat-label">Warnings</span>
+            </div>
+            <div class="seo__stat seo__stat--passed">
+              <span class="seo__stat-count">{{ result.passed.length }}</span>
+              <span class="seo__stat-label">Passed</span>
+            </div>
+          </div>
+
+          <!-- Issues -->
+          @if (result.issues.length) {
+            <div class="seo__section">
+              <h3 class="seo__section-title seo__section-title--issues">Issues</h3>
+              <ul class="seo__list">
+                @for (issue of result.issues; track issue) {
+                  <li class="seo__item seo__item--issue">{{ issue }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          <!-- Warnings -->
+          @if (result.warnings.length) {
+            <div class="seo__section">
+              <h3 class="seo__section-title seo__section-title--warnings">Warnings</h3>
+              <ul class="seo__list">
+                @for (warning of result.warnings; track warning) {
+                  <li class="seo__item seo__item--warning">{{ warning }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          <!-- Passed -->
+          @if (result.passed.length) {
+            <div class="seo__section">
+              <h3 class="seo__section-title seo__section-title--passed">Passed</h3>
+              <ul class="seo__list">
+                @for (item of result.passed; track item) {
+                  <li class="seo__item seo__item--passed">{{ item }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          <!-- Meta info -->
+          <div class="seo__section">
+            <h3 class="seo__section-title">Page Meta</h3>
+            <dl class="seo__meta">
+              <dt>Title</dt>
+              <dd>{{ result.title ?? '(none)' }}</dd>
+              <dt>Meta Description</dt>
+              <dd>{{ result.metaDescription ?? '(none)' }}</dd>
+              <dt>Keywords</dt>
+              <dd>{{ result.metaKeywords ?? '(none)' }}</dd>
+              <dt>Canonical URL</dt>
+              <dd>{{ result.canonicalUrl ?? '(none)' }}</dd>
+            </dl>
+          </div>
+
+          <!-- Open Graph -->
+          <div class="seo__section">
+            <h3 class="seo__section-title">Open Graph</h3>
+            <dl class="seo__meta">
+              <dt>og:title</dt>
+              <dd>{{ result.openGraph.title ?? '(none)' }}</dd>
+              <dt>og:description</dt>
+              <dd>{{ result.openGraph.description ?? '(none)' }}</dd>
+              <dt>og:image</dt>
+              <dd>{{ result.openGraph.image ?? '(none)' }}</dd>
+            </dl>
+          </div>
+
+          <!-- Stats -->
+          <div class="seo__section">
+            <h3 class="seo__section-title">Content Stats</h3>
+            <dl class="seo__meta">
+              <dt>Word Count</dt>
+              <dd>{{ result.wordCount }}</dd>
+              <dt>Images</dt>
+              <dd>{{ result.imageCount }} total, {{ result.imagesMissingAlt }} missing alt</dd>
+              <dt>Internal Links</dt>
+              <dd>{{ result.internalLinks }}</dd>
+              <dt>External Links</dt>
+              <dd>{{ result.externalLinks }}</dd>
+            </dl>
+          </div>
+
+          <!-- Suggested keywords -->
+          <div class="seo__section">
+            <h3 class="seo__section-title">Suggested Keywords</h3>
+            @if (result.suggestedKeywords.length) {
+              <div class="seo__keywords-grid">
+                @for (kw of result.suggestedKeywords; track kw.keyword) {
+                  <div class="seo__keyword-card">
+                    <span class="seo__keyword-text">{{ kw.keyword }}</span>
+                    <span class="seo__keyword-meta">
+                      Score: {{ kw.score }} &middot; {{ kw.frequency }}x
+                    </span>
+                    <button
+                      class="seo__keyword-track"
+                      (click)="trackKeyword(kw.keyword)"
+                      title="Track this keyword"
+                    >
+                      + Track
+                    </button>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="seo__none">No keywords extracted.</p>
+            }
+          </div>
+
+          <!-- Heading structure -->
+          <div class="seo__section">
+            <h3 class="seo__section-title">Heading Structure</h3>
+            @if (result.headings.length) {
+              <ul class="seo__headings">
+                @for (h of result.headings; track $index) {
+                  <li class="seo__heading" [style.padding-left.rem]="(h.level - 1) * 1">
+                    <span class="seo__heading-tag">H{{ h.level }}</span>
+                    {{ h.text }}
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="seo__none">No headings found.</p>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Tracked Keywords -->
+      <div class="seo__section">
+        <div class="seo__section-header">
+          <h3 class="seo__section-title">Tracked Keywords</h3>
+          @if (trackedKeywords().length) {
+            <button class="admin__add-btn" (click)="checkAllKeywords()" [disabled]="checkingAll()">
+              {{ checkingAll() ? 'Checking...' : 'Check All Now' }}
+            </button>
+          }
+        </div>
+        <p class="seo__hint">Ranks are checked automatically every day at 06:00 UTC, and when you add a keyword.</p>
+        <div class="seo__track-form">
+          <input
+            type="text"
+            [(ngModel)]="newKeyword"
+            name="newKeyword"
+            placeholder="Keyword or phrase"
+            class="seo__track-input"
+          />
+          <button class="admin__add-btn" (click)="trackKeyword()">Add</button>
+        </div>
+
+        @if (trackedKeywords().length) {
+          <div class="admin__table-wrap">
+            <table class="admin__table">
+              <thead>
+                <tr>
+                  <th>Keyword</th>
+                  <th>Position</th>
+                  <th>Last Checked</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (kw of trackedKeywords(); track kw.id) {
+                  <tr>
+                    <td class="admin__name">{{ kw.keyword }}</td>
+                    <td>
+                      <span class="seo__rank" [class.seo__rank--good]="kw.lastPosition !== null && kw.lastPosition <= 10" [class.seo__rank--ok]="kw.lastPosition !== null && kw.lastPosition > 10 && kw.lastPosition <= 30" [class.seo__rank--poor]="kw.lastPosition !== null && kw.lastPosition > 30" [class.seo__rank--none]="kw.lastPosition === null">
+                        {{ kw.lastPosition !== null ? '#' + kw.lastPosition : 'Not found' }}
+                      </span>
+                    </td>
+                    <td>{{ kw.lastCheckedUtc ? (kw.lastCheckedUtc | date:'d MMM y, HH:mm') : 'Pending' }}</td>
+                    <td>
+                      <button class="admin__delete-btn" (click)="removeTrackedKeyword(kw.id)">Remove</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="seo__none">No keywords being tracked. Add a keyword above or analyse a page to get suggestions.</p>
+        }
+      </div>
+    </div>
+  }
+
+  @if (activeTab() === 'instagram') {
+    <div class="ig">
+      @if (igConfigured() === false) {
+        <div class="ig__setup">
+          <h3 class="ig__setup-title">Instagram Not Configured</h3>
+          <p class="ig__setup-text">To connect your Instagram Business account, set these Fly secrets:</p>
+          <code class="ig__setup-code">
+            fly secrets set "Instagram__AccessToken=YOUR_TOKEN" "Instagram__UserId=YOUR_IG_USER_ID" --app eden-relics-api
+          </code>
+          <p class="ig__setup-text">
+            You need an Instagram Business/Creator account connected to a Facebook Page,
+            and a long-lived access token with <strong>instagram_content_publish</strong> permission.
+          </p>
+        </div>
+      } @else {
+        @if (igResult()) {
+          <p class="ig__success">{{ igResult() }}</p>
+        }
+        @if (igError()) {
+          <p class="admin__error" role="alert">{{ igError() }}</p>
+        }
+
+        <h3 class="ig__section-title">Create Post</h3>
+        <form class="ig__form" (ngSubmit)="postInstagram()">
+          <label class="admin__field">
+            <span>Image URL</span>
+            <input type="url" [(ngModel)]="igImageUrl" name="igImageUrl" placeholder="https://..." required />
+          </label>
+          <label class="admin__field">
+            <span>Caption</span>
+            <textarea [(ngModel)]="igCaption" name="igCaption" rows="6" required placeholder="Write your caption... Include hashtags!"></textarea>
+          </label>
+          <div class="admin__actions">
+            <button type="submit" class="admin__save-btn" [disabled]="igPosting()">
+              {{ igPosting() ? 'Posting...' : 'Post to Instagram' }}
+            </button>
+          </div>
+        </form>
+
+        <h3 class="ig__section-title">Quick Post from Products</h3>
+        <p class="ig__hint">Click a product to pre-fill the post form with its details.</p>
+        <div class="ig__product-grid">
+          @for (product of store.products(); track product.id) {
+            <button
+              class="ig__product-card"
+              (click)="igImageUrl = product.imageUrl; igCaption = '✨ ' + product.name + '\n\n' + product.description + '\n\n💷 £' + product.price + '\n📏 Size ' + product.size + ' | ' + product.era + '\n\nShop now at edenrelics.co.uk\n\n#vintagefashion #vintagedress #' + product.category + ' #sustainablefashion #edenrelics'"
+            >
+              <img [src]="product.imageUrl" [alt]="product.name" class="ig__product-thumb" />
+              <span class="ig__product-name">{{ product.name }}</span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (activeTab() === 'branding') {
+    <div class="brand">
+      @if (brandingSuccess()) {
+        <p class="ig__success">{{ brandingSuccess() }}</p>
+      }
+      @if (brandingError()) {
+        <p class="admin__error" role="alert">{{ brandingError() }}</p>
+      }
+
+      <!-- Logo -->
+      <div class="brand__section">
+        <h3 class="brand__section-title">Logo</h3>
+        <div class="brand__logo-area">
+          @if (logoPreview()) {
+            <img [src]="logoPreview()" alt="Logo preview" class="brand__logo-preview" />
+          }
+          <div class="brand__logo-actions">
+            <label class="admin__file-btn">
+              Upload New Logo
+              <input type="file" accept="image/*" (change)="onLogoSelected($event)" hidden />
+            </label>
+            @if (logoUploading()) {
+              <span class="admin__uploading">Uploading...</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Colours -->
+      <div class="brand__section">
+        <h3 class="brand__section-title">Colours</h3>
+        <div class="brand__color-grid">
+          <label class="brand__color-field">
+            <span>Background Primary</span>
+            <div class="brand__color-input-wrap">
+              <input type="color" [(ngModel)]="brandingForm.bgPrimary" name="bgPrimary" (ngModelChange)="previewBranding()" />
+              <input type="text" [(ngModel)]="brandingForm.bgPrimary" name="bgPrimaryText" (ngModelChange)="previewBranding()" class="brand__color-text" />
+            </div>
+          </label>
+          <label class="brand__color-field">
+            <span>Background Secondary</span>
+            <div class="brand__color-input-wrap">
+              <input type="color" [(ngModel)]="brandingForm.bgSecondary" name="bgSecondary" (ngModelChange)="previewBranding()" />
+              <input type="text" [(ngModel)]="brandingForm.bgSecondary" name="bgSecondaryText" (ngModelChange)="previewBranding()" class="brand__color-text" />
+            </div>
+          </label>
+          <label class="brand__color-field">
+            <span>Card Background</span>
+            <div class="brand__color-input-wrap">
+              <input type="color" [(ngModel)]="brandingForm.bgCard" name="bgCard" (ngModelChange)="previewBranding()" />
+              <input type="text" [(ngModel)]="brandingForm.bgCard" name="bgCardText" (ngModelChange)="previewBranding()" class="brand__color-text" />
+            </div>
+          </label>
+          <label class="brand__color-field">
+            <span>Dark Background</span>
+            <div class="brand__color-input-wrap">
+              <input type="color" [(ngModel)]="brandingForm.bgDark" name="bgDark" (ngModelChange)="previewBranding()" />
+              <input type="text" [(ngModel)]="brandingForm.bgDark" name="bgDarkText" (ngModelChange)="previewBranding()" class="brand__color-text" />
+            </div>
+          </label>
+          <label class="brand__color-field">
+            <span>Text Primary</span>
+            <div class="brand__color-input-wrap">
+              <input type="color" [(ngModel)]="brandingForm.textPrimary" name="textPrimary" (ngModelChange)="previewBranding()" />
+              <input type="text" [(ngModel)]="brandingForm.textPrimary" name="textPrimaryText" (ngModelChange)="previewBranding()" class="brand__color-text" />
+            </div>
+          </label>
+          <label class="brand__color-field">
+            <span>Text Secondary</span>
+            <div class="brand__color-input-wrap">
+              <input type="color" [(ngModel)]="brandingForm.textSecondary" name="textSecondary" (ngModelChange)="previewBranding()" />
+              <input type="text" [(ngModel)]="brandingForm.textSecondary" name="textSecondaryText" (ngModelChange)="previewBranding()" class="brand__color-text" />
+            </div>
+          </label>
+          <label class="brand__color-field">
+            <span>Text Muted</span>
+            <div class="brand__color-input-wrap">
+              <input type="color" [(ngModel)]="brandingForm.textMuted" name="textMuted" (ngModelChange)="previewBranding()" />
+              <input type="text" [(ngModel)]="brandingForm.textMuted" name="textMutedText" (ngModelChange)="previewBranding()" class="brand__color-text" />
+            </div>
+          </label>
+          <label class="brand__color-field">
+            <span>Text Inverse</span>
+            <div class="brand__color-input-wrap">
+              <input type="color" [(ngModel)]="brandingForm.textInverse" name="textInverse" (ngModelChange)="previewBranding()" />
+              <input type="text" [(ngModel)]="brandingForm.textInverse" name="textInverseText" (ngModelChange)="previewBranding()" class="brand__color-text" />
+            </div>
+          </label>
+          <label class="brand__color-field">
+            <span>Accent</span>
+            <div class="brand__color-input-wrap">
+              <input type="color" [(ngModel)]="brandingForm.accent" name="accent" (ngModelChange)="previewBranding()" />
+              <input type="text" [(ngModel)]="brandingForm.accent" name="accentText" (ngModelChange)="previewBranding()" class="brand__color-text" />
+            </div>
+          </label>
+          <label class="brand__color-field">
+            <span>Accent Hover</span>
+            <div class="brand__color-input-wrap">
+              <input type="color" [(ngModel)]="brandingForm.accentHover" name="accentHover" (ngModelChange)="previewBranding()" />
+              <input type="text" [(ngModel)]="brandingForm.accentHover" name="accentHoverText" (ngModelChange)="previewBranding()" class="brand__color-text" />
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Fonts -->
+      <div class="brand__section">
+        <h3 class="brand__section-title">Fonts</h3>
+        <div class="brand__font-grid">
+          <label class="admin__field">
+            <span>Display Font (headings)</span>
+            <select [(ngModel)]="brandingForm.fontDisplay" name="fontDisplay" (ngModelChange)="previewBranding()">
+              @for (f of fontOptions; track f) {
+                <option [value]="f">{{ f }}</option>
+              }
+            </select>
+          </label>
+          <label class="admin__field">
+            <span>Body Font (text)</span>
+            <select [(ngModel)]="brandingForm.fontBody" name="fontBody" (ngModelChange)="previewBranding()">
+              @for (f of fontOptions; track f) {
+                <option [value]="f">{{ f }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="brand__actions">
+        <button class="admin__save-btn" (click)="saveBranding()" [disabled]="brandingSaving()">
+          {{ brandingSaving() ? 'Saving...' : 'Save Branding' }}
+        </button>
+        <button class="admin__cancel-btn" (click)="loadBranding()">Reset</button>
+      </div>
+    </div>
   }
 </div>

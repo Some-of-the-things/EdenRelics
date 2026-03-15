@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { AuthService } from '../../services/auth.service';
@@ -10,6 +11,53 @@ import {
   OrderAdminService,
   AdminOrder,
 } from '../../services/order-admin.service';
+import { environment } from '../../../environments/environment';
+import { BrandingService, Branding } from '../../services/branding.service';
+
+interface SeoHeading {
+  level: number;
+  text: string;
+}
+
+interface SeoOpenGraph {
+  title: string | null;
+  description: string | null;
+  image: string | null;
+}
+
+interface KeywordSuggestion {
+  keyword: string;
+  score: number;
+  frequency: number;
+}
+
+interface TrackedKeyword {
+  id: string;
+  keyword: string;
+  pageUrl: string;
+  lastPosition: number | null;
+  lastCheckedUtc: string | null;
+  notes: string | null;
+}
+
+interface SeoResult {
+  url: string;
+  title: string | null;
+  metaDescription: string | null;
+  metaKeywords: string | null;
+  canonicalUrl: string | null;
+  openGraph: SeoOpenGraph;
+  headings: SeoHeading[];
+  wordCount: number;
+  imageCount: number;
+  imagesMissingAlt: number;
+  internalLinks: number;
+  externalLinks: number;
+  issues: string[];
+  warnings: string[];
+  passed: string[];
+  suggestedKeywords: KeywordSuggestion[];
+}
 
 @Component({
   selector: 'app-admin-page',
@@ -20,11 +68,13 @@ import {
 export class AdminPageComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
   private readonly productService = inject(ProductService);
   private readonly orderService = inject(OrderAdminService);
   readonly store = inject(ProductStore);
 
-  readonly activeTab = signal<'products' | 'orders'>('products');
+  private readonly brandingService = inject(BrandingService);
+  readonly activeTab = signal<'products' | 'orders' | 'seo' | 'instagram' | 'branding'>('products');
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly imagePreview = signal<string | null>(null);
@@ -39,13 +89,242 @@ export class AdminPageComponent {
 
   readonly statuses = ['Pending', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
 
+  // SEO
+  seoUrl = 'https://edenrelics.co.uk';
+  readonly seoResult = signal<SeoResult | null>(null);
+  readonly seoLoading = signal(false);
+  readonly seoError = signal('');
+
+  // Tracked keywords
+  readonly trackedKeywords = signal<TrackedKeyword[]>([]);
+  readonly trackedLoading = signal(false);
+  newKeyword = '';
+  newKeywordUrl = 'https://edenrelics.co.uk';
+  newKeywordPosition: number | null = null;
+
+  // Branding
+  brandingForm: Branding = {
+    logoUrl: null, bgPrimary: '#FAF9F7', bgSecondary: '#F3F1EE', bgCard: '#FFFFFF',
+    bgDark: '#2E2E2E', textPrimary: '#2E2E2E', textSecondary: '#5A5858',
+    textMuted: '#706E6C', textInverse: '#FAF9F7', accent: '#8F1D31',
+    accentHover: '#6E1526', fontDisplay: 'Playfair Display', fontBody: 'Work Sans',
+  };
+  readonly brandingSaving = signal(false);
+  readonly brandingSuccess = signal('');
+  readonly brandingError = signal('');
+  readonly logoUploading = signal(false);
+  readonly logoPreview = signal<string | null>(null);
+
+  readonly fontOptions = [
+    'Playfair Display', 'Work Sans', 'Inter', 'Lora', 'Merriweather',
+    'Montserrat', 'Open Sans', 'Poppins', 'Raleway', 'Roboto',
+    'Source Sans 3', 'Nunito', 'PT Serif', 'Crimson Text', 'Libre Baskerville',
+    'DM Sans', 'Outfit', 'Cormorant Garamond', 'Josefin Sans', 'EB Garamond',
+  ];
+
+  // Instagram
+  igCaption = '';
+  igImageUrl = '';
+  readonly igPosting = signal(false);
+  readonly igResult = signal<string | null>(null);
+  readonly igError = signal('');
+  readonly igConfigured = signal<boolean | null>(null);
+  postToInstagram = false;
+
   form: Omit<Product, 'id'> = this.emptyForm();
 
-  switchTab(tab: 'products' | 'orders'): void {
+  switchTab(tab: 'products' | 'orders' | 'seo' | 'instagram' | 'branding'): void {
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
       this.loadOrders();
     }
+    if (tab === 'seo' && this.trackedKeywords().length === 0) {
+      this.loadTrackedKeywords();
+    }
+    if (tab === 'instagram' && this.igConfigured() === null) {
+      this.checkInstagramStatus();
+    }
+    if (tab === 'branding') {
+      this.loadBranding();
+    }
+  }
+
+  loadBranding(): void {
+    this.http.get<Branding>(`${environment.apiUrl}/api/branding`).subscribe({
+      next: (b) => {
+        this.brandingForm = { ...b };
+        this.logoPreview.set(b.logoUrl);
+      },
+    });
+  }
+
+  saveBranding(): void {
+    this.brandingSaving.set(true);
+    this.brandingError.set('');
+    this.brandingSuccess.set('');
+
+    this.http.put<Branding>(`${environment.apiUrl}/api/branding`, this.brandingForm).subscribe({
+      next: (b) => {
+        this.brandingSaving.set(false);
+        this.brandingSuccess.set('Branding saved. Changes are live.');
+        this.brandingService.apply(b);
+      },
+      error: (err) => {
+        this.brandingSaving.set(false);
+        this.brandingError.set(err.error?.message ?? 'Failed to save branding.');
+      },
+    });
+  }
+
+  onLogoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.logoUploading.set(true);
+    this.logoPreview.set(URL.createObjectURL(file));
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.http.post<{ logoUrl: string; faviconUrl: string | null }>(
+      `${environment.apiUrl}/api/branding/upload-logo`, formData
+    ).subscribe({
+      next: (res) => {
+        this.brandingForm.logoUrl = res.logoUrl;
+        this.logoUploading.set(false);
+      },
+      error: () => {
+        this.logoUploading.set(false);
+        this.logoPreview.set(this.brandingForm.logoUrl);
+      },
+    });
+  }
+
+  previewBranding(): void {
+    this.brandingService.apply(this.brandingForm);
+  }
+
+  checkInstagramStatus(): void {
+    this.http.get<{ configured: boolean }>(`${environment.apiUrl}/api/instagram/status`).subscribe({
+      next: (res) => this.igConfigured.set(res.configured),
+      error: () => this.igConfigured.set(false),
+    });
+  }
+
+  postInstagram(imageUrl?: string, caption?: string): void {
+    const url = imageUrl ?? this.igImageUrl;
+    const cap = caption ?? this.igCaption;
+    if (!url || !cap) return;
+
+    this.igPosting.set(true);
+    this.igError.set('');
+    this.igResult.set(null);
+
+    this.http
+      .post<{ mediaId: string; message: string }>(`${environment.apiUrl}/api/instagram/post`, {
+        imageUrl: url,
+        caption: cap,
+      })
+      .subscribe({
+        next: (res) => {
+          this.igResult.set(res.message);
+          this.igPosting.set(false);
+          this.igCaption = '';
+          this.igImageUrl = '';
+        },
+        error: (err) => {
+          this.igError.set(err.error?.message ?? 'Failed to post to Instagram.');
+          this.igPosting.set(false);
+        },
+      });
+  }
+
+  loadTrackedKeywords(): void {
+    this.trackedLoading.set(true);
+    this.http.get<TrackedKeyword[]>(`${environment.apiUrl}/api/seo/keywords`).subscribe({
+      next: (keywords) => {
+        this.trackedKeywords.set(keywords);
+        this.trackedLoading.set(false);
+      },
+      error: () => this.trackedLoading.set(false),
+    });
+  }
+
+  trackKeyword(keyword?: string): void {
+    const kw = keyword ?? this.newKeyword;
+    if (!kw.trim()) return;
+    this.http
+      .post<TrackedKeyword>(`${environment.apiUrl}/api/seo/keywords`, {
+        keyword: kw,
+        pageUrl: this.newKeywordUrl,
+        position: this.newKeywordPosition,
+      })
+      .subscribe({
+        next: (created) => {
+          this.trackedKeywords.update((list) => [created, ...list]);
+          this.newKeyword = '';
+          this.newKeywordPosition = null;
+        },
+      });
+  }
+
+  updateKeywordPosition(kw: TrackedKeyword, position: number): void {
+    this.http
+      .put<TrackedKeyword>(`${environment.apiUrl}/api/seo/keywords/${kw.id}`, { position })
+      .subscribe({
+        next: (updated) => {
+          this.trackedKeywords.update((list) =>
+            list.map((k) => (k.id === updated.id ? updated : k))
+          );
+        },
+      });
+  }
+
+  removeTrackedKeyword(id: string): void {
+    this.http.delete(`${environment.apiUrl}/api/seo/keywords/${id}`).subscribe({
+      next: () => {
+        this.trackedKeywords.update((list) => list.filter((k) => k.id !== id));
+      },
+    });
+  }
+
+  readonly checkingAll = signal(false);
+
+  checkAllKeywords(): void {
+    this.checkingAll.set(true);
+    this.http
+      .post<TrackedKeyword[]>(`${environment.apiUrl}/api/seo/keywords/check-all`, {})
+      .subscribe({
+        next: (keywords) => {
+          this.trackedKeywords.set(keywords);
+          this.checkingAll.set(false);
+        },
+        error: () => this.checkingAll.set(false),
+      });
+  }
+
+  analyseSeo(): void {
+    this.seoLoading.set(true);
+    this.seoError.set('');
+    this.seoResult.set(null);
+
+    this.http
+      .post<SeoResult>(`${environment.apiUrl}/api/seo/analyse`, {
+        url: this.seoUrl,
+      })
+      .subscribe({
+        next: (result) => {
+          this.seoResult.set(result);
+          this.seoLoading.set(false);
+        },
+        error: (err) => {
+          this.seoError.set(
+            err.error?.message ?? 'Failed to analyse. Check the URL.'
+          );
+          this.seoLoading.set(false);
+        },
+      });
   }
 
   loadOrders(): void {
@@ -136,7 +415,12 @@ export class AdminPageComponent {
       this.store.updateProduct(id, this.form);
     } else {
       this.store.addProduct(this.form);
+      if (this.postToInstagram && this.form.imageUrl) {
+        const caption = `✨ New arrival: ${this.form.name}\n\n${this.form.description}\n\n💷 £${this.form.price}\n📏 Size ${this.form.size} | ${this.form.era}\n\nShop now at edenrelics.co.uk\n\n#vintagefashion #vintagedress #${this.form.category} #sustainablefashion #edenrelics`;
+        this.postInstagram(this.form.imageUrl, caption);
+      }
     }
+    this.postToInstagram = false;
     this.closeForm();
   }
 

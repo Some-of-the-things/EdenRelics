@@ -9,8 +9,9 @@ export class SeoService {
   private readonly document = inject(DOCUMENT);
 
   private readonly defaultTitle = 'Eden Relics — Vintage Clothing';
-  private readonly defaultDescription = 'Eden Relics — Curated vintage clothing from decades past.';
-  private readonly siteUrl = 'https://www.edenrelics.co.uk';
+  private readonly defaultDescription = 'Shop curated vintage dresses from the 1970s to today at Eden Relics. Carefully sourced bohemian maxis, power dresses, silk slips and Y2K styles.';
+  private readonly defaultImage = 'https://edenrelics.co.uk/og-image.png';
+  private readonly siteUrl = 'https://edenrelics.co.uk';
 
   updateTags(config: {
     title?: string;
@@ -34,17 +35,14 @@ export class SeoService {
     this.meta.updateTag({ property: 'og:description', content: description });
     this.meta.updateTag({ property: 'og:url', content: url });
     this.meta.updateTag({ property: 'og:type', content: type });
-    if (config.image) {
-      this.meta.updateTag({ property: 'og:image', content: config.image });
-    }
+    const image = config.image ?? this.defaultImage;
+    this.meta.updateTag({ property: 'og:image', content: image });
 
     // Twitter Card
-    this.meta.updateTag({ name: 'twitter:card', content: config.image ? 'summary_large_image' : 'summary' });
+    this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
     this.meta.updateTag({ name: 'twitter:title', content: pageTitle });
     this.meta.updateTag({ name: 'twitter:description', content: description });
-    if (config.image) {
-      this.meta.updateTag({ name: 'twitter:image', content: config.image });
-    }
+    this.meta.updateTag({ name: 'twitter:image', content: image });
 
     // Canonical URL
     this.updateCanonical(url);

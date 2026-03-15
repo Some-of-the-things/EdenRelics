@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "sbuMBsY2kb0=",
+  "dgSpecHash": "GA/BWhzID1I=",
   "success": true,
   "projectFilePath": "C:\\Users\\peter\\source\\eden-relics-mono\\backend\\Eden Relics BE.Tests\\Eden Relics BE.Tests.csproj",
   "expectedPackageFiles": [
@@ -17,7 +17,7 @@
     "C:\\Users\\peter\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.3\\microsoft.aspnetcore.openapi.10.0.3.nupkg.sha512",
     "C:\\Users\\peter\\.nuget\\packages\\microsoft.aspnetcore.testhost\\10.0.4\\microsoft.aspnetcore.testhost.10.0.4.nupkg.sha512",
     "C:\\Users\\peter\\.nuget\\packages\\microsoft.aspnetcore.webutilities\\8.0.20\\microsoft.aspnetcore.webutilities.8.0.20.nupkg.sha512",
-    "C:\\Users\\peter\\.nuget\\packages\\microsoft.bcl.memory\\9.0.0\\microsoft.bcl.memory.9.0.0.nupkg.sha512",
+    "C:\\Users\\peter\\.nuget\\packages\\microsoft.bcl.memory\\10.0.5\\microsoft.bcl.memory.10.0.5.nupkg.sha512",
     "C:\\Users\\peter\\.nuget\\packages\\microsoft.bcl.timeprovider\\8.0.1\\microsoft.bcl.timeprovider.8.0.1.nupkg.sha512",
     "C:\\Users\\peter\\.nuget\\packages\\microsoft.codecoverage\\17.14.1\\microsoft.codecoverage.17.14.1.nupkg.sha512",
     "C:\\Users\\peter\\.nuget\\packages\\microsoft.entityframeworkcore\\10.0.4\\microsoft.entityframeworkcore.10.0.4.nupkg.sha512",

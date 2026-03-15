@@ -38,3 +38,46 @@
   margin-inline: auto;
   line-height: 1.6;
 }
+
+.home__about {
+  margin-top: 4rem;
+  padding-top: 3rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.home__about-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  text-align: center;
+  margin: 0 0 2rem;
+  letter-spacing: 0.03em;
+}
+
+.home__about-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.home__about-card {
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .home__about-grid {
+    grid-template-columns: 1fr;
+  }
+}

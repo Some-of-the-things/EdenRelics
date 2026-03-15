@@ -23,6 +23,8 @@
 **/values.dev.yaml
 LICENSE
 README.md
+**/Eden Relics BE.Tests/**
+fly.toml
 !**/.gitignore
 !.git/HEAD
 !.git/config

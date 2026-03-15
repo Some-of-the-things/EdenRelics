@@ -13,6 +13,8 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<UserCredential> UserCredentials => Set<UserCredential>();
+    public DbSet<TrackedKeyword> TrackedKeywords => Set<TrackedKeyword>();
+    public DbSet<SiteBranding> SiteBranding => Set<SiteBranding>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,6 +83,32 @@ public class EdenRelicsDbContext : DbContext
         {
             entity.Property(i => i.ProductName).HasMaxLength(200);
             entity.Property(i => i.UnitPrice).HasPrecision(10, 2);
+        });
+
+        modelBuilder.Entity<TrackedKeyword>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(k => k.Keyword).HasMaxLength(200);
+            entity.Property(k => k.PageUrl).HasMaxLength(500);
+            entity.Property(k => k.Notes).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<SiteBranding>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(b => b.LogoUrl).HasMaxLength(500);
+            entity.Property(b => b.BgPrimary).HasMaxLength(20);
+            entity.Property(b => b.BgSecondary).HasMaxLength(20);
+            entity.Property(b => b.BgCard).HasMaxLength(20);
+            entity.Property(b => b.BgDark).HasMaxLength(20);
+            entity.Property(b => b.TextPrimary).HasMaxLength(20);
+            entity.Property(b => b.TextSecondary).HasMaxLength(20);
+            entity.Property(b => b.TextMuted).HasMaxLength(20);
+            entity.Property(b => b.TextInverse).HasMaxLength(20);
+            entity.Property(b => b.Accent).HasMaxLength(20);
+            entity.Property(b => b.AccentHover).HasMaxLength(20);
+            entity.Property(b => b.FontDisplay).HasMaxLength(100);
+            entity.Property(b => b.FontBody).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Product>(entity =>

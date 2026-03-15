@@ -6,6 +6,7 @@ public interface IEmailService
 {
     Task SendVerificationEmailAsync(string toEmail, string firstName, string token);
     Task SendPasswordResetEmailAsync(string toEmail, string firstName, string token);
+    Task SendContactEmailAsync(string fromName, string fromEmail, string subject, string message);
 }
 
 public class EmailService : IEmailService
@@ -13,6 +14,7 @@ public class EmailService : IEmailService
     private readonly IResend _resend;
     private readonly string _fromEmail;
     private readonly string _frontendUrl;
+    private readonly string _contactRecipient;
     private readonly ILogger<EmailService> _logger;
 
     public EmailService(IResend resend, IConfiguration configuration, ILogger<EmailService> logger)
@@ -20,6 +22,7 @@ public class EmailService : IEmailService
         _resend = resend;
         _fromEmail = configuration["Email:From"] ?? "Eden Relics <noreply@edenrelics.com>";
         _frontendUrl = configuration["Email:FrontendUrl"] ?? "http://localhost:4200";
+        _contactRecipient = configuration["Email:ContactRecipient"] ?? "edenrelics@dcp-net.com";
         _logger = logger;
     }
 
@@ -93,6 +96,38 @@ public class EmailService : IEmailService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send password reset email to {Email}", toEmail);
+            throw;
+        }
+    }
+
+    public async Task SendContactEmailAsync(string fromName, string fromEmail, string subject, string message)
+    {
+        string html = $"""
+            <div style="font-family: Georgia, serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
+                <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">New Contact Form Submission</h1>
+                <p><strong>From:</strong> {fromName} ({fromEmail})</p>
+                <p><strong>Subject:</strong> {subject}</p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 1.5rem 0;" />
+                <p style="white-space: pre-wrap;">{message}</p>
+            </div>
+            """;
+
+        try
+        {
+            var emailMessage = new EmailMessage
+            {
+                From = _fromEmail,
+                To = [_contactRecipient],
+                ReplyTo = [fromEmail],
+                Subject = $"Contact: {subject}",
+                HtmlBody = html
+            };
+            await _resend.EmailSendAsync(emailMessage);
+            _logger.LogInformation("Contact email sent from {Email}", fromEmail);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send contact email from {Email}", fromEmail);
             throw;
         }
     }

@@ -11,4 +11,4 @@ Disallow: /reset-password
 Disallow: /order-confirmation/
 Disallow: /cart
 
-Sitemap: https://www.edenrelics.co.uk/sitemap.xml
+Sitemap: https://edenrelics.co.uk/sitemap.xml
