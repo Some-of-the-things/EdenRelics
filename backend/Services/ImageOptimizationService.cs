@@ -18,7 +18,10 @@ public class ImageOptimizationService(
     public async Task OptimizeExistingImagesAsync()
     {
         string uploadsDir = Path.Combine(env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot"), "uploads");
-        if (!Directory.Exists(uploadsDir)) return;
+        if (!Directory.Exists(uploadsDir))
+        {
+            return;
+        }
 
         string[] imageFiles = Directory.GetFiles(uploadsDir)
             .Where(f => !f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
@@ -39,7 +42,10 @@ public class ImageOptimizationService(
             try
             {
                 string webpPath = Path.ChangeExtension(filePath, ".webp");
-                if (File.Exists(webpPath)) continue;
+                if (File.Exists(webpPath))
+                {
+                    continue;
+                }
 
                 using var image = await Image.LoadAsync(filePath);
                 image.Mutate(x => x.AutoOrient());
@@ -103,6 +109,8 @@ public class ImageOptimizationService(
         }
 
         if (products.Count > 0)
+        {
             await db.SaveChangesAsync();
+        }
     }
 }

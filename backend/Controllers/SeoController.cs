@@ -17,7 +17,9 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
     public async Task<ActionResult<SeoAnalysisResult>> Analyse([FromBody] SeoAnalyseRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Url))
+        {
             return BadRequest(new { message = "URL is required." });
+        }
 
         HttpClient client = httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.UserAgent.ParseAdd("EdenRelics-SEO-Analyser/1.0");
@@ -54,11 +56,17 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
         {
             string href = m.Groups[1].Value;
             if (href.StartsWith('#') || href.StartsWith("javascript", StringComparison.OrdinalIgnoreCase))
+            {
                 continue;
+            }
             if (href.StartsWith('/') || href.Contains("edenrelics.co.uk"))
+            {
                 internalLinks++;
+            }
             else if (href.StartsWith("http"))
+            {
                 externalLinks++;
+            }
         }
 
         List<string> issues = [];
@@ -152,7 +160,10 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
     {
         Match m = Regex.Match(html, $"""<meta\s+name=["']{name}["']\s+content=["']([^"']*)["']""",
             RegexOptions.IgnoreCase);
-        if (m.Success) return m.Groups[1].Value;
+        if (m.Success)
+        {
+            return m.Groups[1].Value;
+        }
         m = Regex.Match(html, $"""<meta\s+content=["']([^"']*)["']\s+name=["']{name}["']""",
             RegexOptions.IgnoreCase);
         return m.Success ? m.Groups[1].Value : null;
@@ -162,7 +173,10 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
     {
         Match m = Regex.Match(html, $"""<meta\s+property=["']{Regex.Escape(property)}["']\s+content=["']([^"']*)["']""",
             RegexOptions.IgnoreCase);
-        if (m.Success) return m.Groups[1].Value;
+        if (m.Success)
+        {
+            return m.Groups[1].Value;
+        }
         m = Regex.Match(html, $"""<meta\s+content=["']([^"']*)["']\s+property=["']{Regex.Escape(property)}["']""",
             RegexOptions.IgnoreCase);
         return m.Success ? m.Groups[1].Value : null;
@@ -231,7 +245,10 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
             .Where(w => w.Length >= 3 && !StopWords.Contains(w))
             .ToArray();
 
-        if (words.Length == 0) return [];
+        if (words.Length == 0)
+        {
+            return [];
+        }
 
         // Score single words
         Dictionary<string, double> scores = [];
@@ -264,7 +281,9 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
             foreach (string key in scores.Keys.ToArray())
             {
                 if (lowerTitle.Contains(key))
+                {
                     scores[key] *= 3;
+                }
             }
         }
 
@@ -275,7 +294,9 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
             foreach (string key in scores.Keys.ToArray())
             {
                 if (lowerDesc.Contains(key))
+                {
                     scores[key] *= 2;
+                }
             }
         }
 
@@ -284,7 +305,9 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
         foreach (string key in scores.Keys.ToArray())
         {
             if (headingText.Contains(key))
+            {
                 scores[key] *= 2;
+            }
         }
 
         // Filter out single words that appear fewer than 2 times, keep phrases with higher scores
@@ -351,16 +374,19 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
     public async Task<ActionResult<TrackedKeywordDto>> UpdateKeyword(Guid id, [FromBody] UpdateTrackedKeywordDto dto)
     {
         TrackedKeyword? keyword = await context.TrackedKeywords.FindAsync(id);
-        if (keyword is null) return NotFound();
+        if (keyword is null)
+        {
+            return NotFound();
+        }
 
-        if (dto.Keyword is not null) keyword.Keyword = dto.Keyword;
-        if (dto.PageUrl is not null) keyword.PageUrl = dto.PageUrl;
+        if (dto.Keyword is not null) { keyword.Keyword = dto.Keyword; }
+        if (dto.PageUrl is not null) { keyword.PageUrl = dto.PageUrl; }
         if (dto.Position.HasValue)
         {
             keyword.LastPosition = dto.Position.Value;
             keyword.LastCheckedUtc = DateTime.UtcNow;
         }
-        if (dto.Notes is not null) keyword.Notes = dto.Notes;
+        if (dto.Notes is not null) { keyword.Notes = dto.Notes; }
 
         await context.SaveChangesAsync();
         return Ok(ToDto(keyword));
@@ -370,7 +396,10 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
     public async Task<IActionResult> DeleteKeyword(Guid id)
     {
         TrackedKeyword? keyword = await context.TrackedKeywords.FindAsync(id);
-        if (keyword is null) return NotFound();
+        if (keyword is null)
+        {
+            return NotFound();
+        }
         context.TrackedKeywords.Remove(keyword);
         await context.SaveChangesAsync();
         return NoContent();

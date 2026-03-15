@@ -16,13 +16,19 @@ public class InstagramController(IHttpClientFactory httpClientFactory, IConfigur
         string? userId = configuration["Instagram:UserId"];
 
         if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(userId))
+        {
             return BadRequest(new { message = "Instagram is not configured. Set Instagram:AccessToken and Instagram:UserId." });
+        }
 
         if (string.IsNullOrWhiteSpace(request.ImageUrl))
+        {
             return BadRequest(new { message = "Image URL is required." });
+        }
 
         if (string.IsNullOrWhiteSpace(request.Caption))
+        {
             return BadRequest(new { message = "Caption is required." });
+        }
 
         HttpClient client = httpClientFactory.CreateClient();
 
@@ -84,7 +90,9 @@ public class InstagramController(IHttpClientFactory httpClientFactory, IConfigur
             using JsonDocument doc = JsonDocument.Parse(json);
             if (doc.RootElement.TryGetProperty("error", out JsonElement err) &&
                 err.TryGetProperty("message", out JsonElement msg))
+            {
                 return msg.GetString() ?? json;
+            }
         }
         catch { }
         return json;

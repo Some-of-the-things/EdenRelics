@@ -26,7 +26,10 @@ public class AccountController : ControllerBase
     public async Task<ActionResult<AccountProfileDto>> GetProfile()
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         return Ok(ToProfileDto(user));
     }
@@ -35,7 +38,10 @@ public class AccountController : ControllerBase
     public async Task<ActionResult<AccountProfileDto>> UpdateProfile(UpdateProfileDto dto)
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         user.FirstName = dto.FirstName;
         user.LastName = dto.LastName;
@@ -48,7 +54,10 @@ public class AccountController : ControllerBase
     public async Task<ActionResult<AccountProfileDto>> UpdateDeliveryAddress(AddressDto dto)
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         user.DeliveryAddressLine1 = dto.AddressLine1;
         user.DeliveryAddressLine2 = dto.AddressLine2;
@@ -65,7 +74,10 @@ public class AccountController : ControllerBase
     public async Task<ActionResult<AccountProfileDto>> UpdateBillingAddress(AddressDto dto)
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         user.BillingAddressLine1 = dto.AddressLine1;
         user.BillingAddressLine2 = dto.AddressLine2;
@@ -82,7 +94,10 @@ public class AccountController : ControllerBase
     public async Task<ActionResult<AccountProfileDto>> UpdatePayment(UpdatePaymentDto dto)
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         user.PaymentCardholderName = dto.CardholderName;
         user.PaymentCardLast4 = dto.CardLast4;
@@ -98,11 +113,16 @@ public class AccountController : ControllerBase
     public async Task<ActionResult> ChangePassword(ChangePasswordDto dto)
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         PasswordVerificationResult result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.CurrentPassword);
         if (result == PasswordVerificationResult.Failed)
+        {
             return BadRequest(new { message = "Current password is incorrect." });
+        }
 
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
         await _userRepository.UpdateAsync(user);
@@ -114,10 +134,15 @@ public class AccountController : ControllerBase
     public async Task<ActionResult<MfaSetupDto>> SetupMfa()
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         if (user.MfaEnabled)
+        {
             return BadRequest(new { message = "MFA is already enabled." });
+        }
 
         byte[] secret = KeyGeneration.GenerateRandomKey(20);
         string base32Secret = Base32Encoding.ToString(secret);
@@ -134,16 +159,23 @@ public class AccountController : ControllerBase
     public async Task<ActionResult> VerifyMfa(VerifyMfaDto dto)
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         if (user.MfaSecret is null)
+        {
             return BadRequest(new { message = "MFA setup has not been started." });
+        }
 
         Totp totp = new(Base32Encoding.ToBytes(user.MfaSecret));
         bool valid = totp.VerifyTotp(dto.Code, out _, new VerificationWindow(previous: 1, future: 1));
 
         if (!valid)
+        {
             return BadRequest(new { message = "Invalid code. Please try again." });
+        }
 
         user.MfaEnabled = true;
         await _userRepository.UpdateAsync(user);
@@ -155,16 +187,23 @@ public class AccountController : ControllerBase
     public async Task<ActionResult> DisableMfa(VerifyMfaDto dto)
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         if (!user.MfaEnabled || user.MfaSecret is null)
+        {
             return BadRequest(new { message = "MFA is not enabled." });
+        }
 
         Totp totp = new(Base32Encoding.ToBytes(user.MfaSecret));
         bool valid = totp.VerifyTotp(dto.Code, out _, new VerificationWindow(previous: 1, future: 1));
 
         if (!valid)
+        {
             return BadRequest(new { message = "Invalid code." });
+        }
 
         user.MfaEnabled = false;
         user.MfaSecret = null;
@@ -177,7 +216,9 @@ public class AccountController : ControllerBase
     {
         string? userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userIdStr is null || !Guid.TryParse(userIdStr, out Guid userId))
+        {
             return null;
+        }
 
         return await _userRepository.GetByIdAsync(userId);
     }

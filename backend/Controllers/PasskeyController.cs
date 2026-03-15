@@ -47,7 +47,10 @@ public class PasskeyController : ControllerBase
     public async Task<ActionResult> RegisterOptions()
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         Fido2User fido2User = new()
         {
@@ -89,11 +92,16 @@ public class PasskeyController : ControllerBase
     public async Task<ActionResult> Register([FromBody] AuthenticatorAttestationRawResponse attestation)
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         string? optionsJson = await _cache.GetStringAsync($"fido2_reg_{user.Id}");
         if (optionsJson is null)
+        {
             return BadRequest(new { message = "Registration session expired." });
+        }
 
         CredentialCreateOptions options = CredentialCreateOptions.FromJson(optionsJson);
 
@@ -172,7 +180,9 @@ public class PasskeyController : ControllerBase
     {
         string? optionsJson = await _cache.GetStringAsync($"fido2_auth_{dto.SessionId}");
         if (optionsJson is null)
+        {
             return BadRequest(new { message = "Login session expired." });
+        }
 
         AssertionOptions options = AssertionOptions.FromJson(optionsJson);
 
@@ -181,7 +191,9 @@ public class PasskeyController : ControllerBase
             .FirstOrDefaultAsync(c => c.CredentialId == credentialId);
 
         if (storedCred is null)
+        {
             return Unauthorized(new { message = "Passkey not recognised." });
+        }
 
         VerifyAssertionResult result = await _fido2.MakeAssertionAsync(
             new MakeAssertionParams
@@ -203,7 +215,10 @@ public class PasskeyController : ControllerBase
         await _cache.RemoveAsync($"fido2_auth_{dto.SessionId}");
 
         User? user = await _userRepository.GetByIdAsync(storedCred.UserId);
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         string token = GenerateToken(user);
         return Ok(new AuthResponseDto(token, new UserDto(user.Id, user.Email, user.FirstName, user.LastName, user.Role, user.EmailVerified)));
@@ -216,7 +231,10 @@ public class PasskeyController : ControllerBase
     public async Task<ActionResult> GetCredentials()
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         List<UserCredential> creds = await _db.UserCredentials
             .Where(c => c.UserId == user.Id)
@@ -238,12 +256,18 @@ public class PasskeyController : ControllerBase
     public async Task<ActionResult> DeleteCredential(Guid id)
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         UserCredential? cred = await _db.UserCredentials
             .FirstOrDefaultAsync(c => c.Id == id && c.UserId == user.Id);
 
-        if (cred is null) return NotFound();
+        if (cred is null)
+        {
+            return NotFound();
+        }
 
         cred.IsDeleted = true;
         await _db.SaveChangesAsync();
@@ -256,12 +280,18 @@ public class PasskeyController : ControllerBase
     public async Task<ActionResult> RenameCredential(Guid id, [FromBody] RenamePasskeyDto dto)
     {
         User? user = await GetCurrentUser();
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         UserCredential? cred = await _db.UserCredentials
             .FirstOrDefaultAsync(c => c.Id == id && c.UserId == user.Id);
 
-        if (cred is null) return NotFound();
+        if (cred is null)
+        {
+            return NotFound();
+        }
 
         cred.Nickname = dto.Nickname;
         await _db.SaveChangesAsync();
@@ -273,7 +303,9 @@ public class PasskeyController : ControllerBase
     {
         string? userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userIdStr is null || !Guid.TryParse(userIdStr, out Guid userId))
+        {
             return null;
+        }
 
         return await _userRepository.GetByIdAsync(userId);
     }

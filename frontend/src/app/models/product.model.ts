@@ -3,6 +3,7 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  costPrice?: number;
   era: string;
   category: '70s' | '80s' | '90s' | 'y2k' | 'modern';
   size: '6' | '8' | '10' | '12' | '14' | '16';

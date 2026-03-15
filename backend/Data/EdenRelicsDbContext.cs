@@ -123,6 +123,7 @@ public class EdenRelicsDbContext : DbContext
         modelBuilder.Entity<Product>(entity =>
         {
             entity.Property(p => p.Price).HasPrecision(10, 2);
+            entity.Property(p => p.CostPrice).HasPrecision(10, 2);
             entity.Property(p => p.Name).HasMaxLength(200);
             entity.Property(p => p.Era).HasMaxLength(50);
             entity.Property(p => p.Category).HasMaxLength(20);

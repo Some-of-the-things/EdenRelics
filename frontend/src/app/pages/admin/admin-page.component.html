@@ -81,6 +81,10 @@
               <input type="number" [(ngModel)]="form.price" name="price" min="0" step="0.01" required />
             </label>
             <label class="admin__field">
+              <span>Cost Price</span>
+              <input type="number" [(ngModel)]="form.costPrice" name="costPrice" min="0" step="0.01" />
+            </label>
+            <label class="admin__field">
               <span>Era</span>
               <input type="text" [(ngModel)]="form.era" name="era" required />
             </label>
@@ -174,6 +178,7 @@
             <th>Size</th>
             <th>Condition</th>
             <th>Price</th>
+            <th>Cost</th>
             <th>Stock</th>
             <th>Actions</th>
           </tr>
@@ -192,6 +197,7 @@
                 </span>
               </td>
               <td>{{ product.price | currency:'GBP' }}</td>
+              <td>{{ product.costPrice ? (product.costPrice | currency:'GBP') : '—' }}</td>
               <td>
                 <span class="admin__stock" [class.admin__stock--out]="!product.inStock">
                   {{ product.inStock ? 'In Stock' : 'Sold' }}
@@ -204,7 +210,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="9" class="admin__empty">No products found.</td>
+              <td colspan="10" class="admin__empty">No products found.</td>
             </tr>
           }
         </tbody>

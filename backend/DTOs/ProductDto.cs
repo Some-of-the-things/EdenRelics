@@ -13,10 +13,25 @@ public record ProductDto(
     bool InStock
 );
 
+public record ProductAdminDto(
+    Guid Id,
+    string Name,
+    string Description,
+    decimal Price,
+    decimal CostPrice,
+    string Era,
+    string Category,
+    string Size,
+    string Condition,
+    string ImageUrl,
+    bool InStock
+);
+
 public record CreateProductDto(
     string Name,
     string Description,
     decimal Price,
+    decimal CostPrice,
     string Era,
     string Category,
     string Size,
@@ -29,6 +44,7 @@ public record UpdateProductDto(
     string? Name,
     string? Description,
     decimal? Price,
+    decimal? CostPrice,
     string? Era,
     string? Category,
     string? Size,

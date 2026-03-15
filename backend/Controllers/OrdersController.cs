@@ -165,7 +165,10 @@ public class OrdersController : ControllerBase
             .Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == id);
 
-        if (order is null) return NotFound();
+        if (order is null)
+        {
+            return NotFound();
+        }
         return Ok(ToDto(order));
     }
 
@@ -191,7 +194,10 @@ public class OrdersController : ControllerBase
             .Include(o => o.User)
             .FirstOrDefaultAsync(o => o.Id == id);
 
-        if (order is null) return NotFound();
+        if (order is null)
+        {
+            return NotFound();
+        }
 
         order.Status = dto.Status;
         await _context.SaveChangesAsync();

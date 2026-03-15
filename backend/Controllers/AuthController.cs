@@ -39,7 +39,9 @@ public class AuthController : ControllerBase
     {
         IEnumerable<User> existing = await _userRepository.FindAsync(u => u.Email == dto.Email);
         if (existing.Any())
+        {
             return Conflict(new { message = "Email already registered." });
+        }
 
         string verificationToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
             .Replace("/", "_").Replace("+", "-").TrimEnd('=');
@@ -69,11 +71,15 @@ public class AuthController : ControllerBase
         User? user = users.FirstOrDefault();
 
         if (user is null)
+        {
             return Unauthorized(new { message = "Invalid email or password." });
+        }
 
         PasswordVerificationResult result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
         if (result == PasswordVerificationResult.Failed)
+        {
             return Unauthorized(new { message = "Invalid email or password." });
+        }
 
         if (user.MfaEnabled)
         {
@@ -90,17 +96,23 @@ public class AuthController : ControllerBase
     {
         Guid? userId = ValidateMfaToken(dto.MfaToken);
         if (userId is null)
+        {
             return Unauthorized(new { message = "Invalid or expired MFA session." });
+        }
 
         User? user = await _userRepository.GetByIdAsync(userId.Value);
         if (user is null || !user.MfaEnabled || user.MfaSecret is null)
+        {
             return Unauthorized(new { message = "Invalid MFA session." });
+        }
 
         Totp totp = new(Base32Encoding.ToBytes(user.MfaSecret));
         bool valid = totp.VerifyTotp(dto.Code, out _, new VerificationWindow(previous: 1, future: 1));
 
         if (!valid)
+        {
             return BadRequest(new { message = "Invalid code. Please try again." });
+        }
 
         string token = GenerateToken(user);
         return Ok(new AuthResponseDto(token, ToDto(user)));
@@ -113,7 +125,9 @@ public class AuthController : ControllerBase
         User? user = users.FirstOrDefault();
 
         if (user is null)
+        {
             return Ok(new { message = "If that email exists, a reset link has been sent." });
+        }
 
         string resetToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
             .Replace("/", "_").Replace("+", "-").TrimEnd('=');
@@ -135,7 +149,9 @@ public class AuthController : ControllerBase
         if (user is null
             || user.PasswordResetToken != dto.Token
             || user.PasswordResetTokenExpiresUtc < DateTime.UtcNow)
+        {
             return BadRequest(new { message = "Invalid or expired reset token." });
+        }
 
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
         user.PasswordResetToken = null;
@@ -153,7 +169,9 @@ public class AuthController : ControllerBase
 
         if (user is null
             || user.EmailVerificationToken != dto.Token)
+        {
             return BadRequest(new { message = "Invalid verification token." });
+        }
 
         user.EmailVerified = true;
         user.EmailVerificationToken = null;
@@ -168,13 +186,20 @@ public class AuthController : ControllerBase
     {
         string? userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userIdStr is null || !Guid.TryParse(userIdStr, out Guid userId))
+        {
             return Unauthorized();
+        }
 
         User? user = await _userRepository.GetByIdAsync(userId);
-        if (user is null) return Unauthorized();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         if (user.EmailVerified)
+        {
             return BadRequest(new { message = "Email is already verified." });
+        }
 
         string verificationToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
             .Replace("/", "_").Replace("+", "-").TrimEnd('=');
@@ -199,7 +224,9 @@ public class AuthController : ControllerBase
         };
 
         if (info is null)
+        {
             return Unauthorized(new { message = "Invalid external login." });
+        }
 
         // Look for existing user by provider ID
         IEnumerable<User> byProvider = await _userRepository.FindAsync(
@@ -266,7 +293,10 @@ public class AuthController : ControllerBase
             HttpClient client = _httpClientFactory.CreateClient();
             string url = $"https://graph.facebook.com/me?fields=id,email,first_name,last_name&access_token={Uri.EscapeDataString(accessToken)}";
             HttpResponseMessage response = await client.GetAsync(url);
-            if (!response.IsSuccessStatusCode) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
 
             string json = await response.Content.ReadAsStringAsync();
             using JsonDocument doc = JsonDocument.Parse(json);
@@ -277,7 +307,10 @@ public class AuthController : ControllerBase
             string? firstName = root.TryGetProperty("first_name", out JsonElement fnEl) ? fnEl.GetString() : null;
             string? lastName = root.TryGetProperty("last_name", out JsonElement lnEl) ? lnEl.GetString() : null;
 
-            if (id is null || email is null) return null;
+            if (id is null || email is null)
+            {
+                return null;
+            }
             return new ExternalUserInfo(id, email, firstName, lastName);
         }
         catch
@@ -314,7 +347,10 @@ public class AuthController : ControllerBase
             string? sub = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
             string? email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
 
-            if (sub is null || email is null) return null;
+            if (sub is null || email is null)
+            {
+                return null;
+            }
             return new ExternalUserInfo(sub, email, null, null);
         }
         catch
@@ -395,7 +431,9 @@ public class AuthController : ControllerBase
             string? userIdStr = principal.FindFirstValue("mfa_user_id");
 
             if (purpose != "mfa" || userIdStr is null || !Guid.TryParse(userIdStr, out Guid userId))
+            {
                 return null;
+            }
 
             return userId;
         }
