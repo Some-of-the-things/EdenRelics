@@ -1005,6 +1005,65 @@
   margin-top: 1rem;
 }
 
+/* Accounts */
+.acct__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.acct__kpi {
+  text-align: center;
+  padding: 1.25rem 1rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+
+  &--accent {
+    border-left: 3px solid #2d7a3a;
+  }
+}
+
+.acct__kpi-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-family: var(--font-display);
+  margin-bottom: 0.25rem;
+}
+
+.acct__kpi-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.acct__section {
+  margin-bottom: 1.5rem;
+}
+
+.acct__section-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.acct__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.acct__section--half {
+  min-width: 0;
+}
+
 .ig__product-name {
   display: block;
   font-size: 0.7rem;

@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe, PercentPipe, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
@@ -14,6 +14,21 @@ import {
 import { environment } from '../../../environments/environment';
 import { BrandingService, Branding } from '../../services/branding.service';
 import { ContentService } from '../../services/content.service';
+
+interface AccountsSummary {
+  totalRevenue: number;
+  totalCost: number;
+  totalProfit: number;
+  marginPercent: number;
+  totalOrders: number;
+  totalItemsSold: number;
+  averageOrderValue: number;
+  revenueByMonth: { month: string; revenue: number; cost: number; profit: number; orders: number; itemsSold: number }[];
+  revenueByCategory: { category: string; revenue: number; cost: number; profit: number; itemsSold: number }[];
+  revenueByEra: { era: string; revenue: number; cost: number; profit: number; itemsSold: number }[];
+  inventory: { inStock: number; outOfStock: number; retailValue: number; costValue: number };
+  ordersByStatus: { status: string; count: number }[];
+}
 
 interface SeoHeading {
   level: number;
@@ -62,7 +77,7 @@ interface SeoResult {
 
 @Component({
   selector: 'app-admin-page',
-  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe],
+  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe, DecimalPipe, PercentPipe],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
@@ -76,7 +91,7 @@ export class AdminPageComponent {
 
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
-  readonly activeTab = signal<'products' | 'orders' | 'seo' | 'instagram' | 'branding' | 'content'>('products');
+  readonly activeTab = signal<'products' | 'orders' | 'accounts' | 'seo' | 'instagram' | 'branding' | 'content'>('products');
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly imagePreview = signal<string | null>(null);
@@ -181,11 +196,16 @@ export class AdminPageComponent {
   readonly igResult = signal<string | null>(null);
   readonly igError = signal('');
   readonly igConfigured = signal<boolean | null>(null);
+  // Accounts
+  readonly accountsSummary = signal<AccountsSummary | null>(null);
+  readonly accountsLoading = signal(false);
+  readonly accountsError = signal('');
+
   postToInstagram = false;
 
   form: Omit<Product, 'id'> = this.emptyForm();
 
-  switchTab(tab: 'products' | 'orders' | 'seo' | 'instagram' | 'branding' | 'content'): void {
+  switchTab(tab: 'products' | 'orders' | 'accounts' | 'seo' | 'instagram' | 'branding' | 'content'): void {
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
       this.loadOrders();
@@ -199,9 +219,27 @@ export class AdminPageComponent {
     if (tab === 'branding') {
       this.loadBranding();
     }
+    if (tab === 'accounts') {
+      this.loadAccounts();
+    }
     if (tab === 'content') {
       this.loadContent();
     }
+  }
+
+  loadAccounts(): void {
+    this.accountsLoading.set(true);
+    this.accountsError.set('');
+    this.http.get<AccountsSummary>(`${environment.apiUrl}/api/accounts/summary`).subscribe({
+      next: (data) => {
+        this.accountsSummary.set(data);
+        this.accountsLoading.set(false);
+      },
+      error: () => {
+        this.accountsError.set('Failed to load accounts data.');
+        this.accountsLoading.set(false);
+      },
+    });
   }
 
   loadContent(): void {

@@ -8,6 +8,9 @@
       @if (activeTab() === 'orders') {
         <button class="admin__add-btn" (click)="loadOrders()">Refresh</button>
       }
+      @if (activeTab() === 'accounts') {
+        <button class="admin__add-btn" (click)="loadAccounts()">Refresh</button>
+      }
       <button class="admin__logout-btn" (click)="logout()">Logout</button>
     </div>
   </div>
@@ -26,6 +29,13 @@
       (click)="switchTab('orders')"
     >
       Orders
+    </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'accounts'"
+      (click)="switchTab('accounts')"
+    >
+      Accounts
     </button>
     <button
       class="admin__tab"
@@ -300,6 +310,173 @@
             }
           </tbody>
         </table>
+      </div>
+    }
+  }
+
+  @if (activeTab() === 'accounts') {
+    @if (accountsError()) {
+      <p class="admin__error" role="alert">{{ accountsError() }}</p>
+    }
+
+    @if (accountsLoading()) {
+      <p class="admin__loading">Loading accounts data...</p>
+    } @else if (accountsSummary(); as acc) {
+      <div class="acct">
+        <!-- KPI Cards -->
+        <div class="acct__kpis">
+          <div class="acct__kpi">
+            <span class="acct__kpi-value">{{ acc.totalRevenue | currency:'GBP' }}</span>
+            <span class="acct__kpi-label">Total Revenue</span>
+          </div>
+          <div class="acct__kpi">
+            <span class="acct__kpi-value">{{ acc.totalCost | currency:'GBP' }}</span>
+            <span class="acct__kpi-label">Total Cost</span>
+          </div>
+          <div class="acct__kpi acct__kpi--accent">
+            <span class="acct__kpi-value">{{ acc.totalProfit | currency:'GBP' }}</span>
+            <span class="acct__kpi-label">Total Profit</span>
+          </div>
+          <div class="acct__kpi">
+            <span class="acct__kpi-value">{{ acc.marginPercent }}%</span>
+            <span class="acct__kpi-label">Margin</span>
+          </div>
+        </div>
+        <div class="acct__kpis">
+          <div class="acct__kpi">
+            <span class="acct__kpi-value">{{ acc.totalOrders }}</span>
+            <span class="acct__kpi-label">Orders</span>
+          </div>
+          <div class="acct__kpi">
+            <span class="acct__kpi-value">{{ acc.totalItemsSold }}</span>
+            <span class="acct__kpi-label">Items Sold</span>
+          </div>
+          <div class="acct__kpi">
+            <span class="acct__kpi-value">{{ acc.averageOrderValue | currency:'GBP' }}</span>
+            <span class="acct__kpi-label">Avg Order Value</span>
+          </div>
+        </div>
+
+        <!-- Revenue by Month -->
+        @if (acc.revenueByMonth.length) {
+          <div class="acct__section">
+            <h3 class="acct__section-title">Revenue by Month</h3>
+            <div class="admin__table-wrap">
+              <table class="admin__table">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>Revenue</th>
+                    <th>Cost</th>
+                    <th>Profit</th>
+                    <th>Orders</th>
+                    <th>Items</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (m of acc.revenueByMonth; track m.month) {
+                    <tr>
+                      <td class="admin__name">{{ m.month }}</td>
+                      <td>{{ m.revenue | currency:'GBP' }}</td>
+                      <td>{{ m.cost | currency:'GBP' }}</td>
+                      <td>{{ m.profit | currency:'GBP' }}</td>
+                      <td>{{ m.orders }}</td>
+                      <td>{{ m.itemsSold }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+        <!-- Revenue by Category & Era side by side -->
+        <div class="acct__row">
+          @if (acc.revenueByCategory.length) {
+            <div class="acct__section acct__section--half">
+              <h3 class="acct__section-title">Revenue by Category</h3>
+              <div class="admin__table-wrap">
+                <table class="admin__table">
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>Revenue</th>
+                      <th>Profit</th>
+                      <th>Items</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (c of acc.revenueByCategory; track c.category) {
+                      <tr>
+                        <td class="admin__name">{{ c.category }}</td>
+                        <td>{{ c.revenue | currency:'GBP' }}</td>
+                        <td>{{ c.profit | currency:'GBP' }}</td>
+                        <td>{{ c.itemsSold }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+          @if (acc.revenueByEra.length) {
+            <div class="acct__section acct__section--half">
+              <h3 class="acct__section-title">Revenue by Era</h3>
+              <div class="admin__table-wrap">
+                <table class="admin__table">
+                  <thead>
+                    <tr>
+                      <th>Era</th>
+                      <th>Revenue</th>
+                      <th>Profit</th>
+                      <th>Items</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (e of acc.revenueByEra; track e.era) {
+                      <tr>
+                        <td class="admin__name">{{ e.era }}</td>
+                        <td>{{ e.revenue | currency:'GBP' }}</td>
+                        <td>{{ e.profit | currency:'GBP' }}</td>
+                        <td>{{ e.itemsSold }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Inventory & Order Status side by side -->
+        <div class="acct__row">
+          <div class="acct__section acct__section--half">
+            <h3 class="acct__section-title">Inventory</h3>
+            <dl class="seo__meta">
+              <dt>In Stock</dt>
+              <dd>{{ acc.inventory.inStock }}</dd>
+              <dt>Sold</dt>
+              <dd>{{ acc.inventory.outOfStock }}</dd>
+              <dt>Retail Value</dt>
+              <dd>{{ acc.inventory.retailValue | currency:'GBP' }}</dd>
+              <dt>Cost Value</dt>
+              <dd>{{ acc.inventory.costValue | currency:'GBP' }}</dd>
+            </dl>
+          </div>
+
+          @if (acc.ordersByStatus.length) {
+            <div class="acct__section acct__section--half">
+              <h3 class="acct__section-title">Orders by Status</h3>
+              <dl class="seo__meta">
+                @for (s of acc.ordersByStatus; track s.status) {
+                  <dt>{{ s.status }}</dt>
+                  <dd>{{ s.count }}</dd>
+                }
+              </dl>
+            </div>
+          }
+        </div>
       </div>
     }
   }
