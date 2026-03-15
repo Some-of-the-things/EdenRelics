@@ -48,6 +48,13 @@
     >
       Branding
     </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'content'"
+      (click)="switchTab('content')"
+    >
+      Content
+    </button>
   </div>
 
   @if (activeTab() === 'products') {
@@ -692,6 +699,50 @@
           {{ brandingSaving() ? 'Saving...' : 'Save Branding' }}
         </button>
         <button class="admin__cancel-btn" (click)="loadBranding()">Reset</button>
+      </div>
+    </div>
+  }
+
+  @if (activeTab() === 'content') {
+    <div class="cms">
+      @if (contentSuccess()) {
+        <p class="ig__success">{{ contentSuccess() }}</p>
+      }
+      @if (contentError()) {
+        <p class="admin__error" role="alert">{{ contentError() }}</p>
+      }
+
+      @for (section of contentSections; track section.title) {
+        <div class="cms__section">
+          <h3 class="cms__section-title">{{ section.title }}</h3>
+          @for (field of section.fields; track field.key) {
+            <label class="cms__field">
+              <span>{{ field.label }}</span>
+              @if (field.type === 'textarea') {
+                <textarea
+                  [ngModel]="contentForm[field.key] ?? ''"
+                  (ngModelChange)="contentForm[field.key] = $event"
+                  [name]="field.key"
+                  rows="3"
+                ></textarea>
+              } @else {
+                <input
+                  type="text"
+                  [ngModel]="contentForm[field.key] ?? ''"
+                  (ngModelChange)="contentForm[field.key] = $event"
+                  [name]="field.key"
+                />
+              }
+            </label>
+          }
+        </div>
+      }
+
+      <div class="brand__actions">
+        <button class="admin__save-btn" (click)="saveContent()" [disabled]="contentSaving()">
+          {{ contentSaving() ? 'Saving...' : 'Save Content' }}
+        </button>
+        <button class="admin__cancel-btn" (click)="loadContent()">Reset</button>
       </div>
     </div>
   }

@@ -1,30 +1,28 @@
 <div class="home">
   <section class="hero">
-    <p class="hero__eyebrow">Carefully Sourced & Lovingly Preserved</p>
-    <h1 class="hero__title">Curated Vintage</h1>
-    <p class="hero__subtitle">
-      Timeless pieces from decades past.
-    </p>
+    <p class="hero__eyebrow">{{ cms.get('home.hero.eyebrow', 'Carefully Sourced & Lovingly Preserved') }}</p>
+    <h1 class="hero__title">{{ cms.get('home.hero.title', 'Curated Vintage') }}</h1>
+    <p class="hero__subtitle">{{ cms.get('home.hero.subtitle', 'Timeless pieces from decades past.') }}</p>
   </section>
   <app-product-list />
   <section class="home__about">
-    <h2 class="home__about-title">Why Eden Relics?</h2>
+    <h2 class="home__about-title">{{ cms.get('home.about.title', 'Why Eden Relics?') }}</h2>
     <div class="home__about-grid">
       <div class="home__about-card">
-        <h3>Authentically Vintage</h3>
-        <p>Every piece in our collection is a genuine vintage garment, carefully sourced from estate sales, vintage fairs and private collections across the UK and Europe. We never sell reproductions.</p>
+        <h3>{{ cms.get('home.about.card1.title', 'Authentically Vintage') }}</h3>
+        <p>{{ cms.get('home.about.card1.text', '') }}</p>
       </div>
       <div class="home__about-card">
-        <h3>Quality Assured</h3>
-        <p>Each dress is inspected, gently cleaned and assessed for condition before it reaches our shop. We grade every item honestly so you know exactly what you are getting, from mint condition to well-loved pieces with character.</p>
+        <h3>{{ cms.get('home.about.card2.title', 'Quality Assured') }}</h3>
+        <p>{{ cms.get('home.about.card2.text', '') }}</p>
       </div>
       <div class="home__about-card">
-        <h3>Sustainable Fashion</h3>
-        <p>Choosing vintage is one of the most sustainable ways to build your wardrobe. By giving these beautiful garments a second life, you are reducing textile waste and embracing slow fashion without compromising on style.</p>
+        <h3>{{ cms.get('home.about.card3.title', 'Sustainable Fashion') }}</h3>
+        <p>{{ cms.get('home.about.card3.text', '') }}</p>
       </div>
       <div class="home__about-card">
-        <h3>Spanning the Decades</h3>
-        <p>From flowing 1970s bohemian maxis and bold 1980s power dresses to minimalist 1990s slip dresses, nostalgic Y2K styles and contemporary pieces, our collection celebrates the best fashion from every era.</p>
+        <h3>{{ cms.get('home.about.card4.title', 'Spanning the Decades') }}</h3>
+        <p>{{ cms.get('home.about.card4.text', '') }}</p>
       </div>
     </div>
   </section>

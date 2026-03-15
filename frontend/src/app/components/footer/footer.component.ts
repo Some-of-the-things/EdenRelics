@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-footer',
@@ -9,4 +10,5 @@ import { RouterLink } from '@angular/router';
 })
 export class FooterComponent {
   readonly year = new Date().getFullYear();
+  readonly cms = inject(ContentService);
 }

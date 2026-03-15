@@ -13,6 +13,7 @@ import {
 } from '../../services/order-admin.service';
 import { environment } from '../../../environments/environment';
 import { BrandingService, Branding } from '../../services/branding.service';
+import { ContentService } from '../../services/content.service';
 
 interface SeoHeading {
   level: number;
@@ -74,7 +75,8 @@ export class AdminPageComponent {
   readonly store = inject(ProductStore);
 
   private readonly brandingService = inject(BrandingService);
-  readonly activeTab = signal<'products' | 'orders' | 'seo' | 'instagram' | 'branding'>('products');
+  private readonly contentService = inject(ContentService);
+  readonly activeTab = signal<'products' | 'orders' | 'seo' | 'instagram' | 'branding' | 'content'>('products');
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly imagePreview = signal<string | null>(null);
@@ -101,6 +103,56 @@ export class AdminPageComponent {
   newKeyword = '';
   newKeywordUrl = 'https://edenrelics.co.uk';
   newKeywordPosition: number | null = null;
+
+  // Content
+  contentForm: Record<string, string> = {};
+  readonly contentSaving = signal(false);
+  readonly contentSuccess = signal('');
+  readonly contentError = signal('');
+
+  readonly contentSections = [
+    {
+      title: 'Hero Section',
+      fields: [
+        { key: 'home.hero.eyebrow', label: 'Eyebrow Text', type: 'text' },
+        { key: 'home.hero.title', label: 'Title', type: 'text' },
+        { key: 'home.hero.subtitle', label: 'Subtitle', type: 'text' },
+      ],
+    },
+    {
+      title: 'About Section',
+      fields: [
+        { key: 'home.about.title', label: 'Section Title', type: 'text' },
+        { key: 'home.about.card1.title', label: 'Card 1 Title', type: 'text' },
+        { key: 'home.about.card1.text', label: 'Card 1 Text', type: 'textarea' },
+        { key: 'home.about.card2.title', label: 'Card 2 Title', type: 'text' },
+        { key: 'home.about.card2.text', label: 'Card 2 Text', type: 'textarea' },
+        { key: 'home.about.card3.title', label: 'Card 3 Title', type: 'text' },
+        { key: 'home.about.card3.text', label: 'Card 3 Text', type: 'textarea' },
+        { key: 'home.about.card4.title', label: 'Card 4 Title', type: 'text' },
+        { key: 'home.about.card4.text', label: 'Card 4 Text', type: 'textarea' },
+      ],
+    },
+    {
+      title: 'Footer',
+      fields: [
+        { key: 'footer.tagline', label: 'Tagline', type: 'text' },
+        { key: 'footer.company.line1', label: 'Company Line 1', type: 'text' },
+        { key: 'footer.company.line2', label: 'Company Line 2', type: 'text' },
+        { key: 'footer.company.line3', label: 'Company Line 3', type: 'text' },
+        { key: 'footer.contact.email', label: 'Email', type: 'text' },
+        { key: 'footer.contact.phone', label: 'Phone', type: 'text' },
+        { key: 'footer.contact.address', label: 'Address', type: 'textarea' },
+      ],
+    },
+    {
+      title: 'Contact Page',
+      fields: [
+        { key: 'contact.title', label: 'Title', type: 'text' },
+        { key: 'contact.subtitle', label: 'Subtitle', type: 'text' },
+      ],
+    },
+  ];
 
   // Branding
   brandingForm: Branding = {
@@ -133,7 +185,7 @@ export class AdminPageComponent {
 
   form: Omit<Product, 'id'> = this.emptyForm();
 
-  switchTab(tab: 'products' | 'orders' | 'seo' | 'instagram' | 'branding'): void {
+  switchTab(tab: 'products' | 'orders' | 'seo' | 'instagram' | 'branding' | 'content'): void {
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
       this.loadOrders();
@@ -147,6 +199,35 @@ export class AdminPageComponent {
     if (tab === 'branding') {
       this.loadBranding();
     }
+    if (tab === 'content') {
+      this.loadContent();
+    }
+  }
+
+  loadContent(): void {
+    this.http.get<Record<string, string>>(`${environment.apiUrl}/api/content`).subscribe({
+      next: (c) => {
+        this.contentForm = { ...c };
+      },
+    });
+  }
+
+  saveContent(): void {
+    this.contentSaving.set(true);
+    this.contentError.set('');
+    this.contentSuccess.set('');
+
+    this.http.put<Record<string, string>>(`${environment.apiUrl}/api/content`, this.contentForm).subscribe({
+      next: (c) => {
+        this.contentSaving.set(false);
+        this.contentSuccess.set('Content saved. Changes are live.');
+        this.contentService.setAll(c);
+      },
+      error: (err) => {
+        this.contentSaving.set(false);
+        this.contentError.set(err.error?.message ?? 'Failed to save content.');
+      },
+    });
   }
 
   loadBranding(): void {

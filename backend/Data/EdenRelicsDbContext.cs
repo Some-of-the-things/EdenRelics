@@ -15,6 +15,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<UserCredential> UserCredentials => Set<UserCredential>();
     public DbSet<TrackedKeyword> TrackedKeywords => Set<TrackedKeyword>();
     public DbSet<SiteBranding> SiteBranding => Set<SiteBranding>();
+    public DbSet<SiteContent> SiteContent => Set<SiteContent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -83,6 +84,14 @@ public class EdenRelicsDbContext : DbContext
         {
             entity.Property(i => i.ProductName).HasMaxLength(200);
             entity.Property(i => i.UnitPrice).HasPrecision(10, 2);
+        });
+
+        modelBuilder.Entity<SiteContent>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(c => c.Key).HasMaxLength(100);
+            entity.Property(c => c.Value).HasMaxLength(2000);
+            entity.HasIndex(c => c.Key).IsUnique();
         });
 
         modelBuilder.Entity<TrackedKeyword>(entity =>

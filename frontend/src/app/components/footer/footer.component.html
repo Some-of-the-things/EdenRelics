@@ -3,10 +3,10 @@
     <div class="footer__grid">
       <div class="footer__section">
         <h2 class="footer__heading">Eden Relics</h2>
-        <p class="footer__text">Carefully sourced &amp; lovingly preserved vintage clothing.</p>
-        <p class="footer__text footer__legal">Company No. 15734157</p>
-        <p class="footer__text footer__legal">VAT Reg. No. 512 3682 13</p>
-        <p class="footer__text footer__legal">Eden Relics is a trading name of DCPNET LTD.</p>
+        <p class="footer__text">{{ cms.get('footer.tagline', 'Carefully sourced & lovingly preserved vintage clothing.') }}</p>
+        <p class="footer__text footer__legal">{{ cms.get('footer.company.line1', 'Company No. 15734157') }}</p>
+        <p class="footer__text footer__legal">{{ cms.get('footer.company.line2', 'VAT Reg. No. 512 3682 13') }}</p>
+        <p class="footer__text footer__legal">{{ cms.get('footer.company.line3', 'Eden Relics is a trading name of DCPNET LTD.') }}</p>
       </div>
 
       <div class="footer__section">
@@ -24,14 +24,9 @@
           <a routerLink="/contact" class="footer__link">General Enquiries</a>
         </nav>
         <div class="footer__contact">
-          <p class="footer__text">edenrelics&#64;dcp-net.com</p>
-          <p class="footer__text">+44 (0) 7454 705183</p>
-          <p class="footer__text">
-            DCPNET LTD<br />
-            30 Vane Close<br />
-            Norwich, NR7 0US<br />
-            United Kingdom
-          </p>
+          <p class="footer__text">{{ cms.get('footer.contact.email', 'edenrelics@dcp-net.com') }}</p>
+          <p class="footer__text">{{ cms.get('footer.contact.phone', '+44 (0) 7454 705183') }}</p>
+          <p class="footer__text footer__address">{{ cms.get('footer.contact.address', 'DCPNET LTD\n30 Vane Close\nNorwich, NR7 0US\nUnited Kingdom') }}</p>
         </div>
       </div>
     </div>
