@@ -827,7 +827,7 @@ export class AdminPageComponent {
     } else {
       this.store.addProduct(this.form);
       if (this.postToInstagram && this.form.imageUrl) {
-        const caption = `✨ New arrival: ${this.form.name}\n\n${this.form.description}\n\n💷 £${this.form.price}\n📏 Size ${this.form.size} | ${this.form.era}\n\nShop now at edenrelics.co.uk\n\n#vintagefashion #vintagedress #${this.form.category} #sustainablefashion #edenrelics`;
+        const caption = `✨ New arrival: ${this.form.name}\n\n${this.stripHtml(this.form.description)}\n\n💷 £${this.form.price}\n📏 Size ${this.form.size} | ${this.form.era}\n\nShop now at edenrelics.co.uk\n\n#vintagefashion #vintagedress #${this.form.category} #sustainablefashion #edenrelics`;
         this.postInstagram(this.form.imageUrl, caption);
       }
     }
@@ -883,5 +883,29 @@ export class AdminPageComponent {
 
   removeAdditionalImage(index: number): void {
     this.form.additionalImageUrls = this.form.additionalImageUrls?.filter((_, i) => i !== index) ?? [];
+  }
+
+  stripHtml(html: string): string {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent ?? '';
+  }
+
+  execRichText(command: string): void {
+    if (command === 'insertParagraph') {
+      document.execCommand('insertHTML', false, '<p><br></p>');
+    } else {
+      document.execCommand(command, false);
+    }
+  }
+
+  onDescriptionInput(event: Event): void {
+    this.form.description = (event.target as HTMLElement).innerHTML;
+  }
+
+  onDescriptionPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text/plain') ?? '';
+    document.execCommand('insertText', false, text);
   }
 }

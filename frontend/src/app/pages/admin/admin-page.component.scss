@@ -891,6 +891,34 @@
   }
 }
 
+/* Rich text editor */
+.admin__richtext-toolbar { display: flex; gap: 0.25rem; }
+
+.admin__richtext-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  min-width: 28px;
+  text-align: center;
+  &:hover { background: var(--border-color); }
+}
+
+.admin__richtext {
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.65rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 80px;
+  line-height: 1.6;
+  &:focus { outline: none; border-color: var(--accent); }
+  p { margin: 0 0 0.5em; }
+}
+
 /* Blog editor */
 .blog-editor {
   max-width: 700px;

@@ -22,7 +22,7 @@
         <span class="detail__era">{{ product.era }}</span>
         <h1 class="detail__name">{{ product.name }}</h1>
         <p class="detail__price">{{ product.price | currency:'GBP' }}</p>
-        <p class="detail__description">{{ product.description }}</p>
+        <div class="detail__description" [innerHTML]="product.description"></div>
         <div class="detail__meta">
           <div class="detail__meta-item">
             <span class="detail__label">Category</span>

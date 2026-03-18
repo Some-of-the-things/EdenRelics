@@ -98,10 +98,22 @@
             <span>Name</span>
             <input type="text" [(ngModel)]="form.name" name="name" required />
           </label>
-          <label class="admin__field">
+          <div class="admin__field">
             <span>Description</span>
-            <textarea [(ngModel)]="form.description" name="description" rows="3" required></textarea>
-          </label>
+            <div class="admin__richtext-toolbar">
+              <button type="button" class="admin__richtext-btn" (click)="execRichText('bold')" title="Bold"><b>B</b></button>
+              <button type="button" class="admin__richtext-btn" (click)="execRichText('italic')" title="Italic"><i>I</i></button>
+              <button type="button" class="admin__richtext-btn" (click)="execRichText('underline')" title="Underline"><u>U</u></button>
+              <button type="button" class="admin__richtext-btn" (click)="execRichText('insertParagraph')" title="New paragraph">P</button>
+            </div>
+            <div
+              class="admin__richtext"
+              contenteditable="true"
+              [innerHTML]="form.description"
+              (input)="onDescriptionInput($event)"
+              (paste)="onDescriptionPaste($event)"
+            ></div>
+          </div>
           <div class="admin__row">
             <label class="admin__field">
               <span>Price</span>
@@ -782,7 +794,7 @@
           @for (product of store.products(); track product.id) {
             <button
               class="ig__product-card"
-              (click)="igImageUrl = product.imageUrl; igCaption = '✨ ' + product.name + '\n\n' + product.description + '\n\n💷 £' + product.price + '\n📏 Size ' + product.size + ' | ' + product.era + '\n\nShop now at edenrelics.co.uk\n\n#vintagefashion #vintagedress #' + product.category + ' #sustainablefashion #edenrelics'"
+              (click)="igImageUrl = product.imageUrl; igCaption = '✨ ' + product.name + '\n\n' + stripHtml(product.description) + '\n\n💷 £' + product.price + '\n📏 Size ' + product.size + ' | ' + product.era + '\n\nShop now at edenrelics.co.uk\n\n#vintagefashion #vintagedress #' + product.category + ' #sustainablefashion #edenrelics'"
             >
               <img [src]="product.imageUrl" [alt]="product.name" class="ig__product-thumb" />
               <span class="ig__product-name">{{ product.name }}</span>
