@@ -168,6 +168,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseResponseCompression();
+app.UseCors("AllowFrontend");
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
@@ -176,7 +177,6 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 app.UseRateLimiter();
-app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
