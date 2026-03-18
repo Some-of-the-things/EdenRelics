@@ -14,12 +14,14 @@ public class ProductsController : ControllerBase
     private readonly IRepository<Product> _repository;
     private readonly IWebHostEnvironment _env;
     private readonly ImageStorageService _storage;
+    private readonly ILogger<ProductsController> _logger;
 
-    public ProductsController(IRepository<Product> repository, IWebHostEnvironment env, ImageStorageService storage)
+    public ProductsController(IRepository<Product> repository, IWebHostEnvironment env, ImageStorageService storage, ILogger<ProductsController> logger)
     {
         _repository = repository;
         _env = env;
         _storage = storage;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -118,14 +120,26 @@ public class ProductsController : ControllerBase
         string extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
         if (!allowedExtensions.Contains(extension))
+        {
             return BadRequest(new { error = "Only image files (jpg, png, webp, gif) are allowed." });
+        }
 
         if (file.Length > 10 * 1024 * 1024)
+        {
             return BadRequest(new { error = "File size must be under 10MB." });
+        }
 
-        string imageUrl = await ImageUploadHelper.ProcessAndUploadAsync(
-            file.OpenReadStream(), _storage, _env, Request, "products");
-        return Ok(new { imageUrl });
+        try
+        {
+            string imageUrl = await ImageUploadHelper.ProcessAndUploadAsync(
+                file.OpenReadStream(), _storage, _env, Request, "products");
+            return Ok(new { imageUrl });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload product image (file: {FileName}, size: {Size})", file.FileName, file.Length);
+            return StatusCode(500, new { error = "Image upload failed. Please try again." });
+        }
     }
 
     [HttpDelete("{id:guid}")]
