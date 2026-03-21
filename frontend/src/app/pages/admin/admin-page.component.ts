@@ -91,7 +91,7 @@ export class AdminPageComponent {
 
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
-  readonly activeTab = signal<'products' | 'orders' | 'accounts' | 'seo' | 'instagram' | 'branding' | 'content' | 'marketplace' | 'blog'>('products');
+  readonly activeTab = signal<'products' | 'orders' | 'accounts' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'>('products');
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly imagePreview = signal<string | null>(null);
@@ -261,13 +261,6 @@ export class AdminPageComponent {
     'DM Sans', 'Outfit', 'Cormorant Garamond', 'Josefin Sans', 'EB Garamond',
   ];
 
-  // Instagram
-  igCaption = '';
-  igImageUrl = '';
-  readonly igPosting = signal(false);
-  readonly igResult = signal<string | null>(null);
-  readonly igError = signal('');
-  readonly igConfigured = signal<boolean | null>(null);
   // Blog
   readonly blogPosts = signal<{ id: string; title: string; slug: string; published: boolean; publishedAtUtc: string | null; createdAtUtc: string }[]>([]);
   readonly blogLoading = signal(false);
@@ -292,20 +285,15 @@ export class AdminPageComponent {
   readonly accountsLoading = signal(false);
   readonly accountsError = signal('');
 
-  postToInstagram = false;
-
   form: Omit<Product, 'id'> = this.emptyForm();
 
-  switchTab(tab: 'products' | 'orders' | 'accounts' | 'seo' | 'instagram' | 'branding' | 'content' | 'marketplace' | 'blog'): void {
+  switchTab(tab: 'products' | 'orders' | 'accounts' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'): void {
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
       this.loadOrders();
     }
     if (tab === 'seo' && this.trackedKeywords().length === 0) {
       this.loadTrackedKeywords();
-    }
-    if (tab === 'instagram' && this.igConfigured() === null) {
-      this.checkInstagramStatus();
     }
     if (tab === 'branding') {
       this.loadBranding();
@@ -613,41 +601,6 @@ export class AdminPageComponent {
     this.contrastCheckTrigger.update(v => v + 1);
   }
 
-  checkInstagramStatus(): void {
-    this.http.get<{ configured: boolean }>(`${environment.apiUrl}/api/instagram/status`).subscribe({
-      next: (res) => this.igConfigured.set(res.configured),
-      error: () => this.igConfigured.set(false),
-    });
-  }
-
-  postInstagram(imageUrl?: string, caption?: string): void {
-    const url = imageUrl ?? this.igImageUrl;
-    const cap = caption ?? this.igCaption;
-    if (!url || !cap) return;
-
-    this.igPosting.set(true);
-    this.igError.set('');
-    this.igResult.set(null);
-
-    this.http
-      .post<{ mediaId: string; message: string }>(`${environment.apiUrl}/api/instagram/post`, {
-        imageUrl: url,
-        caption: cap,
-      })
-      .subscribe({
-        next: (res) => {
-          this.igResult.set(res.message);
-          this.igPosting.set(false);
-          this.igCaption = '';
-          this.igImageUrl = '';
-        },
-        error: (err) => {
-          this.igError.set(err.error?.message ?? 'Failed to post to Instagram.');
-          this.igPosting.set(false);
-        },
-      });
-  }
-
   loadTrackedKeywords(): void {
     this.trackedLoading.set(true);
     this.http.get<TrackedKeyword[]>(`${environment.apiUrl}/api/seo/keywords`).subscribe({
@@ -826,12 +779,7 @@ export class AdminPageComponent {
       this.store.updateProduct(id, this.form);
     } else {
       this.store.addProduct(this.form);
-      if (this.postToInstagram && this.form.imageUrl) {
-        const caption = `✨ New arrival: ${this.form.name}\n\n${this.stripHtml(this.form.description)}\n\n💷 £${this.form.price}\n📏 Size ${this.form.size} | ${this.form.era}\n\nShop now at edenrelics.co.uk\n\n#vintagefashion #vintagedress #${this.form.category} #sustainablefashion #edenrelics`;
-        this.postInstagram(this.form.imageUrl, caption);
-      }
     }
-    this.postToInstagram = false;
     this.closeForm();
   }
 

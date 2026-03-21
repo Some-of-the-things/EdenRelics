@@ -156,6 +156,10 @@ export class ProductService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
+  recordView(id: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${id}/view`, {});
+  }
+
   uploadImage(file: File): Observable<{ imageUrl: string }> {
     const formData = new FormData();
     formData.append('file', file);

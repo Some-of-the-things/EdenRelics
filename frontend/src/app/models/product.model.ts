@@ -12,6 +12,7 @@ export interface Product {
   imageUrl: string;
   additionalImageUrls?: string[];
   inStock: boolean;
+  viewCount?: number;
 }
 
 export interface CartItem {

@@ -49,13 +49,6 @@
     </button>
     <button
       class="admin__tab"
-      [class.admin__tab--active]="activeTab() === 'instagram'"
-      (click)="switchTab('instagram')"
-    >
-      Instagram
-    </button>
-    <button
-      class="admin__tab"
       [class.admin__tab--active]="activeTab() === 'blog'"
       (click)="switchTab('blog')"
     >
@@ -217,12 +210,6 @@
               </label>
             </div>
           </div>
-          @if (!editingId()) {
-            <label class="admin__checkbox">
-              <input type="checkbox" [(ngModel)]="postToInstagram" name="postToInstagram" />
-              Post to Instagram
-            </label>
-          }
           <div class="admin__actions">
             <button type="button" class="admin__cancel-btn" (click)="closeForm()">Cancel</button>
             <button type="submit" class="admin__save-btn">{{ editingId() ? 'Update' : 'Create' }}</button>
@@ -245,6 +232,7 @@
             <th scope="col">Cost</th>
             <th scope="col">Supplier</th>
             <th scope="col">Stock</th>
+            <th scope="col">Views</th>
             <th scope="col">Actions</th>
           </tr>
         </thead>
@@ -269,6 +257,7 @@
                   {{ product.inStock ? 'In Stock' : 'Sold' }}
                 </span>
               </td>
+              <td>{{ product.viewCount ?? 0 }}</td>
               <td class="admin__cell-actions">
                 <button class="admin__edit-btn" (click)="edit(product)">Edit</button>
                 <button class="admin__delete-btn" (click)="remove(product.id)">Delete</button>
@@ -276,7 +265,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="11" class="admin__empty">No products found.</td>
+              <td colspan="12" class="admin__empty">No products found.</td>
             </tr>
           }
         </tbody>
@@ -746,62 +735,6 @@
           <p class="seo__none">No keywords being tracked. Add a keyword above or analyse a page to get suggestions.</p>
         }
       </div>
-    </div>
-  }
-
-  @if (activeTab() === 'instagram') {
-    <div class="ig">
-      @if (igConfigured() === false) {
-        <div class="ig__setup">
-          <h3 class="ig__setup-title">Instagram Not Configured</h3>
-          <p class="ig__setup-text">To connect your Instagram Business account, set these Fly secrets:</p>
-          <code class="ig__setup-code">
-            fly secrets set "Instagram__AccessToken=YOUR_TOKEN" "Instagram__UserId=YOUR_IG_USER_ID" --app eden-relics-api
-          </code>
-          <p class="ig__setup-text">
-            You need an Instagram Business/Creator account connected to a Facebook Page,
-            and a long-lived access token with <strong>instagram_content_publish</strong> permission.
-          </p>
-        </div>
-      } @else {
-        @if (igResult()) {
-          <p class="ig__success">{{ igResult() }}</p>
-        }
-        @if (igError()) {
-          <p class="admin__error" role="alert">{{ igError() }}</p>
-        }
-
-        <h3 class="ig__section-title">Create Post</h3>
-        <form class="ig__form" (ngSubmit)="postInstagram()">
-          <label class="admin__field">
-            <span>Image URL</span>
-            <input type="url" [(ngModel)]="igImageUrl" name="igImageUrl" placeholder="https://..." required />
-          </label>
-          <label class="admin__field">
-            <span>Caption</span>
-            <textarea [(ngModel)]="igCaption" name="igCaption" rows="6" required placeholder="Write your caption... Include hashtags!"></textarea>
-          </label>
-          <div class="admin__actions">
-            <button type="submit" class="admin__save-btn" [disabled]="igPosting()">
-              {{ igPosting() ? 'Posting...' : 'Post to Instagram' }}
-            </button>
-          </div>
-        </form>
-
-        <h3 class="ig__section-title">Quick Post from Products</h3>
-        <p class="ig__hint">Click a product to pre-fill the post form with its details.</p>
-        <div class="ig__product-grid">
-          @for (product of store.products(); track product.id) {
-            <button
-              class="ig__product-card"
-              (click)="igImageUrl = product.imageUrl; igCaption = '✨ ' + product.name + '\n\n' + stripHtml(product.description) + '\n\n💷 £' + product.price + '\n📏 Size ' + product.size + ' | ' + product.era + '\n\nShop now at edenrelics.co.uk\n\n#vintagefashion #vintagedress #' + product.category + ' #sustainablefashion #edenrelics'"
-            >
-              <img [src]="product.imageUrl" [alt]="product.name" class="ig__product-thumb" />
-              <span class="ig__product-name">{{ product.name }}</span>
-            </button>
-          }
-        </div>
-      }
     </div>
   }
 

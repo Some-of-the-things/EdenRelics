@@ -142,6 +142,20 @@ public class ProductsController : ControllerBase
         }
     }
 
+    [HttpPost("{id:guid}/view")]
+    public async Task<IActionResult> RecordView(Guid id)
+    {
+        Product? product = await _repository.GetByIdAsync(id);
+        if (product is null)
+        {
+            return NotFound();
+        }
+
+        product.ViewCount++;
+        await _repository.UpdateAsync(product);
+        return NoContent();
+    }
+
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
@@ -163,6 +177,6 @@ public class ProductsController : ControllerBase
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
         p.Id, p.Name, p.Description, p.Price, p.CostPrice, p.Supplier, p.Era,
-        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.InStock
+        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.InStock, p.ViewCount
     );
 }

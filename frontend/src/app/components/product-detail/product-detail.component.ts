@@ -4,6 +4,8 @@ import { CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
 import { SeoService } from '../../services/seo.service';
+import { ProductService } from '../../services/product.service';
+import { AnalyticsService } from '../../services/analytics.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -16,6 +18,8 @@ export class ProductDetailComponent {
   private readonly productStore = inject(ProductStore);
   readonly cartStore = inject(CartStore);
   private readonly seo = inject(SeoService);
+  private readonly productService = inject(ProductService);
+  private readonly analytics = inject(AnalyticsService);
 
   readonly selectedImage = signal<string | null>(null);
 
@@ -48,6 +52,8 @@ export class ProductDetailComponent {
           image: product.imageUrl,
           type: 'product',
         });
+        this.analytics.viewProduct(product.id, product.name, product.price);
+        this.productService.recordView(product.id).subscribe();
         this.seo.setJsonLd({
           '@context': 'https://schema.org',
           '@type': 'Product',

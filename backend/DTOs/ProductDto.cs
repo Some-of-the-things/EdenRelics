@@ -27,7 +27,8 @@ public record ProductAdminDto(
     string Condition,
     string ImageUrl,
     List<string> AdditionalImageUrls,
-    bool InStock
+    bool InStock,
+    int ViewCount
 );
 
 public record CreateProductDto(
