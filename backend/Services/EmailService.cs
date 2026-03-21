@@ -7,6 +7,7 @@ public interface IEmailService
     Task SendVerificationEmailAsync(string toEmail, string firstName, string token);
     Task SendPasswordResetEmailAsync(string toEmail, string firstName, string token);
     Task SendContactEmailAsync(string fromName, string fromEmail, string subject, string message);
+    Task SendSaleNotificationAsync(string toEmail, string firstName, string productName, decimal originalPrice, decimal salePrice);
 }
 
 public class EmailService : IEmailService
@@ -129,6 +130,42 @@ public class EmailService : IEmailService
         {
             _logger.LogError(ex, "Failed to send contact email from {Email}", fromEmail);
             throw;
+        }
+    }
+
+    public async Task SendSaleNotificationAsync(string toEmail, string firstName, string productName, decimal originalPrice, decimal salePrice)
+    {
+        int discountPercent = (int)Math.Round((1 - salePrice / originalPrice) * 100);
+        string shopUrl = $"{_frontendUrl}";
+
+        string html = $"""
+            <div style="font-family: Georgia, serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
+                <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">A dress you love is now on sale!</h1>
+                <p>Hi {firstName},</p>
+                <p><strong>{productName}</strong> is now <strong>{discountPercent}% off</strong> — reduced from £{originalPrice:F2} to <strong>£{salePrice:F2}</strong>.</p>
+                <a href="{shopUrl}"
+                   style="display: inline-block; background: #1a1a1a; color: #fff; text-decoration: none; padding: 12px 28px; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; margin: 1.5rem 0;">
+                    Shop Now
+                </a>
+                <p style="color: #666; font-size: 0.85rem;">You're receiving this because you favourited this item on Eden Relics.</p>
+            </div>
+            """;
+
+        try
+        {
+            var message = new EmailMessage
+            {
+                From = _fromEmail,
+                To = [toEmail],
+                Subject = $"{productName} is now on sale! — Eden Relics",
+                HtmlBody = html
+            };
+            await _resend.EmailSendAsync(message);
+            _logger.LogInformation("Sale notification sent to {Email} for {Product}", toEmail, productName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send sale notification to {Email}", toEmail);
         }
     }
 }

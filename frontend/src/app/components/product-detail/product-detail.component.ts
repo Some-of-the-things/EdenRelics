@@ -1,15 +1,17 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { CurrencyPipe, TitleCasePipe } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { CurrencyPipe, DecimalPipe, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
 import { SeoService } from '../../services/seo.service';
 import { ProductService } from '../../services/product.service';
 import { AnalyticsService } from '../../services/analytics.service';
+import { AuthService } from '../../services/auth.service';
+import { FavouritesService } from '../../services/favourites.service';
 
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, CurrencyPipe, TitleCasePipe],
+  imports: [RouterLink, CurrencyPipe, TitleCasePipe, DecimalPipe],
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })
@@ -20,6 +22,9 @@ export class ProductDetailComponent {
   private readonly seo = inject(SeoService);
   private readonly productService = inject(ProductService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly auth = inject(AuthService);
+  private readonly favourites = inject(FavouritesService);
+  private readonly router = inject(Router);
 
   readonly selectedImage = signal<string | null>(null);
 
@@ -41,7 +46,22 @@ export class ProductDetailComponent {
     this.selectedImage.set(url);
   }
 
+  toggleFavourite(productId: string): void {
+    if (!this.auth.isAuthenticated()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: `/product/${productId}` } });
+      return;
+    }
+    this.favourites.toggle(productId);
+  }
+
+  isFavourite(productId: string): boolean {
+    return this.favourites.isFavourite(productId);
+  }
+
   constructor() {
+    if (this.auth.isAuthenticated()) {
+      this.favourites.load();
+    }
     effect(() => {
       const product = this.product();
       if (product) {

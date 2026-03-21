@@ -19,6 +19,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<ProductListing> ProductListings => Set<ProductListing>();
     public DbSet<MailingListSubscriber> MailingListSubscribers => Set<MailingListSubscriber>();
     public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
+    public DbSet<Favourite> Favourites => Set<Favourite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -153,9 +154,18 @@ public class EdenRelicsDbContext : DbContext
             entity.HasOne(l => l.Product).WithMany(p => p.Listings).HasForeignKey(l => l.ProductId);
         });
 
+        modelBuilder.Entity<Favourite>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId);
+            entity.HasOne(f => f.Product).WithMany().HasForeignKey(f => f.ProductId);
+            entity.HasIndex(f => new { f.UserId, f.ProductId }).IsUnique();
+        });
+
         modelBuilder.Entity<Product>(entity =>
         {
             entity.Property(p => p.Price).HasPrecision(10, 2);
+            entity.Property(p => p.SalePrice).HasPrecision(10, 2);
             entity.Property(p => p.CostPrice).HasPrecision(10, 2);
             entity.Property(p => p.Supplier).HasMaxLength(200);
             entity.Property(p => p.Name).HasMaxLength(200);

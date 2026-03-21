@@ -222,3 +222,68 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+.product-card__fav {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+  z-index: 1;
+
+  svg {
+    fill: none;
+    stroke: var(--text-primary);
+    stroke-width: 1.5;
+    transition: fill 0.2s ease, stroke 0.2s ease;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  &--active svg {
+    fill: #c44569;
+    stroke: #c44569;
+  }
+}
+
+.product-card__sale-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  background: #c44569;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  z-index: 1;
+}
+
+.product-card__prices {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.product-card__price--original {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.product-card__price--sale {
+  color: #c44569;
+  font-weight: 600;
+}

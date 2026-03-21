@@ -12,15 +12,28 @@ namespace Eden_Relics_BE.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IRepository<Product> _repository;
+    private readonly IRepository<Favourite> _favouriteRepository;
+    private readonly IRepository<User> _userRepository;
     private readonly IWebHostEnvironment _env;
     private readonly ImageStorageService _storage;
+    private readonly IEmailService _emailService;
     private readonly ILogger<ProductsController> _logger;
 
-    public ProductsController(IRepository<Product> repository, IWebHostEnvironment env, ImageStorageService storage, ILogger<ProductsController> logger)
+    public ProductsController(
+        IRepository<Product> repository,
+        IRepository<Favourite> favouriteRepository,
+        IRepository<User> userRepository,
+        IWebHostEnvironment env,
+        ImageStorageService storage,
+        IEmailService emailService,
+        ILogger<ProductsController> logger)
     {
         _repository = repository;
+        _favouriteRepository = favouriteRepository;
+        _userRepository = userRepository;
         _env = env;
         _storage = storage;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -78,7 +91,8 @@ public class ProductsController : ControllerBase
             Condition = dto.Condition,
             ImageUrl = dto.ImageUrl,
             AdditionalImageUrls = dto.AdditionalImageUrls ?? [],
-            InStock = dto.InStock
+            InStock = dto.InStock,
+            SalePrice = dto.SalePrice
         };
 
         await _repository.AddAsync(product);
@@ -107,6 +121,17 @@ public class ProductsController : ControllerBase
         if (dto.ImageUrl is not null) { product.ImageUrl = dto.ImageUrl; }
         if (dto.AdditionalImageUrls is not null) { product.AdditionalImageUrls = dto.AdditionalImageUrls; }
         if (dto.InStock.HasValue) { product.InStock = dto.InStock.Value; }
+        if (dto.SalePrice.HasValue)
+        {
+            decimal? oldSalePrice = product.SalePrice;
+            product.SalePrice = dto.SalePrice.Value == 0 ? null : dto.SalePrice.Value;
+
+            // Notify favourited users if product was just put on sale
+            if (product.SalePrice.HasValue && oldSalePrice != product.SalePrice)
+            {
+                _ = NotifySaleFavouritesAsync(product);
+            }
+        }
 
         await _repository.UpdateAsync(product);
         return Ok(ToAdminDto(product));
@@ -171,12 +196,33 @@ public class ProductsController : ControllerBase
     }
 
     private static ProductDto ToDto(Product p) => new(
-        p.Id, p.Name, p.Description, p.Price, p.Era,
+        p.Id, p.Name, p.Description, p.Price, p.SalePrice, p.Era,
         p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.InStock
     );
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
-        p.Id, p.Name, p.Description, p.Price, p.CostPrice, p.Supplier, p.Era,
+        p.Id, p.Name, p.Description, p.Price, p.SalePrice, p.CostPrice, p.Supplier, p.Era,
         p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.InStock, p.ViewCount
     );
+
+    private async Task NotifySaleFavouritesAsync(Product product)
+    {
+        try
+        {
+            IEnumerable<Favourite> favourites = await _favouriteRepository.FindAsync(f => f.ProductId == product.Id);
+            foreach (Favourite fav in favourites)
+            {
+                User? user = await _userRepository.GetByIdAsync(fav.UserId);
+                if (user is null)
+                {
+                    continue;
+                }
+                _ = _emailService.SendSaleNotificationAsync(user.Email, user.FirstName, product.Name, product.Price, product.SalePrice!.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send sale notifications for product {ProductId}", product.Id);
+        }
+    }
 }

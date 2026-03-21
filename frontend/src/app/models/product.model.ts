@@ -3,6 +3,7 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  salePrice?: number | null;
   costPrice?: number;
   supplier?: string;
   era: string;

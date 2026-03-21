@@ -14,6 +14,7 @@ public class Product : BaseEntity
     public required string ImageUrl { get; set; }
     public List<string> AdditionalImageUrls { get; set; } = [];
     public bool InStock { get; set; }
+    public decimal? SalePrice { get; set; }
     public int ViewCount { get; set; }
     public List<ProductListing> Listings { get; set; } = [];
 }
