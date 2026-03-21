@@ -125,19 +125,22 @@ public class ProductsController : ControllerBase
         if (dto.ImageUrl is not null) { product.ImageUrl = dto.ImageUrl; }
         if (dto.AdditionalImageUrls is not null) { product.AdditionalImageUrls = dto.AdditionalImageUrls; }
         if (dto.InStock.HasValue) { product.InStock = dto.InStock.Value; }
+        bool shouldNotifySale = false;
         if (dto.SalePrice.HasValue)
         {
             decimal? oldSalePrice = product.SalePrice;
             product.SalePrice = dto.SalePrice.Value == 0 ? null : dto.SalePrice.Value;
-
-            // Notify favourited users if product was just put on sale
-            if (product.SalePrice.HasValue && oldSalePrice != product.SalePrice)
-            {
-                _ = NotifySaleFavouritesAsync(product);
-            }
+            shouldNotifySale = product.SalePrice.HasValue && oldSalePrice != product.SalePrice;
         }
 
         await _repository.UpdateAsync(product);
+
+        // Notify after update completes to avoid concurrent DbContext access
+        if (shouldNotifySale)
+        {
+            _ = NotifySaleFavouritesAsync(product);
+        }
+
         return Ok(ToAdminDto(product));
     }
 

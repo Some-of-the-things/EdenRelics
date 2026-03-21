@@ -60,8 +60,10 @@ test.describe('Favourites', () => {
     await page.goto('/');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
 
-    // Favourite the first product
+    // Favourite the first product and wait for API response
+    const favPromise = page.waitForResponse(r => r.url().includes('/api/favourites/') && r.status() < 400);
     await page.locator('.product-card__fav').first().click();
+    await favPromise;
     await expect(page.locator('.product-card__fav').first()).toHaveClass(/product-card__fav--active/, { timeout: 5_000 });
 
     // Navigate away and back
