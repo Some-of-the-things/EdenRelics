@@ -223,4 +223,207 @@ public class ProductsTests : IClassFixture<ApiFactory>
         var response = await client.DeleteAsync($"/api/products/{id}");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Create_WithSalePrice_ReturnsSalePrice()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-saleprice-create@test.com");
+
+        var response = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Sale Dress",
+            description = "On sale",
+            price = 120m,
+            salePrice = 89.99m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/sale.jpg",
+            inStock = true
+        });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var product = await response.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.NotNull(product);
+        Assert.Equal(89.99m, product.SalePrice);
+    }
+
+    [Fact]
+    public async Task Update_SetSalePrice_ReturnsSalePrice()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-saleprice-update@test.com");
+
+        var createResponse = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "No Sale Yet",
+            description = "Desc",
+            price = 100m,
+            era = "1980s",
+            category = "80s",
+            size = "S",
+            condition = "good",
+            imageUrl = "https://example.com/img.jpg",
+            inStock = true
+        });
+        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+
+        var updateResponse = await client.PutAsJsonAsync($"/api/products/{created!.Id}", new
+        {
+            salePrice = 79.99m
+        });
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.Equal(79.99m, updated!.SalePrice);
+    }
+
+    [Fact]
+    public async Task Update_ClearSalePrice_WithZero_ReturnsNull()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-saleprice-clear@test.com");
+
+        var createResponse = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "On Sale Then Not",
+            description = "Desc",
+            price = 100m,
+            salePrice = 60m,
+            era = "1980s",
+            category = "80s",
+            size = "S",
+            condition = "good",
+            imageUrl = "https://example.com/img.jpg",
+            inStock = true
+        });
+        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.Equal(60m, created!.SalePrice);
+
+        var updateResponse = await client.PutAsJsonAsync($"/api/products/{created.Id}", new
+        {
+            salePrice = 0m
+        });
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.Null(updated!.SalePrice);
+    }
+
+    [Fact]
+    public async Task GetAll_IncludesSalePriceInResponse()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-saleprice-getall@test.com");
+
+        await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Sale In List",
+            description = "Desc",
+            price = 200m,
+            salePrice = 150m,
+            era = "1990s",
+            category = "90s",
+            size = "L",
+            condition = "excellent",
+            imageUrl = "https://example.com/img.jpg",
+            inStock = true
+        });
+
+        var products = await client.GetFromJsonAsync<List<ProductResponse>>("/api/products", JsonOptions);
+        Assert.NotNull(products);
+        var saleProduct = products.FirstOrDefault(p => p.Name == "Sale In List");
+        Assert.NotNull(saleProduct);
+        Assert.Equal(150m, saleProduct.SalePrice);
+    }
+
+    [Fact]
+    public async Task GetById_IncludesSalePrice()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-saleprice-getbyid@test.com");
+
+        var createResponse = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Sale Single",
+            description = "Desc",
+            price = 180m,
+            salePrice = 140m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/img.jpg",
+            inStock = true
+        });
+        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+
+        var product = await client.GetFromJsonAsync<ProductResponse>($"/api/products/{created!.Id}", JsonOptions);
+        Assert.NotNull(product);
+        Assert.Equal(140m, product.SalePrice);
+    }
+
+    [Fact]
+    public async Task RecordView_IncrementsViewCount()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-view-single@test.com");
+
+        var createResponse = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "View Test",
+            description = "Desc",
+            price = 50m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/img.jpg",
+            inStock = true
+        });
+        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.Equal(0, created!.ViewCount);
+
+        var viewResponse = await client.PostAsync($"/api/products/{created.Id}/view", null);
+        Assert.Equal(HttpStatusCode.NoContent, viewResponse.StatusCode);
+
+        var product = await client.GetFromJsonAsync<ProductResponse>($"/api/products/{created.Id}", JsonOptions);
+        Assert.NotNull(product);
+        Assert.Equal(1, product.ViewCount);
+    }
+
+    [Fact]
+    public async Task RecordView_MultipleViews_IncrementCorrectly()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-view-multi@test.com");
+
+        var createResponse = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Multi View Test",
+            description = "Desc",
+            price = 50m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/img.jpg",
+            inStock = true
+        });
+        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+
+        await client.PostAsync($"/api/products/{created!.Id}/view", null);
+        await client.PostAsync($"/api/products/{created.Id}/view", null);
+
+        var product = await client.GetFromJsonAsync<ProductResponse>($"/api/products/{created.Id}", JsonOptions);
+        Assert.NotNull(product);
+        Assert.Equal(2, product.ViewCount);
+    }
+
+    [Fact]
+    public async Task RecordView_NonExistent_Returns404()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PostAsync($"/api/products/{Guid.Empty}/view", null);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }

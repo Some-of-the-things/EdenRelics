@@ -77,4 +77,24 @@ describe('CartStore', () => {
     expect(store.items().length).toBe(0);
     expect(store.isEmpty()).toBe(true);
   });
+
+  it('should use salePrice for total when available', () => {
+    const saleProduct: Product = { ...mockProduct, salePrice: 75 };
+    store.addToCart(saleProduct);
+    expect(store.totalPrice()).toBe(75);
+  });
+
+  it('should use regular price when salePrice is null', () => {
+    const noSaleProduct: Product = { ...mockProduct, salePrice: null };
+    store.addToCart(noSaleProduct);
+    expect(store.totalPrice()).toBe(100);
+  });
+
+  it('should mix sale and regular prices in total', () => {
+    const saleProduct: Product = { ...mockProduct, salePrice: 60 };
+    const regularProduct: Product = { ...mockProduct2, salePrice: undefined };
+    store.addToCart(saleProduct); // 60
+    store.addToCart(regularProduct); // 200
+    expect(store.totalPrice()).toBe(260);
+  });
 });
