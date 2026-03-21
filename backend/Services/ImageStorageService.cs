@@ -32,6 +32,8 @@ public class ImageStorageService
                 {
                     ServiceURL = $"https://{accountId}.r2.cloudflarestorage.com",
                     ForcePathStyle = true,
+                    RequestChecksumCalculation = Amazon.Runtime.RequestChecksumCalculation.WHEN_REQUIRED,
+                    ResponseChecksumValidation = Amazon.Runtime.ResponseChecksumValidation.WHEN_REQUIRED,
                 });
             _configured = true;
             _logger.LogInformation("R2 image storage configured (bucket: {Bucket})", _bucketName);
