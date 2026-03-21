@@ -24,3 +24,8 @@ Thumbs.db
 
 # Misc
 lighthouse-perf.json
+/backend/Eden Relics BE.Tests/bin/Debug/net10.0
+/backend/Eden Relics BE.Tests/bin/Release/net10.0
+/backend/Eden Relics BE.Tests/obj/Debug/net10.0
+/backend/Eden Relics BE.Tests/obj/Release/net10.0
+/backend/Eden Relics BE.Tests/obj

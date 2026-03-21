@@ -60,6 +60,8 @@ public class ImageStorageService
             Key = fileName,
             InputStream = stream,
             ContentType = contentType,
+            ChecksumAlgorithm = null,
+            DisablePayloadSigning = true,
         };
 
         await _client.PutObjectAsync(request);
