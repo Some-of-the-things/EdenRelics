@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
 using Eden_Relics_BE.Repositories;
@@ -14,6 +15,7 @@ public class ProductsController : ControllerBase
     private readonly IRepository<Product> _repository;
     private readonly IRepository<Favourite> _favouriteRepository;
     private readonly IRepository<User> _userRepository;
+    private readonly IRepository<ProductView> _viewRepository;
     private readonly IWebHostEnvironment _env;
     private readonly ImageStorageService _storage;
     private readonly IEmailService _emailService;
@@ -23,6 +25,7 @@ public class ProductsController : ControllerBase
         IRepository<Product> repository,
         IRepository<Favourite> favouriteRepository,
         IRepository<User> userRepository,
+        IRepository<ProductView> viewRepository,
         IWebHostEnvironment env,
         ImageStorageService storage,
         IEmailService emailService,
@@ -31,6 +34,7 @@ public class ProductsController : ControllerBase
         _repository = repository;
         _favouriteRepository = favouriteRepository;
         _userRepository = userRepository;
+        _viewRepository = viewRepository;
         _env = env;
         _storage = storage;
         _emailService = emailService;
@@ -175,6 +179,30 @@ public class ProductsController : ControllerBase
         {
             return NotFound();
         }
+
+        string? userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid? userId = Guid.TryParse(userIdStr, out Guid parsed) ? parsed : null;
+        string? ip = Request.Headers["Fly-Client-IP"].FirstOrDefault()
+            ?? Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim()
+            ?? HttpContext.Connection.RemoteIpAddress?.ToString();
+
+        // Check for existing view by this user or IP
+        IEnumerable<ProductView> existingViews = await _viewRepository.FindAsync(v =>
+            v.ProductId == id &&
+            ((userId != null && v.UserId == userId) ||
+             (userId == null && v.IpAddress == ip)));
+
+        if (existingViews.Any())
+        {
+            return NoContent();
+        }
+
+        await _viewRepository.AddAsync(new ProductView
+        {
+            ProductId = id,
+            UserId = userId,
+            IpAddress = ip
+        });
 
         product.ViewCount++;
         await _repository.UpdateAsync(product);

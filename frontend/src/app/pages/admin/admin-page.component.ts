@@ -92,6 +92,7 @@ export class AdminPageComponent {
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
   readonly activeTab = signal<'products' | 'orders' | 'accounts' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'>('products');
+  readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly imagePreview = signal<string | null>(null);
@@ -287,7 +288,12 @@ export class AdminPageComponent {
 
   form: Omit<Product, 'id'> = this.emptyForm();
 
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen.update(v => !v);
+  }
+
   switchTab(tab: 'products' | 'orders' | 'accounts' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'): void {
+    this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
       this.loadOrders();

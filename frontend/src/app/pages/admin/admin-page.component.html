@@ -18,7 +18,12 @@
     </div>
   </div>
 
-  <div class="admin__tabs">
+  <button class="admin__menu-toggle" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+    <span class="admin__menu-bar"></span>
+    <span class="admin__menu-bar"></span>
+    <span class="admin__menu-bar"></span>
+  </button>
+  <div class="admin__tabs" [class.admin__tabs--open]="mobileMenuOpen()">
     <button
       class="admin__tab"
       [class.admin__tab--active]="activeTab() === 'products'"

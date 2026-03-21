@@ -411,10 +411,42 @@ public class ProductsTests : IClassFixture<ApiFactory>
         });
         var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
 
+        // Same user viewing twice should only count once (unique views)
         await client.PostAsync($"/api/products/{created!.Id}/view", null);
         await client.PostAsync($"/api/products/{created.Id}/view", null);
 
         var product = await client.GetFromJsonAsync<ProductResponse>($"/api/products/{created.Id}", JsonOptions);
+        Assert.NotNull(product);
+        Assert.Equal(1, product.ViewCount);
+    }
+
+    [Fact]
+    public async Task RecordView_DifferentUsers_CountsSeparately()
+    {
+        var client1 = _factory.CreateClient();
+        await RegisterAdmin(client1, _factory, "admin-view-diff1@test.com");
+
+        var createResponse = await client1.PostAsJsonAsync("/api/products", new
+        {
+            name = "Multi User View Test",
+            description = "Desc",
+            price = 50m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/img.jpg",
+            inStock = true
+        });
+        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+
+        await client1.PostAsync($"/api/products/{created!.Id}/view", null);
+
+        var client2 = _factory.CreateClient();
+        await RegisterAndLogin(client2, "viewer-diff2@test.com");
+        await client2.PostAsync($"/api/products/{created.Id}/view", null);
+
+        var product = await client1.GetFromJsonAsync<ProductResponse>($"/api/products/{created.Id}", JsonOptions);
         Assert.NotNull(product);
         Assert.Equal(2, product.ViewCount);
     }

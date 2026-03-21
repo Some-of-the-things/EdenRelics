@@ -345,6 +345,25 @@
   padding: 3rem 1rem !important;
 }
 
+.admin__menu-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 1rem;
+}
+
+.admin__menu-bar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--text-primary);
+  transition: transform 0.2s ease;
+}
+
 /* Tabs */
 .admin__tabs {
   display: flex;
@@ -1251,5 +1270,34 @@
 
 .acct__section--half {
   min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .admin__menu-toggle {
+    display: flex;
+  }
+
+  .admin__tabs {
+    display: none;
+    flex-direction: column;
+    border-bottom: none;
+    gap: 0;
+
+    &--open {
+      display: flex;
+    }
+  }
+
+  .admin__tab {
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0;
+    padding: 0.75rem 1rem;
+
+    &--active {
+      border-bottom-color: var(--border-color);
+      background: var(--bg-secondary);
+    }
+  }
 }
 

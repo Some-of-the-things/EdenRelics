@@ -20,6 +20,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<MailingListSubscriber> MailingListSubscribers => Set<MailingListSubscriber>();
     public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
     public DbSet<Favourite> Favourites => Set<Favourite>();
+    public DbSet<ProductView> ProductViews => Set<ProductView>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -160,6 +161,12 @@ public class EdenRelicsDbContext : DbContext
             entity.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId);
             entity.HasOne(f => f.Product).WithMany().HasForeignKey(f => f.ProductId);
             entity.HasIndex(f => new { f.UserId, f.ProductId }).IsUnique();
+        });
+
+        modelBuilder.Entity<ProductView>(entity =>
+        {
+            entity.HasOne(v => v.Product).WithMany().HasForeignKey(v => v.ProductId);
+            entity.Property(v => v.IpAddress).HasMaxLength(45);
         });
 
         modelBuilder.Entity<Product>(entity =>
