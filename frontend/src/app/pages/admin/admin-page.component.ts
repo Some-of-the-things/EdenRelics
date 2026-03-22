@@ -326,6 +326,10 @@ export class AdminPageComponent {
   readonly usersLoading = signal(false);
   readonly usersError = signal('');
 
+  // Mailing list
+  readonly mailingListSubs = signal<{ id: string; email: string; firstName: string | null; source: string; createdAtUtc: string }[]>([]);
+  readonly mailingListLoading = signal(false);
+
   // Accounts
   readonly accountsSummary = signal<AccountsSummary | null>(null);
   readonly accountsLoading = signal(false);
@@ -572,6 +576,24 @@ export class AdminPageComponent {
         this.usersError.set('Failed to load users.');
         this.usersLoading.set(false);
       },
+    });
+    this.loadMailingList();
+  }
+
+  hasUserAccount(email: string): boolean {
+    return this.adminUsers().some(u => u.email.toLowerCase() === email.toLowerCase());
+  }
+
+  loadMailingList(): void {
+    this.mailingListLoading.set(true);
+    this.http.get<{ id: string; email: string; firstName: string | null; source: string; createdAtUtc: string }[]>(
+      `${environment.apiUrl}/api/mailing-list/subscribers`
+    ).subscribe({
+      next: (subs) => {
+        this.mailingListSubs.set(subs);
+        this.mailingListLoading.set(false);
+      },
+      error: () => this.mailingListLoading.set(false),
     });
   }
 
