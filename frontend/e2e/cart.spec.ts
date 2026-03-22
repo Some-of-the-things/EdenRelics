@@ -35,7 +35,7 @@ test.describe('Cart', () => {
     await expect(page.getByText(/your cart is empty/i)).toBeVisible({ timeout: 5_000 });
   });
 
-  test('guest checkout shows options after clicking checkout', async ({ page }) => {
+  test('guest checkout shows checkout form after clicking proceed', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
     await page.locator('.product-card__add-btn').first().click();
@@ -45,11 +45,12 @@ test.describe('Cart', () => {
     await expect(page).toHaveURL(/\/cart/);
     await expect(page.locator('.cart-item').first()).toBeVisible({ timeout: 5_000 });
 
-    // Click the Checkout button to reveal options
+    // Click Proceed to Checkout
     await page.locator('.cart__checkout-btn').click();
 
-    // Should show checkout options (Sign In, Create Account, Guest Checkout)
-    await expect(page.locator('.cart__options')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText(/guest checkout/i)).toBeVisible();
+    // Should show checkout form with shipping address and email for guests
+    await expect(page.locator('.checkout')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/shipping address/i)).toBeVisible();
+    await expect(page.getByText(/contact/i)).toBeVisible();
   });
 });
