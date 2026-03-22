@@ -96,6 +96,7 @@ export class ProductDetailComponent {
             utmSource: params.get('utm_source') || undefined,
             utmMedium: params.get('utm_medium') || undefined,
             utmCampaign: params.get('utm_campaign') || undefined,
+            screenResolution: `${window.screen.width}x${window.screen.height}`,
           }).subscribe();
         }
         this.seo.setJsonLd({

@@ -30,12 +30,29 @@ interface AdminUser {
   favourites: string[];
 }
 
+interface ViewRecord {
+  createdAtUtc: string;
+  channel: string;
+  country: string | null;
+  referrer: string | null;
+  deviceType: string | null;
+  operatingSystem: string | null;
+  screenResolution: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+}
+
 interface ViewAnalytics {
   totalViews: number;
+  trackedViews: number;
+  views: ViewRecord[];
   byChannel: { channel: string; count: number }[];
   byCountry: { country: string; count: number }[];
   topReferrers: { referrer: string; count: number }[];
   viewsByDate: { date: string; count: number }[];
+  byDevice: { device: string; count: number }[];
+  byOs: { os: string; count: number }[];
 }
 
 interface AccountsSummary {
@@ -319,6 +336,7 @@ export class AdminPageComponent {
   readonly viewAnalyticsProduct = signal<Product | null>(null);
   readonly viewAnalyticsData = signal<ViewAnalytics | null>(null);
   readonly viewAnalyticsLoading = signal(false);
+  readonly viewAnalyticsMode = signal<'list' | 'aggregate'>('list');
 
   form: Omit<Product, 'id'> = this.emptyForm();
 

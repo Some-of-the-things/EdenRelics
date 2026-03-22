@@ -206,6 +206,7 @@ public class ProductsController : ControllerBase
         string? channel = DeriveChannel(dto?.Referrer, dto?.UtmSource, dto?.UtmMedium);
         string? country = await _geoIp.GetCountryAsync(ip);
         string? userAgent = Request.Headers.UserAgent.FirstOrDefault();
+        (string deviceType, string os) = ParseUserAgent(userAgent);
 
         await _viewRepository.AddAsync(new ProductView
         {
@@ -219,6 +220,9 @@ public class ProductsController : ControllerBase
             Channel = channel,
             Country = country,
             UserAgent = userAgent?[..Math.Min(userAgent.Length, 500)],
+            DeviceType = deviceType,
+            OperatingSystem = os,
+            ScreenResolution = dto?.ScreenResolution,
         });
 
         product.ViewCount++;
@@ -226,7 +230,7 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
-    public record RecordViewDto(string? Referrer = null, string? UtmSource = null, string? UtmMedium = null, string? UtmCampaign = null);
+    public record RecordViewDto(string? Referrer = null, string? UtmSource = null, string? UtmMedium = null, string? UtmCampaign = null, string? ScreenResolution = null);
 
     [HttpGet("{id:guid}/views")]
     [Authorize(Roles = "Admin")]
@@ -239,7 +243,21 @@ public class ProductsController : ControllerBase
         }
 
         IEnumerable<ProductView> views = await _viewRepository.FindAsync(v => v.ProductId == id);
-        List<ProductView> viewList = views.ToList();
+        List<ProductView> viewList = views.OrderByDescending(v => v.CreatedAtUtc).ToList();
+
+        var individualViews = viewList.Select(v => new
+        {
+            v.CreatedAtUtc,
+            channel = v.Channel ?? "direct",
+            v.Country,
+            referrer = !string.IsNullOrEmpty(v.ReferrerUrl) ? ExtractDomain(v.ReferrerUrl) : null,
+            v.DeviceType,
+            v.OperatingSystem,
+            v.ScreenResolution,
+            v.UtmSource,
+            v.UtmMedium,
+            v.UtmCampaign,
+        }).ToList();
 
         var byChannel = viewList
             .GroupBy(v => v.Channel ?? "direct")
@@ -269,15 +287,90 @@ public class ProductsController : ControllerBase
             .OrderBy(x => x.date)
             .ToList();
 
+        var byDevice = viewList
+            .Where(v => !string.IsNullOrEmpty(v.DeviceType))
+            .GroupBy(v => v.DeviceType!)
+            .Select(g => new { device = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .ToList();
+
+        var byOs = viewList
+            .Where(v => !string.IsNullOrEmpty(v.OperatingSystem))
+            .GroupBy(v => v.OperatingSystem!)
+            .Select(g => new { os = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .ToList();
+
         return Ok(new
         {
             totalViews = Math.Max(product.ViewCount, viewList.Count),
             trackedViews = viewList.Count,
+            views = individualViews,
             byChannel,
             byCountry,
             topReferrers,
             viewsByDate,
+            byDevice,
+            byOs,
         });
+    }
+
+    private static (string deviceType, string os) ParseUserAgent(string? ua)
+    {
+        if (string.IsNullOrEmpty(ua))
+        {
+            return ("Unknown", "Unknown");
+        }
+
+        string uaLower = ua.ToLowerInvariant();
+
+        // Device type
+        string device;
+        if (uaLower.Contains("mobile") || uaLower.Contains("android") && !uaLower.Contains("tablet"))
+        {
+            device = "Mobile";
+        }
+        else if (uaLower.Contains("tablet") || uaLower.Contains("ipad"))
+        {
+            device = "Tablet";
+        }
+        else
+        {
+            device = "Desktop";
+        }
+
+        // OS
+        string os;
+        if (uaLower.Contains("windows"))
+        {
+            os = "Windows";
+        }
+        else if (uaLower.Contains("macintosh") || uaLower.Contains("mac os"))
+        {
+            os = "macOS";
+        }
+        else if (uaLower.Contains("iphone") || uaLower.Contains("ipad"))
+        {
+            os = "iOS";
+        }
+        else if (uaLower.Contains("android"))
+        {
+            os = "Android";
+        }
+        else if (uaLower.Contains("linux"))
+        {
+            os = "Linux";
+        }
+        else if (uaLower.Contains("cros"))
+        {
+            os = "ChromeOS";
+        }
+        else
+        {
+            os = "Other";
+        }
+
+        return (device, os);
     }
 
     private static string DeriveChannel(string? referrer, string? utmSource, string? utmMedium)

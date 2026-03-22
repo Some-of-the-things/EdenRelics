@@ -156,7 +156,7 @@ export class ProductService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  recordView(id: string, meta?: { referrer?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string }): Observable<void> {
+  recordView(id: string, meta?: { referrer?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string; screenResolution?: string }): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/${id}/view`, meta ?? {});
   }
 

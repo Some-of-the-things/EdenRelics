@@ -13,4 +13,7 @@ public class ProductView : BaseEntity
     public string? Channel { get; set; }
     public string? Country { get; set; }
     public string? UserAgent { get; set; }
+    public string? DeviceType { get; set; }
+    public string? OperatingSystem { get; set; }
+    public string? ScreenResolution { get; set; }
 }

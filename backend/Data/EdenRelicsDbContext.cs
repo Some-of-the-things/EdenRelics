@@ -174,6 +174,9 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(v => v.Channel).HasMaxLength(20);
             entity.Property(v => v.Country).HasMaxLength(100);
             entity.Property(v => v.UserAgent).HasMaxLength(500);
+            entity.Property(v => v.DeviceType).HasMaxLength(20);
+            entity.Property(v => v.OperatingSystem).HasMaxLength(50);
+            entity.Property(v => v.ScreenResolution).HasMaxLength(20);
         });
 
         modelBuilder.Entity<Product>(entity =>

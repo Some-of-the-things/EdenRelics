@@ -245,63 +245,138 @@
           <p class="admin__loading">Loading analytics...</p>
         }
         @if (viewAnalyticsData(); as data) {
-          <p class="admin__summary">{{ data.totalViews }} total views</p>
-
-          <div class="analytics__grid">
-            <div class="analytics__section">
-              <h3 class="analytics__heading">Traffic Source</h3>
-              @for (item of data.byChannel; track item.channel) {
-                <div class="analytics__bar-row">
-                  <span class="analytics__label">{{ item.channel | titlecase }}</span>
-                  <div class="analytics__bar-wrap">
-                    <div class="analytics__bar" [style.width.%]="data.totalViews ? (item.count / data.totalViews * 100) : 0"></div>
-                  </div>
-                  <span class="analytics__count">{{ item.count }}</span>
-                </div>
-              } @empty {
-                <p class="analytics__empty">No data yet</p>
-              }
-            </div>
-
-            <div class="analytics__section">
-              <h3 class="analytics__heading">Country</h3>
-              @for (item of data.byCountry; track item.country) {
-                <div class="analytics__bar-row">
-                  <span class="analytics__label">{{ item.country }}</span>
-                  <div class="analytics__bar-wrap">
-                    <div class="analytics__bar" [style.width.%]="data.totalViews ? (item.count / data.totalViews * 100) : 0"></div>
-                  </div>
-                  <span class="analytics__count">{{ item.count }}</span>
-                </div>
-              } @empty {
-                <p class="analytics__empty">No data yet</p>
-              }
-            </div>
-
-            <div class="analytics__section">
-              <h3 class="analytics__heading">Top Referrers</h3>
-              @for (item of data.topReferrers; track item.referrer) {
-                <div class="analytics__bar-row">
-                  <span class="analytics__label">{{ item.referrer }}</span>
-                  <span class="analytics__count">{{ item.count }}</span>
-                </div>
-              } @empty {
-                <p class="analytics__empty">No referrer data</p>
-              }
-            </div>
-
-            <div class="analytics__section">
-              <h3 class="analytics__heading">Views (Last 30 Days)</h3>
-              @for (item of data.viewsByDate; track item.date) {
-                <div class="analytics__bar-row">
-                  <span class="analytics__label">{{ item.date }}</span>
-                  <span class="analytics__count">{{ item.count }}</span>
-                </div>
-              } @empty {
-                <p class="analytics__empty">No views in the last 30 days</p>
-              }
+          <div class="analytics__header">
+            <p class="admin__summary">{{ data.totalViews }} total views ({{ data.trackedViews }} tracked)</p>
+            <div class="analytics__toggle">
+              <button class="analytics__toggle-btn" [class.analytics__toggle-btn--active]="viewAnalyticsMode() === 'list'" (click)="viewAnalyticsMode.set('list')">Individual</button>
+              <button class="analytics__toggle-btn" [class.analytics__toggle-btn--active]="viewAnalyticsMode() === 'aggregate'" (click)="viewAnalyticsMode.set('aggregate')">Aggregate</button>
             </div>
           </div>
+
+          @if (viewAnalyticsMode() === 'list') {
+            <div class="admin__table-wrap">
+              <table class="admin__table analytics__table">
+                <thead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Channel</th>
+                    <th scope="col">Country</th>
+                    <th scope="col">Referrer</th>
+                    <th scope="col">Device</th>
+                    <th scope="col">OS</th>
+                    <th scope="col">Screen</th>
+                    <th scope="col">UTM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (v of data.views; track v.createdAtUtc) {
+                    <tr>
+                      <td>{{ v.createdAtUtc | date:'short' }}</td>
+                      <td>{{ v.channel | titlecase }}</td>
+                      <td>{{ v.country || '—' }}</td>
+                      <td>{{ v.referrer || '—' }}</td>
+                      <td>{{ v.deviceType || '—' }}</td>
+                      <td>{{ v.operatingSystem || '—' }}</td>
+                      <td>{{ v.screenResolution || '—' }}</td>
+                      <td>{{ v.utmSource ? v.utmSource + (v.utmMedium ? ' / ' + v.utmMedium : '') : '—' }}</td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="8" class="admin__empty">No tracked views yet</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          @if (viewAnalyticsMode() === 'aggregate') {
+            <div class="analytics__grid">
+              <div class="analytics__section">
+                <h3 class="analytics__heading">Traffic Source</h3>
+                @for (item of data.byChannel; track item.channel) {
+                  <div class="analytics__bar-row">
+                    <span class="analytics__label">{{ item.channel | titlecase }}</span>
+                    <div class="analytics__bar-wrap">
+                      <div class="analytics__bar" [style.width.%]="data.trackedViews ? (item.count / data.trackedViews * 100) : 0"></div>
+                    </div>
+                    <span class="analytics__count">{{ item.count }}</span>
+                  </div>
+                } @empty {
+                  <p class="analytics__empty">No data yet</p>
+                }
+              </div>
+
+              <div class="analytics__section">
+                <h3 class="analytics__heading">Country</h3>
+                @for (item of data.byCountry; track item.country) {
+                  <div class="analytics__bar-row">
+                    <span class="analytics__label">{{ item.country }}</span>
+                    <div class="analytics__bar-wrap">
+                      <div class="analytics__bar" [style.width.%]="data.trackedViews ? (item.count / data.trackedViews * 100) : 0"></div>
+                    </div>
+                    <span class="analytics__count">{{ item.count }}</span>
+                  </div>
+                } @empty {
+                  <p class="analytics__empty">No data yet</p>
+                }
+              </div>
+
+              <div class="analytics__section">
+                <h3 class="analytics__heading">Device</h3>
+                @for (item of data.byDevice; track item.device) {
+                  <div class="analytics__bar-row">
+                    <span class="analytics__label">{{ item.device }}</span>
+                    <div class="analytics__bar-wrap">
+                      <div class="analytics__bar" [style.width.%]="data.trackedViews ? (item.count / data.trackedViews * 100) : 0"></div>
+                    </div>
+                    <span class="analytics__count">{{ item.count }}</span>
+                  </div>
+                } @empty {
+                  <p class="analytics__empty">No data yet</p>
+                }
+              </div>
+
+              <div class="analytics__section">
+                <h3 class="analytics__heading">Operating System</h3>
+                @for (item of data.byOs; track item.os) {
+                  <div class="analytics__bar-row">
+                    <span class="analytics__label">{{ item.os }}</span>
+                    <div class="analytics__bar-wrap">
+                      <div class="analytics__bar" [style.width.%]="data.trackedViews ? (item.count / data.trackedViews * 100) : 0"></div>
+                    </div>
+                    <span class="analytics__count">{{ item.count }}</span>
+                  </div>
+                } @empty {
+                  <p class="analytics__empty">No data yet</p>
+                }
+              </div>
+
+              <div class="analytics__section">
+                <h3 class="analytics__heading">Top Referrers</h3>
+                @for (item of data.topReferrers; track item.referrer) {
+                  <div class="analytics__bar-row">
+                    <span class="analytics__label">{{ item.referrer }}</span>
+                    <span class="analytics__count">{{ item.count }}</span>
+                  </div>
+                } @empty {
+                  <p class="analytics__empty">No referrer data</p>
+                }
+              </div>
+
+              <div class="analytics__section">
+                <h3 class="analytics__heading">Views (Last 30 Days)</h3>
+                @for (item of data.viewsByDate; track item.date) {
+                  <div class="analytics__bar-row">
+                    <span class="analytics__label">{{ item.date }}</span>
+                    <span class="analytics__count">{{ item.count }}</span>
+                  </div>
+                } @empty {
+                  <p class="analytics__empty">No views in the last 30 days</p>
+                }
+              </div>
+            </div>
+          }
         }
         <div class="admin__actions">
           <button class="admin__cancel-btn" (click)="closeViewAnalytics()">Close</button>
