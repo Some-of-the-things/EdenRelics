@@ -187,6 +187,70 @@
   }
 }
 
+/* Responsive visibility */
+.admin__mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .admin__desktop-only {
+    display: none;
+  }
+
+  .admin__mobile-only {
+    display: block;
+  }
+}
+
+/* Mobile product cards */
+.admin__card {
+  border: 1px solid var(--border-color);
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+}
+
+.admin__card-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.admin__card-thumb {
+  width: 48px;
+  height: 60px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.admin__card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  min-width: 0;
+
+  strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.admin__card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.admin__card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 /* Table */
 .admin__table-wrap {
   overflow-x: auto;

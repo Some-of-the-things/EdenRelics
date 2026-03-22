@@ -227,7 +227,8 @@
       </div>
     }
 
-    <div class="admin__table-wrap">
+    <!-- Desktop table -->
+    <div class="admin__table-wrap admin__desktop-only">
       <table class="admin__table">
         <thead>
           <tr>
@@ -281,6 +282,39 @@
           }
         </tbody>
       </table>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="admin__mobile-only">
+      @for (product of store.products(); track product.id) {
+        <div class="admin__card">
+          <div class="admin__card-header">
+            <img [src]="product.imageUrl" [alt]="product.name" class="admin__card-thumb" />
+            <div class="admin__card-title">
+              <strong>{{ product.name }}</strong>
+              <span class="admin__stock" [class.admin__stock--out]="!product.inStock">
+                {{ product.inStock ? 'In Stock' : 'Sold' }}
+              </span>
+            </div>
+          </div>
+          <div class="admin__card-details">
+            <span>{{ product.era }} · {{ product.category }} · Size {{ product.size }} · {{ product.condition | titlecase }}</span>
+            <span>
+              Price: {{ product.price | currency:'GBP' }}
+              @if (product.salePrice) {
+                · Sale: {{ product.salePrice | currency:'GBP' }}
+              }
+            </span>
+            <span>Cost: {{ product.costPrice ? (product.costPrice | currency:'GBP') : '—' }} · Views: {{ product.viewCount ?? 0 }}</span>
+          </div>
+          <div class="admin__card-actions">
+            <button class="admin__edit-btn" (click)="edit(product)">Edit</button>
+            <button class="admin__delete-btn" (click)="remove(product.id)">Delete</button>
+          </div>
+        </div>
+      } @empty {
+        <p class="admin__empty">No products found.</p>
+      }
     </div>
   }
 
