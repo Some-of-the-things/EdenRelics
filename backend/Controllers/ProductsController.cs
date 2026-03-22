@@ -232,17 +232,24 @@ public class ProductsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult> GetViewAnalytics(Guid id)
     {
+        Product? product = await _repository.GetByIdAsync(id);
+        if (product is null)
+        {
+            return NotFound();
+        }
+
         IEnumerable<ProductView> views = await _viewRepository.FindAsync(v => v.ProductId == id);
         List<ProductView> viewList = views.ToList();
 
         var byChannel = viewList
-            .GroupBy(v => v.Channel ?? "Unknown")
+            .GroupBy(v => v.Channel ?? "direct")
             .Select(g => new { channel = g.Key, count = g.Count() })
             .OrderByDescending(x => x.count)
             .ToList();
 
         var byCountry = viewList
-            .GroupBy(v => v.Country ?? "Unknown")
+            .Where(v => !string.IsNullOrEmpty(v.Country))
+            .GroupBy(v => v.Country!)
             .Select(g => new { country = g.Key, count = g.Count() })
             .OrderByDescending(x => x.count)
             .ToList();
@@ -264,7 +271,8 @@ public class ProductsController : ControllerBase
 
         return Ok(new
         {
-            totalViews = viewList.Count,
+            totalViews = Math.Max(product.ViewCount, viewList.Count),
+            trackedViews = viewList.Count,
             byChannel,
             byCountry,
             topReferrers,
