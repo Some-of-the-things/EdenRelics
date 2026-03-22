@@ -224,6 +224,26 @@ public class OrdersController : ControllerBase
         return Ok(ToAdminDto(order));
     }
 
+    [HttpDelete("admin/{id:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteOrder(Guid id)
+    {
+        Order? order = await _context.Orders
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order is null)
+        {
+            return NotFound();
+        }
+
+        _context.OrderItems.RemoveRange(order.Items);
+        _context.Orders.Remove(order);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     private static OrderDto ToDto(Order o) => new(
         o.Id,
         o.Status,
