@@ -48,14 +48,14 @@ test.describe('Product View Count', () => {
     expect(updated.viewCount).toBeGreaterThanOrEqual(1);
   });
 
-  test('admin table shows view count column', async ({ page }) => {
+  test('admin products show view count', async ({ page }) => {
     await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
     await page.goto('/admin');
 
-    // Wait for admin table
-    await expect(page.locator('.admin__table').first()).toBeVisible({ timeout: 10_000 });
+    // Wait for product cards
+    await expect(page.locator('.admin__card').first()).toBeVisible({ timeout: 10_000 });
 
-    // Should have Views column header
-    await expect(page.locator('th', { hasText: 'Views' })).toBeVisible();
+    // Should have Views link in card
+    await expect(page.locator('.admin__link-btn', { hasText: /Views:/ }).first()).toBeVisible();
   });
 });
