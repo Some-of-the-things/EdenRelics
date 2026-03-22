@@ -171,6 +171,12 @@ jobs:
           name: frontend-dist
           path: frontend/dist/eden-relics
 
+      - name: Patch server bundle for Workers runtime
+        run: |
+          cd frontend/dist/eden-relics/server
+          sed -i "s|import { createRequire } from 'node:module';||" server.mjs
+          sed -i "s|globalThis\['require'\] ??= createRequire(import.meta.url);||" server.mjs
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
