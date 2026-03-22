@@ -34,8 +34,10 @@ export class BlogListComponent implements OnInit {
       description: 'Vintage fashion tips, styling guides and stories from Eden Relics.',
       url: '/blog',
     });
-    this.http.get<BlogSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
-      next: (posts) => this.posts.set(posts),
-    });
+    if (isPlatformBrowser(this.platformId)) {
+      this.http.get<BlogSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
+        next: (posts) => this.posts.set(posts),
+      });
+    }
   }
 }

@@ -128,7 +128,9 @@ export const ProductStore = signalStore(
   })),
   withHooks({
     onInit(store) {
-      store.loadProducts();
+      if (isPlatformBrowser(inject(PLATFORM_ID))) {
+        store.loadProducts();
+      }
     },
   })
 );

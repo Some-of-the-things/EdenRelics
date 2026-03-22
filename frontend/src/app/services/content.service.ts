@@ -10,6 +10,9 @@ export class ContentService {
   private readonly content = signal<Record<string, string>>({});
 
   load(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
     this.http.get<Record<string, string>>(`${environment.apiUrl}/api/content`).subscribe({
       next: (c) => this.content.set(c),
     });
