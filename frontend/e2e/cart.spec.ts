@@ -50,7 +50,7 @@ test.describe('Cart', () => {
 
     // Should show checkout form with shipping address and email for guests
     await expect(page.locator('.checkout')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText(/shipping address/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Shipping Address' })).toBeVisible();
     await expect(page.getByText(/contact/i)).toBeVisible();
   });
 });
