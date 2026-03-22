@@ -26,7 +26,7 @@ public class MailingListController(EdenRelicsDbContext context) : ControllerBase
             if (existing.Unsubscribed)
             {
                 existing.Unsubscribed = false;
-                existing.Source = dto.Source ?? "Website";
+                existing.Source = dto.Source ?? "Homepage";
                 await context.SaveChangesAsync();
             }
             return Ok(new { message = "You're on the list!" });
@@ -36,7 +36,7 @@ public class MailingListController(EdenRelicsDbContext context) : ControllerBase
         {
             Email = email,
             FirstName = dto.FirstName?.Trim(),
-            Source = dto.Source ?? "Website",
+            Source = dto.Source ?? "Homepage",
         });
         await context.SaveChangesAsync();
 

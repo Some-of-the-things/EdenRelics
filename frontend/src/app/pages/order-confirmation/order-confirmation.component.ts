@@ -33,7 +33,7 @@ export class OrderConfirmationComponent implements OnInit {
     if (!this.mailingEmail.trim()) return;
     this.http.post(`${environment.apiUrl}/api/mailing-list/subscribe`, {
       email: this.mailingEmail,
-      source: 'OrderConfirmation',
+      source: 'Order Confirmation',
     }).subscribe({
       next: () => this.mailingSubscribed.set(true),
     });

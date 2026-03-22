@@ -24,7 +24,7 @@ export class HomeComponent implements OnInit {
     if (!this.mailingEmail.trim()) return;
     this.http.post(`${environment.apiUrl}/api/mailing-list/subscribe`, {
       email: this.mailingEmail,
-      source: 'Footer',
+      source: 'Homepage',
     }).subscribe({
       next: () => this.mailingSubscribed.set(true),
     });
