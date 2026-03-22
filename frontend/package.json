@@ -34,6 +34,7 @@
     "@angular/build": "^21.2.1",
     "@angular/cli": "^21.2.1",
     "@angular/compiler-cli": "^21.2.0",
+    "@cloudflare/workers-types": "^4.20260317.1",
     "@playwright/test": "^1.58.2",
     "@types/express": "^5.0.1",
     "@types/node": "^20.17.19",

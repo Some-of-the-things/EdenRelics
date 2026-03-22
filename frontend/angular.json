@@ -39,7 +39,7 @@
               "allowedHosts": ["localhost", "127.0.0.1"]
             },
             "ssr": {
-              "entry": "src/server.ts"
+              "entry": "src/worker.ts"
             }
           },
           "configurations": {
