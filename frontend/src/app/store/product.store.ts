@@ -1,4 +1,5 @@
-import { computed, inject, signal } from '@angular/core';
+import { computed, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import {
   patchState,
   signalStore,
@@ -127,7 +128,9 @@ export const ProductStore = signalStore(
   })),
   withHooks({
     onInit(store) {
-      store.loadProducts();
+      if (isPlatformBrowser(inject(PLATFORM_ID))) {
+        store.loadProducts();
+      }
     },
   })
 );
