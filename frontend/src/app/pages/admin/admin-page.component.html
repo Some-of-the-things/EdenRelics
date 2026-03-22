@@ -506,6 +506,7 @@
               <th scope="col">Items</th>
               <th scope="col">Total</th>
               <th scope="col">Status</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -541,10 +542,13 @@
                     }
                   </select>
                 </td>
+                <td>
+                  <button class="admin__delete-btn" (click)="deleteOrder(order.id)">Delete</button>
+                </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="6" class="admin__empty">No orders found.</td>
+                <td colspan="7" class="admin__empty">No orders found.</td>
               </tr>
             }
           </tbody>

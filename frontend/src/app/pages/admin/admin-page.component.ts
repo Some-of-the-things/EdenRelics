@@ -814,6 +814,18 @@ export class AdminPageComponent {
     });
   }
 
+  deleteOrder(id: string): void {
+    if (!confirm('Permanently delete this order? This cannot be undone.')) {
+      return;
+    }
+    this.http.delete(`${environment.apiUrl}/api/orders/admin/${id}`).subscribe({
+      next: () => {
+        this.orders.update((orders) => orders.filter((o) => o.id !== id));
+      },
+      error: () => this.ordersError.set('Failed to delete order.'),
+    });
+  }
+
   openForm(): void {
     this.editingId.set(null);
     this.imagePreview.set(null);
