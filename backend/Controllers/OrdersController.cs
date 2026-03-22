@@ -42,10 +42,32 @@ public class OrdersController : ControllerBase
             products.Add(product);
         }
 
+        // Determine shipping cost
+        decimal shippingCost = dto.ShippingMethod switch
+        {
+            "express" => 6.95m,
+            "next-day" => 9.95m,
+            _ => 3.95m, // standard
+        };
+
         Order order = new()
         {
             UserId = userId,
             GuestEmail = userId is null ? dto.GuestEmail!.Trim().ToLowerInvariant() : null,
+            ShippingMethod = dto.ShippingMethod ?? "standard",
+            ShippingCost = shippingCost,
+            ShipAddressLine1 = dto.ShippingAddress?.AddressLine1,
+            ShipAddressLine2 = dto.ShippingAddress?.AddressLine2,
+            ShipCity = dto.ShippingAddress?.City,
+            ShipCounty = dto.ShippingAddress?.County,
+            ShipPostcode = dto.ShippingAddress?.Postcode,
+            ShipCountry = dto.ShippingAddress?.Country,
+            BillAddressLine1 = dto.BillingAddress?.AddressLine1,
+            BillAddressLine2 = dto.BillingAddress?.AddressLine2,
+            BillCity = dto.BillingAddress?.City,
+            BillCounty = dto.BillingAddress?.County,
+            BillPostcode = dto.BillingAddress?.Postcode,
+            BillCountry = dto.BillingAddress?.Country,
             Items = dto.Items.Select(item =>
             {
                 Product product = products.First(p => p.Id == item.ProductId);
@@ -53,13 +75,13 @@ public class OrdersController : ControllerBase
                 {
                     ProductId = product.Id,
                     ProductName = product.Name,
-                    UnitPrice = product.Price,
+                    UnitPrice = product.SalePrice ?? product.Price,
                     Quantity = item.Quantity
                 };
             }).ToList()
         };
 
-        order.Total = order.Items.Sum(i => i.UnitPrice * i.Quantity);
+        order.Total = order.Items.Sum(i => i.UnitPrice * i.Quantity) + shippingCost;
 
         _context.Orders.Add(order);
         await _context.SaveChangesAsync();
@@ -81,6 +103,23 @@ public class OrdersController : ControllerBase
             },
             Quantity = item.Quantity,
         }).ToList();
+
+        if (shippingCost > 0)
+        {
+            lineItems.Add(new SessionLineItemOptions
+            {
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    Currency = "gbp",
+                    UnitAmountDecimal = shippingCost * 100,
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name = $"Shipping ({order.ShippingMethod})",
+                    },
+                },
+                Quantity = 1,
+            });
+        }
 
         var sessionOptions = new SessionCreateOptions
         {

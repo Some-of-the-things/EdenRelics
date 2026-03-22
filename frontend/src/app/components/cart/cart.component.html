@@ -1,12 +1,12 @@
 <div class="cart">
-  <h1 class="cart__title">Your Cart</h1>
-
   @if (cartStore.isEmpty()) {
+    <h1 class="cart__title">Your Cart</h1>
     <div class="cart__empty">
       <p>Your cart is empty.</p>
       <a routerLink="/" class="cart__shop-link">Continue Shopping</a>
     </div>
-  } @else {
+  } @else if (step() === 'cart') {
+    <h1 class="cart__title">Your Cart</h1>
     <div class="cart__items">
       @for (item of cartStore.items(); track item.product.id) {
         <div class="cart-item">
@@ -17,7 +17,7 @@
             </h3>
             <p class="cart-item__era">{{ item.product.era }} &middot; Size {{ item.product.size }}</p>
           </div>
-          <span class="cart-item__price">{{ item.product.price | currency:'GBP' }}</span>
+          <span class="cart-item__price">{{ (item.product.salePrice ?? item.product.price) | currency:'GBP' }}</span>
           <button class="cart-item__remove" (click)="cartStore.removeFromCart(item.product.id)" aria-label="Remove {{ item.product.name }} from cart">
             &times;
           </button>
@@ -27,63 +27,153 @@
 
     <div class="cart__summary">
       <div class="cart__total">
-        <span>Total</span>
+        <span>Subtotal</span>
         <span class="cart__total-price">{{ cartStore.totalPrice() | currency:'GBP' }}</span>
       </div>
-
-      @if (error()) {
-        <p class="cart__error" role="alert">{{ error() }}</p>
-      }
-
-      @if (!showCheckoutOptions()) {
-        <button class="cart__checkout-btn" (click)="beginCheckout()">Checkout</button>
-      } @else if (!auth.isAuthenticated()) {
-        <div class="cart__options">
-          <p class="cart__options-title">How would you like to checkout?</p>
-          <div class="cart__options-buttons">
-            <a routerLink="/login" class="cart__option-btn">Sign In</a>
-            <a routerLink="/register" class="cart__option-btn">Create Account</a>
-            <button class="cart__option-btn cart__option-btn--guest" (click)="showGuestForm.set(true)">
-              Guest Checkout
-            </button>
-          </div>
-          @if (showGuestForm()) {
-            <form class="cart__guest-form" (ngSubmit)="checkoutAsGuest()">
-              <label class="cart__guest-label">
-                <span>Email for order confirmation</span>
-                <input
-                  type="email"
-                  [(ngModel)]="guestEmail"
-                  name="guestEmail"
-                  required
-                  placeholder="your@email.com"
-                  class="cart__guest-input"
-                />
-              </label>
-              <button
-                type="submit"
-                class="cart__checkout-btn"
-                [disabled]="processing()"
-              >
-                {{ processing() ? 'Processing...' : 'Place Order' }}
-              </button>
-            </form>
-          }
-        </div>
-      } @else {
-        <button
-          class="cart__checkout-btn"
-          [disabled]="processing()"
-          (click)="checkoutAuthenticated()"
-        >
-          {{ processing() ? 'Processing...' : 'Place Order' }}
-        </button>
-      }
-
+      <button class="cart__checkout-btn" (click)="beginCheckout()">Proceed to Checkout</button>
       <a routerLink="/" class="cart__continue">Continue Shopping</a>
-      <p class="cart__policy-link">
-        By placing an order you agree to our <a routerLink="/returns-policy">Returns Policy</a>.
-      </p>
     </div>
+
+  } @else {
+    <h1 class="cart__title">Checkout</h1>
+    <button class="cart__back-btn" (click)="backToCart()">&larr; Back to Cart</button>
+
+    <form class="checkout" (ngSubmit)="placeOrder()">
+      <div class="checkout__main">
+        <!-- Guest email -->
+        @if (!auth.isAuthenticated()) {
+          <section class="checkout__section">
+            <h2 class="checkout__heading">Contact</h2>
+            <label class="checkout__field">
+              <span>Email</span>
+              <input type="email" [(ngModel)]="guestEmail" name="guestEmail" required placeholder="your@email.com" />
+            </label>
+            <p class="checkout__hint">
+              Already have an account? <a routerLink="/login">Sign in</a>
+            </p>
+          </section>
+        }
+
+        <!-- Shipping address -->
+        <section class="checkout__section">
+          <h2 class="checkout__heading">Shipping Address</h2>
+          <label class="checkout__field">
+            <span>Address line 1</span>
+            <input type="text" [(ngModel)]="shipping.addressLine1" name="shipLine1" required />
+          </label>
+          <label class="checkout__field">
+            <span>Address line 2 (optional)</span>
+            <input type="text" [(ngModel)]="shipping.addressLine2" name="shipLine2" />
+          </label>
+          <div class="checkout__row">
+            <label class="checkout__field">
+              <span>City</span>
+              <input type="text" [(ngModel)]="shipping.city" name="shipCity" required />
+            </label>
+            <label class="checkout__field">
+              <span>County (optional)</span>
+              <input type="text" [(ngModel)]="shipping.county" name="shipCounty" />
+            </label>
+          </div>
+          <div class="checkout__row">
+            <label class="checkout__field">
+              <span>Postcode</span>
+              <input type="text" [(ngModel)]="shipping.postcode" name="shipPostcode" required />
+            </label>
+            <label class="checkout__field">
+              <span>Country</span>
+              <input type="text" [(ngModel)]="shipping.country" name="shipCountry" required />
+            </label>
+          </div>
+        </section>
+
+        <!-- Shipping method -->
+        <section class="checkout__section">
+          <h2 class="checkout__heading">Shipping Method</h2>
+          @for (option of shippingOptions; track option.value) {
+            <label class="checkout__radio">
+              <input type="radio" [(ngModel)]="shippingMethod" [value]="option.value" name="shippingMethod" />
+              <span class="checkout__radio-label">
+                <span>{{ option.label }}</span>
+                <span class="checkout__radio-price">{{ option.price | currency:'GBP' }}</span>
+              </span>
+            </label>
+          }
+        </section>
+
+        <!-- Billing address -->
+        <section class="checkout__section">
+          <h2 class="checkout__heading">Billing Address</h2>
+          <label class="checkout__checkbox">
+            <input type="checkbox" [(ngModel)]="billingSameAsShipping" name="billingSame" />
+            <span>Same as shipping address</span>
+          </label>
+          @if (!billingSameAsShipping) {
+            <label class="checkout__field">
+              <span>Address line 1</span>
+              <input type="text" [(ngModel)]="billing.addressLine1" name="billLine1" required />
+            </label>
+            <label class="checkout__field">
+              <span>Address line 2 (optional)</span>
+              <input type="text" [(ngModel)]="billing.addressLine2" name="billLine2" />
+            </label>
+            <div class="checkout__row">
+              <label class="checkout__field">
+                <span>City</span>
+                <input type="text" [(ngModel)]="billing.city" name="billCity" required />
+              </label>
+              <label class="checkout__field">
+                <span>County (optional)</span>
+                <input type="text" [(ngModel)]="billing.county" name="billCounty" />
+              </label>
+            </div>
+            <div class="checkout__row">
+              <label class="checkout__field">
+                <span>Postcode</span>
+                <input type="text" [(ngModel)]="billing.postcode" name="billPostcode" required />
+              </label>
+              <label class="checkout__field">
+                <span>Country</span>
+                <input type="text" [(ngModel)]="billing.country" name="billCountry" required />
+              </label>
+            </div>
+          }
+        </section>
+      </div>
+
+      <!-- Order summary sidebar -->
+      <aside class="checkout__sidebar">
+        <h2 class="checkout__heading">Order Summary</h2>
+        @for (item of cartStore.items(); track item.product.id) {
+          <div class="checkout__summary-item">
+            <span>{{ item.product.name }}</span>
+            <span>{{ (item.product.salePrice ?? item.product.price) | currency:'GBP' }}</span>
+          </div>
+        }
+        <div class="checkout__summary-line">
+          <span>Subtotal</span>
+          <span>{{ cartStore.totalPrice() | currency:'GBP' }}</span>
+        </div>
+        <div class="checkout__summary-line">
+          <span>Shipping</span>
+          <span>{{ shippingCost | currency:'GBP' }}</span>
+        </div>
+        <div class="checkout__summary-total">
+          <span>Total</span>
+          <span>{{ orderTotal | currency:'GBP' }}</span>
+        </div>
+
+        @if (error()) {
+          <p class="cart__error" role="alert">{{ error() }}</p>
+        }
+
+        <button type="submit" class="cart__checkout-btn" [disabled]="processing()">
+          {{ processing() ? 'Processing...' : 'Pay Now' }}
+        </button>
+        <p class="cart__policy-link">
+          By placing an order you agree to our <a routerLink="/returns-policy">Returns Policy</a>.
+        </p>
+      </aside>
+    </form>
   }
 </div>

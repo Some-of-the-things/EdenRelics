@@ -9,6 +9,26 @@ public class Order : BaseEntity
     public decimal Total { get; set; }
     public string? StripeSessionId { get; set; }
     public List<OrderItem> Items { get; set; } = [];
+
+    // Shipping
+    public string? ShippingMethod { get; set; }
+    public decimal ShippingCost { get; set; }
+
+    // Shipping address
+    public string? ShipAddressLine1 { get; set; }
+    public string? ShipAddressLine2 { get; set; }
+    public string? ShipCity { get; set; }
+    public string? ShipCounty { get; set; }
+    public string? ShipPostcode { get; set; }
+    public string? ShipCountry { get; set; }
+
+    // Billing address
+    public string? BillAddressLine1 { get; set; }
+    public string? BillAddressLine2 { get; set; }
+    public string? BillCity { get; set; }
+    public string? BillCounty { get; set; }
+    public string? BillPostcode { get; set; }
+    public string? BillCountry { get; set; }
 }
 
 public class OrderItem

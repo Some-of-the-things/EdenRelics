@@ -9,6 +9,23 @@ export interface CreateOrderItem {
   quantity: number;
 }
 
+export interface OrderAddress {
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  county?: string;
+  postcode: string;
+  country: string;
+}
+
+export interface CheckoutRequest {
+  items: CreateOrderItem[];
+  guestEmail?: string | null;
+  shippingAddress?: OrderAddress;
+  billingAddress?: OrderAddress;
+  shippingMethod?: string;
+}
+
 export interface OrderItemDto {
   productId: string;
   productName: string;
@@ -42,10 +59,10 @@ export class OrderService {
       : new HttpHeaders();
   }
 
-  checkout(items: CreateOrderItem[], guestEmail?: string): Observable<CheckoutResponse> {
+  checkout(request: CheckoutRequest): Observable<CheckoutResponse> {
     return this.http.post<CheckoutResponse>(
       this.apiUrl,
-      { items, guestEmail: guestEmail ?? null },
+      request,
       { headers: this.authHeaders }
     );
   }

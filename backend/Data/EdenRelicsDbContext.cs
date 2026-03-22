@@ -83,6 +83,20 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(o => o.StripeSessionId).HasMaxLength(256);
             entity.HasOne(o => o.User).WithMany().HasForeignKey(o => o.UserId).IsRequired(false);
             entity.HasMany(o => o.Items).WithOne(i => i.Order).HasForeignKey(i => i.OrderId);
+            entity.Property(o => o.ShippingMethod).HasMaxLength(20);
+            entity.Property(o => o.ShippingCost).HasPrecision(10, 2);
+            entity.Property(o => o.ShipAddressLine1).HasMaxLength(200);
+            entity.Property(o => o.ShipAddressLine2).HasMaxLength(200);
+            entity.Property(o => o.ShipCity).HasMaxLength(100);
+            entity.Property(o => o.ShipCounty).HasMaxLength(100);
+            entity.Property(o => o.ShipPostcode).HasMaxLength(20);
+            entity.Property(o => o.ShipCountry).HasMaxLength(100);
+            entity.Property(o => o.BillAddressLine1).HasMaxLength(200);
+            entity.Property(o => o.BillAddressLine2).HasMaxLength(200);
+            entity.Property(o => o.BillCity).HasMaxLength(100);
+            entity.Property(o => o.BillCounty).HasMaxLength(100);
+            entity.Property(o => o.BillPostcode).HasMaxLength(20);
+            entity.Property(o => o.BillCountry).HasMaxLength(100);
         });
 
         modelBuilder.Entity<OrderItem>(entity =>

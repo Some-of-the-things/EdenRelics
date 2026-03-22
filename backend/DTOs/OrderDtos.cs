@@ -2,7 +2,19 @@ namespace Eden_Relics_BE.DTOs;
 
 public record CreateOrderDto(
     List<CreateOrderItemDto> Items,
-    string? GuestEmail
+    string? GuestEmail,
+    OrderAddressDto? ShippingAddress,
+    OrderAddressDto? BillingAddress,
+    string? ShippingMethod
+);
+
+public record OrderAddressDto(
+    string? AddressLine1,
+    string? AddressLine2,
+    string? City,
+    string? County,
+    string? Postcode,
+    string? Country
 );
 
 public record CreateOrderItemDto(
