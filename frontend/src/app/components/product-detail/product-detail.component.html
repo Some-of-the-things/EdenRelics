@@ -60,6 +60,17 @@
         </button>
       </div>
     </div>
+
+    @if (showSalePrompt()) {
+      <div class="detail__overlay" (click)="confirmSaleNotification(false)"></div>
+      <div class="detail__prompt" role="dialog" aria-modal="true" aria-label="Sale notification preference">
+        <p class="detail__prompt-text">Would you like to be emailed if this item goes on sale?</p>
+        <div class="detail__prompt-actions">
+          <button class="detail__prompt-btn detail__prompt-btn--yes" (click)="confirmSaleNotification(true)">Yes, notify me</button>
+          <button class="detail__prompt-btn detail__prompt-btn--no" (click)="confirmSaleNotification(false)">No thanks</button>
+        </div>
+      </div>
+    }
   </div>
 } @else {
   <div class="detail">

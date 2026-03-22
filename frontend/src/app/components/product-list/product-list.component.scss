@@ -292,3 +292,72 @@
   color: #c44569;
   font-weight: 600;
 }
+
+.products__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+.products__prompt {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 2rem;
+  z-index: 101;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.products__prompt-text {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  margin: 0 0 1.5rem;
+  color: var(--text-primary);
+}
+
+.products__prompt-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.products__prompt-btn {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  transition: background var(--transition);
+
+  &--yes {
+    background: var(--text-primary);
+    color: var(--text-inverse);
+
+    &:hover {
+      background: var(--accent);
+    }
+  }
+
+  &--no {
+    background: transparent;
+    border: 1px solid var(--border-dark);
+    color: var(--text-secondary);
+
+    &:hover {
+      background: var(--bg-secondary);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}

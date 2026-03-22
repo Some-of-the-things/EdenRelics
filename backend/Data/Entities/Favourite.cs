@@ -6,4 +6,5 @@ public class Favourite : BaseEntity
     public User User { get; set; } = null!;
     public Guid ProductId { get; set; }
     public Product Product { get; set; } = null!;
+    public bool NotifyOnSale { get; set; }
 }

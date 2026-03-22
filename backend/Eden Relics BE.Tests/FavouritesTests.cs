@@ -29,7 +29,7 @@ public class FavouritesTests : IClassFixture<ApiFactory>
         var client = _factory.CreateClient();
         await RegisterAndLogin(client, "fav-empty@test.com");
 
-        var favourites = await client.GetFromJsonAsync<List<Guid>>("/api/favourites", JsonOptions);
+        var favourites = await client.GetFromJsonAsync<List<FavouriteDto>>("/api/favourites", JsonOptions);
         Assert.NotNull(favourites);
         Assert.Empty(favourites);
     }
@@ -101,10 +101,12 @@ public class FavouritesTests : IClassFixture<ApiFactory>
         await client.PostAsync($"/api/favourites/{SeededProductId1}", null);
         await client.PostAsync($"/api/favourites/{SeededProductId2}", null);
 
-        var favourites = await client.GetFromJsonAsync<List<Guid>>("/api/favourites", JsonOptions);
+        var favourites = await client.GetFromJsonAsync<List<FavouriteDto>>("/api/favourites", JsonOptions);
         Assert.NotNull(favourites);
         Assert.Equal(2, favourites.Count);
-        Assert.Contains(SeededProductId1, favourites);
-        Assert.Contains(SeededProductId2, favourites);
+        Assert.Contains(favourites, f => f.ProductId == SeededProductId1);
+        Assert.Contains(favourites, f => f.ProductId == SeededProductId2);
     }
+
+    private record FavouriteDto(Guid ProductId, bool NotifyOnSale);
 }

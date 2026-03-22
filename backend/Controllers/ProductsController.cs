@@ -240,7 +240,8 @@ public class ProductsController : ControllerBase
     {
         try
         {
-            IEnumerable<Favourite> favourites = await _favouriteRepository.FindAsync(f => f.ProductId == product.Id);
+            IEnumerable<Favourite> favourites = await _favouriteRepository.FindAsync(
+                f => f.ProductId == product.Id && f.NotifyOnSale);
             foreach (Favourite fav in favourites)
             {
                 User? user = await _userRepository.GetByIdAsync(fav.UserId);

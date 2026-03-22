@@ -19,7 +19,7 @@ public class FavouritesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Guid>>> GetMyFavourites()
+    public async Task<ActionResult> GetMyFavourites()
     {
         Guid? userId = GetUserId();
         if (userId is null)
@@ -28,11 +28,11 @@ public class FavouritesController : ControllerBase
         }
 
         IEnumerable<Favourite> favourites = await _repository.FindAsync(f => f.UserId == userId.Value);
-        return Ok(favourites.Select(f => f.ProductId));
+        return Ok(favourites.Select(f => new { f.ProductId, f.NotifyOnSale }));
     }
 
     [HttpPost("{productId:guid}")]
-    public async Task<IActionResult> AddFavourite(Guid productId)
+    public async Task<IActionResult> AddFavourite(Guid productId, [FromBody] AddFavouriteDto? dto = null)
     {
         Guid? userId = GetUserId();
         if (userId is null)
@@ -44,12 +44,25 @@ public class FavouritesController : ControllerBase
             f => f.UserId == userId.Value && f.ProductId == productId);
         if (existing.Any())
         {
+            Favourite existingFav = existing.First();
+            if (dto is not null && existingFav.NotifyOnSale != dto.NotifyOnSale)
+            {
+                existingFav.NotifyOnSale = dto.NotifyOnSale;
+                await _repository.UpdateAsync(existingFav);
+            }
             return Ok();
         }
 
-        await _repository.AddAsync(new Favourite { UserId = userId.Value, ProductId = productId });
+        await _repository.AddAsync(new Favourite
+        {
+            UserId = userId.Value,
+            ProductId = productId,
+            NotifyOnSale = dto?.NotifyOnSale ?? false,
+        });
         return Created();
     }
+
+    public record AddFavouriteDto(bool NotifyOnSale = false);
 
     [HttpDelete("{productId:guid}")]
     public async Task<IActionResult> RemoveFavourite(Guid productId)

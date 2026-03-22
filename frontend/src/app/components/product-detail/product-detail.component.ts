@@ -27,6 +27,8 @@ export class ProductDetailComponent {
   private readonly router = inject(Router);
 
   readonly selectedImage = signal<string | null>(null);
+  readonly showSalePrompt = signal(false);
+  private pendingFavouriteId: string | null = null;
 
   readonly product = computed(() =>
     this.productStore.products().find(p => p.id === this.id())
@@ -51,7 +53,20 @@ export class ProductDetailComponent {
       this.router.navigate(['/login'], { queryParams: { returnUrl: `/product/${productId}` } });
       return;
     }
-    this.favourites.toggle(productId);
+    if (this.favourites.isFavourite(productId)) {
+      this.favourites.remove(productId);
+    } else {
+      this.pendingFavouriteId = productId;
+      this.showSalePrompt.set(true);
+    }
+  }
+
+  confirmSaleNotification(notify: boolean): void {
+    if (this.pendingFavouriteId) {
+      this.favourites.add(this.pendingFavouriteId, notify);
+    }
+    this.pendingFavouriteId = null;
+    this.showSalePrompt.set(false);
   }
 
   isFavourite(productId: string): boolean {

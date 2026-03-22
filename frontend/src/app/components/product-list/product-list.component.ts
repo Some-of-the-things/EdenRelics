@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
@@ -21,6 +21,9 @@ export class ProductListComponent {
   private readonly favourites = inject(FavouritesService);
   private readonly router = inject(Router);
 
+  readonly showSalePrompt = signal(false);
+  private pendingFavouriteId: string | null = null;
+
   constructor() {
     if (this.auth.isAuthenticated()) {
       this.favourites.load();
@@ -33,11 +36,25 @@ export class ProductListComponent {
 
   toggleFavourite(event: Event, productId: string): void {
     event.stopPropagation();
+    event.preventDefault();
     if (!this.auth.isAuthenticated()) {
       this.router.navigate(['/login'], { queryParams: { returnUrl: '/' } });
       return;
     }
-    this.favourites.toggle(productId);
+    if (this.favourites.isFavourite(productId)) {
+      this.favourites.remove(productId);
+    } else {
+      this.pendingFavouriteId = productId;
+      this.showSalePrompt.set(true);
+    }
+  }
+
+  confirmSaleNotification(notify: boolean): void {
+    if (this.pendingFavouriteId) {
+      this.favourites.add(this.pendingFavouriteId, notify);
+    }
+    this.pendingFavouriteId = null;
+    this.showSalePrompt.set(false);
   }
 
   isFavourite(productId: string): boolean {

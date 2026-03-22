@@ -92,4 +92,15 @@
       <p class="products__empty">No relics found matching your search.</p>
     }
   </div>
+
+  @if (showSalePrompt()) {
+    <div class="products__overlay" (click)="confirmSaleNotification(false)"></div>
+    <div class="products__prompt" role="dialog" aria-modal="true" aria-label="Sale notification preference">
+      <p class="products__prompt-text">Would you like to be emailed if this item goes on sale?</p>
+      <div class="products__prompt-actions">
+        <button class="products__prompt-btn products__prompt-btn--yes" (click)="confirmSaleNotification(true)">Yes, notify me</button>
+        <button class="products__prompt-btn products__prompt-btn--no" (click)="confirmSaleNotification(false)">No thanks</button>
+      </div>
+    </div>
+  }
 </section>
