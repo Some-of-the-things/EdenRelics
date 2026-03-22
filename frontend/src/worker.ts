@@ -22,8 +22,7 @@ export default {
 
       if (response) {
         const cached = new Response(response.body, response);
-        cached.headers.set('Cache-Control', `public, s-maxage=${SSR_CACHE_TTL}, stale-while-revalidate=60`);
-        cached.headers.set('CDN-Cache-Control', `public, max-age=${SSR_CACHE_TTL}`);
+        cached.headers.set('Cache-Control', 'no-cache');
         return cached;
       }
     } catch {
