@@ -167,6 +167,13 @@ public class EdenRelicsDbContext : DbContext
         {
             entity.HasOne(v => v.Product).WithMany().HasForeignKey(v => v.ProductId);
             entity.Property(v => v.IpAddress).HasMaxLength(45);
+            entity.Property(v => v.ReferrerUrl).HasMaxLength(2000);
+            entity.Property(v => v.UtmSource).HasMaxLength(200);
+            entity.Property(v => v.UtmMedium).HasMaxLength(200);
+            entity.Property(v => v.UtmCampaign).HasMaxLength(200);
+            entity.Property(v => v.Channel).HasMaxLength(20);
+            entity.Property(v => v.Country).HasMaxLength(100);
+            entity.Property(v => v.UserAgent).HasMaxLength(500);
         });
 
         modelBuilder.Entity<Product>(entity =>

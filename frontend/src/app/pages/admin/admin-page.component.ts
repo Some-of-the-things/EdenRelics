@@ -30,6 +30,14 @@ interface AdminUser {
   favourites: string[];
 }
 
+interface ViewAnalytics {
+  totalViews: number;
+  byChannel: { channel: string; count: number }[];
+  byCountry: { country: string; count: number }[];
+  topReferrers: { referrer: string; count: number }[];
+  viewsByDate: { date: string; count: number }[];
+}
+
 interface AccountsSummary {
   totalRevenue: number;
   totalCost: number;
@@ -306,6 +314,12 @@ export class AdminPageComponent {
   readonly accountsLoading = signal(false);
   readonly accountsError = signal('');
 
+  // View analytics
+  readonly showViewAnalytics = signal(false);
+  readonly viewAnalyticsProduct = signal<Product | null>(null);
+  readonly viewAnalyticsData = signal<ViewAnalytics | null>(null);
+  readonly viewAnalyticsLoading = signal(false);
+
   form: Omit<Product, 'id'> = this.emptyForm();
 
   toggleMobileMenu(): void {
@@ -541,6 +555,24 @@ export class AdminPageComponent {
         this.usersLoading.set(false);
       },
     });
+  }
+
+  openViewAnalytics(product: Product): void {
+    this.viewAnalyticsProduct.set(product);
+    this.viewAnalyticsData.set(null);
+    this.viewAnalyticsLoading.set(true);
+    this.showViewAnalytics.set(true);
+    this.http.get<ViewAnalytics>(`${environment.apiUrl}/api/products/${product.id}/views`).subscribe({
+      next: (data) => {
+        this.viewAnalyticsData.set(data);
+        this.viewAnalyticsLoading.set(false);
+      },
+      error: () => this.viewAnalyticsLoading.set(false),
+    });
+  }
+
+  closeViewAnalytics(): void {
+    this.showViewAnalytics.set(false);
   }
 
   loadAccounts(): void {

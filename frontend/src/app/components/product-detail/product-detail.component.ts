@@ -1,6 +1,6 @@
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, PLATFORM_ID } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { CurrencyPipe, DecimalPipe, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, DecimalPipe, isPlatformBrowser, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
 import { SeoService } from '../../services/seo.service';
@@ -88,7 +88,15 @@ export class ProductDetailComponent {
           type: 'product',
         });
         this.analytics.viewProduct(product.id, product.name, product.price);
-        this.productService.recordView(product.id).subscribe();
+        if (isPlatformBrowser(inject(PLATFORM_ID))) {
+          const params = new URLSearchParams(window.location.search);
+          this.productService.recordView(product.id, {
+            referrer: document.referrer || undefined,
+            utmSource: params.get('utm_source') || undefined,
+            utmMedium: params.get('utm_medium') || undefined,
+            utmCampaign: params.get('utm_campaign') || undefined,
+          }).subscribe();
+        }
         this.seo.setJsonLd({
           '@context': 'https://schema.org',
           '@type': 'Product',

@@ -19,6 +19,7 @@ public class ProductsController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly ImageStorageService _storage;
     private readonly IEmailService _emailService;
+    private readonly GeoIpService _geoIp;
     private readonly ILogger<ProductsController> _logger;
 
     public ProductsController(
@@ -29,6 +30,7 @@ public class ProductsController : ControllerBase
         IWebHostEnvironment env,
         ImageStorageService storage,
         IEmailService emailService,
+        GeoIpService geoIp,
         ILogger<ProductsController> logger)
     {
         _repository = repository;
@@ -38,6 +40,7 @@ public class ProductsController : ControllerBase
         _env = env;
         _storage = storage;
         _emailService = emailService;
+        _geoIp = geoIp;
         _logger = logger;
     }
 
@@ -175,7 +178,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/view")]
-    public async Task<IActionResult> RecordView(Guid id)
+    public async Task<IActionResult> RecordView(Guid id, [FromBody] RecordViewDto? dto = null)
     {
         Product? product = await _repository.GetByIdAsync(id);
         if (product is null)
@@ -200,16 +203,130 @@ public class ProductsController : ControllerBase
             return NoContent();
         }
 
+        string? channel = DeriveChannel(dto?.Referrer, dto?.UtmSource, dto?.UtmMedium);
+        string? country = await _geoIp.GetCountryAsync(ip);
+        string? userAgent = Request.Headers.UserAgent.FirstOrDefault();
+
         await _viewRepository.AddAsync(new ProductView
         {
             ProductId = id,
             UserId = userId,
-            IpAddress = ip
+            IpAddress = ip,
+            ReferrerUrl = dto?.Referrer?[..Math.Min(dto.Referrer.Length, 2000)],
+            UtmSource = dto?.UtmSource,
+            UtmMedium = dto?.UtmMedium,
+            UtmCampaign = dto?.UtmCampaign,
+            Channel = channel,
+            Country = country,
+            UserAgent = userAgent?[..Math.Min(userAgent.Length, 500)],
         });
 
         product.ViewCount++;
         await _repository.UpdateAsync(product);
         return NoContent();
+    }
+
+    public record RecordViewDto(string? Referrer = null, string? UtmSource = null, string? UtmMedium = null, string? UtmCampaign = null);
+
+    [HttpGet("{id:guid}/views")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> GetViewAnalytics(Guid id)
+    {
+        IEnumerable<ProductView> views = await _viewRepository.FindAsync(v => v.ProductId == id);
+        List<ProductView> viewList = views.ToList();
+
+        var byChannel = viewList
+            .GroupBy(v => v.Channel ?? "Unknown")
+            .Select(g => new { channel = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .ToList();
+
+        var byCountry = viewList
+            .GroupBy(v => v.Country ?? "Unknown")
+            .Select(g => new { country = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .ToList();
+
+        var topReferrers = viewList
+            .Where(v => !string.IsNullOrEmpty(v.ReferrerUrl))
+            .GroupBy(v => ExtractDomain(v.ReferrerUrl!))
+            .Select(g => new { referrer = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .Take(10)
+            .ToList();
+
+        var viewsByDate = viewList
+            .Where(v => v.CreatedAtUtc >= DateTime.UtcNow.AddDays(-30))
+            .GroupBy(v => v.CreatedAtUtc.ToString("yyyy-MM-dd"))
+            .Select(g => new { date = g.Key, count = g.Count() })
+            .OrderBy(x => x.date)
+            .ToList();
+
+        return Ok(new
+        {
+            totalViews = viewList.Count,
+            byChannel,
+            byCountry,
+            topReferrers,
+            viewsByDate,
+        });
+    }
+
+    private static string DeriveChannel(string? referrer, string? utmSource, string? utmMedium)
+    {
+        if (!string.IsNullOrEmpty(utmMedium))
+        {
+            string medium = utmMedium.ToLowerInvariant();
+            if (medium is "cpc" or "ppc" or "paid")
+            {
+                return "paid";
+            }
+            if (medium == "email")
+            {
+                return "email";
+            }
+            if (medium == "social")
+            {
+                return "social";
+            }
+        }
+
+        if (!string.IsNullOrEmpty(referrer))
+        {
+            string domain = ExtractDomain(referrer).ToLowerInvariant();
+            string[] socialDomains = ["facebook.com", "instagram.com", "twitter.com", "x.com", "tiktok.com", "pinterest.com", "linkedin.com"];
+            if (socialDomains.Any(s => domain.Contains(s)))
+            {
+                return "social";
+            }
+
+            string[] searchDomains = ["google.", "bing.com", "yahoo.com", "duckduckgo.com", "baidu.com"];
+            if (searchDomains.Any(s => domain.Contains(s)))
+            {
+                return "search";
+            }
+
+            return "referral";
+        }
+
+        if (!string.IsNullOrEmpty(utmSource))
+        {
+            return "referral";
+        }
+
+        return "direct";
+    }
+
+    private static string ExtractDomain(string url)
+    {
+        try
+        {
+            return new Uri(url).Host;
+        }
+        catch
+        {
+            return url;
+        }
     }
 
     [HttpDelete("{id:guid}")]

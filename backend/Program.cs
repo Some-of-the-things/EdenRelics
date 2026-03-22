@@ -91,6 +91,7 @@ builder.Services.Configure<Resend.ResendClientOptions>(o =>
 });
 builder.Services.AddTransient<Resend.IResend, Resend.ResendClient>();
 builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddHttpClient<GeoIpService>();
 
 // FIDO2 / Passkeys
 builder.Services.AddFido2(options =>

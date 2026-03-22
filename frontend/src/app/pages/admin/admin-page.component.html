@@ -237,6 +237,78 @@
       </div>
     }
 
+    @if (showViewAnalytics()) {
+      <div class="admin__overlay" (click)="closeViewAnalytics()"></div>
+      <div class="admin__form-panel admin__analytics-panel" role="dialog" aria-modal="true" aria-label="View Analytics">
+        <h2 class="admin__form-title">{{ viewAnalyticsProduct()?.name }} — View Analytics</h2>
+        @if (viewAnalyticsLoading()) {
+          <p class="admin__loading">Loading analytics...</p>
+        }
+        @if (viewAnalyticsData(); as data) {
+          <p class="admin__summary">{{ data.totalViews }} total views</p>
+
+          <div class="analytics__grid">
+            <div class="analytics__section">
+              <h3 class="analytics__heading">Traffic Source</h3>
+              @for (item of data.byChannel; track item.channel) {
+                <div class="analytics__bar-row">
+                  <span class="analytics__label">{{ item.channel | titlecase }}</span>
+                  <div class="analytics__bar-wrap">
+                    <div class="analytics__bar" [style.width.%]="data.totalViews ? (item.count / data.totalViews * 100) : 0"></div>
+                  </div>
+                  <span class="analytics__count">{{ item.count }}</span>
+                </div>
+              } @empty {
+                <p class="analytics__empty">No data yet</p>
+              }
+            </div>
+
+            <div class="analytics__section">
+              <h3 class="analytics__heading">Country</h3>
+              @for (item of data.byCountry; track item.country) {
+                <div class="analytics__bar-row">
+                  <span class="analytics__label">{{ item.country }}</span>
+                  <div class="analytics__bar-wrap">
+                    <div class="analytics__bar" [style.width.%]="data.totalViews ? (item.count / data.totalViews * 100) : 0"></div>
+                  </div>
+                  <span class="analytics__count">{{ item.count }}</span>
+                </div>
+              } @empty {
+                <p class="analytics__empty">No data yet</p>
+              }
+            </div>
+
+            <div class="analytics__section">
+              <h3 class="analytics__heading">Top Referrers</h3>
+              @for (item of data.topReferrers; track item.referrer) {
+                <div class="analytics__bar-row">
+                  <span class="analytics__label">{{ item.referrer }}</span>
+                  <span class="analytics__count">{{ item.count }}</span>
+                </div>
+              } @empty {
+                <p class="analytics__empty">No referrer data</p>
+              }
+            </div>
+
+            <div class="analytics__section">
+              <h3 class="analytics__heading">Views (Last 30 Days)</h3>
+              @for (item of data.viewsByDate; track item.date) {
+                <div class="analytics__bar-row">
+                  <span class="analytics__label">{{ item.date }}</span>
+                  <span class="analytics__count">{{ item.count }}</span>
+                </div>
+              } @empty {
+                <p class="analytics__empty">No views in the last 30 days</p>
+              }
+            </div>
+          </div>
+        }
+        <div class="admin__actions">
+          <button class="admin__cancel-btn" (click)="closeViewAnalytics()">Close</button>
+        </div>
+      </div>
+    }
+
     <!-- Desktop table -->
     <div class="admin__table-wrap admin__desktop-only">
       <table class="admin__table">
@@ -279,7 +351,7 @@
                   {{ product.inStock ? 'In Stock' : 'Sold' }}
                 </span>
               </td>
-              <td>{{ product.viewCount ?? 0 }}</td>
+              <td><button class="admin__link-btn" (click)="openViewAnalytics(product)">{{ product.viewCount ?? 0 }}</button></td>
               <td class="admin__cell-actions">
                 <button class="admin__edit-btn" (click)="edit(product)">Edit</button>
                 <button class="admin__delete-btn" (click)="remove(product.id)">Delete</button>
@@ -315,7 +387,7 @@
                 · Sale: {{ product.salePrice | currency:'GBP' }}
               }
             </span>
-            <span>Cost: {{ product.costPrice ? (product.costPrice | currency:'GBP') : '—' }} · Views: {{ product.viewCount ?? 0 }}</span>
+            <span>Cost: {{ product.costPrice ? (product.costPrice | currency:'GBP') : '—' }} · <button class="admin__link-btn" (click)="openViewAnalytics(product)">Views: {{ product.viewCount ?? 0 }}</button></span>
           </div>
           <div class="admin__card-actions">
             <button class="admin__edit-btn" (click)="edit(product)">Edit</button>
