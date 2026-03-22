@@ -22,7 +22,7 @@ export default {
 
       if (response) {
         const cached = new Response(response.body, response);
-        cached.headers.set('Cache-Control', 'no-cache');
+        cached.headers.set('Cache-Control', 'public, max-age=60, must-revalidate');
         return cached;
       }
     } catch {
