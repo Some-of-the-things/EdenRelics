@@ -384,65 +384,7 @@
       </div>
     }
 
-    <!-- Desktop table -->
-    <div class="admin__table-wrap admin__desktop-only">
-      <table class="admin__table">
-        <thead>
-          <tr>
-            <th scope="col">Image</th>
-            <th scope="col">Name</th>
-            <th scope="col">Era</th>
-            <th scope="col">Category</th>
-            <th scope="col">Size</th>
-            <th scope="col">Condition</th>
-            <th scope="col">Price</th>
-            <th scope="col">Sale</th>
-            <th scope="col">Cost</th>
-            <th scope="col">Supplier</th>
-            <th scope="col">Stock</th>
-            <th scope="col">Views</th>
-            <th scope="col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (product of store.products(); track product.id) {
-            <tr>
-              <td><img [src]="product.imageUrl" [alt]="product.name" class="admin__thumb" /></td>
-              <td class="admin__name">{{ product.name }}</td>
-              <td>{{ product.era }}</td>
-              <td>{{ product.category }}</td>
-              <td>{{ product.size }}</td>
-              <td>
-                <span class="admin__condition" [attr.data-condition]="product.condition">
-                  {{ product.condition | titlecase }}
-                </span>
-              </td>
-              <td>{{ product.price | currency:'GBP' }}</td>
-              <td>{{ product.salePrice ? (product.salePrice | currency:'GBP') : '—' }}</td>
-              <td>{{ product.costPrice ? (product.costPrice | currency:'GBP') : '—' }}</td>
-              <td>{{ product.supplier || '—' }}</td>
-              <td>
-                <span class="admin__stock" [class.admin__stock--out]="!product.inStock">
-                  {{ product.inStock ? 'In Stock' : 'Sold' }}
-                </span>
-              </td>
-              <td><button class="admin__link-btn" (click)="openViewAnalytics(product)">{{ product.viewCount ?? 0 }}</button></td>
-              <td class="admin__cell-actions">
-                <button class="admin__edit-btn" (click)="edit(product)">Edit</button>
-                <button class="admin__delete-btn" (click)="remove(product.id)">Delete</button>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="13" class="admin__empty">No products found.</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Mobile cards -->
-    <div class="admin__mobile-only">
+    <div>
       @for (product of store.products(); track product.id) {
         <div class="admin__card">
           <div class="admin__card-header">
