@@ -49,7 +49,7 @@
               {{ p.deliveryAddress.addressLine1 }}@if (p.deliveryAddress.addressLine2) {, {{ p.deliveryAddress.addressLine2 }}}@if (p.deliveryAddress.city) {, {{ p.deliveryAddress.city }}}@if (p.deliveryAddress.postcode) {, {{ p.deliveryAddress.postcode }}}
             </span>
           } @else {
-            <a routerLink="/settings" class="account__add-link">Add address</a>
+            <a routerLink="/settings" class="account__add-link">Manage in Settings</a>
           }
         </div>
       }
