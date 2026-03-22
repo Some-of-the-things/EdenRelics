@@ -47,6 +47,7 @@ public class OrdersController : ControllerBase
         {
             "express" => 6.95m,
             "next-day" => 9.95m,
+            "international" => 12.95m,
             _ => 3.95m, // standard
         };
 

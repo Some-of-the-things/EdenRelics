@@ -30,9 +30,10 @@ export class CartComponent implements OnInit {
   billing: OrderAddress = { addressLine1: '', city: '', postcode: '', country: 'United Kingdom' };
 
   readonly shippingOptions = [
-    { value: 'standard', label: 'Standard Delivery (3–5 days)', price: 3.95 },
-    { value: 'express', label: 'Express Delivery (1–2 days)', price: 6.95 },
-    { value: 'next-day', label: 'Next Day Delivery', price: 9.95 },
+    { value: 'standard', label: 'Standard UK Delivery (3–5 days)', price: 3.95 },
+    { value: 'express', label: 'Express UK Delivery (1–2 days)', price: 6.95 },
+    { value: 'next-day', label: 'Next Day UK Delivery', price: 9.95 },
+    { value: 'international', label: 'International Delivery (7–14 days)', price: 12.95 },
   ];
 
   get shippingCost(): number {
