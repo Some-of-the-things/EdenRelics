@@ -5,13 +5,7 @@ const angularApp = new AngularAppEngine();
 const SSR_CACHE_TTL = 300; // 5 minutes
 
 export default {
-  async fetch(request: Request, env: Record<string, unknown>, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-
-    // Serve static assets from the browser build
-    // Cloudflare Pages automatically serves files from the static assets directory
-    // This handler only receives requests that don't match static files
-
+  async fetch(request: Request, env: { ASSETS: { fetch: typeof fetch } }, ctx: ExecutionContext): Promise<Response> {
     const response = await angularApp.handle(request);
 
     if (response) {
@@ -22,7 +16,8 @@ export default {
       return cached;
     }
 
-    return new Response('Not Found', { status: 404 });
+    // For client-rendered routes (admin, login, etc.), serve the CSR shell
+    return env.ASSETS.fetch(new Request(new URL('/index.csr.html', request.url), request));
   },
 };
 
