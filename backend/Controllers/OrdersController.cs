@@ -46,7 +46,6 @@ public class OrdersController : ControllerBase
         decimal shippingCost = dto.ShippingMethod switch
         {
             "express" => 6.95m,
-            "next-day" => 9.95m,
             "international" => 12.95m,
             _ => 3.95m, // standard
         };
