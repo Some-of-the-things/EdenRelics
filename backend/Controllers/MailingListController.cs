@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Eden_Relics_BE.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/mailing-list")]
 public class MailingListController(EdenRelicsDbContext context) : ControllerBase
 {
     [HttpPost("subscribe")]
