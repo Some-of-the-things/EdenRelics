@@ -1,7 +1,7 @@
 name = "eden-relics"
+main = "dist/eden-relics/server/server.mjs"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "dist/eden-relics"
 
 [assets]
-binding = "ASSETS"
+directory = "dist/eden-relics/browser"

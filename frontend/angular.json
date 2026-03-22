@@ -36,10 +36,10 @@
             "server": "src/main.server.ts",
             "outputMode": "server",
             "security": {
-              "allowedHosts": ["localhost", "127.0.0.1"]
+              "allowedHosts": ["localhost", "127.0.0.1", "edenrelics.co.uk", "*.edenrelics.co.uk", "eden-relics.workers.dev", "*.workers.dev"]
             },
             "ssr": {
-              "entry": "src/server.ts"
+              "entry": "src/worker.ts"
             }
           },
           "configurations": {

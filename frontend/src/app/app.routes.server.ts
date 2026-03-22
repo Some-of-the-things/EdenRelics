@@ -3,15 +3,11 @@ import { RenderMode, ServerRoute } from '@angular/ssr';
 export const serverRoutes: ServerRoute[] = [
   {
     path: 'product/:id',
-    renderMode: RenderMode.Client,
+    renderMode: RenderMode.Server,
   },
   {
     path: 'blog/:slug',
-    renderMode: RenderMode.Client,
-  },
-  {
-    path: 'cart',
-    renderMode: RenderMode.Client,
+    renderMode: RenderMode.Server,
   },
   {
     path: 'order-confirmation/:id',
@@ -38,23 +34,7 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Client,
   },
   {
-    path: 'blog',
-    renderMode: RenderMode.Client,
-  },
-  {
-    path: 'forgot-password',
-    renderMode: RenderMode.Client,
-  },
-  {
-    path: 'verify-email',
-    renderMode: RenderMode.Client,
-  },
-  {
-    path: 'reset-password',
-    renderMode: RenderMode.Client,
-  },
-  {
     path: '**',
-    renderMode: RenderMode.Prerender,
+    renderMode: RenderMode.Server,
   },
 ];

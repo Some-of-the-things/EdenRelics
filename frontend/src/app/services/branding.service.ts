@@ -28,9 +28,6 @@ export class BrandingService {
   readonly branding = signal<Branding | null>(null);
 
   load(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
     this.http.get<Branding>(`${environment.apiUrl}/api/branding`).subscribe({
       next: (b) => {
         this.branding.set(b);
