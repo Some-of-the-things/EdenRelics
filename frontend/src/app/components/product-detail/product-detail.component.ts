@@ -25,6 +25,7 @@ export class ProductDetailComponent {
   private readonly auth = inject(AuthService);
   private readonly favourites = inject(FavouritesService);
   private readonly router = inject(Router);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly selectedImage = signal<string | null>(null);
   readonly showSalePrompt = signal(false);
@@ -88,7 +89,7 @@ export class ProductDetailComponent {
           type: 'product',
         });
         this.analytics.viewProduct(product.id, product.name, product.price);
-        if (isPlatformBrowser(inject(PLATFORM_ID))) {
+        if (this.isBrowser) {
           const params = new URLSearchParams(window.location.search);
           this.productService.recordView(product.id, {
             referrer: document.referrer || undefined,
