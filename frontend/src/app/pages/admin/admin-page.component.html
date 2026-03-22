@@ -8,6 +8,9 @@
       @if (activeTab() === 'orders') {
         <button class="admin__add-btn" (click)="loadOrders()">Refresh</button>
       }
+      @if (activeTab() === 'users') {
+        <button class="admin__add-btn" (click)="loadUsers()">Refresh</button>
+      }
       @if (activeTab() === 'accounts') {
         <button class="admin__add-btn" (click)="loadAccounts()">Refresh</button>
       }
@@ -37,6 +40,13 @@
       (click)="switchTab('orders')"
     >
       Orders
+    </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'users'"
+      (click)="switchTab('users')"
+    >
+      Users
     </button>
     <button
       class="admin__tab"
@@ -392,6 +402,104 @@
             }
           </tbody>
         </table>
+      </div>
+    }
+  }
+
+  @if (activeTab() === 'users') {
+    @if (usersError()) {
+      <p class="admin__error" role="alert">{{ usersError() }}</p>
+    }
+
+    @if (usersLoading()) {
+      <p class="admin__loading">Loading users...</p>
+    }
+
+    @if (!usersLoading() && adminUsers().length > 0) {
+      <p class="admin__summary">{{ adminUsers().length }} registered users</p>
+
+      <!-- Desktop table -->
+      <div class="admin__table-wrap admin__desktop-only">
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Email</th>
+              <th scope="col">Role</th>
+              <th scope="col">Verified</th>
+              <th scope="col">MFA</th>
+              <th scope="col">Provider</th>
+              <th scope="col">Orders</th>
+              <th scope="col">Mailing List</th>
+              <th scope="col">Favourites</th>
+              <th scope="col">Joined</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of adminUsers(); track user.id) {
+              <tr>
+                <td class="admin__name">{{ user.firstName }} {{ user.lastName }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                  <span class="admin__role" [attr.data-role]="user.role">{{ user.role }}</span>
+                </td>
+                <td>{{ user.emailVerified ? 'Yes' : 'No' }}</td>
+                <td>{{ user.mfaEnabled ? 'Yes' : 'No' }}</td>
+                <td>{{ user.externalProvider || 'Email' }}</td>
+                <td>{{ user.orderCount }}</td>
+                <td>
+                  <span class="admin__stock" [class.admin__stock--out]="!user.mailingList">
+                    {{ user.mailingList ? 'Subscribed' : 'No' }}
+                  </span>
+                </td>
+                <td>
+                  @if (user.favourites.length > 0) {
+                    <span class="admin__fav-list" [title]="user.favourites.join(', ')">
+                      {{ user.favourites.length }} item{{ user.favourites.length !== 1 ? 's' : '' }}
+                    </span>
+                  } @else {
+                    —
+                  }
+                </td>
+                <td>{{ user.createdAtUtc | date:'mediumDate' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="admin__empty">No users found.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile cards -->
+      <div class="admin__mobile-only">
+        @for (user of adminUsers(); track user.id) {
+          <div class="admin__card">
+            <div class="admin__card-header">
+              <div class="admin__card-title">
+                <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+                <span class="admin__role" [attr.data-role]="user.role">{{ user.role }}</span>
+              </div>
+            </div>
+            <div class="admin__card-details">
+              <span>{{ user.email }}</span>
+              <span>Joined: {{ user.createdAtUtc | date:'mediumDate' }} · Provider: {{ user.externalProvider || 'Email' }}</span>
+              <span>Orders: {{ user.orderCount }} · Verified: {{ user.emailVerified ? 'Yes' : 'No' }} · MFA: {{ user.mfaEnabled ? 'Yes' : 'No' }}</span>
+              <span>
+                Mailing list:
+                <span class="admin__stock" [class.admin__stock--out]="!user.mailingList">
+                  {{ user.mailingList ? 'Subscribed' : 'No' }}
+                </span>
+              </span>
+              @if (user.favourites.length > 0) {
+                <span>Favourites: {{ user.favourites.join(', ') }}</span>
+              }
+            </div>
+          </div>
+        } @empty {
+          <p class="admin__empty">No users found.</p>
+        }
       </div>
     }
   }

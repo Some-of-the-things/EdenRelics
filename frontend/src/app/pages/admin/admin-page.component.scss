@@ -252,6 +252,36 @@
   gap: 0.5rem;
 }
 
+.admin__summary {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.admin__role {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border-color);
+
+  &[data-role='Admin'] {
+    color: #8F1D31;
+    border-color: #8F1D31;
+  }
+}
+
+.admin__fav-list {
+  cursor: help;
+  border-bottom: 1px dotted var(--text-muted);
+}
+
+.admin__loading {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 /* Table */
 .admin__table-wrap {
   overflow-x: auto;

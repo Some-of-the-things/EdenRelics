@@ -15,6 +15,21 @@ import { environment } from '../../../environments/environment';
 import { BrandingService, Branding } from '../../services/branding.service';
 import { ContentService } from '../../services/content.service';
 
+interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  emailVerified: boolean;
+  mfaEnabled: boolean;
+  externalProvider: string | null;
+  createdAtUtc: string;
+  orderCount: number;
+  mailingList: boolean;
+  favourites: string[];
+}
+
 interface AccountsSummary {
   totalRevenue: number;
   totalCost: number;
@@ -91,7 +106,7 @@ export class AdminPageComponent {
 
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
-  readonly activeTab = signal<'products' | 'orders' | 'accounts' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'>('products');
+  readonly activeTab = signal<'products' | 'orders' | 'users' | 'accounts' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'>('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
@@ -281,6 +296,11 @@ export class AdminPageComponent {
   readonly marketplaceError = signal('');
   readonly marketplaceSuccess = signal('');
 
+  // Users
+  readonly adminUsers = signal<AdminUser[]>([]);
+  readonly usersLoading = signal(false);
+  readonly usersError = signal('');
+
   // Accounts
   readonly accountsSummary = signal<AccountsSummary | null>(null);
   readonly accountsLoading = signal(false);
@@ -292,7 +312,7 @@ export class AdminPageComponent {
     this.mobileMenuOpen.update(v => !v);
   }
 
-  switchTab(tab: 'products' | 'orders' | 'accounts' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'): void {
+  switchTab(tab: 'products' | 'orders' | 'users' | 'accounts' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
@@ -303,6 +323,9 @@ export class AdminPageComponent {
     }
     if (tab === 'branding') {
       this.loadBranding();
+    }
+    if (tab === 'users') {
+      this.loadUsers();
     }
     if (tab === 'accounts') {
       this.loadAccounts();
@@ -503,6 +526,21 @@ export class AdminPageComponent {
 
   copyToClipboard(text: string): void {
     navigator.clipboard.writeText(text);
+  }
+
+  loadUsers(): void {
+    this.usersLoading.set(true);
+    this.usersError.set('');
+    this.http.get<AdminUser[]>(`${environment.apiUrl}/api/admin/users`).subscribe({
+      next: (users) => {
+        this.adminUsers.set(users);
+        this.usersLoading.set(false);
+      },
+      error: () => {
+        this.usersError.set('Failed to load users.');
+        this.usersLoading.set(false);
+      },
+    });
   }
 
   loadAccounts(): void {

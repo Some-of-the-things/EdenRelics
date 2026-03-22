@@ -62,24 +62,34 @@ export class SocialLoginComponent {
     }).catch(() => {});
   }
 
+  private initializeGoogle(): void {
+    google.accounts.id.initialize({
+      client_id: '795615736938-ep20lsmjf72ahenf1okv2mljrio799df.apps.googleusercontent.com',
+      callback: (response: any) => {
+        this.tokenReceived.emit({ provider: 'Google', idToken: response.credential });
+      },
+    });
+    const target = document.getElementById('g_id_signin');
+    if (target) {
+      google.accounts.id.renderButton(target, { type: 'standard', size: 'large' });
+    }
+  }
+
   private loadGoogleSdk(): void {
-    if (document.getElementById('google-gsi')) return;
+    if (document.getElementById('google-gsi')) {
+      if (typeof google !== 'undefined') {
+        this.googleLoaded = true;
+        this.initializeGoogle();
+      }
+      return;
+    }
     const script = document.createElement('script');
     script.id = 'google-gsi';
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.onload = () => {
       this.googleLoaded = true;
-      google.accounts.id.initialize({
-        client_id: '795615736938-ep20lsmjf72ahenf1okv2mljrio799df.apps.googleusercontent.com',
-        callback: (response: any) => {
-          this.tokenReceived.emit({ provider: 'Google', idToken: response.credential });
-        },
-      });
-      const target = document.getElementById('g_id_signin');
-      if (target) {
-        google.accounts.id.renderButton(target, { type: 'standard', size: 'large' });
-      }
+      this.initializeGoogle();
     };
     document.head.appendChild(script);
   }
