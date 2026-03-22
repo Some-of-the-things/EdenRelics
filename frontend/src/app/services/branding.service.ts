@@ -26,8 +26,13 @@ export class BrandingService {
   private readonly document = inject(DOCUMENT);
 
   readonly branding = signal<Branding | null>(null);
+  private loaded = false;
 
   load(): void {
+    if (this.loaded) {
+      return;
+    }
+    this.loaded = true;
     this.http.get<Branding>(`${environment.apiUrl}/api/branding`).subscribe({
       next: (b) => {
         this.branding.set(b);

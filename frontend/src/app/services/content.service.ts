@@ -8,8 +8,13 @@ export class ContentService {
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly content = signal<Record<string, string>>({});
+  private loaded = false;
 
   load(): void {
+    if (this.loaded) {
+      return;
+    }
+    this.loaded = true;
     this.http.get<Record<string, string>>(`${environment.apiUrl}/api/content`).subscribe({
       next: (c) => this.content.set(c),
     });
