@@ -448,6 +448,61 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpPost("refresh")]
+    public async Task<ActionResult<AuthResponseDto>> Refresh()
+    {
+        // Extract the token manually to allow expired tokens
+        string? authHeader = Request.Headers.Authorization.FirstOrDefault();
+        if (authHeader is null || !authHeader.StartsWith("Bearer "))
+        {
+            return Unauthorized();
+        }
+
+        string expiredToken = authHeader["Bearer ".Length..];
+
+        try
+        {
+            string key = _configuration["Jwt:Key"]!;
+            TokenValidationParameters parameters = new()
+            {
+                ValidateIssuer = true,
+                ValidIssuer = _configuration["Jwt:Issuer"],
+                ValidateAudience = true,
+                ValidAudience = _configuration["Jwt:Audience"],
+                ValidateLifetime = false, // Allow expired tokens
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+            };
+
+            JwtSecurityTokenHandler handler = new();
+            ClaimsPrincipal principal = handler.ValidateToken(expiredToken, parameters, out SecurityToken validatedToken);
+
+            // Only allow refresh within 30 days of expiry
+            if (validatedToken.ValidTo < DateTime.UtcNow.AddDays(-30))
+            {
+                return Unauthorized(new { message = "Token too old to refresh." });
+            }
+
+            string? userIdStr = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdStr is null || !Guid.TryParse(userIdStr, out Guid userId))
+            {
+                return Unauthorized();
+            }
+
+            User? user = await _userRepository.GetByIdAsync(userId);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            string newToken = GenerateToken(user);
+            return Ok(new AuthResponseDto(newToken, ToDto(user)));
+        }
+        catch
+        {
+            return Unauthorized();
+        }
+    }
+
     [HttpPost("promote-admin")]
     [Authorize]
     public async Task<ActionResult<AuthResponseDto>> PromoteToAdmin()
