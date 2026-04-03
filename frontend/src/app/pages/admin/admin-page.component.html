@@ -11,9 +11,13 @@
       @if (activeTab() === 'users') {
         <button class="admin__add-btn" (click)="loadUsers()">Refresh</button>
       }
-      @if (activeTab() === 'finance') {
+      @if (activeTab() === 'finance' && financeSubTab() === 'transactions') {
         <button class="admin__add-btn" (click)="openFinanceForm()">+ Add Transaction</button>
         <button class="admin__add-btn" (click)="loadFinance(); loadAccounts()">Refresh</button>
+      }
+      @if (activeTab() === 'finance' && financeSubTab() === 'bank') {
+        <button class="admin__add-btn" (click)="syncMonzo()" [disabled]="monzoSyncing()">Sync Monzo</button>
+        <button class="admin__add-btn" (click)="loadMonzo()">Refresh</button>
       }
       @if (activeTab() === 'blog') {
         <button class="admin__add-btn" (click)="openBlogForm()">+ New Post</button>
@@ -168,6 +172,7 @@
                 <option value="12">12</option>
                 <option value="12/14">12/14</option>
                 <option value="14">14</option>
+                <option value="14/16">14/16</option>
                 <option value="16">16</option>
               </select>
             </label>
@@ -178,6 +183,7 @@
               <select [(ngModel)]="form.condition" name="condition" required>
                 <option value="mint">Mint</option>
                 <option value="excellent">Excellent</option>
+                <option value="very good">Very Good</option>
                 <option value="good">Good</option>
                 <option value="fair">Fair</option>
               </select>
@@ -636,6 +642,12 @@
   }
 
   @if (activeTab() === 'finance') {
+    <div class="admin__subtabs">
+      <button class="admin__subtab" [class.admin__subtab--active]="financeSubTab() === 'transactions'" (click)="switchFinanceSubTab('transactions')">Transactions</button>
+      <button class="admin__subtab" [class.admin__subtab--active]="financeSubTab() === 'bank'" (click)="switchFinanceSubTab('bank')">Bank</button>
+    </div>
+
+    @if (financeSubTab() === 'transactions') {
     @if (financeError()) {
       <p class="admin__error" role="alert">{{ financeError() }}</p>
     }
@@ -883,6 +895,129 @@
           </table>
         </div>
       </div>
+    }
+    }
+
+    @if (financeSubTab() === 'bank') {
+      @if (monzoError()) {
+        <p class="admin__error" role="alert">{{ monzoError() }}</p>
+      }
+
+      @if (monzoPendingApproval() && !monzoLoading()) {
+        <div class="admin__empty-state monzo__approval">
+          <p><strong>Approve access in the Monzo app</strong></p>
+          <p>Open the Monzo app on your phone and approve the API access request. Once approved, click Verify below.</p>
+          <div style="margin-top: 1rem; display: flex; gap: 0.75rem; justify-content: center">
+            <button class="admin__add-btn" (click)="verifyMonzo()">Verify Connection</button>
+            <button class="admin__logout-btn" (click)="disconnectMonzo()">Cancel</button>
+          </div>
+        </div>
+      }
+
+      @if (!monzoConnected() && !monzoPendingApproval() && !monzoLoading()) {
+        <div class="admin__empty-state">
+          <p>Connect your Monzo business account to sync bank transactions automatically.</p>
+          <button class="admin__add-btn" (click)="connectMonzo()" style="margin-top: 1rem">Connect Monzo</button>
+        </div>
+      }
+
+      @if (monzoLoading()) {
+        <p class="admin__loading">Loading bank data...</p>
+      }
+
+      @if (monzoConnected() && !monzoLoading()) {
+        @if (monzoBalance(); as bal) {
+          <div class="acct__kpis">
+            <div class="acct__kpi acct__kpi--accent">
+              <span class="acct__kpi-value">{{ bal.balance | currency:'GBP' }}</span>
+              <span class="acct__kpi-label">Balance</span>
+            </div>
+            <div class="acct__kpi">
+              <span class="acct__kpi-value">{{ bal.totalBalance | currency:'GBP' }}</span>
+              <span class="acct__kpi-label">Total Balance</span>
+            </div>
+            <div class="acct__kpi">
+              <span class="acct__kpi-value fin__amount--negative">{{ bal.spendToday | currency:'GBP' }}</span>
+              <span class="acct__kpi-label">Spent Today</span>
+            </div>
+          </div>
+        }
+
+        <div class="fin__toolbar">
+          <button class="admin__add-btn" (click)="syncMonzo()" [disabled]="monzoSyncing()">
+            {{ monzoSyncing() ? 'Syncing...' : 'Sync Now' }}
+          </button>
+          <button class="admin__logout-btn" (click)="disconnectMonzo()">Disconnect</button>
+        </div>
+
+        <div class="acct__section">
+          <h3 class="acct__section-title">Bank Transactions</h3>
+          <div class="admin__table-wrap">
+            <table class="admin__table">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Description</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Notes</th>
+                  <th scope="col">Tags</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (txn of monzoTransactions(); track txn.id) {
+                  <tr>
+                    <td>{{ txn.date | date:'dd MMM yyyy' }}</td>
+                    <td class="admin__name">
+                      @if (txn.merchantLogo) {
+                        <img [src]="txn.merchantLogo" alt="" class="monzo__merchant-logo" />
+                      }
+                      {{ txn.description }}
+                    </td>
+                    <td [class.fin__amount--positive]="txn.amount >= 0" [class.fin__amount--negative]="txn.amount < 0">
+                      {{ txn.amount | currency:'GBP' }}
+                    </td>
+                    <td>{{ txn.category }}</td>
+                    <td>
+                      <input
+                        type="text"
+                        class="monzo__inline-input"
+                        [value]="txn.notes ?? ''"
+                        (blur)="annotateMonzoTransaction(txn, $any($event.target).value, txn.tags ?? '')"
+                        placeholder="Add note..."
+                        [disabled]="monzoAnnotating() === txn.id"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        class="monzo__inline-input"
+                        [value]="txn.tags ?? ''"
+                        (blur)="annotateMonzoTransaction(txn, txn.notes ?? '', $any($event.target).value)"
+                        placeholder="Add tags..."
+                        [disabled]="monzoAnnotating() === txn.id"
+                      />
+                    </td>
+                    <td>
+                      @if (txn.declineReason) {
+                        <span class="monzo__declined">Declined</span>
+                      }
+                      @if (!txn.settledAt && !txn.declineReason) {
+                        <span class="monzo__pending">Pending</span>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="admin__empty">No bank transactions found.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
     }
   }
 

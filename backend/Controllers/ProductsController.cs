@@ -523,7 +523,7 @@ public class ProductsController : ControllerBase
                                 - "era": the decade it's from as a string like "1970s", "1980s", "1990s", "2000s", or "2020s"
                                 - "category": one of "70s", "80s", "90s", "y2k", or "modern" (matching the era)
                                 - "size": your best guess at UK size as a string (e.g. "8", "10", "12", "14", "16"), or "10" if unclear
-                                - "condition": one of "mint", "excellent", "good", or "fair"
+                                - "condition": one of "mint", "excellent", "very good", "good", or "fair"
                                 - "suggestedPrice": a suggested retail price in GBP as a number (no currency symbol)
                                 {styleExamples}
                                 Return ONLY valid JSON, no markdown fences, no explanation.

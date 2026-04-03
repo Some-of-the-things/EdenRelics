@@ -494,6 +494,7 @@
 
   &[data-condition='mint'] { color: #1b6327; }
   &[data-condition='excellent'] { color: #306b28; }
+  &[data-condition='very good'] { color: #4a7a22; }
   &[data-condition='good'] { color: #6e5100; }
   &[data-condition='fair'] { color: #8b3f0e; }
 }
@@ -1700,5 +1701,82 @@
   color: var(--accent);
   text-decoration: underline;
   font-size: 0.85rem;
+}
+
+// Sub-tabs within a tab
+.admin__subtabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--bg-card, #2a2a2a);
+}
+
+.admin__subtab {
+  padding: 0.6rem 1.25rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: var(--text-muted, #999);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+
+  &:hover {
+    color: var(--text-primary, #fff);
+  }
+
+  &--active {
+    color: var(--accent, #c9a96e);
+    border-bottom-color: var(--accent, #c9a96e);
+  }
+}
+
+// Monzo bank styles
+.monzo__merchant-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-right: 0.4rem;
+}
+
+.monzo__inline-input {
+  background: var(--bg-card, #2a2a2a);
+  border: 1px solid transparent;
+  color: var(--text-primary, #fff);
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  width: 100%;
+  min-width: 80px;
+
+  &:focus {
+    border-color: var(--accent, #c9a96e);
+    outline: none;
+  }
+
+  &::placeholder {
+    color: var(--text-muted, #666);
+  }
+}
+
+.monzo__declined {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.monzo__pending {
+  color: #f39c12;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.admin__empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted, #999);
+  font-size: 0.95rem;
 }
 
