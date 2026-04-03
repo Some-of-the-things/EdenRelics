@@ -38,7 +38,7 @@ public class MonzoSyncBackgroundService(
         }
     }
 
-    public static async Task<(int Fetched, int Added, string AccountId, DateTime Since)> SyncTransactionsAsync(
+    public static async Task<(int Fetched, int Added, string AccountId, DateTime? Since)> SyncTransactionsAsync(
         MonzoService monzo, EdenRelicsDbContext context, string accessToken, string accountId)
     {
         DateTime? latestDate = await context.MonzoTransactions
@@ -46,7 +46,8 @@ public class MonzoSyncBackgroundService(
             .Select(t => (DateTime?)t.Date)
             .FirstOrDefaultAsync();
 
-        DateTime since = latestDate?.AddMinutes(-5) ?? DateTime.UtcNow.AddDays(-90);
+        // Only pass 'since' for incremental syncs — Monzo returns empty for far-back dates
+        DateTime? since = latestDate?.AddMinutes(-5);
 
         List<MonzoTransactionResponse> transactions = await monzo.GetTransactionsAsync(
             accessToken, accountId, since: since);
