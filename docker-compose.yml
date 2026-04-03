@@ -22,6 +22,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=edenrelics;Username=postgres;Password=EdenRelics2026!
+      - Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
     ports:
       - "5260:8080"
     depends_on:

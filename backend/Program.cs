@@ -125,7 +125,9 @@ string[] allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins"
     ?? ["https://edenrelics.co.uk"];
 // Ensure production origin is always included
 if (!allowedOrigins.Contains("https://edenrelics.co.uk"))
+{
     allowedOrigins = [..allowedOrigins, "https://edenrelics.co.uk"];
+}
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -148,9 +150,13 @@ using (IServiceScope scope = app.Services.CreateScope())
 {
     EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
     if (db.Database.IsRelational())
+    {
         db.Database.Migrate();
+    }
     else
+    {
         db.Database.EnsureCreated();
+    }
 }
 
 // Optimize any uncompressed uploaded images

@@ -21,6 +21,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
     public DbSet<Favourite> Favourites => Set<Favourite>();
     public DbSet<ProductView> ProductViews => Set<ProductView>();
+    public DbSet<Transaction> Transactions => Set<Transaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -191,6 +192,18 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(v => v.DeviceType).HasMaxLength(20);
             entity.Property(v => v.OperatingSystem).HasMaxLength(50);
             entity.Property(v => v.ScreenResolution).HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<Transaction>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(t => t.Description).HasMaxLength(300);
+            entity.Property(t => t.Amount).HasPrecision(10, 2);
+            entity.Property(t => t.Category).HasMaxLength(30);
+            entity.Property(t => t.Platform).HasMaxLength(30);
+            entity.Property(t => t.Reference).HasMaxLength(100);
+            entity.Property(t => t.ReceiptUrl).HasMaxLength(500);
+            entity.Property(t => t.Notes).HasMaxLength(500);
         });
 
         modelBuilder.Entity<Product>(entity =>

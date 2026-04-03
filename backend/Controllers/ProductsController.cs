@@ -1,4 +1,8 @@
 using System.Security.Claims;
+using System.Text.Json;
+using Anthropic.SDK;
+using Anthropic.SDK.Constants;
+using Anthropic.SDK.Messaging;
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
 using Eden_Relics_BE.Repositories;
@@ -20,6 +24,7 @@ public class ProductsController : ControllerBase
     private readonly ImageStorageService _storage;
     private readonly IEmailService _emailService;
     private readonly GeoIpService _geoIp;
+    private readonly IConfiguration _config;
     private readonly ILogger<ProductsController> _logger;
 
     public ProductsController(
@@ -31,6 +36,7 @@ public class ProductsController : ControllerBase
         ImageStorageService storage,
         IEmailService emailService,
         GeoIpService geoIp,
+        IConfiguration config,
         ILogger<ProductsController> logger)
     {
         _repository = repository;
@@ -41,6 +47,7 @@ public class ProductsController : ControllerBase
         _storage = storage;
         _emailService = emailService;
         _geoIp = geoIp;
+        _config = config;
         _logger = logger;
     }
 
@@ -85,6 +92,11 @@ public class ProductsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ProductDto>> Create(CreateProductDto dto)
     {
+        if (dto.AdditionalImageUrls is { Count: > 6 })
+        {
+            return BadRequest(new { error = "A product can have at most 6 additional images." });
+        }
+
         Product product = new()
         {
             Name = dto.Name,
@@ -126,7 +138,14 @@ public class ProductsController : ControllerBase
         if (dto.Size is not null) { product.Size = dto.Size; }
         if (dto.Condition is not null) { product.Condition = dto.Condition; }
         if (dto.ImageUrl is not null) { product.ImageUrl = dto.ImageUrl; }
-        if (dto.AdditionalImageUrls is not null) { product.AdditionalImageUrls = dto.AdditionalImageUrls; }
+        if (dto.AdditionalImageUrls is not null)
+        {
+            if (dto.AdditionalImageUrls.Count > 6)
+            {
+                return BadRequest(new { error = "A product can have at most 6 additional images." });
+            }
+            product.AdditionalImageUrls = dto.AdditionalImageUrls;
+        }
         if (dto.InStock.HasValue) { product.InStock = dto.InStock.Value; }
         bool shouldNotifySale = false;
         if (dto.SalePrice.HasValue)
@@ -429,6 +448,116 @@ public class ProductsController : ControllerBase
             return url;
         }
     }
+
+    [HttpPost("analyse-image")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> AnalyseImage([FromBody] AnalyseImageRequest request)
+    {
+        string? apiKey = _config["Anthropic:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            return StatusCode(503, new { error = "Anthropic API key not configured." });
+        }
+
+        try
+        {
+            var client = new AnthropicClient(apiKey);
+
+            // Fetch recent product descriptions as style examples
+            IEnumerable<Product> recentProducts = await _repository.GetAllAsync();
+            List<Product> examples = recentProducts
+                .Where(p => !string.IsNullOrWhiteSpace(p.Description) && p.Description.Length > 20)
+                .OrderByDescending(p => p.CreatedAtUtc)
+                .Take(5)
+                .ToList();
+
+            string styleExamples = "";
+            if (examples.Count > 0)
+            {
+                styleExamples = "\n\nHere are existing product listings from this shop. Match their writing style, tone, length, and formatting exactly:\n\n";
+                foreach (Product ex in examples)
+                {
+                    styleExamples += $"Name: {ex.Name}\nDescription: {ex.Description}\n\n";
+                }
+            }
+
+            // Fetch the image and convert to base64
+            using HttpClient http = new();
+            byte[] imageBytes = await http.GetByteArrayAsync(request.ImageUrl);
+            string base64 = Convert.ToBase64String(imageBytes);
+            string mediaType = request.ImageUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/webp";
+
+            var messages = new List<Message>
+            {
+                new()
+                {
+                    Role = RoleType.User,
+                    Content =
+                    [
+                        new ImageContent
+                        {
+                            Source = new ImageSource
+                            {
+                                MediaType = mediaType,
+                                Data = base64,
+                            }
+                        },
+                        new TextContent
+                        {
+                            Text = $"""
+                                You are a vintage clothing expert cataloguing items for an online shop called Eden Relics.
+                                Analyse this clothing image and return a JSON object with these fields:
+                                - "name": a short, appealing product name (e.g. "Silk Slip Dress", "Power Shoulder Blazer")
+                                - "description": a rich product description highlighting era, fabric, details, and styling. Use the same HTML formatting as the examples below if provided.
+                                - "era": the decade it's from as a string like "1970s", "1980s", "1990s", "2000s", or "2020s"
+                                - "category": one of "70s", "80s", "90s", "y2k", or "modern" (matching the era)
+                                - "size": your best guess at UK size as a string (e.g. "8", "10", "12", "14", "16"), or "10" if unclear
+                                - "condition": one of "mint", "excellent", "good", or "fair"
+                                - "suggestedPrice": a suggested retail price in GBP as a number (no currency symbol)
+                                {styleExamples}
+                                Return ONLY valid JSON, no markdown fences, no explanation.
+                                """
+                        }
+                    ]
+                }
+            };
+
+            var parameters = new MessageParameters
+            {
+                Messages = messages,
+                MaxTokens = 512,
+                Model = AnthropicModels.Claude45Haiku,
+                Stream = false,
+                Temperature = 0.3m,
+            };
+
+            var result = await client.Messages.GetClaudeMessageAsync(parameters);
+            string responseText = result.Message.ToString().Trim();
+
+            // Strip markdown fences if present
+            if (responseText.StartsWith("```"))
+            {
+                responseText = responseText.Split('\n', 2).Length > 1
+                    ? responseText.Split('\n', 2)[1]
+                    : responseText;
+                if (responseText.EndsWith("```"))
+                {
+                    responseText = responseText[..^3];
+                }
+                responseText = responseText.Trim();
+            }
+
+            JsonDocument parsed = JsonDocument.Parse(responseText);
+            return Ok(parsed.RootElement);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to analyse product image");
+            return StatusCode(500, new { error = "Image analysis failed. Please try again." });
+        }
+    }
+
+    public record AnalyseImageRequest(string ImageUrl);
 
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Admin")]

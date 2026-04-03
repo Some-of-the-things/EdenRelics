@@ -56,7 +56,9 @@ public class ApiFactory : WebApplicationFactory<Program>
             var emailDescriptor = services.SingleOrDefault(
                 d => d.ServiceType == typeof(IEmailService));
             if (emailDescriptor is not null)
+            {
                 services.Remove(emailDescriptor);
+            }
             services.AddTransient<IEmailService, FakeEmailService>();
 
         });

@@ -1,5 +1,8 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using static Eden_Relics_BE.Tests.Helpers;
 
 namespace Eden_Relics_BE.Tests;
@@ -458,4 +461,252 @@ public class ProductsTests : IClassFixture<ApiFactory>
         var response = await client.PostAsync($"/api/products/{Guid.Empty}/view", null);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task UploadImage_AsAdmin_ReturnsImageUrl()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-upload@test.com");
+
+        using var content = CreateImageUploadContent("test.png");
+        var response = await client.PostAsync("/api/products/upload-image", content);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<ImageUploadResponse>(JsonOptions);
+        Assert.NotNull(result);
+        Assert.False(string.IsNullOrEmpty(result.ImageUrl));
+        Assert.EndsWith(".webp", result.ImageUrl);
+    }
+
+    [Fact]
+    public async Task UploadMultipleImages_AsAdmin_ReturnsDifferentUrls()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-multi-upload@test.com");
+
+        var urls = new List<string>();
+        for (int i = 0; i < 3; i++)
+        {
+            using var content = CreateImageUploadContent($"photo{i}.png");
+            var response = await client.PostAsync("/api/products/upload-image", content);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ImageUploadResponse>(JsonOptions);
+            Assert.NotNull(result);
+            Assert.False(string.IsNullOrEmpty(result.ImageUrl));
+            urls.Add(result.ImageUrl);
+        }
+
+        Assert.Equal(3, urls.Distinct().Count());
+    }
+
+    [Fact]
+    public async Task Create_WithAdditionalImages_ReturnsAllImages()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-create-multi-img@test.com");
+
+        var additionalUrls = new List<string>
+        {
+            "https://example.com/img2.webp",
+            "https://example.com/img3.webp",
+            "https://example.com/img4.webp"
+        };
+
+        var response = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Multi Photo Dress",
+            description = "A dress with multiple photos",
+            price = 149.99m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "excellent",
+            imageUrl = "https://example.com/img1.webp",
+            additionalImageUrls = additionalUrls,
+            inStock = true
+        });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var product = await response.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.NotNull(product);
+        Assert.Equal("https://example.com/img1.webp", product.ImageUrl);
+        Assert.Equal(3, product.AdditionalImageUrls.Count);
+        Assert.Equal(additionalUrls, product.AdditionalImageUrls);
+    }
+
+    [Fact]
+    public async Task Update_AdditionalImages_ReplacesImages()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-update-multi-img@test.com");
+
+        var createResponse = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Update Photos Dress",
+            description = "Desc",
+            price = 100m,
+            era = "1980s",
+            category = "80s",
+            size = "S",
+            condition = "good",
+            imageUrl = "https://example.com/original.webp",
+            additionalImageUrls = new[] { "https://example.com/old1.webp" },
+            inStock = true
+        });
+        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.Single(created!.AdditionalImageUrls);
+
+        var newUrls = new[] { "https://example.com/new1.webp", "https://example.com/new2.webp" };
+        var updateResponse = await client.PutAsJsonAsync($"/api/products/{created.Id}", new
+        {
+            additionalImageUrls = newUrls
+        });
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+
+        var updated = await updateResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.Equal(2, updated!.AdditionalImageUrls.Count);
+        Assert.Equal(newUrls, updated.AdditionalImageUrls);
+    }
+
+    [Fact]
+    public async Task UploadImage_AsCustomer_Returns403()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAndLogin(client, "customer-upload@test.com");
+
+        using var content = CreateImageUploadContent("test.png");
+        var response = await client.PostAsync("/api/products/upload-image", content);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UploadImage_InvalidExtension_Returns400()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-upload-bad-ext@test.com");
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(new byte[] { 0x00 });
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        content.Add(fileContent, "file", "document.pdf");
+
+        var response = await client.PostAsync("/api/products/upload-image", content);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UploadAndCreate_EndToEnd_MultiplePhotos()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-e2e-photos@test.com");
+
+        // Upload 3 images
+        var uploadedUrls = new List<string>();
+        for (int i = 0; i < 3; i++)
+        {
+            using var content = CreateImageUploadContent($"dress{i}.jpg");
+            var uploadResponse = await client.PostAsync("/api/products/upload-image", content);
+            Assert.Equal(HttpStatusCode.OK, uploadResponse.StatusCode);
+
+            var result = await uploadResponse.Content.ReadFromJsonAsync<ImageUploadResponse>(JsonOptions);
+            uploadedUrls.Add(result!.ImageUrl);
+        }
+
+        // Create product using first as primary, rest as additional
+        var response = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "E2E Photo Dress",
+            description = "End to end test",
+            price = 175m,
+            era = "1970s",
+            category = "70s",
+            size = "M",
+            condition = "excellent",
+            imageUrl = uploadedUrls[0],
+            additionalImageUrls = uploadedUrls.Skip(1).ToList(),
+            inStock = true
+        });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var product = await response.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.NotNull(product);
+        Assert.Equal(uploadedUrls[0], product.ImageUrl);
+        Assert.Equal(2, product.AdditionalImageUrls.Count);
+        Assert.Equal(uploadedUrls[1], product.AdditionalImageUrls[0]);
+        Assert.Equal(uploadedUrls[2], product.AdditionalImageUrls[1]);
+
+        // Verify via GET
+        var fetched = await client.GetFromJsonAsync<ProductResponse>($"/api/products/{product.Id}", JsonOptions);
+        Assert.NotNull(fetched);
+        Assert.Equal(uploadedUrls[0], fetched.ImageUrl);
+        Assert.Equal(2, fetched.AdditionalImageUrls.Count);
+    }
+
+    [Fact]
+    public async Task Create_WithMoreThan6AdditionalImages_Returns400()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-too-many-imgs@test.com");
+
+        var urls = Enumerable.Range(1, 7).Select(i => $"https://example.com/img{i}.webp").ToList();
+        var response = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Too Many Photos",
+            description = "Desc",
+            price = 100m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/primary.webp",
+            additionalImageUrls = urls,
+            inStock = true
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_WithMoreThan6AdditionalImages_Returns400()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-too-many-update@test.com");
+
+        var createResponse = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Will Overflow",
+            description = "Desc",
+            price = 100m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/primary.webp",
+            inStock = true
+        });
+        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+
+        var urls = Enumerable.Range(1, 7).Select(i => $"https://example.com/img{i}.webp").ToList();
+        var response = await client.PutAsJsonAsync($"/api/products/{created!.Id}", new
+        {
+            additionalImageUrls = urls
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private static MultipartFormDataContent CreateImageUploadContent(string fileName)
+    {
+        using var image = new Image<Rgba32>(100, 100);
+        using var ms = new MemoryStream();
+        image.SaveAsPng(ms);
+        var bytes = ms.ToArray();
+
+        var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(bytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        content.Add(fileContent, "file", fileName);
+        return content;
+    }
+
+    private record ImageUploadResponse(string ImageUrl);
 }

@@ -34,7 +34,9 @@ public class RankCheckerService(IHttpClientFactory httpClientFactory, IConfigura
                 using JsonDocument doc = JsonDocument.Parse(json);
 
                 if (!doc.RootElement.TryGetProperty("items", out JsonElement items))
+                {
                     break;
+                }
 
                 int position = startIndex;
                 foreach (JsonElement item in items.EnumerateArray())

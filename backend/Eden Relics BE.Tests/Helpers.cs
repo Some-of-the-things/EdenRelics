@@ -55,7 +55,7 @@ public static class Helpers
 
     public record AuthResponse(string Token, UserResponse User);
     public record UserResponse(Guid Id, string Email, string FirstName, string LastName, string Role, bool EmailVerified);
-    public record ProductResponse(Guid Id, string Name, string Description, decimal Price, decimal? SalePrice, string Era, string Category, string Size, string Condition, string ImageUrl, bool InStock, int ViewCount);
+    public record ProductResponse(Guid Id, string Name, string Description, decimal Price, decimal? SalePrice, string Era, string Category, string Size, string Condition, string ImageUrl, List<string> AdditionalImageUrls, bool InStock, int ViewCount);
     public record OrderResponse(Guid Id, string Status, decimal Total, DateTime CreatedAtUtc, List<OrderItemResponse> Items);
     public record OrderItemResponse(Guid ProductId, string ProductName, decimal UnitPrice, int Quantity);
     public record ProfileResponse(Guid Id, string Email, string FirstName, string LastName, AddressResponse DeliveryAddress, AddressResponse BillingAddress, PaymentResponse? Payment, bool MfaEnabled, bool EmailVerified);
@@ -63,4 +63,8 @@ public static class Helpers
     public record PaymentResponse(string? CardholderName, string? CardLast4, string? CardBrand, int? ExpiryMonth, int? ExpiryYear);
     public record MfaSetupResponse(string Secret, string QrUri);
     public record MessageResponse(string Message);
+    public record TransactionResponse(Guid Id, DateTime Date, string Description, decimal Amount, string Category, string? Platform, string? Reference, string? ReceiptUrl, string? Notes, DateTime CreatedAtUtc);
+    public record FinanceSummaryResponse(decimal TotalIncome, decimal TotalExpenses, decimal TotalProfit, int TransactionCount, List<MonthSummary> ByMonth);
+    public record MonthSummary(string Month, decimal Income, decimal Expenses, decimal Profit, int Count);
+    public record AnalyseImageError(string Error);
 }

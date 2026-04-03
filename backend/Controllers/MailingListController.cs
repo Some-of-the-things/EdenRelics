@@ -14,7 +14,9 @@ public class MailingListController(EdenRelicsDbContext context) : ControllerBase
     public async Task<ActionResult> Subscribe([FromBody] MailingListSubscribeDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Email) || !dto.Email.Contains('@') || dto.Email.Length < 5)
+        {
             return BadRequest(new { message = "A valid email address is required." });
+        }
 
         string email = dto.Email.Trim().ToLowerInvariant();
 
@@ -47,7 +49,9 @@ public class MailingListController(EdenRelicsDbContext context) : ControllerBase
     public async Task<ActionResult> Unsubscribe([FromBody] MailingListUnsubscribeDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Email))
+        {
             return BadRequest(new { message = "Email is required." });
+        }
 
         string email = dto.Email.Trim().ToLowerInvariant();
         MailingListSubscriber? sub = await context.MailingListSubscribers

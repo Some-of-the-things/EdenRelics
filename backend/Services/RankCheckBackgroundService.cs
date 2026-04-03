@@ -35,7 +35,9 @@ public class RankCheckBackgroundService(IServiceScopeFactory scopeFactory, ILogg
         DateTime now = DateTime.UtcNow;
         DateTime nextRun = now.Date.AddHours(6);
         if (nextRun <= now)
+        {
             nextRun = nextRun.AddDays(1);
+        }
         return nextRun - now;
     }
 }

@@ -31,14 +31,18 @@ public class OrdersController : ControllerBase
         Guid? userId = userIdClaim is not null ? Guid.Parse(userIdClaim) : null;
 
         if (userId is null && string.IsNullOrWhiteSpace(dto.GuestEmail))
+        {
             return BadRequest(new { message = "Guest email is required for anonymous checkout." });
+        }
 
         List<Product> products = [];
         foreach (CreateOrderItemDto item in dto.Items)
         {
             Product? product = await _context.Products.FindAsync(item.ProductId);
             if (product is null)
+            {
                 return BadRequest(new { message = $"Product {item.ProductId} not found." });
+            }
             products.Add(product);
         }
 

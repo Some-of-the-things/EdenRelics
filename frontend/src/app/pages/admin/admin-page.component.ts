@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, ElementRef, inject, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
@@ -96,6 +96,35 @@ interface TrackedKeyword {
   notes: string | null;
 }
 
+interface FinanceTransaction {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  category: string;
+  platform: string | null;
+  reference: string | null;
+  receiptUrl: string | null;
+  notes: string | null;
+  createdAtUtc: string;
+}
+
+interface FinanceSummary {
+  totalIncome: number;
+  totalExpenses: number;
+  totalProfit: number;
+  transactionCount: number;
+  byMonth: {
+    month: string;
+    income: number;
+    expenses: number;
+    profit: number;
+    count: number;
+    byCategory: { category: string; total: number; count: number }[];
+    byPlatform: { platform: string; total: number; count: number }[];
+  }[];
+}
+
 interface SeoResult {
   url: string;
   title: string | null;
@@ -131,7 +160,9 @@ export class AdminPageComponent {
 
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
-  readonly activeTab = signal<'products' | 'orders' | 'users' | 'accounts' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'>('products');
+
+  @ViewChild('descriptionEditor') descriptionEditor!: ElementRef<HTMLElement>;
+  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'>('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
@@ -321,6 +352,10 @@ export class AdminPageComponent {
   readonly marketplaceError = signal('');
   readonly marketplaceSuccess = signal('');
 
+  // AI analysis
+  readonly analysing = signal(false);
+  readonly analyseError = signal('');
+
   // Users
   readonly adminUsers = signal<AdminUser[]>([]);
   readonly usersLoading = signal(false);
@@ -335,6 +370,22 @@ export class AdminPageComponent {
   readonly accountsLoading = signal(false);
   readonly accountsError = signal('');
 
+  // Finance
+  readonly financeTransactions = signal<FinanceTransaction[]>([]);
+  readonly financeLoading = signal(false);
+  readonly financeError = signal('');
+  readonly financeSuccess = signal('');
+  readonly financeSummary = signal<FinanceSummary | null>(null);
+  readonly showFinanceForm = signal(false);
+  readonly editingTransactionId = signal<string | null>(null);
+  readonly financeReceiptUploading = signal(false);
+  readonly financeMonthFilter = signal<string>('all');
+  financeForm = { date: '', description: '', amount: 0, category: 'Stock', platform: '', reference: '', notes: '' };
+  financeReceiptUrl: string | null = null;
+
+  readonly financeCategories = ['Stock', 'Shipping', 'Fees', 'Packaging', 'Owner Draw', 'Sales', 'Other'];
+  readonly financePlatforms = ['Website', 'Etsy', 'Depop', 'Vinted', 'eBay', ''];
+
   // View analytics
   readonly showViewAnalytics = signal(false);
   readonly viewAnalyticsProduct = signal<Product | null>(null);
@@ -348,7 +399,7 @@ export class AdminPageComponent {
     this.mobileMenuOpen.update(v => !v);
   }
 
-  switchTab(tab: 'products' | 'orders' | 'users' | 'accounts' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'): void {
+  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
@@ -363,14 +414,15 @@ export class AdminPageComponent {
     if (tab === 'users') {
       this.loadUsers();
     }
-    if (tab === 'accounts') {
-      this.loadAccounts();
-    }
     if (tab === 'content') {
       this.loadContent();
     }
     if (tab === 'marketplace') {
       this.loadMarketplace();
+    }
+    if (tab === 'finance') {
+      this.loadFinance();
+      this.loadAccounts();
     }
     if (tab === 'blog') {
       this.loadBlogPosts();
@@ -854,6 +906,11 @@ export class AdminPageComponent {
     this.uploadError.set('');
     this.form = this.emptyForm();
     this.showForm.set(true);
+    setTimeout(() => {
+      if (this.descriptionEditor) {
+        this.descriptionEditor.nativeElement.innerHTML = '';
+      }
+    });
   }
 
   edit(product: Product): void {
@@ -876,6 +933,11 @@ export class AdminPageComponent {
       inStock: product.inStock,
     };
     this.showForm.set(true);
+    setTimeout(() => {
+      if (this.descriptionEditor) {
+        this.descriptionEditor.nativeElement.innerHTML = product.description;
+      }
+    });
   }
 
   onFileSelected(event: Event): void {
@@ -898,6 +960,31 @@ export class AdminPageComponent {
         this.uploadError.set(
           err.error?.error ?? 'Upload failed. Please try again.'
         );
+      },
+    });
+  }
+
+  analyseImage(): void {
+    if (!this.form.imageUrl) {
+      this.analyseError.set('Upload an image first.');
+      return;
+    }
+    this.analysing.set(true);
+    this.analyseError.set('');
+    this.http.post<any>(`${environment.apiUrl}/api/products/analyse-image`, { imageUrl: this.form.imageUrl }).subscribe({
+      next: (result) => {
+        if (result.name) { this.form.name = result.name; }
+        if (result.description) { this.form.description = result.description; }
+        if (result.era) { this.form.era = result.era; }
+        if (result.category) { this.form.category = result.category; }
+        if (result.size) { this.form.size = result.size; }
+        if (result.condition) { this.form.condition = result.condition; }
+        if (result.suggestedPrice) { this.form.price = result.suggestedPrice; }
+        this.analysing.set(false);
+      },
+      error: (err) => {
+        this.analyseError.set(err.error?.error ?? 'Analysis failed. Please try again.');
+        this.analysing.set(false);
       },
     });
   }
@@ -1006,6 +1093,152 @@ export class AdminPageComponent {
       });
     }
     input.value = '';
+  }
+
+  loadFinance(): void {
+    this.financeLoading.set(true);
+    this.financeError.set('');
+    this.http.get<FinanceTransaction[]>(`${environment.apiUrl}/api/finance`).subscribe({
+      next: (txns) => {
+        this.financeTransactions.set(txns);
+        this.financeLoading.set(false);
+      },
+      error: () => {
+        this.financeError.set('Failed to load transactions.');
+        this.financeLoading.set(false);
+      },
+    });
+    this.http.get<FinanceSummary>(`${environment.apiUrl}/api/finance/summary`).subscribe({
+      next: (s) => this.financeSummary.set(s),
+    });
+  }
+
+  get filteredFinanceTransactions(): FinanceTransaction[] {
+    const filter = this.financeMonthFilter();
+    if (filter === 'all') {
+      return this.financeTransactions();
+    }
+    return this.financeTransactions().filter(t => t.date.startsWith(filter));
+  }
+
+  get selectedMonthSummary(): FinanceSummary['byMonth'][0] | null {
+    const filter = this.financeMonthFilter();
+    const summary = this.financeSummary();
+    if (!summary) {
+      return null;
+    }
+    if (filter === 'all') {
+      return null;
+    }
+    return summary.byMonth.find(m => m.month === filter) ?? null;
+  }
+
+  openFinanceForm(): void {
+    this.editingTransactionId.set(null);
+    this.financeForm = { date: new Date().toISOString().slice(0, 10), description: '', amount: 0, category: 'Stock', platform: '', reference: '', notes: '' };
+    this.financeReceiptUrl = null;
+    this.financeError.set('');
+    this.financeSuccess.set('');
+    this.showFinanceForm.set(true);
+  }
+
+  editTransaction(txn: FinanceTransaction): void {
+    this.editingTransactionId.set(txn.id);
+    this.financeForm = {
+      date: txn.date.slice(0, 10),
+      description: txn.description,
+      amount: txn.amount,
+      category: txn.category,
+      platform: txn.platform ?? '',
+      reference: txn.reference ?? '',
+      notes: txn.notes ?? '',
+    };
+    this.financeReceiptUrl = txn.receiptUrl;
+    this.financeError.set('');
+    this.financeSuccess.set('');
+    this.showFinanceForm.set(true);
+  }
+
+  saveTransaction(): void {
+    this.financeError.set('');
+    const id = this.editingTransactionId();
+    const body: any = {
+      ...this.financeForm,
+      platform: this.financeForm.platform || null,
+      reference: this.financeForm.reference || null,
+      notes: this.financeForm.notes || null,
+    };
+
+    if (id) {
+      body.receiptUrl = this.financeReceiptUrl ?? '';
+      this.http.put(`${environment.apiUrl}/api/finance/${id}`, body).subscribe({
+        next: () => {
+          this.financeSuccess.set('Transaction updated.');
+          this.showFinanceForm.set(false);
+          this.loadFinance();
+        },
+        error: (err) => this.financeError.set(err.error?.message ?? 'Failed to save.'),
+      });
+    } else {
+      this.http.post<FinanceTransaction>(`${environment.apiUrl}/api/finance`, body).subscribe({
+        next: (created) => {
+          if (this.financeReceiptUrl) {
+            this.http.put(`${environment.apiUrl}/api/finance/${created.id}`, { receiptUrl: this.financeReceiptUrl }).subscribe({
+              next: () => {
+                this.financeSuccess.set('Transaction created.');
+                this.showFinanceForm.set(false);
+                this.loadFinance();
+              },
+            });
+          } else {
+            this.financeSuccess.set('Transaction created.');
+            this.showFinanceForm.set(false);
+            this.loadFinance();
+          }
+        },
+        error: (err) => this.financeError.set(err.error?.message ?? 'Failed to create.'),
+      });
+    }
+  }
+
+  deleteTransaction(id: string): void {
+    if (!confirm('Delete this transaction?')) {
+      return;
+    }
+    this.http.delete(`${environment.apiUrl}/api/finance/${id}`).subscribe({
+      next: () => this.loadFinance(),
+      error: () => this.financeError.set('Failed to delete transaction.'),
+    });
+  }
+
+  onReceiptUpload(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) {
+      return;
+    }
+    this.financeReceiptUploading.set(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    this.http.post<{ receiptUrl: string }>(`${environment.apiUrl}/api/finance/upload-receipt`, formData).subscribe({
+      next: (res) => {
+        this.financeReceiptUrl = res.receiptUrl;
+        this.financeReceiptUploading.set(false);
+      },
+      error: () => {
+        this.financeReceiptUploading.set(false);
+        this.financeError.set('Receipt upload failed.');
+      },
+    });
+  }
+
+  exportFinanceCsv(): void {
+    const filter = this.financeMonthFilter();
+    let url = `${environment.apiUrl}/api/finance/export`;
+    if (filter !== 'all') {
+      const [year, month] = filter.split('-');
+      url += `?year=${year}&month=${parseInt(month)}`;
+    }
+    window.open(url, '_blank');
   }
 
   stripHtml(html: string): string {

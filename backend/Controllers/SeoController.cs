@@ -76,15 +76,15 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
         // Title
         if (string.IsNullOrWhiteSpace(title))
         {
-            issues.Add("Missing <title> tag.");
+            issues.Add("Missing <title> tag. Every page needs a <title> element inside <head>. This is the clickable headline shown in Google results and browser tabs. Add one like: <title>Your Page Title | Eden Relics</title>");
         }
         else if (title.Length < 30)
         {
-            warnings.Add($"Title is short ({title.Length} chars). Aim for 50-60.");
+            warnings.Add($"Title is short ({title.Length} chars, aim for 50\u201360). Current title: \"{title}\". Short titles waste valuable search result space. Expand it to include relevant keywords and your brand name.");
         }
         else if (title.Length > 60)
         {
-            warnings.Add($"Title is long ({title.Length} chars). Aim for 50-60.");
+            warnings.Add($"Title is long ({title.Length} chars, aim for 50\u201360). Current title: \"{title}\". Google truncates titles over ~60 characters in search results. Move the most important keywords to the front and trim the rest.");
         }
         else
         {
@@ -94,15 +94,15 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
         // Meta description
         if (string.IsNullOrWhiteSpace(metaDescription))
         {
-            issues.Add("Missing meta description.");
+            issues.Add("Missing meta description. Add a <meta name=\"description\" content=\"...\"> tag inside <head>. This is the snippet shown under your title in search results. Without it, Google will auto-generate one which may not represent your page well.");
         }
         else if (metaDescription.Length < 120)
         {
-            warnings.Add($"Meta description is short ({metaDescription.Length} chars). Aim for 150-160.");
+            warnings.Add($"Meta description is short ({metaDescription.Length} chars, aim for 150\u2013160). Current value: \"{metaDescription}\". You have room to add more detail and keywords to improve click-through rates from search results.");
         }
         else if (metaDescription.Length > 160)
         {
-            warnings.Add($"Meta description is long ({metaDescription.Length} chars). Aim for 150-160.");
+            warnings.Add($"Meta description is long ({metaDescription.Length} chars, aim for 150\u2013160). Current value: \"{metaDescription[..80]}...\". Google truncates descriptions over ~160 characters. Keep the most compelling information in the first 150 characters.");
         }
         else
         {
@@ -113,11 +113,15 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
         int h1Count = headings.Count(h => h.Level == 1);
         if (h1Count == 0)
         {
-            issues.Add("No H1 tag found.");
+            string headingSummary = headings.Count > 0
+                ? $" Found headings: {string.Join(", ", headings.Take(5).Select(h => $"<h{h.Level}> \"{(h.Text.Length > 40 ? h.Text[..40] + "..." : h.Text)}\""))}."
+                : " No heading tags (h1\u2013h6) were found on the page at all.";
+            issues.Add($"No H1 tag found. Every page should have exactly one <h1> tag containing the main topic of the page. Search engines use it to understand what the page is about.{headingSummary} Add an <h1> element as the primary visible heading.");
         }
         else if (h1Count > 1)
         {
-            warnings.Add($"Multiple H1 tags found ({h1Count}). Use only one.");
+            string h1Texts = string.Join("; ", headings.Where(h => h.Level == 1).Select(h => $"\"{(h.Text.Length > 50 ? h.Text[..50] + "..." : h.Text)}\""));
+            warnings.Add($"Multiple H1 tags found ({h1Count}): {h1Texts}. Use only one <h1> per page for a clear content hierarchy. Demote the extras to <h2> or lower.");
         }
         else
         {
@@ -127,7 +131,7 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
         // Images
         if (imagesMissingAlt > 0)
         {
-            warnings.Add($"{imagesMissingAlt} image(s) missing alt text.");
+            warnings.Add($"{imagesMissingAlt} of {imageCount} image(s) missing alt text. Screen readers and search engines rely on alt attributes to understand images. Find <img> tags without alt=\"...\" and add descriptive text for each.");
         }
         else if (imageCount > 0)
         {
@@ -137,7 +141,7 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
         // Word count
         if (wordCount < 300)
         {
-            warnings.Add($"Low word count ({wordCount}). Aim for 300+ words.");
+            warnings.Add($"Low word count ({wordCount} words, aim for 300+). Thin content pages tend to rank poorly. Consider adding more descriptive text, FAQs, or product details to give search engines more to index.");
         }
         else
         {
@@ -147,21 +151,21 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
         // Open Graph
         if (string.IsNullOrWhiteSpace(ogTitle))
         {
-            warnings.Add("Missing og:title meta tag.");
+            warnings.Add("Missing og:title meta tag. Add <meta property=\"og:title\" content=\"...\"> so that social media shares (Facebook, LinkedIn, etc.) display a proper title instead of guessing from the page.");
         }
         if (string.IsNullOrWhiteSpace(ogDescription))
         {
-            warnings.Add("Missing og:description meta tag.");
+            warnings.Add("Missing og:description meta tag. Add <meta property=\"og:description\" content=\"...\"> to control the snippet shown when the page is shared on social media.");
         }
         if (string.IsNullOrWhiteSpace(ogImage))
         {
-            warnings.Add("Missing og:image meta tag.");
+            warnings.Add("Missing og:image meta tag. Add <meta property=\"og:image\" content=\"https://...\"> to display a thumbnail when the page is shared on social media. Recommended size: 1200x630 pixels.");
         }
 
         // Canonical
         if (string.IsNullOrWhiteSpace(canonical))
         {
-            warnings.Add("Missing canonical link.");
+            warnings.Add("Missing canonical link. Add <link rel=\"canonical\" href=\"https://...\"> inside <head> to tell search engines which URL is the preferred version of this page. This prevents duplicate content issues if the page is accessible via multiple URLs.");
         }
         else
         {

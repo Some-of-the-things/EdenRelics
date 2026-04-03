@@ -11,8 +11,9 @@
       @if (activeTab() === 'users') {
         <button class="admin__add-btn" (click)="loadUsers()">Refresh</button>
       }
-      @if (activeTab() === 'accounts') {
-        <button class="admin__add-btn" (click)="loadAccounts()">Refresh</button>
+      @if (activeTab() === 'finance') {
+        <button class="admin__add-btn" (click)="openFinanceForm()">+ Add Transaction</button>
+        <button class="admin__add-btn" (click)="loadFinance(); loadAccounts()">Refresh</button>
       }
       @if (activeTab() === 'blog') {
         <button class="admin__add-btn" (click)="openBlogForm()">+ New Post</button>
@@ -50,10 +51,10 @@
     </button>
     <button
       class="admin__tab"
-      [class.admin__tab--active]="activeTab() === 'accounts'"
-      (click)="switchTab('accounts')"
+      [class.admin__tab--active]="activeTab() === 'finance'"
+      (click)="switchTab('finance')"
     >
-      Accounting
+      Finance
     </button>
     <button
       class="admin__tab"
@@ -117,7 +118,7 @@
             <div
               class="admin__richtext"
               contenteditable="true"
-              [innerHTML]="form.description"
+              #descriptionEditor
               (input)="onDescriptionInput($event)"
               (paste)="onDescriptionPaste($event)"
             ></div>
@@ -211,6 +212,14 @@
             }
             @if (uploadError()) {
               <span class="admin__upload-error">{{ uploadError() }}</span>
+            }
+            @if (form.imageUrl && !editingId()) {
+              <button type="button" class="admin__ai-btn" (click)="analyseImage()" [disabled]="analysing()">
+                {{ analysing() ? 'Analysing...' : 'Auto-fill with AI' }}
+              </button>
+              @if (analyseError()) {
+                <span class="admin__upload-error">{{ analyseError() }}</span>
+              }
             }
           </div>
           <div class="admin__actions">
@@ -626,168 +635,252 @@
     }
   }
 
-  @if (activeTab() === 'accounts') {
-    @if (accountsError()) {
-      <p class="admin__error" role="alert">{{ accountsError() }}</p>
+  @if (activeTab() === 'finance') {
+    @if (financeError()) {
+      <p class="admin__error" role="alert">{{ financeError() }}</p>
+    }
+    @if (financeSuccess()) {
+      <p class="admin__success">{{ financeSuccess() }}</p>
     }
 
-    @if (accountsLoading()) {
-      <p class="admin__loading">Loading accounts data...</p>
-    } @else if (accountsSummary(); as acc) {
-      <div class="acct">
-        <!-- KPI Cards -->
+    @if (showFinanceForm()) {
+      <div class="admin__overlay" (click)="showFinanceForm.set(false)"></div>
+      <div class="admin__form-panel" role="dialog" aria-modal="true" [attr.aria-label]="editingTransactionId() ? 'Edit Transaction' : 'New Transaction'">
+        <h2 class="admin__form-title">{{ editingTransactionId() ? 'Edit' : 'New' }} Transaction</h2>
+        <form (ngSubmit)="saveTransaction()" class="admin__form">
+          <label class="admin__field">
+            <span>Date</span>
+            <input type="date" [(ngModel)]="financeForm.date" name="date" required />
+          </label>
+          <label class="admin__field">
+            <span>Description</span>
+            <input type="text" [(ngModel)]="financeForm.description" name="description" required />
+          </label>
+          <label class="admin__field">
+            <span>Amount (positive = income, negative = expense)</span>
+            <input type="number" step="0.01" [(ngModel)]="financeForm.amount" name="amount" required />
+          </label>
+          <label class="admin__field">
+            <span>Category</span>
+            <select [(ngModel)]="financeForm.category" name="category">
+              @for (cat of financeCategories; track cat) {
+                <option [value]="cat">{{ cat }}</option>
+              }
+            </select>
+          </label>
+          <label class="admin__field">
+            <span>Platform (optional)</span>
+            <select [(ngModel)]="financeForm.platform" name="platform">
+              <option value="">None</option>
+              @for (p of financePlatforms; track p) {
+                @if (p) {
+                  <option [value]="p">{{ p }}</option>
+                }
+              }
+            </select>
+          </label>
+          <label class="admin__field">
+            <span>Reference (optional)</span>
+            <input type="text" [(ngModel)]="financeForm.reference" name="reference" />
+          </label>
+          <label class="admin__field">
+            <span>Notes (optional)</span>
+            <textarea [(ngModel)]="financeForm.notes" name="notes" rows="2"></textarea>
+          </label>
+          <div class="admin__field">
+            <span>Receipt</span>
+            @if (financeReceiptUrl) {
+              <div class="fin__receipt-preview">
+                <a [href]="financeReceiptUrl" target="_blank" rel="noopener">View receipt</a>
+                <button type="button" class="admin__remove-btn" (click)="financeReceiptUrl = null">Remove</button>
+              </div>
+            }
+            <input type="file" accept="image/*,.pdf" (change)="onReceiptUpload($event)" [disabled]="financeReceiptUploading()" />
+            @if (financeReceiptUploading()) {
+              <span class="admin__uploading">Uploading...</span>
+            }
+          </div>
+          <div class="admin__form-actions">
+            <button type="submit" class="admin__add-btn">{{ editingTransactionId() ? 'Update' : 'Create' }}</button>
+            <button type="button" class="admin__logout-btn" (click)="showFinanceForm.set(false)">Cancel</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (financeLoading()) {
+      <p class="admin__loading">Loading finance data...</p>
+    } @else {
+      <!-- Summary KPIs -->
+      @if (financeSummary(); as summary) {
         <div class="acct__kpis">
           <div class="acct__kpi">
-            <span class="acct__kpi-value">{{ acc.totalRevenue | currency:'GBP' }}</span>
-            <span class="acct__kpi-label">Total Revenue</span>
+            <span class="acct__kpi-value fin__amount--positive">{{ summary.totalIncome | currency:'GBP' }}</span>
+            <span class="acct__kpi-label">Total Income</span>
           </div>
           <div class="acct__kpi">
-            <span class="acct__kpi-value">{{ acc.totalCost | currency:'GBP' }}</span>
-            <span class="acct__kpi-label">Total Cost</span>
+            <span class="acct__kpi-value fin__amount--negative">{{ summary.totalExpenses | currency:'GBP' }}</span>
+            <span class="acct__kpi-label">Total Expenses</span>
           </div>
           <div class="acct__kpi acct__kpi--accent">
-            <span class="acct__kpi-value">{{ acc.totalProfit | currency:'GBP' }}</span>
-            <span class="acct__kpi-label">Total Profit</span>
+            <span class="acct__kpi-value">{{ summary.totalProfit | currency:'GBP' }}</span>
+            <span class="acct__kpi-label">Net Profit</span>
           </div>
           <div class="acct__kpi">
-            <span class="acct__kpi-value">{{ acc.marginPercent }}%</span>
-            <span class="acct__kpi-label">Margin</span>
-          </div>
-        </div>
-        <div class="acct__kpis">
-          <div class="acct__kpi">
-            <span class="acct__kpi-value">{{ acc.totalOrders }}</span>
-            <span class="acct__kpi-label">Orders</span>
-          </div>
-          <div class="acct__kpi">
-            <span class="acct__kpi-value">{{ acc.totalItemsSold }}</span>
-            <span class="acct__kpi-label">Items Sold</span>
-          </div>
-          <div class="acct__kpi">
-            <span class="acct__kpi-value">{{ acc.averageOrderValue | currency:'GBP' }}</span>
-            <span class="acct__kpi-label">Avg Order Value</span>
+            <span class="acct__kpi-value">{{ summary.transactionCount }}</span>
+            <span class="acct__kpi-label">Transactions</span>
           </div>
         </div>
 
-        <!-- Revenue by Month -->
-        @if (acc.revenueByMonth.length) {
+        <!-- Monthly Breakdown -->
+        @if (summary.byMonth.length) {
           <div class="acct__section">
-            <h3 class="acct__section-title">Revenue by Month</h3>
+            <h3 class="acct__section-title">Monthly Breakdown</h3>
             <div class="admin__table-wrap">
               <table class="admin__table">
                 <thead>
                   <tr>
                     <th scope="col">Month</th>
-                    <th scope="col">Revenue</th>
-                    <th scope="col">Cost</th>
+                    <th scope="col">Income</th>
+                    <th scope="col">Expenses</th>
                     <th scope="col">Profit</th>
-                    <th scope="col">Orders</th>
-                    <th scope="col">Items</th>
+                    <th scope="col">Txns</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (m of acc.revenueByMonth; track m.month) {
+                  @for (m of summary.byMonth; track m.month) {
                     <tr>
                       <td class="admin__name">{{ m.month }}</td>
-                      <td>{{ m.revenue | currency:'GBP' }}</td>
-                      <td>{{ m.cost | currency:'GBP' }}</td>
-                      <td>{{ m.profit | currency:'GBP' }}</td>
-                      <td>{{ m.orders }}</td>
-                      <td>{{ m.itemsSold }}</td>
+                      <td class="fin__amount--positive">{{ m.income | currency:'GBP' }}</td>
+                      <td class="fin__amount--negative">{{ m.expenses | currency:'GBP' }}</td>
+                      <td [class.fin__amount--positive]="m.profit >= 0" [class.fin__amount--negative]="m.profit < 0">{{ m.profit | currency:'GBP' }}</td>
+                      <td>{{ m.count }}</td>
                     </tr>
                   }
                 </tbody>
               </table>
             </div>
           </div>
+
+          <!-- By Platform (from selected month or overall) -->
+          @if (selectedMonthSummary; as ms) {
+            <div class="acct__row">
+              @if (ms.byCategory.length) {
+                <div class="acct__section acct__section--half">
+                  <h3 class="acct__section-title">{{ financeMonthFilter() }} by Category</h3>
+                  <div class="admin__table-wrap">
+                    <table class="admin__table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Category</th>
+                          <th scope="col">Total</th>
+                          <th scope="col">Count</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (c of ms.byCategory; track c.category) {
+                          <tr>
+                            <td class="admin__name">{{ c.category }}</td>
+                            <td [class.fin__amount--positive]="c.total >= 0" [class.fin__amount--negative]="c.total < 0">{{ c.total | currency:'GBP' }}</td>
+                            <td>{{ c.count }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
+              @if (ms.byPlatform.length) {
+                <div class="acct__section acct__section--half">
+                  <h3 class="acct__section-title">{{ financeMonthFilter() }} by Platform</h3>
+                  <div class="admin__table-wrap">
+                    <table class="admin__table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Platform</th>
+                          <th scope="col">Total</th>
+                          <th scope="col">Count</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (p of ms.byPlatform; track p.platform) {
+                          <tr>
+                            <td class="admin__name">{{ p.platform }}</td>
+                            <td [class.fin__amount--positive]="p.total >= 0" [class.fin__amount--negative]="p.total < 0">{{ p.total | currency:'GBP' }}</td>
+                            <td>{{ p.count }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
+            </div>
+          }
         }
+      }
 
-        <!-- Revenue by Category & Era side by side -->
-        <div class="acct__row">
-          @if (acc.revenueByCategory.length) {
-            <div class="acct__section acct__section--half">
-              <h3 class="acct__section-title">Revenue by Category</h3>
-              <div class="admin__table-wrap">
-                <table class="admin__table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Category</th>
-                      <th scope="col">Revenue</th>
-                      <th scope="col">Profit</th>
-                      <th scope="col">Items</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (c of acc.revenueByCategory; track c.category) {
-                      <tr>
-                        <td class="admin__name">{{ c.category }}</td>
-                        <td>{{ c.revenue | currency:'GBP' }}</td>
-                        <td>{{ c.profit | currency:'GBP' }}</td>
-                        <td>{{ c.itemsSold }}</td>
-                      </tr>
+      <!-- Filter & Export Bar -->
+      <div class="fin__toolbar">
+        <label class="fin__filter">
+          <span>Filter by month:</span>
+          <select [ngModel]="financeMonthFilter()" (ngModelChange)="financeMonthFilter.set($event)" name="monthFilter">
+            <option value="all">All time</option>
+            @if (financeSummary(); as summary) {
+              @for (m of summary.byMonth; track m.month) {
+                <option [value]="m.month">{{ m.month }}</option>
+              }
+            }
+          </select>
+        </label>
+        <button type="button" class="admin__logout-btn" (click)="exportFinanceCsv()">Export CSV</button>
+      </div>
+
+      <!-- Transactions Table -->
+      <div class="acct__section">
+        <h3 class="acct__section-title">Transactions</h3>
+        <div class="admin__table-wrap">
+          <table class="admin__table">
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Description</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Category</th>
+                <th scope="col">Platform</th>
+                <th scope="col">Receipt</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (txn of filteredFinanceTransactions; track txn.id) {
+                <tr>
+                  <td>{{ txn.date | date:'dd MMM yyyy' }}</td>
+                  <td class="admin__name">{{ txn.description }}</td>
+                  <td [class.fin__amount--positive]="txn.amount >= 0" [class.fin__amount--negative]="txn.amount < 0">
+                    {{ txn.amount | currency:'GBP' }}
+                  </td>
+                  <td>{{ txn.category }}</td>
+                  <td>{{ txn.platform ?? '-' }}</td>
+                  <td>
+                    @if (txn.receiptUrl) {
+                      <a [href]="txn.receiptUrl" target="_blank" rel="noopener" class="fin__receipt-link">View</a>
+                    } @else {
+                      -
                     }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          }
-
-          @if (acc.revenueByEra.length) {
-            <div class="acct__section acct__section--half">
-              <h3 class="acct__section-title">Revenue by Era</h3>
-              <div class="admin__table-wrap">
-                <table class="admin__table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Era</th>
-                      <th scope="col">Revenue</th>
-                      <th scope="col">Profit</th>
-                      <th scope="col">Items</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (e of acc.revenueByEra; track e.era) {
-                      <tr>
-                        <td class="admin__name">{{ e.era }}</td>
-                        <td>{{ e.revenue | currency:'GBP' }}</td>
-                        <td>{{ e.profit | currency:'GBP' }}</td>
-                        <td>{{ e.itemsSold }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          }
-        </div>
-
-        <!-- Inventory & Order Status side by side -->
-        <div class="acct__row">
-          <div class="acct__section acct__section--half">
-            <h3 class="acct__section-title">Inventory</h3>
-            <dl class="seo__meta">
-              <dt>In Stock</dt>
-              <dd>{{ acc.inventory.inStock }}</dd>
-              <dt>Sold</dt>
-              <dd>{{ acc.inventory.outOfStock }}</dd>
-              <dt>Retail Value</dt>
-              <dd>{{ acc.inventory.retailValue | currency:'GBP' }}</dd>
-              <dt>Cost Value</dt>
-              <dd>{{ acc.inventory.costValue | currency:'GBP' }}</dd>
-            </dl>
-          </div>
-
-          @if (acc.ordersByStatus.length) {
-            <div class="acct__section acct__section--half">
-              <h3 class="acct__section-title">Orders by Status</h3>
-              <dl class="seo__meta">
-                @for (s of acc.ordersByStatus; track s.status) {
-                  <dt>{{ s.status }}</dt>
-                  <dd>{{ s.count }}</dd>
-                }
-              </dl>
-            </div>
-          }
+                  </td>
+                  <td class="admin__actions">
+                    <button class="admin__edit-btn" (click)="editTransaction(txn)">Edit</button>
+                    <button class="admin__delete-btn" (click)="deleteTransaction(txn.id)">Delete</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="admin__empty">No transactions found.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
       </div>
     }

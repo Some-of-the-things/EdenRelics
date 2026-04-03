@@ -56,10 +56,14 @@ public class BrandingController(EdenRelicsDbContext context, IWebHostEnvironment
         string extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
         if (!allowedExtensions.Contains(extension))
+        {
             return BadRequest(new { error = "Only image files (jpg, png, webp, svg) are allowed." });
+        }
 
         if (file.Length > 5 * 1024 * 1024)
+        {
             return BadRequest(new { error = "File size must be under 5MB." });
+        }
 
         string logoUrl = await ImageUploadHelper.ProcessAndUploadAsync(
             file.OpenReadStream(), storage, env, Request, "branding", maxWidth: 400, maxHeight: 200, quality: 85);
