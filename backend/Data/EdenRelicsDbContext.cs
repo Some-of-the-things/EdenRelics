@@ -226,7 +226,7 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(t => t.Currency).HasMaxLength(10);
             entity.Property(t => t.Category).HasMaxLength(50);
             entity.Property(t => t.MerchantName).HasMaxLength(200);
-            entity.Property(t => t.MerchantLogo).HasMaxLength(500);
+            entity.Property(t => t.MerchantLogo).HasMaxLength(2000);
             entity.Property(t => t.Notes).HasMaxLength(1000);
             entity.Property(t => t.Tags).HasMaxLength(500);
             entity.Property(t => t.DeclineReason).HasMaxLength(100);
