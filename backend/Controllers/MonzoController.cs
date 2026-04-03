@@ -113,6 +113,34 @@ public class MonzoController(
         return Ok(new { message = "Monzo disconnected." });
     }
 
+    [HttpGet("debug-transactions")]
+    public async Task<ActionResult> DebugTransactions()
+    {
+        string? accessToken = await monzo.EnsureValidTokenAsync(context);
+        MonzoToken? token = await context.MonzoTokens.FirstOrDefaultAsync();
+        if (accessToken is null || token is null)
+        {
+            return BadRequest(new { error = "Monzo is not connected." });
+        }
+
+        // Try with no filters at all
+        List<MonzoTransactionResponse> noFilter = await monzo.GetTransactionsAsync(accessToken, token.AccountId);
+        // Try with a very recent since
+        List<MonzoTransactionResponse> recent = await monzo.GetTransactionsAsync(accessToken, token.AccountId, since: DateTime.UtcNow.AddDays(-7));
+        // Try with a longer range
+        List<MonzoTransactionResponse> longer = await monzo.GetTransactionsAsync(accessToken, token.AccountId, since: DateTime.UtcNow.AddDays(-90));
+
+        return Ok(new
+        {
+            accountId = token.AccountId,
+            tokenExpiresAt = token.ExpiresAtUtc,
+            noFilterCount = noFilter.Count,
+            recentCount = recent.Count,
+            longerCount = longer.Count,
+            sampleTransaction = noFilter.FirstOrDefault(),
+        });
+    }
+
     [HttpGet("accounts")]
     public async Task<ActionResult> GetAccounts()
     {
