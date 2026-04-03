@@ -125,6 +125,31 @@ interface FinanceSummary {
   }[];
 }
 
+interface MonzoTransaction {
+  id: string;
+  monzoId: string;
+  date: string;
+  description: string;
+  amount: number;
+  currency: string;
+  category: string;
+  merchantName: string | null;
+  merchantLogo: string | null;
+  notes: string | null;
+  tags: string | null;
+  isLoad: boolean;
+  declineReason: string | null;
+  settledAt: string | null;
+  createdAtUtc: string;
+}
+
+interface MonzoBalance {
+  balance: number;
+  totalBalance: number;
+  currency: string;
+  spendToday: number;
+}
+
 interface SeoResult {
   url: string;
   title: string | null;
@@ -385,6 +410,16 @@ export class AdminPageComponent {
 
   readonly financeCategories = ['Stock', 'Shipping', 'Fees', 'Packaging', 'Owner Draw', 'Sales', 'Other'];
   readonly financePlatforms = ['Website', 'Etsy', 'Depop', 'Vinted', 'eBay', ''];
+
+  // Monzo bank
+  readonly financeSubTab = signal<'transactions' | 'bank'>('transactions');
+  readonly monzoTransactions = signal<MonzoTransaction[]>([]);
+  readonly monzoBalance = signal<MonzoBalance | null>(null);
+  readonly monzoLoading = signal(false);
+  readonly monzoSyncing = signal(false);
+  readonly monzoError = signal('');
+  readonly monzoConnected = signal(false);
+  readonly monzoAnnotating = signal<string | null>(null);
 
   // View analytics
   readonly showViewAnalytics = signal(false);
@@ -974,7 +1009,12 @@ export class AdminPageComponent {
     this.http.post<any>(`${environment.apiUrl}/api/products/analyse-image`, { imageUrl: this.form.imageUrl }).subscribe({
       next: (result) => {
         if (result.name) { this.form.name = result.name; }
-        if (result.description) { this.form.description = result.description; }
+        if (result.description) {
+          this.form.description = result.description;
+          if (this.descriptionEditor) {
+            this.descriptionEditor.nativeElement.innerHTML = result.description;
+          }
+        }
         if (result.era) { this.form.era = result.era; }
         if (result.category) { this.form.category = result.category; }
         if (result.size) { this.form.size = result.size; }
