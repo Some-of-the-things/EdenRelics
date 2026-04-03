@@ -482,8 +482,19 @@ public class ProductsController : ControllerBase
             }
 
             // Fetch the image and convert to base64
-            using HttpClient http = new();
-            byte[] imageBytes = await http.GetByteArrayAsync(request.ImageUrl);
+            byte[] imageBytes;
+            if (request.ImageUrl.Contains("/uploads/"))
+            {
+                // Local file — read directly from disk
+                string relativePath = request.ImageUrl[(request.ImageUrl.IndexOf("/uploads/") + 1)..];
+                string filePath = Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), relativePath);
+                imageBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+            }
+            else
+            {
+                using HttpClient http = new();
+                imageBytes = await http.GetByteArrayAsync(request.ImageUrl);
+            }
             string base64 = Convert.ToBase64String(imageBytes);
             string mediaType = request.ImageUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/webp";
 
@@ -540,7 +551,7 @@ public class ProductsController : ControllerBase
             if (jsonStart < 0 || jsonEnd < 0 || jsonEnd <= jsonStart)
             {
                 _logger.LogWarning("Analyse-image response contained no JSON: {Response}", responseText);
-                return StatusCode(500, new { error = "Image analysis returned an unexpected response. Please try again." });
+                return BadRequest(new { error = "The image doesn't appear to be a clothing item. Please upload a photo of a garment." });
             }
             string json = responseText[jsonStart..(jsonEnd + 1)];
 
