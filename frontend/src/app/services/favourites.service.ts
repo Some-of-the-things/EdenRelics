@@ -1,6 +1,7 @@
 import { Injectable, inject, signal, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
 interface FavouriteEntry {
@@ -12,6 +13,7 @@ interface FavouriteEntry {
 export class FavouritesService {
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly auth = inject(AuthService);
   private readonly apiUrl = `${environment.apiUrl}/api/favourites`;
 
   readonly favouriteIds = signal<Set<string>>(new Set());
@@ -19,7 +21,7 @@ export class FavouritesService {
   private loaded = false;
 
   load(): void {
-    if (!isPlatformBrowser(this.platformId) || this.loaded) {
+    if (!isPlatformBrowser(this.platformId) || this.loaded || !this.auth.isAuthenticated()) {
       return;
     }
     this.loaded = true;
