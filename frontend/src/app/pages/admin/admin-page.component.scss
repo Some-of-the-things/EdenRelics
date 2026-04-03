@@ -1761,6 +1761,22 @@
   }
 }
 
+.monzo__inline-select {
+  background: var(--bg-card, #2a2a2a);
+  border: 1px solid transparent;
+  color: var(--text-primary, #fff);
+  padding: 0.25rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  min-width: 70px;
+  cursor: pointer;
+
+  &:focus {
+    border-color: var(--accent, #c9a96e);
+    outline: none;
+  }
+}
+
 .monzo__declined {
   color: #e74c3c;
   font-size: 0.8rem;
@@ -1771,6 +1787,18 @@
   color: #f39c12;
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.monzo__settled {
+  color: #2ecc71;
+  font-size: 0.8rem;
+}
+
+.monzo__receipt-upload {
+  color: var(--accent, #c9a96e);
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .admin__empty-state {

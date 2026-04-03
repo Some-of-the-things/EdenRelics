@@ -27,7 +27,7 @@ public class MonzoService(
         return $"{AuthUrl}/?client_id={Uri.EscapeDataString(ClientId)}&redirect_uri={Uri.EscapeDataString(RedirectUri)}&response_type=code&state={Uri.EscapeDataString(state)}";
     }
 
-    public async Task<MonzoTokenResponse?> ExchangeCodeAsync(string code)
+    public async Task<(MonzoTokenResponse? Token, string? Error)> ExchangeCodeAsync(string code)
     {
         FormUrlEncodedContent content = new([
             new("grant_type", "authorization_code"),
@@ -42,11 +42,11 @@ public class MonzoService(
         {
             string body = await response.Content.ReadAsStringAsync();
             logger.LogWarning("Monzo token exchange failed: {Status} {Body}", response.StatusCode, body);
-            return null;
+            return (null, body);
         }
 
         string json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<MonzoTokenResponse>(json);
+        return (JsonSerializer.Deserialize<MonzoTokenResponse>(json), null);
     }
 
     public async Task<MonzoTokenResponse?> RefreshTokenAsync(string refreshToken)

@@ -140,6 +140,9 @@ interface MonzoTransaction {
   isLoad: boolean;
   declineReason: string | null;
   settledAt: string | null;
+  userCategory: string | null;
+  platform: string | null;
+  receiptUrl: string | null;
   createdAtUtc: string;
 }
 
@@ -148,6 +151,31 @@ interface MonzoBalance {
   totalBalance: number;
   currency: string;
   spendToday: number;
+}
+
+interface MonzoSummary {
+  totalIncome: number;
+  totalExpenses: number;
+  totalProfit: number;
+  transactionCount: number;
+  taggedCount: number;
+  untaggedCount: number;
+  byMonth: {
+    month: string;
+    income: number;
+    expenses: number;
+    profit: number;
+    count: number;
+    byCategory: { category: string; total: number; count: number }[];
+    byPlatform: { platform: string; total: number; count: number }[];
+  }[];
+}
+
+interface MonzoAnnotatePayload {
+  notes: string;
+  tags: string;
+  userCategory: string;
+  platform: string;
 }
 
 interface SeoResult {
@@ -422,6 +450,9 @@ export class AdminPageComponent implements OnInit {
   readonly monzoConnected = signal(false);
   readonly monzoPendingApproval = signal(false);
   readonly monzoAnnotating = signal<string | null>(null);
+  readonly monzoSummary = signal<MonzoSummary | null>(null);
+  readonly monzoMonthFilter = signal<string>('all');
+  readonly monzoReceiptUploading = signal<string | null>(null);
 
   // View analytics
   readonly showViewAnalytics = signal(false);
@@ -1288,7 +1319,16 @@ export class AdminPageComponent implements OnInit {
       const [year, month] = filter.split('-');
       url += `?year=${year}&month=${parseInt(month)}`;
     }
-    window.open(url, '_blank');
+    this.http.get(url, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filter === 'all' ? 'transactions-all.csv' : `transactions-${filter}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      },
+      error: () => this.financeError.set('Export failed.'),
+    });
   }
 
   // Monzo bank methods
@@ -1351,6 +1391,7 @@ export class AdminPageComponent implements OnInit {
         if (status.connected) {
           this.loadMonzoBalance();
           this.loadMonzoTransactions();
+          this.loadMonzoSummary();
         } else {
           this.monzoLoading.set(false);
         }
@@ -1413,6 +1454,7 @@ export class AdminPageComponent implements OnInit {
         this.monzoSyncing.set(false);
         this.loadMonzoTransactions();
         this.loadMonzoBalance();
+        this.loadMonzoSummary();
       },
       error: () => {
         this.monzoError.set('Sync failed.');
@@ -1421,15 +1463,89 @@ export class AdminPageComponent implements OnInit {
     });
   }
 
-  annotateMonzoTransaction(txn: MonzoTransaction, notes: string, tags: string): void {
+  annotateMonzoTransaction(txn: MonzoTransaction, patch: Partial<MonzoAnnotatePayload>): void {
     this.monzoAnnotating.set(txn.id);
-    this.http.patch<MonzoTransaction>(`${environment.apiUrl}/api/monzo/transactions/${txn.id}/annotate`, { notes, tags }).subscribe({
+    this.http.patch<MonzoTransaction>(`${environment.apiUrl}/api/monzo/transactions/${txn.id}/annotate`, patch).subscribe({
       next: (updated) => {
         this.monzoTransactions.update(list => list.map(t => t.id === updated.id ? updated : t));
         this.monzoAnnotating.set(null);
       },
       error: () => this.monzoAnnotating.set(null),
     });
+  }
+
+  uploadMonzoReceipt(txn: MonzoTransaction, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) { return; }
+    this.monzoReceiptUploading.set(txn.id);
+    const formData = new FormData();
+    formData.append('file', file);
+    this.http.post<MonzoTransaction>(`${environment.apiUrl}/api/monzo/transactions/${txn.id}/upload-receipt`, formData).subscribe({
+      next: (updated) => {
+        this.monzoTransactions.update(list => list.map(t => t.id === updated.id ? updated : t));
+        this.monzoReceiptUploading.set(null);
+      },
+      error: () => {
+        this.monzoError.set('Receipt upload failed.');
+        this.monzoReceiptUploading.set(null);
+      },
+    });
+  }
+
+  loadMonzoSummary(): void {
+    this.http.get<MonzoSummary>(`${environment.apiUrl}/api/monzo/summary`).subscribe({
+      next: (summary) => this.monzoSummary.set(summary),
+      error: () => {},
+    });
+  }
+
+  exportMonzoCsv(): void {
+    const filter = this.monzoMonthFilter();
+    let url = `${environment.apiUrl}/api/monzo/export`;
+    if (filter !== 'all') {
+      const [year, month] = filter.split('-');
+      url += `?year=${year}&month=${parseInt(month)}`;
+    }
+    this.http.get(url, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filter === 'all' ? 'monzo-all.csv' : `monzo-${filter}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      },
+      error: () => this.monzoError.set('Export failed.'),
+    });
+  }
+
+  get filteredMonzoTransactions(): MonzoTransaction[] {
+    const filter = this.monzoMonthFilter();
+    const txns = this.monzoTransactions();
+    if (filter === 'all') { return txns; }
+    const [year, month] = filter.split('-').map(Number);
+    return txns.filter(t => {
+      const d = new Date(t.date);
+      return d.getFullYear() === year && d.getMonth() + 1 === month;
+    });
+  }
+
+  get monzoSelectedMonthSummary(): MonzoSummary['byMonth'][0] | null {
+    const summary = this.monzoSummary();
+    const filter = this.monzoMonthFilter();
+    if (!summary) { return null; }
+    if (filter === 'all') {
+      return {
+        month: 'All Time',
+        income: summary.totalIncome,
+        expenses: summary.totalExpenses,
+        profit: summary.totalProfit,
+        count: summary.transactionCount,
+        byCategory: summary.byMonth.flatMap(m => m.byCategory),
+        byPlatform: summary.byMonth.flatMap(m => m.byPlatform),
+      };
+    }
+    return summary.byMonth.find(m => m.month === filter) ?? null;
   }
 
   switchFinanceSubTab(tab: 'transactions' | 'bank'): void {

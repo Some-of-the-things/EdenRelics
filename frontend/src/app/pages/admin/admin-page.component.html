@@ -926,6 +926,7 @@
       }
 
       @if (monzoConnected() && !monzoLoading()) {
+        <!-- Balance & Summary KPIs -->
         @if (monzoBalance(); as bal) {
           <div class="acct__kpis">
             <div class="acct__kpi acct__kpi--accent">
@@ -943,13 +944,135 @@
           </div>
         }
 
+        @if (monzoSummary(); as summary) {
+          <div class="acct__kpis">
+            <div class="acct__kpi">
+              <span class="acct__kpi-value fin__amount--positive">{{ summary.totalIncome | currency:'GBP' }}</span>
+              <span class="acct__kpi-label">Total Income</span>
+            </div>
+            <div class="acct__kpi">
+              <span class="acct__kpi-value fin__amount--negative">{{ summary.totalExpenses | currency:'GBP' }}</span>
+              <span class="acct__kpi-label">Total Expenses</span>
+            </div>
+            <div class="acct__kpi acct__kpi--accent">
+              <span class="acct__kpi-value">{{ summary.totalProfit | currency:'GBP' }}</span>
+              <span class="acct__kpi-label">Monthly Profit</span>
+            </div>
+            <div class="acct__kpi">
+              <span class="acct__kpi-value">{{ summary.taggedCount }} / {{ summary.transactionCount }}</span>
+              <span class="acct__kpi-label">Tagged</span>
+            </div>
+          </div>
+
+          <!-- Monthly Breakdown -->
+          @if (summary.byMonth.length) {
+            <div class="acct__section">
+              <h3 class="acct__section-title">Monthly Breakdown</h3>
+              <div class="admin__table-wrap">
+                <table class="admin__table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Month</th>
+                      <th scope="col">Income</th>
+                      <th scope="col">Expenses</th>
+                      <th scope="col">Profit</th>
+                      <th scope="col">Txns</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (m of summary.byMonth; track m.month) {
+                      <tr>
+                        <td class="admin__name">{{ m.month }}</td>
+                        <td class="fin__amount--positive">{{ m.income | currency:'GBP' }}</td>
+                        <td class="fin__amount--negative">{{ m.expenses | currency:'GBP' }}</td>
+                        <td [class.fin__amount--positive]="m.profit >= 0" [class.fin__amount--negative]="m.profit < 0">{{ m.profit | currency:'GBP' }}</td>
+                        <td>{{ m.count }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- By Category & Platform -->
+            @if (monzoSelectedMonthSummary; as ms) {
+              <div class="acct__row">
+                @if (ms.byCategory.length) {
+                  <div class="acct__section acct__section--half">
+                    <h3 class="acct__section-title">{{ monzoMonthFilter() === 'all' ? 'All Time' : monzoMonthFilter() }} by Category</h3>
+                    <div class="admin__table-wrap">
+                      <table class="admin__table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Category</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Count</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (c of ms.byCategory; track c.category) {
+                            <tr>
+                              <td class="admin__name">{{ c.category }}</td>
+                              <td [class.fin__amount--positive]="c.total >= 0" [class.fin__amount--negative]="c.total < 0">{{ c.total | currency:'GBP' }}</td>
+                              <td>{{ c.count }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
+                @if (ms.byPlatform.length) {
+                  <div class="acct__section acct__section--half">
+                    <h3 class="acct__section-title">{{ monzoMonthFilter() === 'all' ? 'All Time' : monzoMonthFilter() }} by Platform</h3>
+                    <div class="admin__table-wrap">
+                      <table class="admin__table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Platform</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Count</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (p of ms.byPlatform; track p.platform) {
+                            <tr>
+                              <td class="admin__name">{{ p.platform }}</td>
+                              <td [class.fin__amount--positive]="p.total >= 0" [class.fin__amount--negative]="p.total < 0">{{ p.total | currency:'GBP' }}</td>
+                              <td>{{ p.count }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          }
+        }
+
+        <!-- Filter & Export Bar -->
         <div class="fin__toolbar">
+          <label class="fin__filter">
+            <span>Filter by month:</span>
+            <select [ngModel]="monzoMonthFilter()" (ngModelChange)="monzoMonthFilter.set($event)" name="monzoMonthFilter">
+              <option value="all">All time</option>
+              @if (monzoSummary(); as summary) {
+                @for (m of summary.byMonth; track m.month) {
+                  <option [value]="m.month">{{ m.month }}</option>
+                }
+              }
+            </select>
+          </label>
           <button class="admin__add-btn" (click)="syncMonzo()" [disabled]="monzoSyncing()">
             {{ monzoSyncing() ? 'Syncing...' : 'Sync Now' }}
           </button>
+          <button type="button" class="admin__logout-btn" (click)="exportMonzoCsv()">Export CSV</button>
           <button class="admin__logout-btn" (click)="disconnectMonzo()">Disconnect</button>
         </div>
 
+        <!-- Transactions Table -->
         <div class="acct__section">
           <h3 class="acct__section-title">Bank Transactions</h3>
           <div class="admin__table-wrap">
@@ -959,14 +1082,16 @@
                   <th scope="col">Date</th>
                   <th scope="col">Description</th>
                   <th scope="col">Amount</th>
-                  <th scope="col">Category</th>
+                  <th scope="col">Monzo Cat.</th>
+                  <th scope="col">Tag</th>
+                  <th scope="col">Platform</th>
                   <th scope="col">Notes</th>
-                  <th scope="col">Tags</th>
-                  <th scope="col">Actions</th>
+                  <th scope="col">Receipt</th>
+                  <th scope="col">Status</th>
                 </tr>
               </thead>
               <tbody>
-                @for (txn of monzoTransactions(); track txn.id) {
+                @for (txn of filteredMonzoTransactions; track txn.id) {
                   <tr>
                     <td>{{ txn.date | date:'dd MMM yyyy' }}</td>
                     <td class="admin__name">
@@ -980,37 +1105,68 @@
                     </td>
                     <td>{{ txn.category }}</td>
                     <td>
+                      <select
+                        class="monzo__inline-select"
+                        [ngModel]="txn.userCategory ?? ''"
+                        (ngModelChange)="annotateMonzoTransaction(txn, { userCategory: $event })"
+                        [disabled]="monzoAnnotating() === txn.id"
+                        name="cat-{{txn.id}}"
+                      >
+                        <option value="">--</option>
+                        @for (cat of financeCategories; track cat) {
+                          <option [value]="cat">{{ cat }}</option>
+                        }
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        class="monzo__inline-select"
+                        [ngModel]="txn.platform ?? ''"
+                        (ngModelChange)="annotateMonzoTransaction(txn, { platform: $event })"
+                        [disabled]="monzoAnnotating() === txn.id"
+                        name="plat-{{txn.id}}"
+                      >
+                        <option value="">--</option>
+                        @for (p of financePlatforms; track p) {
+                          @if (p) {
+                            <option [value]="p">{{ p }}</option>
+                          }
+                        }
+                      </select>
+                    </td>
+                    <td>
                       <input
                         type="text"
                         class="monzo__inline-input"
                         [value]="txn.notes ?? ''"
-                        (blur)="annotateMonzoTransaction(txn, $any($event.target).value, txn.tags ?? '')"
+                        (blur)="annotateMonzoTransaction(txn, { notes: $any($event.target).value })"
                         placeholder="Add note..."
                         [disabled]="monzoAnnotating() === txn.id"
                       />
                     </td>
                     <td>
-                      <input
-                        type="text"
-                        class="monzo__inline-input"
-                        [value]="txn.tags ?? ''"
-                        (blur)="annotateMonzoTransaction(txn, txn.notes ?? '', $any($event.target).value)"
-                        placeholder="Add tags..."
-                        [disabled]="monzoAnnotating() === txn.id"
-                      />
+                      @if (txn.receiptUrl) {
+                        <a [href]="txn.receiptUrl" target="_blank" rel="noopener" class="fin__receipt-link">View</a>
+                      } @else {
+                        <label class="monzo__receipt-upload">
+                          {{ monzoReceiptUploading() === txn.id ? '...' : 'Upload' }}
+                          <input type="file" accept="image/*,.pdf" (change)="uploadMonzoReceipt(txn, $event)" [disabled]="monzoReceiptUploading() === txn.id" hidden />
+                        </label>
+                      }
                     </td>
                     <td>
                       @if (txn.declineReason) {
                         <span class="monzo__declined">Declined</span>
-                      }
-                      @if (!txn.settledAt && !txn.declineReason) {
+                      } @else if (!txn.settledAt) {
                         <span class="monzo__pending">Pending</span>
+                      } @else {
+                        <span class="monzo__settled">Settled</span>
                       }
                     </td>
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="7" class="admin__empty">No bank transactions found.</td>
+                    <td colspan="9" class="admin__empty">No bank transactions found. Click Sync Now to pull from Monzo.</td>
                   </tr>
                 }
               </tbody>

@@ -1,3 +1,4 @@
+using System.Text;
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
@@ -14,7 +15,8 @@ namespace Eden_Relics_BE.Controllers;
 public class MonzoController(
     EdenRelicsDbContext context,
     MonzoService monzo,
-    IConfiguration configuration) : ControllerBase
+    ImageStorageService storage,
+    IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet("status")]
     public async Task<ActionResult> GetStatus()
@@ -52,13 +54,12 @@ public class MonzoController(
             return BadRequest(new { error = "Monzo OAuth is not configured." });
         }
 
-        MonzoTokenResponse? tokenResponse = await monzo.ExchangeCodeAsync(dto.Code);
+        (MonzoTokenResponse? tokenResponse, string? exchangeError) = await monzo.ExchangeCodeAsync(dto.Code);
         if (tokenResponse is null)
         {
-            return BadRequest(new { error = "Failed to exchange authorization code." });
+            return BadRequest(new { error = $"Failed to exchange authorization code: {exchangeError}" });
         }
 
-        // Store the token immediately — account ID will be resolved on verify
         List<MonzoToken> existing = await context.MonzoTokens.ToListAsync();
         context.MonzoTokens.RemoveRange(existing);
 
@@ -90,7 +91,6 @@ public class MonzoController(
             return BadRequest(new { error = "Token expired. Please reconnect." });
         }
 
-        // Try to fetch accounts — this will fail with 403 until the user approves in the app
         List<MonzoAccountResponse> accounts = await monzo.GetAccountsAsync(accessToken);
         if (accounts.Count == 0)
         {
@@ -186,6 +186,8 @@ public class MonzoController(
 
         if (dto.Notes is not null) { txn.Notes = dto.Notes; }
         if (dto.Tags is not null) { txn.Tags = dto.Tags; }
+        if (dto.UserCategory is not null) { txn.UserCategory = dto.UserCategory == "" ? null : dto.UserCategory; }
+        if (dto.Platform is not null) { txn.Platform = dto.Platform == "" ? null : dto.Platform; }
 
         await context.SaveChangesAsync();
 
@@ -198,8 +200,135 @@ public class MonzoController(
         return Ok(ToDto(txn));
     }
 
+    [HttpPost("transactions/{id:guid}/upload-receipt")]
+    public async Task<ActionResult<MonzoTransactionDto>> UploadReceipt(Guid id, IFormFile file)
+    {
+        MonzoTransaction? txn = await context.MonzoTransactions.FindAsync(id);
+        if (txn is null)
+        {
+            return NotFound();
+        }
+
+        string[] allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
+        string extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(extension))
+        {
+            return BadRequest(new { error = "Only image files (jpg, png, webp) and PDFs are allowed." });
+        }
+
+        if (file.Length > 10 * 1024 * 1024)
+        {
+            return BadRequest(new { error = "File size must be under 10MB." });
+        }
+
+        string receiptUrl = await ImageUploadHelper.ProcessAndUploadAsync(
+            file.OpenReadStream(), storage, env, Request, "receipts", maxWidth: 1200, maxHeight: 1600, quality: 80);
+
+        txn.ReceiptUrl = receiptUrl;
+        await context.SaveChangesAsync();
+
+        return Ok(ToDto(txn));
+    }
+
+    [HttpGet("summary")]
+    public async Task<ActionResult> GetSummary()
+    {
+        List<MonzoTransaction> all = await context.MonzoTransactions.ToListAsync();
+
+        var byMonth = all
+            .GroupBy(t => new { t.Date.Year, t.Date.Month })
+            .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
+            .Select(g =>
+            {
+                decimal income = g.Where(t => t.Amount > 0).Sum(t => t.Amount);
+                decimal expenses = g.Where(t => t.Amount < 0).Sum(t => Math.Abs(t.Amount));
+                return new
+                {
+                    month = $"{g.Key.Year}-{g.Key.Month:D2}",
+                    income,
+                    expenses,
+                    profit = income - expenses,
+                    count = g.Count(),
+                    byCategory = g
+                        .Where(t => t.UserCategory is not null)
+                        .GroupBy(t => t.UserCategory!)
+                        .Select(c => new { category = c.Key, total = c.Sum(t => t.Amount), count = c.Count() })
+                        .OrderByDescending(c => Math.Abs(c.total))
+                        .ToList(),
+                    byPlatform = g
+                        .Where(t => t.Platform is not null)
+                        .GroupBy(t => t.Platform!)
+                        .Select(p => new { platform = p.Key, total = p.Sum(t => t.Amount), count = p.Count() })
+                        .OrderByDescending(p => Math.Abs(p.total))
+                        .ToList(),
+                };
+            })
+            .ToList();
+
+        decimal totalIncome = all.Where(t => t.Amount > 0).Sum(t => t.Amount);
+        decimal totalExpenses = all.Where(t => t.Amount < 0).Sum(t => Math.Abs(t.Amount));
+        int tagged = all.Count(t => t.UserCategory is not null);
+
+        return Ok(new
+        {
+            totalIncome = Math.Round(totalIncome, 2),
+            totalExpenses = Math.Round(totalExpenses, 2),
+            totalProfit = Math.Round(totalIncome - totalExpenses, 2),
+            transactionCount = all.Count,
+            taggedCount = tagged,
+            untaggedCount = all.Count - tagged,
+            byMonth,
+        });
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> Export([FromQuery] int? year, [FromQuery] int? month)
+    {
+        IQueryable<MonzoTransaction> query = context.MonzoTransactions.OrderByDescending(t => t.Date);
+
+        if (year.HasValue)
+        {
+            query = query.Where(t => t.Date.Year == year.Value);
+        }
+        if (month.HasValue)
+        {
+            query = query.Where(t => t.Date.Month == month.Value);
+        }
+
+        List<MonzoTransaction> transactions = await query.ToListAsync();
+
+        StringBuilder csv = new();
+        csv.AppendLine("Date,Description,Amount,Monzo Category,Tagged Category,Platform,Merchant,Notes,Settled,Receipt");
+        foreach (MonzoTransaction t in transactions)
+        {
+            csv.AppendLine(
+                $"{t.Date:yyyy-MM-dd}," +
+                $"\"{Escape(t.Description)}\"," +
+                $"{t.Amount}," +
+                $"\"{Escape(t.Category)}\"," +
+                $"\"{Escape(t.UserCategory ?? "")}\"," +
+                $"\"{Escape(t.Platform ?? "")}\"," +
+                $"\"{Escape(t.MerchantName ?? "")}\"," +
+                $"\"{Escape(t.Notes ?? "")}\"," +
+                $"{(t.SettledAt.HasValue ? t.SettledAt.Value.ToString("yyyy-MM-dd") : "")}," +
+                $"\"{Escape(t.ReceiptUrl ?? "")}\"");
+        }
+
+        string fileName = year.HasValue && month.HasValue
+            ? $"monzo-{year}-{month:D2}.csv"
+            : year.HasValue
+                ? $"monzo-{year}.csv"
+                : "monzo-all.csv";
+
+        return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv", fileName);
+    }
+
+    private static string Escape(string value) => value.Replace("\"", "\"\"");
+
     private static MonzoTransactionDto ToDto(MonzoTransaction t) => new(
         t.Id, t.MonzoId, t.Date, t.Description, t.Amount, t.Currency,
         t.Category, t.MerchantName, t.MerchantLogo, t.Notes, t.Tags,
-        t.IsLoad, t.DeclineReason, t.SettledAt, t.CreatedAtUtc);
+        t.IsLoad, t.DeclineReason, t.SettledAt,
+        t.UserCategory, t.Platform, t.ReceiptUrl, t.CreatedAtUtc);
 }

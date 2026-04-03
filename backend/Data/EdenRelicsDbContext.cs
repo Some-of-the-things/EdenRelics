@@ -230,6 +230,9 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(t => t.Notes).HasMaxLength(1000);
             entity.Property(t => t.Tags).HasMaxLength(500);
             entity.Property(t => t.DeclineReason).HasMaxLength(100);
+            entity.Property(t => t.UserCategory).HasMaxLength(30);
+            entity.Property(t => t.Platform).HasMaxLength(30);
+            entity.Property(t => t.ReceiptUrl).HasMaxLength(500);
         });
 
         modelBuilder.Entity<Product>(entity =>

@@ -15,12 +15,17 @@ public record MonzoTransactionDto(
     bool IsLoad,
     string? DeclineReason,
     DateTime? SettledAt,
+    string? UserCategory,
+    string? Platform,
+    string? ReceiptUrl,
     DateTime CreatedAtUtc
 );
 
 public record MonzoAnnotateDto(
     string? Notes,
-    string? Tags
+    string? Tags,
+    string? UserCategory,
+    string? Platform
 );
 
 public record MonzoBalanceDto(

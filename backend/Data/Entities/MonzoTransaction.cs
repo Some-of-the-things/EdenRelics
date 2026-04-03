@@ -15,4 +15,9 @@ public class MonzoTransaction : BaseEntity
     public bool IsLoad { get; set; }
     public string? DeclineReason { get; set; }
     public DateTime? SettledAt { get; set; }
+
+    // User-assigned fields for bookkeeping
+    public string? UserCategory { get; set; }
+    public string? Platform { get; set; }
+    public string? ReceiptUrl { get; set; }
 }
