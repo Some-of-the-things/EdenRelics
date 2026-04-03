@@ -64,16 +64,16 @@ public class MonzoSyncBackgroundService(
             {
                 MonzoId = txn.Id,
                 Date = txn.Created.ToUniversalTime(),
-                Description = txn.Merchant?.Name ?? FormatDescription(txn.Description),
+                Description = Truncate(txn.Merchant?.Name ?? FormatDescription(txn.Description), 500),
                 Amount = txn.Amount / 100m,
                 Currency = txn.Currency,
                 Category = FormatCategory(txn.Category),
-                MerchantName = txn.Merchant?.Name,
-                MerchantLogo = txn.Merchant?.Logo,
-                Notes = txn.Notes,
-                Tags = txn.Metadata?.GetValueOrDefault("tags"),
+                MerchantName = Truncate(txn.Merchant?.Name, 200),
+                MerchantLogo = Truncate(txn.Merchant?.Logo, 2000),
+                Notes = Truncate(txn.Notes, 1000),
+                Tags = Truncate(txn.Metadata?.GetValueOrDefault("tags"), 500),
                 IsLoad = txn.IsLoad,
-                DeclineReason = txn.DeclineReason,
+                DeclineReason = Truncate(txn.DeclineReason, 100),
                 SettledAt = DateTime.TryParse(txn.Settled, out DateTime settled) ? settled.ToUniversalTime() : null,
             });
             added++;
@@ -103,5 +103,11 @@ public class MonzoSyncBackgroundService(
             .Select(w => w.Length > 1
                 ? char.ToUpper(w[0]) + w[1..].ToLower()
                 : w.ToUpper()));
+    }
+
+    private static string? Truncate(string? value, int maxLength)
+    {
+        if (value is null) { return null; }
+        return value.Length <= maxLength ? value : value[..maxLength];
     }
 }
