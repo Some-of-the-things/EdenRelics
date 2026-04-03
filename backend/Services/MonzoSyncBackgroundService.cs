@@ -61,7 +61,7 @@ public class MonzoSyncBackgroundService(
             context.MonzoTransactions.Add(new MonzoTransaction
             {
                 MonzoId = txn.Id,
-                Date = txn.Created,
+                Date = txn.Created.ToUniversalTime(),
                 Description = txn.Merchant?.Name ?? FormatDescription(txn.Description),
                 Amount = txn.Amount / 100m,
                 Currency = txn.Currency,
@@ -72,7 +72,7 @@ public class MonzoSyncBackgroundService(
                 Tags = txn.Metadata?.GetValueOrDefault("tags"),
                 IsLoad = txn.IsLoad,
                 DeclineReason = txn.DeclineReason,
-                SettledAt = DateTime.TryParse(txn.Settled, out DateTime settled) ? settled : null,
+                SettledAt = DateTime.TryParse(txn.Settled, out DateTime settled) ? settled.ToUniversalTime() : null,
             });
         }
 
