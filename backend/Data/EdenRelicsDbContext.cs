@@ -22,6 +22,8 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<Favourite> Favourites => Set<Favourite>();
     public DbSet<ProductView> ProductViews => Set<ProductView>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<MonzoTransaction> MonzoTransactions => Set<MonzoTransaction>();
+    public DbSet<MonzoToken> MonzoTokens => Set<MonzoToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -204,6 +206,30 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(t => t.Reference).HasMaxLength(100);
             entity.Property(t => t.ReceiptUrl).HasMaxLength(500);
             entity.Property(t => t.Notes).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<MonzoToken>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(t => t.AccessToken).HasMaxLength(500);
+            entity.Property(t => t.RefreshToken).HasMaxLength(500);
+            entity.Property(t => t.AccountId).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<MonzoTransaction>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(t => t.MonzoId).HasMaxLength(100);
+            entity.HasIndex(t => t.MonzoId).IsUnique();
+            entity.Property(t => t.Description).HasMaxLength(500);
+            entity.Property(t => t.Amount).HasPrecision(10, 2);
+            entity.Property(t => t.Currency).HasMaxLength(10);
+            entity.Property(t => t.Category).HasMaxLength(50);
+            entity.Property(t => t.MerchantName).HasMaxLength(200);
+            entity.Property(t => t.MerchantLogo).HasMaxLength(500);
+            entity.Property(t => t.Notes).HasMaxLength(1000);
+            entity.Property(t => t.Tags).HasMaxLength(500);
+            entity.Property(t => t.DeclineReason).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Product>(entity =>

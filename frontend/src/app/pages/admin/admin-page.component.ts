@@ -1,6 +1,6 @@
-import { Component, computed, ElementRef, inject, signal, ViewChild } from '@angular/core';
+import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ProductStore } from '../../store/product.store';
@@ -175,9 +175,10 @@ interface SeoResult {
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
-export class AdminPageComponent {
+export class AdminPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
   private readonly productService = inject(ProductService);
   private readonly orderService = inject(OrderAdminService);
@@ -419,6 +420,7 @@ export class AdminPageComponent {
   readonly monzoSyncing = signal(false);
   readonly monzoError = signal('');
   readonly monzoConnected = signal(false);
+  readonly monzoPendingApproval = signal(false);
   readonly monzoAnnotating = signal<string | null>(null);
 
   // View analytics
@@ -429,6 +431,14 @@ export class AdminPageComponent {
   readonly viewAnalyticsMode = signal<'list' | 'aggregate'>('list');
 
   form: Omit<Product, 'id'> = this.emptyForm();
+
+  ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      if (params['monzo'] === 'callback' && params['code']) {
+        this.handleMonzoCallback(params['code'], params['state'] ?? '');
+      }
+    });
+  }
 
   toggleMobileMenu(): void {
     this.mobileMenuOpen.update(v => !v);
@@ -1279,6 +1289,154 @@ export class AdminPageComponent {
       url += `?year=${year}&month=${parseInt(month)}`;
     }
     window.open(url, '_blank');
+  }
+
+  // Monzo bank methods
+  connectMonzo(): void {
+    this.http.get<{ url: string; state: string }>(`${environment.apiUrl}/api/monzo/connect`).subscribe({
+      next: (res) => {
+        localStorage.setItem('monzo_state', res.state);
+        window.location.href = res.url;
+      },
+      error: () => this.monzoError.set('Failed to start Monzo connection.'),
+    });
+  }
+
+  private handleMonzoCallback(code: string, state: string): void {
+    this.activeTab.set('finance');
+    this.financeSubTab.set('bank');
+    this.monzoLoading.set(true);
+    this.monzoError.set('');
+
+    // Clean up URL
+    this.router.navigate(['/admin'], { queryParams: {} });
+
+    this.http.post<{ pendingApproval?: boolean }>(`${environment.apiUrl}/api/monzo/callback`, { code, state }).subscribe({
+      next: (res) => {
+        if (res.pendingApproval) {
+          this.monzoPendingApproval.set(true);
+          this.monzoLoading.set(false);
+        } else {
+          this.monzoConnected.set(true);
+          this.loadMonzoBalance();
+          this.loadMonzoTransactions();
+        }
+      },
+      error: (err) => {
+        this.monzoError.set(err.error?.error ?? 'Failed to connect Monzo.');
+        this.monzoLoading.set(false);
+      },
+    });
+  }
+
+  disconnectMonzo(): void {
+    if (!confirm('Disconnect Monzo? You can reconnect at any time.')) { return; }
+    this.http.post(`${environment.apiUrl}/api/monzo/disconnect`, {}).subscribe({
+      next: () => {
+        this.monzoConnected.set(false);
+        this.monzoBalance.set(null);
+        this.monzoTransactions.set([]);
+      },
+      error: () => this.monzoError.set('Failed to disconnect.'),
+    });
+  }
+
+  loadMonzo(): void {
+    this.monzoLoading.set(true);
+    this.monzoError.set('');
+    this.http.get<{ connected: boolean; pendingApproval: boolean }>(`${environment.apiUrl}/api/monzo/status`).subscribe({
+      next: (status) => {
+        this.monzoConnected.set(status.connected);
+        this.monzoPendingApproval.set(status.pendingApproval);
+        if (status.connected) {
+          this.loadMonzoBalance();
+          this.loadMonzoTransactions();
+        } else {
+          this.monzoLoading.set(false);
+        }
+      },
+      error: () => {
+        this.monzoError.set('Failed to check Monzo status.');
+        this.monzoLoading.set(false);
+      },
+    });
+  }
+
+  verifyMonzo(): void {
+    this.monzoLoading.set(true);
+    this.monzoError.set('');
+    this.http.post<{ verified: boolean; message?: string }>(`${environment.apiUrl}/api/monzo/verify`, {}).subscribe({
+      next: (res) => {
+        if (res.verified) {
+          this.monzoPendingApproval.set(false);
+          this.monzoConnected.set(true);
+          this.loadMonzoBalance();
+          this.loadMonzoTransactions();
+        } else {
+          this.monzoError.set(res.message ?? 'Still waiting for approval in the Monzo app.');
+          this.monzoLoading.set(false);
+        }
+      },
+      error: (err) => {
+        this.monzoError.set(err.error?.error ?? 'Verification failed.');
+        this.monzoLoading.set(false);
+      },
+    });
+  }
+
+  loadMonzoBalance(): void {
+    this.http.get<MonzoBalance>(`${environment.apiUrl}/api/monzo/balance`).subscribe({
+      next: (balance) => this.monzoBalance.set(balance),
+      error: () => {},
+    });
+  }
+
+  loadMonzoTransactions(): void {
+    this.monzoLoading.set(true);
+    this.http.get<MonzoTransaction[]>(`${environment.apiUrl}/api/monzo/transactions`).subscribe({
+      next: (txns) => {
+        this.monzoTransactions.set(txns);
+        this.monzoLoading.set(false);
+      },
+      error: () => {
+        this.monzoError.set('Failed to load Monzo transactions.');
+        this.monzoLoading.set(false);
+      },
+    });
+  }
+
+  syncMonzo(): void {
+    this.monzoSyncing.set(true);
+    this.monzoError.set('');
+    this.http.post(`${environment.apiUrl}/api/monzo/sync`, {}).subscribe({
+      next: () => {
+        this.monzoSyncing.set(false);
+        this.loadMonzoTransactions();
+        this.loadMonzoBalance();
+      },
+      error: () => {
+        this.monzoError.set('Sync failed.');
+        this.monzoSyncing.set(false);
+      },
+    });
+  }
+
+  annotateMonzoTransaction(txn: MonzoTransaction, notes: string, tags: string): void {
+    this.monzoAnnotating.set(txn.id);
+    this.http.patch<MonzoTransaction>(`${environment.apiUrl}/api/monzo/transactions/${txn.id}/annotate`, { notes, tags }).subscribe({
+      next: (updated) => {
+        this.monzoTransactions.update(list => list.map(t => t.id === updated.id ? updated : t));
+        this.monzoAnnotating.set(null);
+      },
+      error: () => this.monzoAnnotating.set(null),
+    });
+  }
+
+  switchFinanceSubTab(tab: 'transactions' | 'bank'): void {
+    this.financeSubTab.set(tab);
+    if (tab === 'bank' && this.monzoTransactions().length === 0) {
+      this.loadMonzo();
+    }
   }
 
   stripHtml(html: string): string {

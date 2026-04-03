@@ -79,6 +79,11 @@ builder.Services.AddSingleton<ImageStorageService>();
 builder.Services.AddScoped<RankCheckerService>();
 builder.Services.AddHostedService<RankCheckBackgroundService>();
 
+// Monzo bank integration
+builder.Services.AddHttpClient<MonzoService>();
+builder.Services.AddScoped<MonzoService>();
+builder.Services.AddHostedService<MonzoSyncBackgroundService>();
+
 // HttpClient for external OAuth token verification
 builder.Services.AddHttpClient();
 
