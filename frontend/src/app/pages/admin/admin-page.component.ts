@@ -945,22 +945,67 @@ export class AdminPageComponent {
     };
   }
 
-  onAdditionalImageSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    this.uploading.set(true);
-    this.productService.uploadImage(file).subscribe({
-      next: (res) => {
-        this.form.additionalImageUrls = [...(this.form.additionalImageUrls ?? []), res.imageUrl];
-        this.uploading.set(false);
-      },
-      error: () => this.uploading.set(false),
-    });
+  allProductImages(): string[] {
+    const imgs: string[] = [];
+    if (this.form.imageUrl) {
+      imgs.push(this.form.imageUrl);
+    }
+    for (const img of this.form.additionalImageUrls ?? []) {
+      if (img && !imgs.includes(img)) {
+        imgs.push(img);
+      }
+    }
+    return imgs;
   }
 
-  removeAdditionalImage(index: number): void {
-    this.form.additionalImageUrls = this.form.additionalImageUrls?.filter((_, i) => i !== index) ?? [];
+  setPrimaryImage(url: string): void {
+    const others = this.allProductImages().filter(img => img !== url);
+    this.form.imageUrl = url;
+    this.form.additionalImageUrls = others;
+  }
+
+  removeProductImage(url: string): void {
+    if (url === this.form.imageUrl) {
+      const others = (this.form.additionalImageUrls ?? []).filter(img => img !== url);
+      this.form.imageUrl = others[0] ?? '';
+      this.form.additionalImageUrls = others.slice(1);
+    } else {
+      this.form.additionalImageUrls = (this.form.additionalImageUrls ?? []).filter(img => img !== url);
+    }
+  }
+
+  onProductImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+    this.uploading.set(true);
+    this.uploadError.set('');
+    let pending = files.length;
+    for (let i = 0; i < files.length; i++) {
+      this.productService.uploadImage(files[i]).subscribe({
+        next: (res) => {
+          if (!this.form.imageUrl) {
+            this.form.imageUrl = res.imageUrl;
+          } else {
+            this.form.additionalImageUrls = [...(this.form.additionalImageUrls ?? []), res.imageUrl];
+          }
+          pending--;
+          if (pending === 0) {
+            this.uploading.set(false);
+          }
+        },
+        error: () => {
+          pending--;
+          if (pending === 0) {
+            this.uploading.set(false);
+          }
+          this.uploadError.set('One or more uploads failed.');
+        },
+      });
+    }
+    input.value = '';
   }
 
   stripHtml(html: string): string {

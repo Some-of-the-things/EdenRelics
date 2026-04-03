@@ -524,6 +524,93 @@
   border: 1px solid var(--border-color);
 }
 
+.admin__gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin__gallery-item {
+  position: relative;
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+  transition: border-color var(--transition);
+
+  &--primary {
+    border-color: var(--accent);
+  }
+
+  &:hover {
+    border-color: var(--text-primary);
+  }
+}
+
+.admin__gallery-thumb {
+  width: 80px;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+}
+
+.admin__gallery-badge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--accent);
+  color: var(--text-inverse);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.15rem 0;
+}
+
+.admin__gallery-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-sale);
+  color: white;
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity var(--transition);
+
+  .admin__gallery-item:hover & {
+    opacity: 1;
+  }
+}
+
+.admin__gallery-add {
+  width: 80px;
+  height: 100px;
+  border: 2px dashed var(--border-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
 .admin__file-btn {
   display: inline-block;
   background: var(--bg-secondary);

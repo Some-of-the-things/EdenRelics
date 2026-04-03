@@ -190,44 +190,28 @@
             </label>
           </div>
           <div class="admin__field">
-            <span>Image</span>
-            <div class="admin__image-upload">
-              @if (imagePreview() || form.imageUrl) {
-                <img [src]="imagePreview() || form.imageUrl" alt="Preview" class="admin__image-preview" />
-              }
-              <label class="admin__file-btn">
-                Choose File
-                <input type="file" accept="image/*" (change)="onFileSelected($event)" hidden />
-              </label>
-              @if (uploading()) {
-                <span class="admin__uploading">Uploading...</span>
-              }
-              @if (uploadError()) {
-                <span class="admin__upload-error">{{ uploadError() }}</span>
-              }
-              <input
-                type="text"
-                [(ngModel)]="form.imageUrl"
-                name="imageUrl"
-                placeholder="Or paste image URL"
-                class="admin__url-input"
-              />
-            </div>
-          </div>
-          <div class="admin__field">
-            <span>Additional Images</span>
-            <div class="admin__additional-images">
-              @for (img of form.additionalImageUrls; track $index) {
-                <div class="admin__additional-image">
-                  <img [src]="img" alt="Additional" class="admin__image-preview" />
-                  <button type="button" class="admin__delete-btn" (click)="removeAdditionalImage($index)" aria-label="Remove image">&times;</button>
+            <span>Photos (click to set as primary)</span>
+            <div class="admin__gallery">
+              @for (img of allProductImages(); track img; let i = $index) {
+                <div class="admin__gallery-item" [class.admin__gallery-item--primary]="img === form.imageUrl">
+                  <img [src]="img" alt="Product photo" class="admin__gallery-thumb" (click)="setPrimaryImage(img)" />
+                  @if (img === form.imageUrl) {
+                    <span class="admin__gallery-badge">Primary</span>
+                  }
+                  <button type="button" class="admin__gallery-remove" (click)="removeProductImage(img)" aria-label="Remove image">&times;</button>
                 </div>
               }
-              <label class="admin__file-btn">
-                + Add Image
-                <input type="file" accept="image/*" (change)="onAdditionalImageSelected($event)" hidden />
+              <label class="admin__gallery-add">
+                + Add Photo
+                <input type="file" accept="image/*" multiple (change)="onProductImageSelected($event)" hidden />
               </label>
             </div>
+            @if (uploading()) {
+              <span class="admin__uploading">Uploading...</span>
+            }
+            @if (uploadError()) {
+              <span class="admin__upload-error">{{ uploadError() }}</span>
+            }
           </div>
           <div class="admin__actions">
             <button type="button" class="admin__cancel-btn" (click)="closeForm()">Cancel</button>
