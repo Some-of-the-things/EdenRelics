@@ -113,6 +113,19 @@ public class MonzoController(
         return Ok(new { message = "Monzo disconnected." });
     }
 
+    [HttpGet("accounts")]
+    public async Task<ActionResult> GetAccounts()
+    {
+        string? accessToken = await monzo.EnsureValidTokenAsync(context);
+        if (accessToken is null)
+        {
+            return BadRequest(new { error = "Monzo is not connected." });
+        }
+
+        List<MonzoAccountResponse> accounts = await monzo.GetAccountsAsync(accessToken);
+        return Ok(new { accounts });
+    }
+
     [HttpGet("balance")]
     public async Task<ActionResult<MonzoBalanceDto>> GetBalance()
     {
