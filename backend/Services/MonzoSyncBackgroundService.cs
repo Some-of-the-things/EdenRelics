@@ -38,7 +38,7 @@ public class MonzoSyncBackgroundService(
         }
     }
 
-    public static async Task SyncTransactionsAsync(
+    public static async Task<(int Fetched, int Added, string AccountId, DateTime Since)> SyncTransactionsAsync(
         MonzoService monzo, EdenRelicsDbContext context, string accessToken, string accountId)
     {
         DateTime? latestDate = await context.MonzoTransactions
@@ -51,6 +51,7 @@ public class MonzoSyncBackgroundService(
         List<MonzoTransactionResponse> transactions = await monzo.GetTransactionsAsync(
             accessToken, accountId, since: since);
 
+        int added = 0;
         foreach (MonzoTransactionResponse txn in transactions)
         {
             bool exists = await context.MonzoTransactions
@@ -74,9 +75,11 @@ public class MonzoSyncBackgroundService(
                 DeclineReason = txn.DeclineReason,
                 SettledAt = DateTime.TryParse(txn.Settled, out DateTime settled) ? settled.ToUniversalTime() : null,
             });
+            added++;
         }
 
         await context.SaveChangesAsync();
+        return (transactions.Count, added, accountId, since);
     }
 
     private static string FormatDescription(string description)

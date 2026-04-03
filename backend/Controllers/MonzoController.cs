@@ -148,8 +148,8 @@ public class MonzoController(
             return BadRequest(new { error = "Monzo is not connected." });
         }
 
-        await MonzoSyncBackgroundService.SyncTransactionsAsync(monzo, context, accessToken, token.AccountId);
-        return Ok(new { message = "Sync completed." });
+        var (fetched, added, accountId, since) = await MonzoSyncBackgroundService.SyncTransactionsAsync(monzo, context, accessToken, token.AccountId);
+        return Ok(new { message = "Sync completed.", fetched, added, accountId, since });
     }
 
     [HttpGet("transactions")]
