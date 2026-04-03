@@ -2,8 +2,7 @@
   <div class="detail">
     <a routerLink="/" class="detail__back">&larr; Back to Shop</a>
     <div class="detail__layout">
-      <div class="detail__image-wrap">
-        <img [src]="currentImage()" [alt]="product.name" class="detail__image" />
+      <div class="detail__image-wrap" [class.detail__image-wrap--has-thumbs]="allImages().length > 1">
         @if (allImages().length > 1) {
           <div class="detail__thumbs">
             @for (img of allImages(); track img) {
@@ -17,6 +16,7 @@
             }
           </div>
         }
+        <img [src]="currentImage()" [alt]="product.name" class="detail__image" />
       </div>
       <div class="detail__info">
         <span class="detail__era">{{ product.era }}</span>

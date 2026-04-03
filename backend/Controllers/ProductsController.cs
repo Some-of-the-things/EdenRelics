@@ -534,20 +534,17 @@ public class ProductsController : ControllerBase
             var result = await client.Messages.GetClaudeMessageAsync(parameters);
             string responseText = result.Message.ToString().Trim();
 
-            // Strip markdown fences if present
-            if (responseText.StartsWith("```"))
+            // Extract JSON object from response regardless of surrounding text
+            int jsonStart = responseText.IndexOf('{');
+            int jsonEnd = responseText.LastIndexOf('}');
+            if (jsonStart < 0 || jsonEnd < 0 || jsonEnd <= jsonStart)
             {
-                responseText = responseText.Split('\n', 2).Length > 1
-                    ? responseText.Split('\n', 2)[1]
-                    : responseText;
-                if (responseText.EndsWith("```"))
-                {
-                    responseText = responseText[..^3];
-                }
-                responseText = responseText.Trim();
+                _logger.LogWarning("Analyse-image response contained no JSON: {Response}", responseText);
+                return StatusCode(500, new { error = "Image analysis returned an unexpected response. Please try again." });
             }
+            string json = responseText[jsonStart..(jsonEnd + 1)];
 
-            JsonDocument parsed = JsonDocument.Parse(responseText);
+            JsonDocument parsed = JsonDocument.Parse(json);
             return Ok(parsed.RootElement);
         }
         catch (Exception ex)

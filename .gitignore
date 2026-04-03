@@ -22,6 +22,9 @@ Thumbs.db
 # Claude Code
 .claude/
 
+# Uploads
+backend/wwwroot/uploads/
+
 # Misc
 lighthouse-perf.json
 /backend/Eden Relics BE.Tests/bin/Debug/net10.0
