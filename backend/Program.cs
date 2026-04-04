@@ -75,6 +75,9 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddSingleton<ImageOptimizationService>();
 builder.Services.AddSingleton<ImageStorageService>();
 
+// Translation
+builder.Services.AddScoped<TranslationService>();
+
 // SEO rank checking
 builder.Services.AddScoped<RankCheckerService>();
 builder.Services.AddHostedService<RankCheckBackgroundService>();
@@ -166,6 +169,22 @@ using (IServiceScope scope = app.Services.CreateScope())
 
 // Optimize any uncompressed uploaded images
 await app.Services.GetRequiredService<ImageOptimizationService>().OptimizeExistingImagesAsync();
+
+// Host filtering — reject requests with spoofed Host headers
+app.Use(async (context, next) =>
+{
+    string? host = context.Request.Host.Host;
+    if (!app.Environment.IsDevelopment()
+        && host != "api.edenrelics.co.uk"
+        && host != "localhost")
+    {
+        context.Response.StatusCode = 400;
+        await context.Response.WriteAsync("Invalid host");
+        return;
+    }
+
+    await next();
+});
 
 // Security headers
 app.Use(async (context, next) =>

@@ -1,5 +1,6 @@
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
+using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,21 +9,48 @@ namespace Eden_Relics_BE.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ContentController(EdenRelicsDbContext context) : ControllerBase
+public class ContentController(EdenRelicsDbContext context, TranslationService translation) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<Dictionary<string, string>>> GetAll()
+    public async Task<ActionResult<Dictionary<string, string>>> GetAll([FromQuery] string? locale = null)
     {
         List<SiteContent> entries = await context.SiteContent.ToListAsync();
-        Dictionary<string, string> result = entries.ToDictionary(e => e.Key, e => e.Value);
+        Dictionary<string, string> all = entries.ToDictionary(e => e.Key, e => e.Value);
 
         // Merge defaults for any missing keys
         foreach (KeyValuePair<string, string> kv in Defaults)
         {
-            result.TryAdd(kv.Key, kv.Value);
+            all.TryAdd(kv.Key, kv.Value);
         }
 
-        return Ok(result);
+        // If a locale is requested (e.g., "fr"), return localised content where available
+        if (!string.IsNullOrWhiteSpace(locale) && locale != "en")
+        {
+            string prefix = $"{locale}.";
+            Dictionary<string, string> result = [];
+
+            foreach (KeyValuePair<string, string> kv in all)
+            {
+                // Skip locale-prefixed keys in the base result
+                if (kv.Key.Length > 3 && kv.Key[2] == '.' && TranslationService.SupportedLocales.ContainsKey(kv.Key[..2]))
+                {
+                    continue;
+                }
+
+                // Use translated version if available, otherwise fall back to English
+                string localisedKey = prefix + kv.Key;
+                result[kv.Key] = all.GetValueOrDefault(localisedKey, kv.Value);
+            }
+
+            return Ok(result);
+        }
+
+        // Default: return English content (strip locale-prefixed keys)
+        Dictionary<string, string> english = all
+            .Where(kv => !(kv.Key.Length > 3 && kv.Key[2] == '.' && TranslationService.SupportedLocales.ContainsKey(kv.Key[..2])))
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+        return Ok(english);
     }
 
     [HttpPut]
@@ -46,15 +74,53 @@ public class ContentController(EdenRelicsDbContext context) : ControllerBase
 
         await context.SaveChangesAsync();
 
-        // Return full content including defaults
+        // Translate changed content in the background
+        _ = TranslateAndStoreAsync(content);
+
+        // Return full English content including defaults
         List<SiteContent> updated = await context.SiteContent.ToListAsync();
-        Dictionary<string, string> result = updated.ToDictionary(e => e.Key, e => e.Value);
+        Dictionary<string, string> result = updated
+            .Where(e => !(e.Key.Length > 3 && e.Key[2] == '.' && TranslationService.SupportedLocales.ContainsKey(e.Key[..2])))
+            .ToDictionary(e => e.Key, e => e.Value);
         foreach (KeyValuePair<string, string> kv in Defaults)
         {
             result.TryAdd(kv.Key, kv.Value);
         }
 
         return Ok(result);
+    }
+
+    private async Task TranslateAndStoreAsync(Dictionary<string, string> content)
+    {
+        try
+        {
+            Dictionary<string, string> translations = await translation.TranslateBatchAsync(content);
+            if (translations.Count == 0)
+            {
+                return;
+            }
+
+            List<SiteContent> existing = await context.SiteContent.ToListAsync();
+            Dictionary<string, SiteContent> byKey = existing.ToDictionary(e => e.Key);
+
+            foreach ((string key, string value) in translations)
+            {
+                if (byKey.TryGetValue(key, out SiteContent? entry))
+                {
+                    entry.Value = value;
+                }
+                else
+                {
+                    context.SiteContent.Add(new SiteContent { Key = key, Value = value });
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+        catch (Exception)
+        {
+            // Translation failures should not break the save
+        }
     }
 
     private static readonly Dictionary<string, string> Defaults = new()
