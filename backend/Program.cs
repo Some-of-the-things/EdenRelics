@@ -170,7 +170,10 @@ using (IServiceScope scope = app.Services.CreateScope())
 // Optimize any uncompressed uploaded images
 await app.Services.GetRequiredService<ImageOptimizationService>().OptimizeExistingImagesAsync();
 
-// Security headers
+app.UseResponseCompression();
+app.UseCors("AllowFrontend");
+
+// Security headers (after CORS so preflight responses aren't blocked)
 app.Use(async (context, next) =>
 {
     context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
@@ -181,9 +184,6 @@ app.Use(async (context, next) =>
     context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
     await next();
 });
-
-app.UseResponseCompression();
-app.UseCors("AllowFrontend");
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
