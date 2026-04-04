@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accessibility Report — Eden Relics</title>
+  <style>
+    :root {
+      --text: #2e2e2e;
+      --muted: #666;
+      --accent: #2d6a4f;
+      --accent-light: #eaf5f0;
+      --border: #ddd;
+      --bg: #fff;
+      --bg-alt: #fafafa;
+      --pass: #2d6a4f;
+      --warn: #b45309;
+      --fail: #c0392b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.7;
+      font-size: 17px;
+    }
+
+    a { color: var(--accent); }
+    a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 1rem;
+      background: var(--accent);
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 0 0 4px 4px;
+      z-index: 100;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .skip-link:focus { top: 0; }
+
+    header.hero {
+      background: var(--accent);
+      color: #fff;
+      padding: 3rem 1.5rem;
+      text-align: center;
+    }
+    header.hero h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    header.hero p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    header.hero .date {
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      opacity: 0.75;
+    }
+    .download-link {
+      display: inline-block;
+      margin-top: 1.25rem;
+      padding: 0.6rem 1.5rem;
+      background: #fff;
+      color: var(--accent);
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    .download-link:hover,
+    .download-link:focus-visible {
+      background: var(--accent-light);
+      color: #1b4d38;
+    }
+
+    main { max-width: 820px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    h2 {
+      font-size: 1.55rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--accent);
+      color: var(--text);
+    }
+    h3 {
+      font-size: 1.2rem;
+      margin: 1.8rem 0 0.6rem;
+      color: var(--text);
+    }
+
+    p { margin-bottom: 1rem; }
+
+    ul, ol { margin: 0 0 1rem 1.5rem; }
+    li { margin-bottom: 0.4rem; }
+
+    .verdict-box {
+      background: var(--accent-light);
+      border-left: 4px solid var(--accent);
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .verdict-box strong { display: block; margin-bottom: 0.3rem; font-size: 1.05rem; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      background: var(--bg);
+    }
+    .card h3 { margin: 0 0 0.5rem; font-size: 1.05rem; }
+    .card p { margin: 0; font-size: 0.95rem; color: var(--muted); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .badge--pass { background: #e6f4ea; color: var(--pass); }
+    .badge--warn { background: #fff3e0; color: var(--warn); }
+    .badge--fail { background: #fdecea; color: var(--fail); }
+    .badge--info { background: #e8f0fe; color: #1a56db; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: var(--bg-alt);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    .strengths-list {
+      list-style: none;
+      margin-left: 0;
+      padding: 0;
+    }
+    .strengths-list li {
+      padding: 0.5rem 0 0.5rem 2rem;
+      position: relative;
+    }
+    .strengths-list li::before {
+      content: "\2713";
+      position: absolute;
+      left: 0;
+      color: var(--pass);
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .appendix { background: var(--bg-alt); padding: 2rem 1.5rem; margin-top: 3rem; border-radius: 8px; }
+    .appendix h2 { border-color: var(--muted); }
+    .appendix table { font-size: 0.88rem; }
+    .appendix td, .appendix th { padding: 0.55rem 0.75rem; }
+
+    footer.report-footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 600px) {
+      header.hero h1 { font-size: 1.5rem; }
+      main { padding: 1.5rem 1rem 3rem; }
+      .card-grid { grid-template-columns: 1fr; }
+      table { font-size: 0.85rem; }
+      th, td { padding: 0.5rem; }
+    }
+
+    @media print {
+      header.hero { background: #fff; color: var(--text); border-bottom: 2px solid var(--accent); }
+      .skip-link { display: none; }
+      main { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to main content</a>
+
+<header class="hero">
+  <h1>Accessibility Report</h1>
+  <p>An independent review of the Eden Relics website against international accessibility standards</p>
+  <div class="date">Published 4 April 2026 &middot; edenrelics.co.uk</div>
+  <a href="/accessibility-report.pdf" class="download-link" download>Download as PDF</a>
+</header>
+
+<main id="main">
+
+  <!-- ============ INTRO ============ -->
+  <h2>About This Report</h2>
+  <p>
+    This report summarises the results of an accessibility audit of the
+    <strong>Eden Relics</strong> website. The audit checks whether the site can be used
+    comfortably by everyone, including people who rely on screen readers, keyboard
+    navigation, or other assistive technologies.
+  </p>
+  <p>
+    We tested seven key pages &mdash; the home page, login, registration, contact form,
+    blog, shopping cart, and privacy policy &mdash; using a combination of automated
+    scanning tools and a detailed manual review of the underlying code.
+  </p>
+  <p>
+    The site was assessed against <strong>WCAG 2.1 Level AA</strong>, the internationally
+    recognised standard for web accessibility adopted by governments and organisations
+    worldwide. Where technical criteria are referenced, they are listed in the
+    <a href="#appendix-a">appendix</a> at the end of this report for those who wish to
+    explore further.
+  </p>
+
+  <!-- ============ OVERALL ============ -->
+  <h2>Overall Assessment</h2>
+  <div class="verdict-box">
+    <strong>Verdict: Strong foundation with a small number of improvements needed</strong>
+    The Eden Relics website already includes many important accessibility features.
+    The automated scan returned <strong>zero errors</strong> across all seven pages tested,
+    which places it well ahead of the majority of e-commerce sites. A handful of areas
+    identified during the manual review need attention to reach full compliance.
+  </div>
+
+  <!-- ============ STRENGTHS ============ -->
+  <h2>What the Site Does Well</h2>
+  <p>
+    Before looking at what can be improved, it is worth highlighting the many things
+    Eden Relics already gets right. These features show a genuine commitment to making
+    the site usable for everyone:
+  </p>
+  <ul class="strengths-list">
+    <li><strong>Skip navigation</strong> &mdash; a hidden link lets keyboard users jump
+      straight past the menu to the main content, saving time on every page.</li>
+    <li><strong>Clear page structure</strong> &mdash; the site uses proper HTML elements
+      (headings, navigation landmarks, main content area) so screen readers can present
+      a logical outline of each page.</li>
+    <li><strong>Image descriptions</strong> &mdash; all product images and the site logo
+      have text descriptions that are read aloud by screen readers.</li>
+    <li><strong>Visible focus indicator</strong> &mdash; when navigating with a keyboard,
+      a clear outline shows which element is currently selected.</li>
+    <li><strong>Proper form labels</strong> &mdash; every form field (name, email,
+      password, etc.) has an associated label so screen reader users know what
+      information to enter.</li>
+    <li><strong>Browser auto-fill support</strong> &mdash; form fields include hints that
+      allow browsers to auto-fill personal details, which is especially helpful for
+      users with motor difficulties.</li>
+    <li><strong>Meaningful page titles</strong> &mdash; each page has a unique title
+      (e.g. "Blog | Eden Relics") so users with multiple tabs open can distinguish
+      between them.</li>
+    <li><strong>Readable fonts</strong> &mdash; text uses the system font with
+      <em>font-display: swap</em>, which prevents invisible text while custom fonts load.</li>
+    <li><strong>Responsive images</strong> &mdash; images include width and height
+      attributes that prevent the page from jumping around as content loads.</li>
+  </ul>
+
+  <!-- ============ IMPROVEMENTS ============ -->
+  <h2>Areas for Improvement</h2>
+  <p>
+    The following areas were identified as needing attention. They are listed in order
+    of priority, starting with the most impactful changes.
+  </p>
+
+  <!-- 1 -->
+  <h3>1. Pop-up windows need better keyboard support</h3>
+  <div><span class="badge badge--fail">High priority</span></div>
+  <p>
+    When a pop-up window (for example, the prompt to sign in before adding a favourite)
+    appears on screen, keyboard-only users can accidentally move focus to elements
+    behind it. There is also no way to close the pop-up by pressing the
+    <kbd>Escape</kbd> key, which is the expected behaviour.
+  </p>
+  <p>
+    <strong>What this means for users:</strong> Someone navigating with a keyboard or
+    screen reader may become confused or stuck when a pop-up is displayed, as their
+    focus can drift to hidden content behind it.
+  </p>
+  <p>
+    <strong>Recommended fix:</strong> Keep keyboard focus trapped within the pop-up
+    while it is open, add Escape key support to close it, and return focus to the
+    button that triggered it when it closes.
+  </p>
+
+  <!-- 2 -->
+  <h3>2. Dynamic updates are not announced to screen readers</h3>
+  <div><span class="badge badge--fail">High priority</span></div>
+  <p>
+    When something changes on the page without a full reload &mdash; for example, adding
+    an item to the shopping cart, filtering products by category, or a form being
+    submitted &mdash; screen reader users are not notified of the change. They may not
+    realise that their action had any effect.
+  </p>
+  <p>
+    <strong>What this means for users:</strong> A screen reader user who adds a product
+    to their cart might not hear any confirmation, leaving them unsure whether the action
+    succeeded.
+  </p>
+  <p>
+    <strong>Recommended fix:</strong> Add invisible announcement regions that screen
+    readers monitor for updates. When the cart count changes or a filter is applied,
+    a short message (e.g. "Item added to cart" or "Showing 12 results") should be
+    announced.
+  </p>
+
+  <!-- 3 -->
+  <h3>3. Text contrast on product image overlays needs checking</h3>
+  <div><span class="badge badge--warn">Medium priority</span></div>
+  <p>
+    Product cards display a decade label (e.g. "1970s") overlaid on the product
+    photograph. Because the label sits on top of a varying image, the contrast between
+    the text and the background can differ from product to product. The automated
+    scanner flagged 20 instances where it could not confirm sufficient contrast.
+  </p>
+  <p>
+    <strong>What this means for users:</strong> People with low vision or colour
+    deficiencies may struggle to read the decade label on some product cards,
+    particularly where the product image is light-coloured.
+  </p>
+  <p>
+    <strong>Recommended fix:</strong> Add a solid or high-opacity background behind the
+    decade label to guarantee readable contrast regardless of the underlying image.
+  </p>
+
+  <!-- 4 -->
+  <h3>4. Form error messages could be more descriptive</h3>
+  <div><span class="badge badge--warn">Medium priority</span></div>
+  <p>
+    When a user submits a form with missing or incorrect information, an error message
+    appears on screen. While the message is announced by screen readers, it is not
+    directly linked to the specific field that needs correcting. On longer forms (such
+    as the checkout), this can make it harder to find and fix the problem.
+  </p>
+  <p>
+    <strong>What this means for users:</strong> A screen reader user filling in the
+    checkout form might hear "Please check your details" without knowing whether the
+    issue is with their name, email, or address.
+  </p>
+  <p>
+    <strong>Recommended fix:</strong> Link each error message to its corresponding form
+    field so that screen readers can announce the error when the user navigates to that
+    field.
+  </p>
+
+  <!-- 5 -->
+  <h3>5. Some buttons could be larger for touchscreen users</h3>
+  <div><span class="badge badge--warn">Medium priority</span></div>
+  <p>
+    The favourite (heart) button on product cards measures 36&times;36 pixels. While this
+    meets the baseline requirement, the recommended minimum for comfortable use on
+    touchscreens is 44&times;44 pixels. Some navigation links may also be small on
+    mobile devices.
+  </p>
+  <p>
+    <strong>What this means for users:</strong> People with motor difficulties or those
+    using a mobile phone may find it harder to accurately tap smaller buttons.
+  </p>
+  <p>
+    <strong>Recommended fix:</strong> Increase the size of small interactive elements
+    to at least 44&times;44 pixels, or add extra padding around them.
+  </p>
+
+  <!-- 6 -->
+  <h3>6. Decorative icons should be hidden from screen readers</h3>
+  <div><span class="badge badge--info">Low priority</span></div>
+  <p>
+    Some decorative icons (such as the heart icon on the favourite button and the social
+    login provider logos) are not explicitly marked as decorative. Screen readers may
+    attempt to describe these images, which adds unnecessary noise.
+  </p>
+  <p>
+    <strong>Recommended fix:</strong> Mark decorative icons as hidden from assistive
+    technology, and ensure that icon-only buttons (such as "Sign in with Google") have
+    a text label that screen readers can announce.
+  </p>
+
+  <!-- ============ SUMMARY TABLE ============ -->
+  <h2>Summary</h2>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Area</th>
+        <th scope="col">Priority</th>
+        <th scope="col">Current Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Skip navigation &amp; page structure</td>
+        <td><span class="badge badge--pass">Pass</span></td>
+        <td>Well implemented across all pages</td>
+      </tr>
+      <tr>
+        <td>Image descriptions</td>
+        <td><span class="badge badge--pass">Pass</span></td>
+        <td>All images have descriptive alt text</td>
+      </tr>
+      <tr>
+        <td>Keyboard focus visibility</td>
+        <td><span class="badge badge--pass">Pass</span></td>
+        <td>Clear focus outlines on all controls</td>
+      </tr>
+      <tr>
+        <td>Form labels &amp; auto-fill</td>
+        <td><span class="badge badge--pass">Pass</span></td>
+        <td>Proper labels and autocomplete attributes</td>
+      </tr>
+      <tr>
+        <td>Page titles</td>
+        <td><span class="badge badge--pass">Pass</span></td>
+        <td>Unique, descriptive titles on each page</td>
+      </tr>
+      <tr>
+        <td>Pop-up keyboard support</td>
+        <td><span class="badge badge--fail">High</span></td>
+        <td>Focus trapping and Escape key needed</td>
+      </tr>
+      <tr>
+        <td>Screen reader announcements</td>
+        <td><span class="badge badge--fail">High</span></td>
+        <td>Dynamic updates not announced</td>
+      </tr>
+      <tr>
+        <td>Text contrast on image overlays</td>
+        <td><span class="badge badge--warn">Medium</span></td>
+        <td>Needs solid background on badges</td>
+      </tr>
+      <tr>
+        <td>Form error descriptions</td>
+        <td><span class="badge badge--warn">Medium</span></td>
+        <td>Errors not linked to specific fields</td>
+      </tr>
+      <tr>
+        <td>Touchscreen button sizes</td>
+        <td><span class="badge badge--warn">Medium</span></td>
+        <td>Some targets below recommended size</td>
+      </tr>
+      <tr>
+        <td>Decorative icon labelling</td>
+        <td><span class="badge badge--info">Low</span></td>
+        <td>Minor &mdash; icons need hiding from readers</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ============ APPENDIX A ============ -->
+  <div class="appendix" id="appendix-a">
+    <h2>Appendix A &mdash; WCAG 2.1 Criteria Reference</h2>
+    <p>
+      The findings in this report are measured against the
+      <a href="https://www.w3.org/TR/WCAG21/">Web Content Accessibility Guidelines
+      (WCAG) 2.1</a>, Level AA. The table below maps each finding to the specific
+      success criterion it relates to.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Finding</th>
+          <th scope="col">WCAG Criterion</th>
+          <th scope="col">Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pop-up keyboard support</td>
+          <td>2.4.3 Focus Order</td>
+          <td>Focusable components receive focus in an order that preserves meaning and operability.</td>
+        </tr>
+        <tr>
+          <td>Screen reader announcements</td>
+          <td>4.1.3 Status Messages</td>
+          <td>Status messages can be programmatically determined so that assistive technologies can present them without receiving focus.</td>
+        </tr>
+        <tr>
+          <td>Text contrast on overlays</td>
+          <td>1.4.3 Contrast (Minimum)</td>
+          <td>Text has a contrast ratio of at least 4.5:1 (3:1 for large text).</td>
+        </tr>
+        <tr>
+          <td>Form error descriptions</td>
+          <td>3.3.1 Error Identification</td>
+          <td>If an input error is detected, the item in error is identified and described to the user in text.</td>
+        </tr>
+        <tr>
+          <td>Form error descriptions</td>
+          <td>3.3.3 Error Suggestion</td>
+          <td>If an input error is detected and suggestions are known, they are provided to the user.</td>
+        </tr>
+        <tr>
+          <td>Touchscreen button sizes</td>
+          <td>2.5.5 Target Size (AAA)</td>
+          <td>Interactive targets are at least 44 by 44 CSS pixels. (Level AAA recommendation; 2.5.8 at Level AA requires 24px.)</td>
+        </tr>
+        <tr>
+          <td>Decorative icon labelling</td>
+          <td>4.1.2 Name, Role, Value</td>
+          <td>All user interface components have accessible names and roles that can be programmatically determined.</td>
+        </tr>
+        <tr>
+          <td>Decorative icon labelling</td>
+          <td>1.1.1 Non-text Content</td>
+          <td>All non-text content has a text alternative, or is marked as decorative.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ APPENDIX B ============ -->
+  <div class="appendix" id="appendix-b" style="margin-top: 1.5rem;">
+    <h2>Appendix B &mdash; Testing Methodology</h2>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Method</th>
+          <th scope="col">Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Automated scanning</td>
+          <td>Pa11y v9.1.1 with HTML_CodeSniffer engine, WCAG 2.1 AA standard, run against 7 pages with headless Chromium</td>
+        </tr>
+        <tr>
+          <td>Manual code review</td>
+          <td>All Angular component templates (.html) and stylesheets (.scss) reviewed for ARIA usage, contrast, focus management, and keyboard operability</td>
+        </tr>
+        <tr>
+          <td>Pages tested</td>
+          <td>Home, Login, Register, Contact, Blog, Cart, Privacy Policy</td>
+        </tr>
+        <tr>
+          <td>Date of audit</td>
+          <td>4 April 2026</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<footer class="report-footer">
+  <p>Eden Relics Accessibility Report &middot; 4 April 2026 &middot; edenrelics.co.uk</p>
+</footer>
+
+</body>
+</html>
