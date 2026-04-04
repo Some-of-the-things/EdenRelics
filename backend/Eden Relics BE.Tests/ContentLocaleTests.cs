@@ -17,6 +17,14 @@ public class ContentLocaleTests : IClassFixture<ApiFactory>
     public async Task GetAll_WithoutLocale_ReturnsEnglishDefaults()
     {
         var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "content-en-default@test.com");
+
+        // Ensure seed value is set (other tests in this class may overwrite it)
+        await client.PutAsJsonAsync("/api/content", new Dictionary<string, string>
+        {
+            ["home.hero.title"] = "Curated Vintage"
+        });
+
         var content = await client.GetFromJsonAsync<Dictionary<string, string>>("/api/content", JsonOptions);
         Assert.NotNull(content);
         Assert.True(content.ContainsKey("home.hero.title"));
@@ -27,6 +35,14 @@ public class ContentLocaleTests : IClassFixture<ApiFactory>
     public async Task GetAll_WithEnLocale_ReturnsEnglishDefaults()
     {
         var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "content-en-locale@test.com");
+
+        // Ensure seed value is set (other tests in this class may overwrite it)
+        await client.PutAsJsonAsync("/api/content", new Dictionary<string, string>
+        {
+            ["home.hero.title"] = "Curated Vintage"
+        });
+
         var content = await client.GetFromJsonAsync<Dictionary<string, string>>("/api/content?locale=en", JsonOptions);
         Assert.NotNull(content);
         Assert.True(content.ContainsKey("home.hero.title"));
