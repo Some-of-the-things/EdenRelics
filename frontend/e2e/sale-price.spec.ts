@@ -112,10 +112,21 @@ test.describe('Sale Prices', () => {
     await expect(page.locator('.detail__discount')).toContainText('30%');
   });
 
+});
+
+test.describe('Sale Price Clearing', () => {
+  let token: string;
+
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    token = await registerAdmin(page, uniqueEmail('sale-clear-admin'));
+    await page.close();
+  });
+
   test('admin can clear sale price by setting to 0', async ({ request }) => {
     // Create product with sale price
     const createRes = await request.post(`${API}/products`, {
-      headers: { Authorization: `Bearer ${adminToken}` },
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         name: 'Clear Sale Dress',
         description: 'Test clearing sale',
@@ -134,7 +145,7 @@ test.describe('Sale Prices', () => {
 
     // Clear sale price
     const updateRes = await request.put(`${API}/products/${product.id}`, {
-      headers: { Authorization: `Bearer ${adminToken}` },
+      headers: { Authorization: `Bearer ${token}` },
       data: { salePrice: 0 },
     });
     expect(updateRes.status()).toBe(200);
