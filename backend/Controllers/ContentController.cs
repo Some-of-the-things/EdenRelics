@@ -12,18 +12,54 @@ namespace Eden_Relics_BE.Controllers;
 public class ContentController(EdenRelicsDbContext context, TranslationService translation) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<Dictionary<string, string>>> GetAll()
+    public async Task<ActionResult<Dictionary<string, string>>> GetAll([FromQuery] string? locale = null)
     {
         List<SiteContent> entries = await context.SiteContent.ToListAsync();
-        Dictionary<string, string> result = entries.ToDictionary(e => e.Key, e => e.Value);
+        Dictionary<string, string> all = entries.ToDictionary(e => e.Key, e => e.Value);
 
         // Merge defaults for any missing keys
         foreach (KeyValuePair<string, string> kv in Defaults)
         {
-            result.TryAdd(kv.Key, kv.Value);
+            all.TryAdd(kv.Key, kv.Value);
         }
 
-        return Ok(result);
+        // If a locale is requested, return translated content where available
+        if (!string.IsNullOrWhiteSpace(locale) && locale != "en")
+        {
+            string prefix = $"{locale}.";
+            Dictionary<string, string> result = [];
+
+            foreach (KeyValuePair<string, string> kv in all)
+            {
+                if (IsLocalePrefixedKey(kv.Key))
+                {
+                    continue;
+                }
+
+                string localisedKey = prefix + kv.Key;
+                result[kv.Key] = all.GetValueOrDefault(localisedKey, kv.Value);
+            }
+
+            return Ok(result);
+        }
+
+        // Default: return English content, stripping locale-prefixed keys
+        Dictionary<string, string> english = [];
+        foreach (KeyValuePair<string, string> kv in all)
+        {
+            if (!IsLocalePrefixedKey(kv.Key))
+            {
+                english[kv.Key] = kv.Value;
+            }
+        }
+
+        return Ok(english);
+    }
+
+    /// <summary>Check if a key is prefixed with a supported locale code (e.g., "fr.home.hero.title").</summary>
+    private static bool IsLocalePrefixedKey(string key)
+    {
+        return key.Length > 3 && key[2] == '.' && TranslationService.SupportedLocales.ContainsKey(key[..2]);
     }
 
     [HttpPut]
