@@ -1,0 +1,8 @@
+<div class="policy">
+  <h1 class="policy__title">Accessibility Report</h1>
+  <p class="policy__updated">Last updated: {{ content.get('report.accessibility.updated', 'April 2026') }}</p>
+  <div [innerHTML]="content.get('report.accessibility.content')"></div>
+  <a href="/accessibility-report.pdf" download class="policy__download">
+    Download Accessibility Report (PDF)
+  </a>
+</div>
