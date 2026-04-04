@@ -22,6 +22,15 @@
       </div>
 
       <div class="footer__section">
+        <h2 class="footer__heading">Reports</h2>
+        <nav class="footer__links" aria-label="Report links">
+          <a routerLink="/accessibility-report" class="footer__link">Accessibility Report</a>
+          <a routerLink="/security" class="footer__link">Security Report</a>
+          <a routerLink="/compliance-report" class="footer__link">Compliance Report</a>
+        </nav>
+      </div>
+
+      <div class="footer__section">
         <h2 class="footer__heading">Contact</h2>
         <nav class="footer__links" aria-label="Contact links">
           <a routerLink="/contact" class="footer__link">General Enquiries</a>
@@ -37,8 +46,7 @@
     <div class="footer__bottom">
       <p class="footer__copyright">&copy; {{ year }} DCPNET LTD. All rights reserved.</p>
       <p class="footer__vat-notice">All prices shown are inclusive of VAT where applicable.</p>
-      <p class="footer__wcag">This website is tested compliant with WCAG 2.1 Level AA accessibility standards. <a routerLink="/accessibility-report" class="footer__link footer__link--inline">View our accessibility report</a></p>
-      <p class="footer__wcag"><a routerLink="/security" class="footer__link footer__link--inline">Latest Security Report</a> &middot; <a routerLink="/compliance-report" class="footer__link footer__link--inline">Shareholders Compliance Report</a></p>
+      <p class="footer__wcag">This website is tested compliant with WCAG 2.1 Level AA accessibility standards.</p>
     </div>
   </div>
 </footer>
