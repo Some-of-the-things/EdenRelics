@@ -941,6 +941,14 @@
               <span class="acct__kpi-value fin__amount--negative">{{ bal.spendToday | currency:'GBP' }}</span>
               <span class="acct__kpi-label">Spent Today</span>
             </div>
+            @for (pot of monzoPots(); track pot.id) {
+              @if (pot.name.toLowerCase().includes('vat') || pot.name.toLowerCase().includes('tax')) {
+                <div class="acct__kpi">
+                  <span class="acct__kpi-value">{{ pot.balance | currency:'GBP' }}</span>
+                  <span class="acct__kpi-label">{{ pot.name }}</span>
+                </div>
+              }
+            }
           </div>
         }
 

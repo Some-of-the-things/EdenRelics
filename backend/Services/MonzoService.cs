@@ -145,6 +145,23 @@ public class MonzoService(
         return JsonSerializer.Deserialize<MonzoBalanceResponse>(json);
     }
 
+    public async Task<List<MonzoPotResponse>> GetPotsAsync(string accessToken, string accountId)
+    {
+        HttpRequestMessage request = new(HttpMethod.Get, $"{BaseUrl}/pots?current_account_id={accountId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        HttpResponseMessage response = await httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning("Monzo pots request failed: {Status}", response.StatusCode);
+            return [];
+        }
+
+        string json = await response.Content.ReadAsStringAsync();
+        MonzoPotListResponse? result = JsonSerializer.Deserialize<MonzoPotListResponse>(json);
+        return result?.Pots?.Where(p => !p.Deleted).ToList() ?? [];
+    }
+
     public async Task<List<MonzoTransactionResponse>> GetTransactionsAsync(
         string accessToken, string accountId, DateTime? since = null, DateTime? before = null)
     {
@@ -304,4 +321,29 @@ public class MonzoMerchantResponse
 
     [JsonPropertyName("logo")]
     public string? Logo { get; set; }
+}
+
+// Pot models
+public class MonzoPotListResponse
+{
+    [JsonPropertyName("pots")]
+    public List<MonzoPotResponse> Pots { get; set; } = [];
+}
+
+public class MonzoPotResponse
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = "";
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = "";
+
+    [JsonPropertyName("balance")]
+    public long Balance { get; set; }
+
+    [JsonPropertyName("currency")]
+    public string Currency { get; set; } = "GBP";
+
+    [JsonPropertyName("deleted")]
+    public bool Deleted { get; set; }
 }

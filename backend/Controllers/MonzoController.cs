@@ -154,6 +154,25 @@ public class MonzoController(
         return Ok(new { accounts });
     }
 
+    [HttpGet("pots")]
+    public async Task<ActionResult<List<MonzoPotDto>>> GetPots()
+    {
+        string? accessToken = await monzo.EnsureValidTokenAsync(context);
+        MonzoToken? token = await context.MonzoTokens.FirstOrDefaultAsync();
+
+        if (accessToken is null || token is null)
+        {
+            return BadRequest(new { error = "Monzo is not connected." });
+        }
+
+        List<MonzoPotResponse> pots = await monzo.GetPotsAsync(accessToken, token.AccountId);
+        List<MonzoPotDto> result = pots
+            .Select(p => new MonzoPotDto(p.Id, p.Name, p.Balance / 100m, p.Currency))
+            .ToList();
+
+        return Ok(result);
+    }
+
     [HttpGet("balance")]
     public async Task<ActionResult<MonzoBalanceDto>> GetBalance()
     {

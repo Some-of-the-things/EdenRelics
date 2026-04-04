@@ -171,6 +171,13 @@ interface MonzoSummary {
   }[];
 }
 
+interface MonzoPot {
+  id: string;
+  name: string;
+  balance: number;
+  currency: string;
+}
+
 interface MonzoAnnotatePayload {
   notes: string;
   tags: string;
@@ -444,6 +451,7 @@ export class AdminPageComponent implements OnInit {
   readonly financeSubTab = signal<'transactions' | 'bank'>('transactions');
   readonly monzoTransactions = signal<MonzoTransaction[]>([]);
   readonly monzoBalance = signal<MonzoBalance | null>(null);
+  readonly monzoPots = signal<MonzoPot[]>([]);
   readonly monzoLoading = signal(false);
   readonly monzoSyncing = signal(false);
   readonly monzoError = signal('');
@@ -1375,6 +1383,7 @@ export class AdminPageComponent implements OnInit {
       next: () => {
         this.monzoConnected.set(false);
         this.monzoBalance.set(null);
+        this.monzoPots.set([]);
         this.monzoTransactions.set([]);
       },
       error: () => this.monzoError.set('Failed to disconnect.'),
@@ -1390,6 +1399,7 @@ export class AdminPageComponent implements OnInit {
         this.monzoPendingApproval.set(status.pendingApproval);
         if (status.connected) {
           this.loadMonzoBalance();
+          this.loadMonzoPots();
           this.loadMonzoTransactions();
           this.loadMonzoSummary();
         } else {
@@ -1412,6 +1422,7 @@ export class AdminPageComponent implements OnInit {
           this.monzoPendingApproval.set(false);
           this.monzoConnected.set(true);
           this.loadMonzoBalance();
+          this.loadMonzoPots();
           this.loadMonzoTransactions();
         } else {
           this.monzoError.set(res.message ?? 'Still waiting for approval in the Monzo app.');
@@ -1428,6 +1439,13 @@ export class AdminPageComponent implements OnInit {
   loadMonzoBalance(): void {
     this.http.get<MonzoBalance>(`${environment.apiUrl}/api/monzo/balance`).subscribe({
       next: (balance) => this.monzoBalance.set(balance),
+      error: () => {},
+    });
+  }
+
+  loadMonzoPots(): void {
+    this.http.get<MonzoPot[]>(`${environment.apiUrl}/api/monzo/pots`).subscribe({
+      next: (pots) => this.monzoPots.set(pots),
       error: () => {},
     });
   }
@@ -1454,6 +1472,7 @@ export class AdminPageComponent implements OnInit {
         this.monzoSyncing.set(false);
         this.loadMonzoTransactions();
         this.loadMonzoBalance();
+        this.loadMonzoPots();
         this.loadMonzoSummary();
       },
       error: () => {

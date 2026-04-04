@@ -44,3 +44,10 @@ public record MonzoCallbackDto(
     string Code,
     string State
 );
+
+public record MonzoPotDto(
+    string Id,
+    string Name,
+    decimal Balance,
+    string Currency
+);
