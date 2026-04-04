@@ -11,8 +11,8 @@ export class SecurityReportComponent implements OnInit {
 
   ngOnInit(): void {
     this.seo.updateTags({
-      title: 'Security Assessment',
-      description: 'Eden Relics security assessment summary — our commitment to protecting your data.',
+      title: 'Latest Security Report',
+      description: 'Eden Relics latest security report — our commitment to protecting your data.',
       url: '/security',
     });
   }

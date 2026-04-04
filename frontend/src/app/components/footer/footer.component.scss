@@ -78,11 +78,25 @@
   text-align: center;
 }
 
+.footer__vat-notice {
+  font-size: 0.7rem;
+  color: #C0BEBB;
+  margin: 0.35rem 0 0;
+  text-align: center;
+}
+
 .footer__wcag {
   font-size: 0.7rem;
   color: #C0BEBB;
-  margin: 0.5rem 0 0;
+  margin: 0.35rem 0 0;
   text-align: center;
+}
+
+.footer__link--inline {
+  display: inline;
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 @media (max-width: 768px) {

@@ -212,6 +212,74 @@ public class AccountController : ControllerBase
         return Ok(new { message = "MFA has been disabled." });
     }
 
+    [HttpGet("export-data")]
+    public async Task<ActionResult<object>> ExportData()
+    {
+        User? user = await GetCurrentUser();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        var data = new
+        {
+            Profile = new
+            {
+                user.Email,
+                user.FirstName,
+                user.LastName,
+                user.EmailVerified,
+                AccountCreated = user.CreatedAtUtc,
+            },
+            DeliveryAddress = new
+            {
+                user.DeliveryAddressLine1,
+                user.DeliveryAddressLine2,
+                user.DeliveryCity,
+                user.DeliveryCounty,
+                user.DeliveryPostcode,
+                user.DeliveryCountry,
+            },
+            BillingAddress = new
+            {
+                user.BillingAddressLine1,
+                user.BillingAddressLine2,
+                user.BillingCity,
+                user.BillingCounty,
+                user.BillingPostcode,
+                user.BillingCountry,
+            },
+            Payment = user.PaymentCardLast4 is not null ? new
+            {
+                user.PaymentCardholderName,
+                user.PaymentCardLast4,
+                user.PaymentCardBrand,
+                user.PaymentCardExpiryMonth,
+                user.PaymentCardExpiryYear,
+            } : null,
+            SecuritySettings = new
+            {
+                MfaEnabled = user.MfaEnabled,
+            },
+        };
+
+        return Ok(data);
+    }
+
+    [HttpDelete("delete-account")]
+    public async Task<ActionResult> DeleteAccount()
+    {
+        User? user = await GetCurrentUser();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        await _userRepository.DeleteAsync(user.Id);
+
+        return Ok(new { message = "Your account and all associated data have been permanently deleted." });
+    }
+
     private async Task<User?> GetCurrentUser()
     {
         string? userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);

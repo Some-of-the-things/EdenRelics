@@ -1,11 +1,11 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService, AccountProfileDto, AddressDto } from '../../services/auth.service';
 import { PasskeyService, PasskeyInfo } from '../../services/passkey.service';
 
-type Section = 'name' | 'delivery' | 'billing' | 'payment' | 'password' | 'mfa' | 'passkeys';
+type Section = 'name' | 'delivery' | 'billing' | 'payment' | 'password' | 'mfa' | 'passkeys' | 'data';
 
 @Component({
   selector: 'app-settings-page',
@@ -16,6 +16,7 @@ type Section = 'name' | 'delivery' | 'billing' | 'payment' | 'password' | 'mfa' 
 export class SettingsPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly passkeyService = inject(PasskeyService);
+  private readonly router = inject(Router);
 
   readonly active = signal<Section | null>(null);
   readonly saving = signal(false);
@@ -64,6 +65,9 @@ export class SettingsPageComponent implements OnInit {
   // Passkeys
   readonly passkeySupported = signal(false);
   readonly passkeys = signal<PasskeyInfo[]>([]);
+
+  // Data
+  readonly confirmDelete = signal(false);
 
   ngOnInit(): void {
     this.auth.getProfile().subscribe({
@@ -235,6 +239,40 @@ export class SettingsPageComponent implements OnInit {
         this.showSuccess('Two-factor authentication has been disabled.');
       },
       error: (err) => this.showError(err.error?.message ?? 'Invalid code.'),
+    });
+  }
+
+  exportData(): void {
+    this.saving.set(true);
+    this.message.set('');
+    this.auth.exportData().subscribe({
+      next: (data) => {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'eden-relics-my-data.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        this.showSuccess('Your data has been downloaded.');
+      },
+      error: () => this.showError('Failed to export data.'),
+    });
+  }
+
+  deleteAccount(): void {
+    if (!this.confirmDelete()) {
+      this.confirmDelete.set(true);
+      return;
+    }
+    this.saving.set(true);
+    this.message.set('');
+    this.auth.deleteAccount().subscribe({
+      next: () => {
+        this.auth.logout();
+        this.router.navigate(['/']);
+      },
+      error: () => this.showError('Failed to delete account.'),
     });
   }
 

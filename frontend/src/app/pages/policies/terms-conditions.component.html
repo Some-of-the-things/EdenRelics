@@ -1,0 +1,5 @@
+<div class="policy">
+  <h1 class="policy__title">Terms &amp; Conditions</h1>
+  <p class="policy__updated">Last updated: {{ content.get('policy.terms.updated', 'April 2026') }}</p>
+  <div [innerHTML]="content.get('policy.terms.content')"></div>
+</div>

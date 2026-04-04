@@ -164,6 +164,14 @@
   &:hover { text-decoration: underline; }
 }
 
+.settings__data-delete {
+  margin-top: 1rem;
+}
+
+.settings__hint--danger {
+  color: var(--accent-sale);
+}
+
 .settings__secret {
   font-size: 0.8rem;
   color: var(--text-muted);

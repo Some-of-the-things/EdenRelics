@@ -242,6 +242,37 @@
     }
   </section>
 
+  <!-- Your Data (GDPR) -->
+  <section class="settings__section">
+    <div class="settings__section-header" role="button" tabindex="0" [attr.aria-expanded]="active() === 'data'" (click)="toggle('data')" (keydown.enter)="toggle('data')" (keydown.space)="toggle('data'); $event.preventDefault()">
+      <h2>Your Data</h2>
+      <span class="settings__toggle" aria-hidden="true">{{ active() === 'data' ? '−' : '+' }}</span>
+    </div>
+    @if (active() === 'data') {
+      <div class="settings__form">
+        <p class="settings__hint">Under UK GDPR, you have the right to access and delete your personal data. See our <a routerLink="/privacy-policy">Privacy Policy</a> for full details.</p>
+        <button type="button" class="settings__btn" (click)="exportData()" [disabled]="saving()">
+          {{ saving() ? 'Exporting...' : 'Download My Data' }}
+        </button>
+        <div class="settings__data-delete">
+          @if (!confirmDelete()) {
+            <button type="button" class="settings__btn settings__btn--danger" (click)="deleteAccount()">
+              Delete My Account
+            </button>
+          } @else {
+            <p class="settings__hint settings__hint--danger">This will permanently delete your account and all associated data. This action cannot be undone.</p>
+            <button type="button" class="settings__btn settings__btn--danger" (click)="deleteAccount()" [disabled]="saving()">
+              {{ saving() ? 'Deleting...' : 'Confirm Permanent Deletion' }}
+            </button>
+          }
+        </div>
+        @if (message()) {
+          <p class="settings__message" [class.settings__message--error]="isError()" role="status">{{ message() }}</p>
+        }
+      </div>
+    }
+  </section>
+
   <!-- Passkeys -->
   @if (passkeySupported()) {
   <section class="settings__section">

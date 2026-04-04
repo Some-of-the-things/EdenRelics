@@ -180,6 +180,14 @@ export class AuthService {
     return this.http.post<{ message: string }>(`${this.accountUrl}/mfa/disable`, { code }, this.authHeaders());
   }
 
+  exportData(): Observable<object> {
+    return this.http.get<object>(`${this.accountUrl}/export-data`, this.authHeaders());
+  }
+
+  deleteAccount(): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.accountUrl}/delete-account`, this.authHeaders());
+  }
+
   private setSession(res: AuthResponse): void {
     this.currentUser.set(res.user);
     if (isPlatformBrowser(this.platformId)) {

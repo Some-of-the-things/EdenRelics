@@ -1,0 +1,5 @@
+<div class="policy">
+  <h1 class="policy__title">Cookie Policy</h1>
+  <p class="policy__updated">Last updated: {{ content.get('policy.cookies.updated', 'April 2026') }}</p>
+  <div [innerHTML]="content.get('policy.cookies.content')"></div>
+</div>

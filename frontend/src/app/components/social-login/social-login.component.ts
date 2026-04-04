@@ -1,4 +1,5 @@
-import { Component, afterNextRender, output, signal } from '@angular/core';
+import { Component, afterNextRender, output, signal, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 declare const google: any;
 declare const FB: any;
@@ -10,29 +11,49 @@ declare const AppleID: any;
   styleUrl: './social-login.component.scss',
 })
 export class SocialLoginComponent {
+  private readonly platformId = inject(PLATFORM_ID);
   readonly tokenReceived = output<{ provider: string; idToken: string }>();
   readonly ready = signal(false);
 
   private googleLoaded = false;
   private facebookLoaded = false;
 
+  private hasNonEssentialConsent(): boolean {
+    if (!isPlatformBrowser(this.platformId)) {
+      return false;
+    }
+    return localStorage.getItem('eden_cookie_consent') === 'all';
+  }
+
   constructor() {
     afterNextRender({
       read: () => {
         this.ready.set(true);
-        this.loadGoogleSdk();
-        this.loadFacebookSdk();
+        if (this.hasNonEssentialConsent()) {
+          this.loadGoogleSdk();
+          this.loadFacebookSdk();
+        }
       },
     });
   }
 
   loginWithGoogle(): void {
-    if (!this.googleLoaded || typeof google === 'undefined') return;
+    if (!this.googleLoaded) {
+      this.loadGoogleSdk();
+    }
+    if (typeof google === 'undefined') {
+      return;
+    }
     google.accounts.id.prompt();
   }
 
   loginWithFacebook(): void {
-    if (typeof FB === 'undefined') return;
+    if (!this.facebookLoaded) {
+      this.loadFacebookSdk();
+    }
+    if (typeof FB === 'undefined') {
+      return;
+    }
     FB.login((response: any) => {
       if (response.authResponse?.accessToken) {
         this.tokenReceived.emit({ provider: 'Facebook', idToken: response.authResponse.accessToken });

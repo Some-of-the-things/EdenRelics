@@ -2,13 +2,14 @@ import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
+import { CookieBannerComponent } from './components/cookie-banner/cookie-banner.component';
 import { AnalyticsService } from './services/analytics.service';
 import { BrandingService } from './services/branding.service';
 import { ContentService } from './services/content.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, CookieBannerComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

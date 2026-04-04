@@ -162,6 +162,7 @@
           <span>Total</span>
           <span>{{ orderTotal | currency:'GBP' }}</span>
         </div>
+        <p class="checkout__vat-note">All prices include VAT.</p>
 
         @if (error()) {
           <p class="cart__error" role="alert">{{ error() }}</p>
@@ -170,9 +171,14 @@
         <button type="submit" class="cart__checkout-btn" [disabled]="processing()">
           {{ processing() ? 'Processing...' : 'Pay Now' }}
         </button>
-        <p class="cart__policy-link">
-          By placing an order you agree to our <a routerLink="/returns-policy">Returns Policy</a>.
-        </p>
+        <div class="checkout__legal">
+          <p class="checkout__withdrawal">
+            You have the right to cancel your order within 14 days of receiving your item without giving any reason. To exercise this right, contact us at edenrelics&#64;dcp-net.com. See our <a routerLink="/returns-policy">Returns Policy</a> for full details.
+          </p>
+          <p class="cart__policy-link">
+            By placing an order you agree to our <a routerLink="/terms-conditions">Terms &amp; Conditions</a> and <a routerLink="/returns-policy">Returns Policy</a>.
+          </p>
+        </div>
       </aside>
     </form>
   }

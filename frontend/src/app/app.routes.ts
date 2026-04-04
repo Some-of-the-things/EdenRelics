@@ -98,6 +98,20 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'terms-conditions',
+    loadComponent: () =>
+      import('./pages/policies/terms-conditions.component').then(
+        (m) => m.TermsConditionsComponent
+      ),
+  },
+  {
+    path: 'cookie-policy',
+    loadComponent: () =>
+      import('./pages/policies/cookie-policy.component').then(
+        (m) => m.CookiePolicyComponent
+      ),
+  },
+  {
     path: 'settings',
     canActivate: [authGuard],
     loadComponent: () =>
