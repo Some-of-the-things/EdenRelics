@@ -167,9 +167,6 @@ using (IServiceScope scope = app.Services.CreateScope())
     }
 }
 
-// Optimize any uncompressed uploaded images
-await app.Services.GetRequiredService<ImageOptimizationService>().OptimizeExistingImagesAsync();
-
 app.UseResponseCompression();
 app.UseCors("AllowFrontend");
 
@@ -196,6 +193,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/healthz");
+
+// Optimize images in the background after the app starts accepting requests
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    _ = app.Services.GetRequiredService<ImageOptimizationService>().OptimizeExistingImagesAsync();
+});
 
 app.Run();
 
