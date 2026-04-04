@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, catchError } from 'rxjs';
 import { Product } from '../models/product.model';
 import { environment } from '../../environments/environment';
+import { LocaleService } from './locale.service';
 
 const MOCK_PRODUCTS: Product[] = [
   {
@@ -130,16 +131,22 @@ const MOCK_PRODUCTS: Product[] = [
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private readonly http = inject(HttpClient);
+  private readonly localeService = inject(LocaleService);
   private readonly apiUrl = `${environment.apiUrl}/api/products`;
 
+  private get localeParam(): string {
+    const lang = this.localeService.locale().locale.split('-')[0];
+    return lang && lang !== 'en' ? `?locale=${lang}` : '';
+  }
+
   getAll(): Observable<Product[]> {
-    return this.http.get<Product[]>(this.apiUrl).pipe(
+    return this.http.get<Product[]>(`${this.apiUrl}${this.localeParam}`).pipe(
       catchError(() => of(MOCK_PRODUCTS))
     );
   }
 
   getById(id: string): Observable<Product | undefined> {
-    return this.http.get<Product>(`${this.apiUrl}/${id}`).pipe(
+    return this.http.get<Product>(`${this.apiUrl}/${id}${this.localeParam}`).pipe(
       catchError(() => of(MOCK_PRODUCTS.find(p => p.id === id)))
     );
   }

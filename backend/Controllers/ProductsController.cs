@@ -26,6 +26,7 @@ public class ProductsController : ControllerBase
     private readonly GeoIpService _geoIp;
     private readonly IConfiguration _config;
     private readonly ILogger<ProductsController> _logger;
+    private readonly TranslationService _translation;
 
     public ProductsController(
         IRepository<Product> repository,
@@ -37,7 +38,8 @@ public class ProductsController : ControllerBase
         IEmailService emailService,
         GeoIpService geoIp,
         IConfiguration config,
-        ILogger<ProductsController> logger)
+        ILogger<ProductsController> logger,
+        TranslationService translation)
     {
         _repository = repository;
         _favouriteRepository = favouriteRepository;
@@ -49,21 +51,22 @@ public class ProductsController : ControllerBase
         _geoIp = geoIp;
         _config = config;
         _logger = logger;
+        _translation = translation;
     }
 
     [HttpGet]
-    public async Task<ActionResult> GetAll()
+    public async Task<ActionResult> GetAll([FromQuery] string? locale = null)
     {
         IEnumerable<Product> products = await _repository.GetAllAsync();
         if (User.IsInRole("Admin"))
         {
             return Ok(products.Select(ToAdminDto));
         }
-        return Ok(products.Select(ToDto));
+        return Ok(products.Select(p => ToDto(p, locale)));
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult> GetById(Guid id)
+    public async Task<ActionResult> GetById(Guid id, [FromQuery] string? locale = null)
     {
         Product? product = await _repository.GetByIdAsync(id);
         if (product is null)
@@ -74,18 +77,18 @@ public class ProductsController : ControllerBase
         {
             return Ok(ToAdminDto(product));
         }
-        return Ok(ToDto(product));
+        return Ok(ToDto(product, locale));
     }
 
     [HttpGet("category/{category}")]
-    public async Task<ActionResult> GetByCategory(string category)
+    public async Task<ActionResult> GetByCategory(string category, [FromQuery] string? locale = null)
     {
         IEnumerable<Product> products = await _repository.FindAsync(p => p.Category == category);
         if (User.IsInRole("Admin"))
         {
             return Ok(products.Select(ToAdminDto));
         }
-        return Ok(products.Select(ToDto));
+        return Ok(products.Select(p => ToDto(p, locale)));
     }
 
     [HttpPost]
@@ -116,6 +119,10 @@ public class ProductsController : ControllerBase
         };
 
         await _repository.AddAsync(product);
+
+        // Translate name and description in the background
+        _ = TranslateProductAsync(product);
+
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, ToAdminDto(product));
     }
 
@@ -158,6 +165,12 @@ public class ProductsController : ControllerBase
         }
 
         await _repository.UpdateAsync(product);
+
+        // Translate updated name/description in the background
+        if (dto.Name is not null || dto.Description is not null)
+        {
+            _ = TranslateProductAsync(product);
+        }
 
         // Notify after update completes to avoid concurrent DbContext access
         if (shouldNotifySale)
@@ -641,15 +654,46 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
-    private static ProductDto ToDto(Product p) => new(
-        p.Id, p.Name, p.Description, p.Price, p.SalePrice, p.Era,
-        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.InStock
-    );
+    private static ProductDto ToDto(Product p, string? locale = null)
+    {
+        string name = p.Name;
+        string description = p.Description;
+        if (locale is not null && locale != "en")
+        {
+            if (p.NameTranslations.TryGetValue(locale, out string? tn))
+            {
+                name = tn;
+            }
+            if (p.DescriptionTranslations.TryGetValue(locale, out string? td))
+            {
+                description = td;
+            }
+        }
+        return new(p.Id, name, description, p.Price, p.SalePrice, p.Era,
+            p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.InStock);
+    }
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
         p.Id, p.Name, p.Description, p.Price, p.SalePrice, p.CostPrice, p.Supplier, p.Era,
         p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.InStock, p.ViewCount
     );
+
+    private async Task TranslateProductAsync(Product product)
+    {
+        try
+        {
+            Dictionary<string, string> nameTranslations = await _translation.TranslateTextAsync(product.Name);
+            Dictionary<string, string> descTranslations = await _translation.TranslateTextAsync(product.Description);
+
+            product.NameTranslations = nameTranslations;
+            product.DescriptionTranslations = descTranslations;
+            await _repository.UpdateAsync(product);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to translate product {ProductId}", product.Id);
+        }
+    }
 
     private async Task NotifySaleFavouritesAsync(Product product)
     {

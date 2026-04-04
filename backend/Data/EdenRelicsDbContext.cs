@@ -151,6 +151,9 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(b => b.Excerpt).HasMaxLength(500);
             entity.Property(b => b.FeaturedImageUrl).HasMaxLength(500);
             entity.Property(b => b.Author).HasMaxLength(100);
+            entity.Property(b => b.TitleTranslations).HasColumnType("jsonb");
+            entity.Property(b => b.ContentTranslations).HasColumnType("jsonb");
+            entity.Property(b => b.ExcerptTranslations).HasColumnType("jsonb");
         });
 
         modelBuilder.Entity<MailingListSubscriber>(entity =>
@@ -249,6 +252,8 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(p => p.ImageUrl).HasMaxLength(500);
             entity.Property(p => p.AdditionalImageUrls).HasColumnType("jsonb");
             entity.Property(p => p.VideoUrls).HasColumnType("jsonb");
+            entity.Property(p => p.NameTranslations).HasColumnType("jsonb");
+            entity.Property(p => p.DescriptionTranslations).HasColumnType("jsonb");
 
             DateTime seededAt = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 

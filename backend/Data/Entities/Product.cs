@@ -18,4 +18,10 @@ public class Product : BaseEntity
     public decimal? SalePrice { get; set; }
     public int ViewCount { get; set; }
     public List<ProductListing> Listings { get; set; } = [];
+
+    /// <summary>Locale -> translated name</summary>
+    public Dictionary<string, string> NameTranslations { get; set; } = [];
+
+    /// <summary>Locale -> translated description HTML</summary>
+    public Dictionary<string, string> DescriptionTranslations { get; set; } = [];
 }
