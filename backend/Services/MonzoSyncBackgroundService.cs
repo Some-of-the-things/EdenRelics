@@ -52,6 +52,10 @@ public class MonzoSyncBackgroundService(
         List<MonzoTransactionResponse> transactions = await monzo.GetTransactionsAsync(
             accessToken, accountId, since: since);
 
+        // Build pot ID → name lookup for friendly descriptions
+        List<MonzoPotResponse> pots = await monzo.GetPotsAsync(accessToken, accountId);
+        Dictionary<string, string> potNames = pots.ToDictionary(p => p.Id, p => p.Name);
+
         int added = 0;
         foreach (MonzoTransactionResponse txn in transactions)
         {
@@ -64,7 +68,7 @@ public class MonzoSyncBackgroundService(
             {
                 MonzoId = txn.Id,
                 Date = txn.Created.ToUniversalTime(),
-                Description = Truncate(txn.Merchant?.Name ?? FormatDescription(txn.Description), 500),
+                Description = Truncate(txn.Merchant?.Name ?? FormatDescription(txn.Description, potNames), 500),
                 Amount = txn.Amount / 100m,
                 Currency = txn.Currency,
                 Category = FormatCategory(txn.Category),
@@ -79,13 +83,37 @@ public class MonzoSyncBackgroundService(
             added++;
         }
 
+        // Fix existing transactions that still have raw pot IDs in their description
+        if (potNames.Count > 0)
+        {
+            List<MonzoTransaction> potTransactions = await context.MonzoTransactions
+                .Where(t => t.Description.StartsWith("Pot ") && t.Description.Length > 10)
+                .ToListAsync();
+
+            foreach (MonzoTransaction existing in potTransactions)
+            {
+                string potId = "pot_" + existing.Description[4..].ToLower();
+                if (potNames.TryGetValue(potId, out string? name))
+                {
+                    existing.Description = name;
+                }
+            }
+        }
+
         await context.SaveChangesAsync();
         return (transactions.Count, added, accountId, since);
     }
 
-    private static string FormatDescription(string description)
+    private static string FormatDescription(string description, Dictionary<string, string> potNames)
     {
         if (string.IsNullOrWhiteSpace(description)) { return description; }
+
+        // Monzo pot transfers have descriptions like "pot_0000b2bflcp416rntjda7d"
+        if (description.StartsWith("pot_", StringComparison.OrdinalIgnoreCase) && potNames.TryGetValue(description.ToLower(), out string? potName))
+        {
+            return potName;
+        }
+
         return string.Join(' ', description
             .Replace("_", " ")
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
