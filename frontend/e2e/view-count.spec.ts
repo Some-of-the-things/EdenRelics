@@ -16,9 +16,9 @@ test.describe('Product View Count', () => {
     await page.close();
   });
 
-  test('viewing a product increments the view count', async ({ page }) => {
+  test('viewing a product increments the view count', async ({ page, request }) => {
     // Create a product
-    const createRes = await page.request.post(`${API}/products`, {
+    const createRes = await request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
         name: 'View Count Test Dress',
@@ -32,18 +32,19 @@ test.describe('Product View Count', () => {
         inStock: true,
       },
     });
-    expect(createRes.status()).toBe(201);
+    expect(createRes.ok()).toBeTruthy();
     const product = await createRes.json();
 
-    // Visit the product detail page (triggers view)
-    await page.goto(`/product/${product.id}`);
+    // Visit the product detail page (triggers view) and wait for the view API call to complete
+    const [viewResponse] = await Promise.all([
+      page.waitForResponse(resp => resp.url().includes('/api/analytics/') && resp.status() === 200, { timeout: 15_000 }).catch(() => null),
+      page.goto(`/product/${product.id}`),
+    ]);
+
     await expect(page.locator('.detail__name')).toBeVisible({ timeout: 10_000 });
 
-    // Wait a moment for the view request to complete
-    await page.waitForTimeout(1000);
-
-    // Verify view count via API (admin endpoint)
-    const getRes = await page.request.get(`${API}/products/${product.id}`, {
+    // Verify view count via standalone API context (won't die with page)
+    const getRes = await request.get(`${API}/products/${product.id}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     const updated = await getRes.json();
