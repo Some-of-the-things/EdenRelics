@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using SixLabors.ImageSharp;
 using static Eden_Relics_BE.Tests.Helpers;
 
 namespace Eden_Relics_BE.Tests;
