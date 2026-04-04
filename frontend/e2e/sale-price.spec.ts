@@ -123,9 +123,9 @@ test.describe('Sale Price Clearing', () => {
     await page.close();
   });
 
-  test('admin can clear sale price by setting to 0', async ({ request }) => {
+  test('admin can clear sale price by setting to 0', async ({ page }) => {
     // Create product with sale price
-    const createRes = await request.post(`${API}/products`, {
+    const createRes = await page.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${token}` },
       data: {
         name: 'Clear Sale Dress',
@@ -144,7 +144,7 @@ test.describe('Sale Price Clearing', () => {
     const product = await createRes.json();
 
     // Clear sale price
-    const updateRes = await request.put(`${API}/products/${product.id}`, {
+    const updateRes = await page.request.put(`${API}/products/${product.id}`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { salePrice: 0 },
     });
