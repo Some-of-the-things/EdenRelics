@@ -231,6 +231,23 @@ public class OrdersController : ControllerBase
         {
             return NotFound();
         }
+
+        // Verify ownership: authenticated users can only view their own orders
+        string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdClaim is not null)
+        {
+            Guid userId = Guid.Parse(userIdClaim);
+            if (order.UserId != userId && !User.IsInRole("Admin"))
+            {
+                return NotFound();
+            }
+        }
+        else if (order.UserId is not null)
+        {
+            // Unauthenticated user trying to access a registered user's order
+            return NotFound();
+        }
+
         return Ok(ToDto(order));
     }
 

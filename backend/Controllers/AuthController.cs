@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Eden_Relics_BE.Data.Entities;
@@ -48,8 +49,7 @@ public class AuthController : ControllerBase
             return Conflict(new { message = "Email already registered." });
         }
 
-        string verificationToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
-            .Replace("/", "_").Replace("+", "-").TrimEnd('=');
+        string verificationToken = GenerateSecureToken();
 
         User user = new()
         {
@@ -124,6 +124,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("forgot-password")]
+    [EnableRateLimiting("contact")]
     public async Task<ActionResult> ForgotPassword(ForgotPasswordDto dto)
     {
         IEnumerable<User> users = await _userRepository.FindAsync(u => u.Email == dto.Email.ToLowerInvariant());
@@ -134,8 +135,7 @@ public class AuthController : ControllerBase
             return Ok(new { message = "If that email exists, a reset link has been sent." });
         }
 
-        string resetToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
-            .Replace("/", "_").Replace("+", "-").TrimEnd('=');
+        string resetToken = GenerateSecureToken();
         user.PasswordResetToken = resetToken;
         user.PasswordResetTokenExpiresUtc = DateTime.UtcNow.AddHours(1);
         await _userRepository.UpdateAsync(user);
@@ -206,8 +206,7 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Email is already verified." });
         }
 
-        string verificationToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
-            .Replace("/", "_").Replace("+", "-").TrimEnd('=');
+        string verificationToken = GenerateSecureToken();
 
         user.EmailVerificationToken = verificationToken;
         await _userRepository.UpdateAsync(user);
@@ -238,7 +237,7 @@ public class AuthController : ControllerBase
             u => u.ExternalProvider == dto.Provider && u.ExternalProviderId == info.ProviderId);
         User? user = byProvider.FirstOrDefault();
 
-        // If not found, look by email and link the account
+        // If not found, look by email — only link if the existing account's email is verified
         if (user is null)
         {
             IEnumerable<User> byEmail = await _userRepository.FindAsync(
@@ -247,6 +246,10 @@ public class AuthController : ControllerBase
 
             if (user is not null)
             {
+                if (!user.EmailVerified)
+                {
+                    return BadRequest(new { message = "An account with this email exists but is not verified. Please verify your email first or log in with your password." });
+                }
                 user.ExternalProvider = dto.Provider;
                 user.ExternalProviderId = info.ProviderId;
                 await _userRepository.UpdateAsync(user);
@@ -522,6 +525,13 @@ public class AuthController : ControllerBase
 
         string token = GenerateToken(user);
         return Ok(new AuthResponseDto(token, ToDto(user)));
+    }
+
+    private static string GenerateSecureToken()
+    {
+        byte[] tokenBytes = new byte[32];
+        RandomNumberGenerator.Fill(tokenBytes);
+        return Convert.ToBase64String(tokenBytes).Replace("/", "_").Replace("+", "-").TrimEnd('=');
     }
 
     private static UserDto ToDto(User u) => new(u.Id, u.Email, u.FirstName, u.LastName, u.Role, u.EmailVerified);

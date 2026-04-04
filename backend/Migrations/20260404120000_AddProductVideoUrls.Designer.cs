@@ -3,6 +3,7 @@ using System;
 using Eden_Relics_BE.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Eden_Relics_BE.Migrations
 {
     [DbContext(typeof(EdenRelicsDbContext))]
-    partial class EdenRelicsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260404120000_AddProductVideoUrls")]
+    partial class AddProductVideoUrls
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

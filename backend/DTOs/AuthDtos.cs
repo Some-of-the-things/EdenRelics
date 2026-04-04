@@ -1,15 +1,17 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Eden_Relics_BE.DTOs;
 
 public record RegisterDto(
-    string Email,
-    string Password,
-    string FirstName,
-    string LastName
+    [Required, EmailAddress, MaxLength(256)] string Email,
+    [Required, MinLength(8), MaxLength(128)] string Password,
+    [Required, MaxLength(100)] string FirstName,
+    [Required, MaxLength(100)] string LastName
 );
 
 public record LoginDto(
-    string Email,
-    string Password
+    [Required, EmailAddress, MaxLength(256)] string Email,
+    [Required] string Password
 );
 
 public record AuthResponseDto(
@@ -27,13 +29,13 @@ public record UserDto(
 );
 
 public record ForgotPasswordDto(
-    string Email
+    [Required, EmailAddress, MaxLength(256)] string Email
 );
 
 public record ResetPasswordDto(
-    string Email,
-    string Token,
-    string NewPassword
+    [Required, EmailAddress, MaxLength(256)] string Email,
+    [Required] string Token,
+    [Required, MinLength(8), MaxLength(128)] string NewPassword
 );
 
 public record ExternalLoginDto(

@@ -91,6 +91,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'security',
+    loadComponent: () =>
+      import('./pages/policies/security-report.component').then(
+        (m) => m.SecurityReportComponent
+      ),
+  },
+  {
     path: 'settings',
     canActivate: [authGuard],
     loadComponent: () =>

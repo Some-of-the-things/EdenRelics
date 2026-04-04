@@ -644,12 +644,12 @@ public class ProductsTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Create_WithMoreThan6AdditionalImages_Returns400()
+    public async Task Create_WithMoreThan10AdditionalImages_Returns400()
     {
         var client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "admin-too-many-imgs@test.com");
 
-        var urls = Enumerable.Range(1, 7).Select(i => $"https://example.com/img{i}.webp").ToList();
+        var urls = Enumerable.Range(1, 11).Select(i => $"https://example.com/img{i}.webp").ToList();
         var response = await client.PostAsJsonAsync("/api/products", new
         {
             name = "Too Many Photos",
@@ -667,7 +667,32 @@ public class ProductsTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Update_WithMoreThan6AdditionalImages_Returns400()
+    public async Task Create_With10AdditionalImages_Succeeds()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-10-imgs@test.com");
+
+        var urls = Enumerable.Range(1, 10).Select(i => $"https://example.com/img{i}.webp").ToList();
+        var response = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Max Photos",
+            description = "Desc",
+            price = 100m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/primary.webp",
+            additionalImageUrls = urls,
+            inStock = true
+        });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var product = await response.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.Equal(10, product!.AdditionalImageUrls.Count);
+    }
+
+    [Fact]
+    public async Task Update_WithMoreThan10AdditionalImages_Returns400()
     {
         var client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "admin-too-many-update@test.com");
@@ -686,12 +711,120 @@ public class ProductsTests : IClassFixture<ApiFactory>
         });
         var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
 
-        var urls = Enumerable.Range(1, 7).Select(i => $"https://example.com/img{i}.webp").ToList();
+        var urls = Enumerable.Range(1, 11).Select(i => $"https://example.com/img{i}.webp").ToList();
         var response = await client.PutAsJsonAsync($"/api/products/{created!.Id}", new
         {
             additionalImageUrls = urls
         });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithVideoUrls_ReturnsVideoUrls()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-video-create@test.com");
+
+        var videoUrls = new[] { "https://example.com/vid1.mp4", "https://example.com/vid2.mp4" };
+        var response = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Video Dress",
+            description = "Desc",
+            price = 100m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/img.webp",
+            videoUrls,
+            inStock = true
+        });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var product = await response.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.NotNull(product);
+        Assert.Equal(2, product.VideoUrls.Count);
+        Assert.Equal(videoUrls, product.VideoUrls);
+    }
+
+    [Fact]
+    public async Task Update_VideoUrls_ReplacesVideos()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-video-update@test.com");
+
+        var createResponse = await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Video Update Dress",
+            description = "Desc",
+            price = 100m,
+            era = "1990s",
+            category = "90s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/img.webp",
+            videoUrls = new[] { "https://example.com/old.mp4" },
+            inStock = true
+        });
+        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+
+        var newUrls = new[] { "https://example.com/new1.mp4", "https://example.com/new2.webm" };
+        var updateResponse = await client.PutAsJsonAsync($"/api/products/{created!.Id}", new
+        {
+            videoUrls = newUrls
+        });
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.Equal(2, updated!.VideoUrls.Count);
+        Assert.Equal(newUrls, updated.VideoUrls);
+    }
+
+    [Fact]
+    public async Task UploadVideo_AsAdmin_ReturnsVideoUrl()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-upload-video@test.com");
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(new byte[1024]);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("video/mp4");
+        content.Add(fileContent, "file", "test.mp4");
+
+        var response = await client.PostAsync("/api/products/upload-video", content);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<VideoUploadResponse>(JsonOptions);
+        Assert.NotNull(result);
+        Assert.False(string.IsNullOrEmpty(result.VideoUrl));
+    }
+
+    [Fact]
+    public async Task UploadVideo_InvalidExtension_Returns400()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-upload-video-bad@test.com");
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(new byte[100]);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        content.Add(fileContent, "file", "document.pdf");
+
+        var response = await client.PostAsync("/api/products/upload-video", content);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UploadVideo_AsCustomer_Returns403()
+    {
+        var client = _factory.CreateClient();
+        await RegisterAndLogin(client, "customer-upload-video@test.com");
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(new byte[100]);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("video/mp4");
+        content.Add(fileContent, "file", "test.mp4");
+
+        var response = await client.PostAsync("/api/products/upload-video", content);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     private static MultipartFormDataContent CreateImageUploadContent(string fileName)
@@ -709,4 +842,5 @@ public class ProductsTests : IClassFixture<ApiFactory>
     }
 
     private record ImageUploadResponse(string ImageUrl);
+    private record VideoUploadResponse(string VideoUrl);
 }

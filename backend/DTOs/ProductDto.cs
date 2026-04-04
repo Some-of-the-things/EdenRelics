@@ -12,6 +12,7 @@ public record ProductDto(
     string Condition,
     string ImageUrl,
     List<string> AdditionalImageUrls,
+    List<string> VideoUrls,
     bool InStock
 );
 
@@ -29,6 +30,7 @@ public record ProductAdminDto(
     string Condition,
     string ImageUrl,
     List<string> AdditionalImageUrls,
+    List<string> VideoUrls,
     bool InStock,
     int ViewCount
 );
@@ -46,6 +48,7 @@ public record CreateProductDto(
     string Condition,
     string ImageUrl,
     List<string>? AdditionalImageUrls,
+    List<string>? VideoUrls,
     bool InStock
 );
 
@@ -62,5 +65,6 @@ public record UpdateProductDto(
     string? Condition,
     string? ImageUrl,
     List<string>? AdditionalImageUrls,
+    List<string>? VideoUrls,
     bool? InStock
 );

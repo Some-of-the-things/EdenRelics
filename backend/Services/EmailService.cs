@@ -1,3 +1,4 @@
+using System.Net;
 using Resend;
 
 namespace Eden_Relics_BE.Services;
@@ -106,10 +107,10 @@ public class EmailService : IEmailService
         string html = $"""
             <div style="font-family: Georgia, serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
                 <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">New Contact Form Submission</h1>
-                <p><strong>From:</strong> {fromName} ({fromEmail})</p>
-                <p><strong>Subject:</strong> {subject}</p>
+                <p><strong>From:</strong> {WebUtility.HtmlEncode(fromName)} ({WebUtility.HtmlEncode(fromEmail)})</p>
+                <p><strong>Subject:</strong> {WebUtility.HtmlEncode(subject)}</p>
                 <hr style="border: none; border-top: 1px solid #ddd; margin: 1.5rem 0;" />
-                <p style="white-space: pre-wrap;">{message}</p>
+                <p style="white-space: pre-wrap;">{WebUtility.HtmlEncode(message)}</p>
             </div>
             """;
 

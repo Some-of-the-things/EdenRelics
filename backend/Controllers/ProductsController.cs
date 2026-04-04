@@ -92,9 +92,9 @@ public class ProductsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ProductDto>> Create(CreateProductDto dto)
     {
-        if (dto.AdditionalImageUrls is { Count: > 6 })
+        if (dto.AdditionalImageUrls is { Count: > 10 })
         {
-            return BadRequest(new { error = "A product can have at most 6 additional images." });
+            return BadRequest(new { error = "A product can have at most 10 additional images." });
         }
 
         Product product = new()
@@ -110,6 +110,7 @@ public class ProductsController : ControllerBase
             Condition = dto.Condition,
             ImageUrl = dto.ImageUrl,
             AdditionalImageUrls = dto.AdditionalImageUrls ?? [],
+            VideoUrls = dto.VideoUrls ?? [],
             InStock = dto.InStock,
             SalePrice = dto.SalePrice
         };
@@ -140,12 +141,13 @@ public class ProductsController : ControllerBase
         if (dto.ImageUrl is not null) { product.ImageUrl = dto.ImageUrl; }
         if (dto.AdditionalImageUrls is not null)
         {
-            if (dto.AdditionalImageUrls.Count > 6)
+            if (dto.AdditionalImageUrls.Count > 10)
             {
-                return BadRequest(new { error = "A product can have at most 6 additional images." });
+                return BadRequest(new { error = "A product can have at most 10 additional images." });
             }
             product.AdditionalImageUrls = dto.AdditionalImageUrls;
         }
+        if (dto.VideoUrls is not null) { product.VideoUrls = dto.VideoUrls; }
         if (dto.InStock.HasValue) { product.InStock = dto.InStock.Value; }
         bool shouldNotifySale = false;
         if (dto.SalePrice.HasValue)
@@ -193,6 +195,64 @@ public class ProductsController : ControllerBase
         {
             _logger.LogError(ex, "Failed to upload product image (file: {FileName}, size: {Size})", file.FileName, file.Length);
             return StatusCode(500, new { error = "Image upload failed. Please try again." });
+        }
+    }
+
+    [HttpPost("upload-video")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<object>> UploadVideo([FromForm] IFormFile file)
+    {
+        string[] allowedExtensions = [".mp4", ".mov", ".webm", ".avi"];
+        string extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(extension))
+        {
+            return BadRequest(new { error = "Only video files (mp4, mov, webm, avi) are allowed." });
+        }
+
+        if (file.Length > 100 * 1024 * 1024)
+        {
+            return BadRequest(new { error = "File size must be under 100MB." });
+        }
+
+        try
+        {
+            string contentType = extension switch
+            {
+                ".mp4" => "video/mp4",
+                ".mov" => "video/quicktime",
+                ".webm" => "video/webm",
+                ".avi" => "video/x-msvideo",
+                _ => "video/mp4",
+            };
+
+            string fileName = $"products/{Guid.NewGuid()}{extension}";
+
+            if (_storage.IsConfigured)
+            {
+                using var stream = file.OpenReadStream();
+                string videoUrl = await _storage.UploadAsync(stream, fileName, contentType);
+                return Ok(new { videoUrl });
+            }
+
+            // Fallback to local filesystem
+            string uploadsDir = Path.Combine(
+                _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"),
+                "uploads", "products");
+            Directory.CreateDirectory(uploadsDir);
+
+            string localFileName = Path.GetFileName(fileName);
+            string filePath = Path.Combine(uploadsDir, localFileName);
+            await using var fs = new FileStream(filePath, FileMode.Create);
+            await file.OpenReadStream().CopyToAsync(fs);
+
+            string videoUrlLocal = $"{Request.Scheme}://{Request.Host}/uploads/products/{localFileName}";
+            return Ok(new { videoUrl = videoUrlLocal });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload product video (file: {FileName}, size: {Size})", file.FileName, file.Length);
+            return StatusCode(500, new { error = "Video upload failed. Please try again." });
         }
     }
 
@@ -583,12 +643,12 @@ public class ProductsController : ControllerBase
 
     private static ProductDto ToDto(Product p) => new(
         p.Id, p.Name, p.Description, p.Price, p.SalePrice, p.Era,
-        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.InStock
+        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.InStock
     );
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
         p.Id, p.Name, p.Description, p.Price, p.SalePrice, p.CostPrice, p.Supplier, p.Era,
-        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.InStock, p.ViewCount
+        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.InStock, p.ViewCount
     );
 
     private async Task NotifySaleFavouritesAsync(Product product)

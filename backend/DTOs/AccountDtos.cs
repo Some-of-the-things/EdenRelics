@@ -1,22 +1,24 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Eden_Relics_BE.DTOs;
 
 public record UpdateProfileDto(
-    string FirstName,
-    string LastName
+    [Required, MaxLength(100)] string FirstName,
+    [Required, MaxLength(100)] string LastName
 );
 
 public record AddressDto(
-    string? AddressLine1,
-    string? AddressLine2,
-    string? City,
-    string? County,
-    string? Postcode,
-    string? Country
+    [MaxLength(200)] string? AddressLine1,
+    [MaxLength(200)] string? AddressLine2,
+    [MaxLength(100)] string? City,
+    [MaxLength(100)] string? County,
+    [MaxLength(20)] string? Postcode,
+    [MaxLength(100)] string? Country
 );
 
 public record ChangePasswordDto(
-    string CurrentPassword,
-    string NewPassword
+    [Required] string CurrentPassword,
+    [Required, MinLength(8), MaxLength(128)] string NewPassword
 );
 
 public record UpdatePaymentDto(

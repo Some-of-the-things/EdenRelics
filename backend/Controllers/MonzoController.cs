@@ -213,9 +213,9 @@ public class MonzoController(
             var (fetched, added, accountId, since) = await MonzoSyncBackgroundService.SyncTransactionsAsync(monzo, context, accessToken, token.AccountId);
             return Ok(new { message = "Sync completed.", fetched, added, accountId, since });
         }
-        catch (Exception ex)
+        catch
         {
-            return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
+            return StatusCode(500, new { error = "Sync failed. Please try again." });
         }
     }
 
