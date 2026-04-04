@@ -12,45 +12,18 @@ namespace Eden_Relics_BE.Controllers;
 public class ContentController(EdenRelicsDbContext context, TranslationService translation) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<Dictionary<string, string>>> GetAll([FromQuery] string? locale = null)
+    public async Task<ActionResult<Dictionary<string, string>>> GetAll()
     {
         List<SiteContent> entries = await context.SiteContent.ToListAsync();
-        Dictionary<string, string> all = entries.ToDictionary(e => e.Key, e => e.Value);
+        Dictionary<string, string> result = entries.ToDictionary(e => e.Key, e => e.Value);
 
         // Merge defaults for any missing keys
         foreach (KeyValuePair<string, string> kv in Defaults)
         {
-            all.TryAdd(kv.Key, kv.Value);
+            result.TryAdd(kv.Key, kv.Value);
         }
 
-        // If a locale is requested (e.g., "fr"), return localised content where available
-        if (!string.IsNullOrWhiteSpace(locale) && locale != "en")
-        {
-            string prefix = $"{locale}.";
-            Dictionary<string, string> result = [];
-
-            foreach (KeyValuePair<string, string> kv in all)
-            {
-                // Skip locale-prefixed keys in the base result
-                if (kv.Key.Length > 3 && kv.Key[2] == '.' && TranslationService.SupportedLocales.ContainsKey(kv.Key[..2]))
-                {
-                    continue;
-                }
-
-                // Use translated version if available, otherwise fall back to English
-                string localisedKey = prefix + kv.Key;
-                result[kv.Key] = all.GetValueOrDefault(localisedKey, kv.Value);
-            }
-
-            return Ok(result);
-        }
-
-        // Default: return English content (strip locale-prefixed keys)
-        Dictionary<string, string> english = all
-            .Where(kv => !(kv.Key.Length > 3 && kv.Key[2] == '.' && TranslationService.SupportedLocales.ContainsKey(kv.Key[..2])))
-            .ToDictionary(kv => kv.Key, kv => kv.Value);
-
-        return Ok(english);
+        return Ok(result);
     }
 
     [HttpPut]
