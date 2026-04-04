@@ -328,6 +328,41 @@ export class AdminPageComponent implements OnInit {
         { key: 'policy.modern-slavery.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
+    {
+      title: 'Terms & Conditions',
+      fields: [
+        { key: 'policy.terms.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.terms.content', label: 'Content (HTML)', type: 'html' },
+      ],
+    },
+    {
+      title: 'Cookie Policy',
+      fields: [
+        { key: 'policy.cookies.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.cookies.content', label: 'Content (HTML)', type: 'html' },
+      ],
+    },
+    {
+      title: 'Latest Security Report',
+      fields: [
+        { key: 'report.security.updated', label: 'Last Updated', type: 'text' },
+        { key: 'report.security.content', label: 'Content (HTML)', type: 'html' },
+      ],
+    },
+    {
+      title: 'Accessibility Report',
+      fields: [
+        { key: 'report.accessibility.updated', label: 'Last Updated', type: 'text' },
+        { key: 'report.accessibility.content', label: 'Content (HTML)', type: 'html' },
+      ],
+    },
+    {
+      title: 'Shareholders Compliance Report',
+      fields: [
+        { key: 'report.compliance.updated', label: 'Last Updated', type: 'text' },
+        { key: 'report.compliance.content', label: 'Content (HTML)', type: 'html' },
+      ],
+    },
   ];
 
   // Branding

@@ -53,6 +53,7 @@ export async function setAuthInBrowser(
     ({ token, user }) => {
       localStorage.setItem('eden_token', token);
       localStorage.setItem('eden_user', JSON.stringify(user));
+      localStorage.setItem('eden_cookie_consent', 'all');
     },
     { token, user }
   );

@@ -7,10 +7,11 @@ import { CurrencyPipe, DecimalPipe, NgOptimizedImage, TitleCasePipe } from '@ang
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { FavouritesService } from '../../services/favourites.service';
+import { LocalPricePipe } from '../../pipes/local-price.pipe';
 
 @Component({
   selector: 'app-product-list',
-  imports: [RouterLink, CurrencyPipe, TitleCasePipe, FormsModule, NgOptimizedImage, DecimalPipe],
+  imports: [RouterLink, CurrencyPipe, TitleCasePipe, FormsModule, NgOptimizedImage, DecimalPipe, LocalPricePipe],
   templateUrl: './product-list.component.html',
   styleUrl: './product-list.component.scss',
 })

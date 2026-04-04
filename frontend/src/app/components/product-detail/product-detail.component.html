@@ -26,9 +26,11 @@
             <span class="detail__price detail__price--original">{{ product.price | currency:'GBP' }}</span>
             <span class="detail__price detail__price--sale">{{ product.salePrice | currency:'GBP' }}</span>
             <span class="detail__discount">{{ (1 - product.salePrice / product.price) * 100 | number:'1.0-0' }}% off</span>
+            <span class="detail__local-price">{{ product.salePrice | localPrice }}</span>
           </div>
         } @else {
           <p class="detail__price">{{ product.price | currency:'GBP' }}</p>
+          <p class="detail__local-price">{{ product.price | localPrice }}</p>
         }
         <div class="detail__description" [innerHTML]="product.description"></div>
         <div class="detail__meta">

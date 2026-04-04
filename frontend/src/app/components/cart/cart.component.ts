@@ -6,6 +6,7 @@ import { CartStore } from '../../store/cart.store';
 import { AuthService } from '../../services/auth.service';
 import { OrderService, OrderAddress } from '../../services/order.service';
 import { ShippingService, ShippingCountry } from '../../services/shipping.service';
+import { LocaleService } from '../../services/locale.service';
 
 interface ShippingOption {
   value: string;
@@ -25,6 +26,7 @@ export class CartComponent implements OnInit {
   readonly auth = inject(AuthService);
   private readonly orderService = inject(OrderService);
   private readonly shippingService = inject(ShippingService);
+  private readonly localeService = inject(LocaleService);
   private readonly router = inject(Router);
 
   readonly step = signal<'cart' | 'checkout'>('cart');
@@ -35,8 +37,8 @@ export class CartComponent implements OnInit {
   shippingMethod = 'standard';
   billingSameAsShipping = true;
 
-  shipping: OrderAddress = { addressLine1: '', city: '', postcode: '', country: 'GB' };
-  billing: OrderAddress = { addressLine1: '', city: '', postcode: '', country: 'GB' };
+  shipping: OrderAddress = { addressLine1: '', city: '', postcode: '', country: '' };
+  billing: OrderAddress = { addressLine1: '', city: '', postcode: '', country: '' };
 
   countries: ShippingCountry[] = [];
   shippingOptions: ShippingOption[] = [
@@ -53,6 +55,9 @@ export class CartComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Detect user's country and pre-select it
+    const detectedCountry = this.localeService.locale().countryCode || 'GB';
+
     this.shippingService.getZones().subscribe(zones => {
       // Build unique country list from all zones (excluding UK-only duplicates)
       const seen = new Set<string>();
@@ -70,6 +75,12 @@ export class CartComponent implements OnInit {
         if (b.code === 'GB') { return 1; }
         return a.name.localeCompare(b.name);
       });
+
+      // Pre-select detected country if supported, otherwise default to GB
+      const supported = this.countries.find(c => c.code === detectedCountry);
+      this.shipping.country = supported ? detectedCountry : 'GB';
+      this.billing.country = this.shipping.country;
+      this.onCountryChange();
     });
 
     if (this.auth.isAuthenticated()) {

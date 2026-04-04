@@ -112,6 +112,20 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'accessibility-report',
+    loadComponent: () =>
+      import('./pages/policies/accessibility-report.component').then(
+        (m) => m.AccessibilityReportComponent
+      ),
+  },
+  {
+    path: 'compliance-report',
+    loadComponent: () =>
+      import('./pages/policies/compliance-report.component').then(
+        (m) => m.ComplianceReportComponent
+      ),
+  },
+  {
     path: 'settings',
     canActivate: [authGuard],
     loadComponent: () =>

@@ -78,9 +78,11 @@
               <div class="product-card__prices">
                 <span class="product-card__price product-card__price--original">{{ product.price | currency:'GBP' }}</span>
                 <span class="product-card__price product-card__price--sale">{{ product.salePrice | currency:'GBP' }}</span>
+                <span class="product-card__local-price">{{ product.salePrice | localPrice }}</span>
               </div>
             } @else {
               <span class="product-card__price">{{ product.price | currency:'GBP' }}</span>
+              <span class="product-card__local-price">{{ product.price | localPrice }}</span>
             }
             <button class="product-card__add-btn" (click)="addToCart(product)">
               Add to Cart

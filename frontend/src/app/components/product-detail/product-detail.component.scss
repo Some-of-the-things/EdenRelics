@@ -196,6 +196,12 @@
   padding: 0.25rem 0.5rem;
 }
 
+.detail__local-price {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0.25rem 0 0;
+}
+
 .detail__fav-btn {
   display: flex;
   align-items: center;

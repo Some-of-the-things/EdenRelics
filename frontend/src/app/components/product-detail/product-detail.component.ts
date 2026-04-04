@@ -8,10 +8,11 @@ import { ProductService } from '../../services/product.service';
 import { AnalyticsService } from '../../services/analytics.service';
 import { AuthService } from '../../services/auth.service';
 import { FavouritesService } from '../../services/favourites.service';
+import { LocalPricePipe } from '../../pipes/local-price.pipe';
 
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, CurrencyPipe, TitleCasePipe, DecimalPipe],
+  imports: [RouterLink, CurrencyPipe, TitleCasePipe, DecimalPipe, LocalPricePipe],
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })
