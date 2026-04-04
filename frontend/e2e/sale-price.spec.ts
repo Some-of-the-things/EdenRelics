@@ -111,9 +111,9 @@ test.describe('Sale Prices', () => {
     await expect(page.locator('.detail__discount')).toContainText('30%');
   });
 
-  test('admin can clear sale price by setting to 0', async ({ page }) => {
+  test('admin can clear sale price by setting to 0', async ({ request }) => {
     // Create product with sale price
-    const createRes = await page.request.post(`${API}/products`, {
+    const createRes = await request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
         name: 'Clear Sale Dress',
@@ -131,7 +131,7 @@ test.describe('Sale Prices', () => {
     const product = await createRes.json();
 
     // Clear sale price
-    const updateRes = await page.request.put(`${API}/products/${product.id}`, {
+    const updateRes = await request.put(`${API}/products/${product.id}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: { salePrice: 0 },
     });
