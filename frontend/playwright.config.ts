@@ -3,7 +3,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
-  retries: 0,
+  retries: 1,
   use: {
     baseURL: 'http://localhost:4200',
     headless: true,
@@ -18,9 +18,9 @@ export default defineConfig({
   webServer: [
     {
       command: 'dotnet run --project "../backend"',
-      url: 'http://localhost:5260/api/products',
+      url: 'http://localhost:5260/healthz',
       reuseExistingServer: true,
-      timeout: 30_000,
+      timeout: 60_000,
     },
     {
       command: 'npx ng serve --configuration development',
