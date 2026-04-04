@@ -141,8 +141,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(allowedOrigins)
-            .WithHeaders("Content-Type", "Authorization")
-            .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS");
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
