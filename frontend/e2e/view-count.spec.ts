@@ -4,6 +4,8 @@ import { registerAdmin, setAuthInBrowser, uniqueEmail } from './helpers';
 const API = 'http://localhost:5260/api';
 
 test.describe('Product View Count', () => {
+  test.describe.configure({ mode: 'serial' });
+
   let adminToken: string;
   let adminEmail: string;
 
