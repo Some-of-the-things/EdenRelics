@@ -46,13 +46,9 @@ public class OrdersController : ControllerBase
             products.Add(product);
         }
 
-        // Determine shipping cost
-        decimal shippingCost = dto.ShippingMethod switch
-        {
-            "express" => 6.95m,
-            "international" => 12.95m,
-            _ => 3.95m, // standard
-        };
+        // Determine shipping cost based on zone
+        decimal shippingCost = ShippingZones.GetShippingCost(
+            dto.ShippingMethod, dto.ShippingAddress?.Country);
 
         Order order = new()
         {

@@ -82,7 +82,11 @@
             </label>
             <label class="checkout__field">
               <span>Country</span>
-              <input type="text" [(ngModel)]="shipping.country" name="shipCountry" required />
+              <select [(ngModel)]="shipping.country" name="shipCountry" required (ngModelChange)="onCountryChange()">
+                @for (c of countries; track c.code) {
+                  <option [value]="c.code">{{ c.name }}</option>
+                }
+              </select>
             </label>
           </div>
         </section>
@@ -94,7 +98,7 @@
             <label class="checkout__radio">
               <input type="radio" [(ngModel)]="shippingMethod" [value]="option.value" name="shippingMethod" />
               <span class="checkout__radio-label">
-                <span>{{ option.label }}</span>
+                <span>{{ option.label }}<span class="checkout__radio-estimate"> ({{ option.estimate }})</span></span>
                 <span class="checkout__radio-price">{{ option.price | currency:'GBP' }}</span>
               </span>
             </label>
@@ -134,7 +138,11 @@
               </label>
               <label class="checkout__field">
                 <span>Country</span>
-                <input type="text" [(ngModel)]="billing.country" name="billCountry" required />
+                <select [(ngModel)]="billing.country" name="billCountry" required>
+                  @for (c of countries; track c.code) {
+                    <option [value]="c.code">{{ c.name }}</option>
+                  }
+                </select>
               </label>
             </div>
           }

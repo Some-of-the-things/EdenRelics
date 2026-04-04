@@ -5,6 +5,14 @@ import { FormsModule } from '@angular/forms';
 import { CartStore } from '../../store/cart.store';
 import { AuthService } from '../../services/auth.service';
 import { OrderService, OrderAddress } from '../../services/order.service';
+import { ShippingService, ShippingCountry } from '../../services/shipping.service';
+
+interface ShippingOption {
+  value: string;
+  label: string;
+  price: number;
+  estimate: string;
+}
 
 @Component({
   selector: 'app-cart',
@@ -16,6 +24,7 @@ export class CartComponent implements OnInit {
   readonly cartStore = inject(CartStore);
   readonly auth = inject(AuthService);
   private readonly orderService = inject(OrderService);
+  private readonly shippingService = inject(ShippingService);
   private readonly router = inject(Router);
 
   readonly step = signal<'cart' | 'checkout'>('cart');
@@ -26,13 +35,13 @@ export class CartComponent implements OnInit {
   shippingMethod = 'standard';
   billingSameAsShipping = true;
 
-  shipping: OrderAddress = { addressLine1: '', city: '', postcode: '', country: 'United Kingdom' };
-  billing: OrderAddress = { addressLine1: '', city: '', postcode: '', country: 'United Kingdom' };
+  shipping: OrderAddress = { addressLine1: '', city: '', postcode: '', country: 'GB' };
+  billing: OrderAddress = { addressLine1: '', city: '', postcode: '', country: 'GB' };
 
-  readonly shippingOptions = [
-    { value: 'standard', label: 'Standard UK Delivery (3–5 days)', price: 3.95 },
-    { value: 'express', label: 'Express UK Delivery (1–2 days)', price: 6.95 },
-    { value: 'international', label: 'International Delivery (7–14 days)', price: 12.95 },
+  countries: ShippingCountry[] = [];
+  shippingOptions: ShippingOption[] = [
+    { value: 'standard', label: 'Standard UK Delivery', price: 3.95, estimate: '3\u20135 working days' },
+    { value: 'express', label: 'Express UK Delivery', price: 6.95, estimate: '1\u20132 working days' },
   ];
 
   get shippingCost(): number {
@@ -44,6 +53,25 @@ export class CartComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.shippingService.getZones().subscribe(zones => {
+      // Build unique country list from all zones (excluding UK-only duplicates)
+      const seen = new Set<string>();
+      this.countries = [];
+      for (const zone of zones) {
+        for (const c of zone.countries) {
+          if (!seen.has(c.code)) {
+            seen.add(c.code);
+            this.countries.push(c);
+          }
+        }
+      }
+      this.countries.sort((a, b) => {
+        if (a.code === 'GB') { return -1; }
+        if (b.code === 'GB') { return 1; }
+        return a.name.localeCompare(b.name);
+      });
+    });
+
     if (this.auth.isAuthenticated()) {
       this.auth.getProfile().subscribe({
         next: (profile) => {
@@ -54,8 +82,9 @@ export class CartComponent implements OnInit {
               city: profile.deliveryAddress.city ?? '',
               county: profile.deliveryAddress.county ?? '',
               postcode: profile.deliveryAddress.postcode ?? '',
-              country: profile.deliveryAddress.country || 'United Kingdom',
+              country: profile.deliveryAddress.country || 'GB',
             };
+            this.onCountryChange();
           }
           if (profile.billingAddress?.addressLine1) {
             this.billingSameAsShipping = false;
@@ -65,9 +94,37 @@ export class CartComponent implements OnInit {
               city: profile.billingAddress.city ?? '',
               county: profile.billingAddress.county ?? '',
               postcode: profile.billingAddress.postcode ?? '',
-              country: profile.billingAddress.country || 'United Kingdom',
+              country: profile.billingAddress.country || 'GB',
             };
           }
+        },
+      });
+    }
+  }
+
+  onCountryChange(): void {
+    const country = this.shipping.country;
+    if (country === 'GB') {
+      this.shippingOptions = [
+        { value: 'standard', label: 'Standard UK Delivery', price: 3.95, estimate: '3\u20135 working days' },
+        { value: 'express', label: 'Express UK Delivery', price: 6.95, estimate: '1\u20132 working days' },
+      ];
+      if (this.shippingMethod !== 'standard' && this.shippingMethod !== 'express') {
+        this.shippingMethod = 'standard';
+      }
+    } else {
+      this.shippingService.getRate(country).subscribe({
+        next: (rate) => {
+          this.shippingOptions = [
+            { value: rate.method, label: `${rate.label} Delivery`, price: rate.price, estimate: rate.deliveryEstimate },
+          ];
+          this.shippingMethod = rate.method;
+        },
+        error: () => {
+          this.shippingOptions = [
+            { value: 'international', label: 'International Delivery', price: 18.95, estimate: '10\u201321 working days' },
+          ];
+          this.shippingMethod = 'international';
         },
       });
     }
