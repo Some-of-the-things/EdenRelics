@@ -1,6 +1,5 @@
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
-using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,8 +8,9 @@ namespace Eden_Relics_BE.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ContentController(EdenRelicsDbContext context, TranslationService translation) : ControllerBase
+public class ContentController(EdenRelicsDbContext context) : ControllerBase
 {
+    private static readonly HashSet<string> LocalePrefixes = ["en", "fr", "de", "es", "it", "nl", "pt", "sv", "da", "nb", "ja", "ko"];
     [HttpGet]
     public async Task<ActionResult<Dictionary<string, string>>> GetAll([FromQuery] string? locale = null)
     {
@@ -59,7 +59,7 @@ public class ContentController(EdenRelicsDbContext context, TranslationService t
     /// <summary>Check if a key is prefixed with a supported locale code (e.g., "fr.home.hero.title").</summary>
     private static bool IsLocalePrefixedKey(string key)
     {
-        return key.Length > 3 && key[2] == '.' && TranslationService.SupportedLocales.ContainsKey(key[..2]);
+        return key.Length > 3 && key[2] == '.' && LocalePrefixes.Contains(key[..2]);
     }
 
     [HttpPut]
@@ -83,53 +83,22 @@ public class ContentController(EdenRelicsDbContext context, TranslationService t
 
         await context.SaveChangesAsync();
 
-        // Translate changed content in the background
-        _ = TranslateAndStoreAsync(content);
-
         // Return full English content including defaults
         List<SiteContent> updated = await context.SiteContent.ToListAsync();
-        Dictionary<string, string> result = updated
-            .Where(e => !(e.Key.Length > 3 && e.Key[2] == '.' && TranslationService.SupportedLocales.ContainsKey(e.Key[..2])))
-            .ToDictionary(e => e.Key, e => e.Value);
+        Dictionary<string, string> result = [];
+        foreach (SiteContent e in updated)
+        {
+            if (!IsLocalePrefixedKey(e.Key))
+            {
+                result[e.Key] = e.Value;
+            }
+        }
         foreach (KeyValuePair<string, string> kv in Defaults)
         {
             result.TryAdd(kv.Key, kv.Value);
         }
 
         return Ok(result);
-    }
-
-    private async Task TranslateAndStoreAsync(Dictionary<string, string> content)
-    {
-        try
-        {
-            Dictionary<string, string> translations = await translation.TranslateBatchAsync(content);
-            if (translations.Count == 0)
-            {
-                return;
-            }
-
-            List<SiteContent> existing = await context.SiteContent.ToListAsync();
-            Dictionary<string, SiteContent> byKey = existing.ToDictionary(e => e.Key);
-
-            foreach ((string key, string value) in translations)
-            {
-                if (byKey.TryGetValue(key, out SiteContent? entry))
-                {
-                    entry.Value = value;
-                }
-                else
-                {
-                    context.SiteContent.Add(new SiteContent { Key = key, Value = value });
-                }
-            }
-
-            await context.SaveChangesAsync();
-        }
-        catch (Exception)
-        {
-            // Translation failures should not break the save
-        }
     }
 
     private static readonly Dictionary<string, string> Defaults = new()

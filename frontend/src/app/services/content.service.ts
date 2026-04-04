@@ -17,6 +17,10 @@ export class ContentService {
     this.loaded = true;
     this.http.get<Record<string, string>>(`${environment.apiUrl}/api/content`).subscribe({
       next: (c) => this.content.set(c),
+      error: () => {
+        // API failed — allow retry on next navigation
+        this.loaded = false;
+      },
     });
   }
 
