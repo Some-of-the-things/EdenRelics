@@ -8,7 +8,14 @@ namespace Eden_Relics_BE.Data;
 
 public class EdenRelicsDbContext : DbContext
 {
-    public EdenRelicsDbContext(DbContextOptions<EdenRelicsDbContext> options) : base(options) { }
+    private readonly bool _isRelational;
+
+    public EdenRelicsDbContext(DbContextOptions<EdenRelicsDbContext> options) : base(options)
+    {
+        _isRelational = options.Extensions.Any(e =>
+            e.GetType().FullName?.Contains("Relational") == true ||
+            e.GetType().FullName?.Contains("Npgsql") == true);
+    }
 
     public DbSet<Product> Products => Set<Product>();
     public DbSet<User> Users => Set<User>();
@@ -428,7 +435,7 @@ public class EdenRelicsDbContext : DbContext
 
     private void ConfigureJsonProperty(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<Dictionary<string, string>> prop)
     {
-        if (!Database.IsRelational())
+        if (!_isRelational)
         {
             var converter = new ValueConverter<Dictionary<string, string>, string>(
                 v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
@@ -446,7 +453,7 @@ public class EdenRelicsDbContext : DbContext
 
     private void ConfigureJsonListProperty(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<List<string>> prop)
     {
-        if (!Database.IsRelational())
+        if (!_isRelational)
         {
             var converter = new ValueConverter<List<string>, string>(
                 v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),

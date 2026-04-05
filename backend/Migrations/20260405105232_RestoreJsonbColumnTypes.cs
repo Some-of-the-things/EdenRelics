@@ -10,8 +10,8 @@ namespace Eden_Relics_BE.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Columns are already jsonb in production.
-            // This migration only updates the EF model snapshot to match.
+            // No-op: columns are already jsonb in production.
+            // This migration exists only to update the EF model snapshot.
         }
 
         /// <inheritdoc />
