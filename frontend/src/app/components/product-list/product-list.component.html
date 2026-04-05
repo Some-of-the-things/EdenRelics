@@ -46,7 +46,7 @@
     @for (product of productStore.filteredProducts(); track product.id; let idx = $index) {
       <article class="product-card">
         <div class="product-card__image-link">
-          <img [ngSrc]="product.imageUrl" [alt]="product.name" class="product-card__image" width="400" height="500" [priority]="idx < 4" />
+          <img [ngSrc]="product.imageUrl" [alt]="product.name" class="product-card__image" width="400" height="500" [priority]="idx < 4" sizes="(max-width: 600px) 100vw, (max-width: 960px) 50vw, 280px" />
           <span class="product-card__era">{{ product.era }}</span>
           @if (product.salePrice) {
             <span class="product-card__sale-badge">{{ (1 - product.salePrice / product.price) * 100 | number:'1.0-0' }}% off</span>
