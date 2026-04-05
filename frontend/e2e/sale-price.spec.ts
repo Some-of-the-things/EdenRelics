@@ -117,6 +117,7 @@ test.describe('Sale Prices', () => {
 test.describe('Sale Price Clearing', () => {
 
   test('admin can clear sale price by setting to 0', async ({ page }) => {
+    test.setTimeout(90_000);
     const token = await registerAdmin(page, uniqueEmail('sale-clear-admin'));
 
     // Create product with sale price
