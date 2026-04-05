@@ -31,26 +31,6 @@ public class EdenRelicsDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        ValueConverter<Dictionary<string, string>, string> dictConverter = new(
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-            v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>()
-        );
-        ValueComparer<Dictionary<string, string>> dictComparer = new(
-            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-            v => v.GetHashCode(),
-            v => new Dictionary<string, string>(v)
-        );
-
-        ValueConverter<List<string>, string> listConverter = new(
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-            v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>()
-        );
-        ValueComparer<List<string>> listComparer = new(
-            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-            v => v.GetHashCode(),
-            v => new List<string>(v)
-        );
-
         // Global query filter for soft deletes on all BaseEntity types
         modelBuilder.Entity<Product>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
@@ -173,9 +153,9 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(b => b.Excerpt).HasMaxLength(500);
             entity.Property(b => b.FeaturedImageUrl).HasMaxLength(500);
             entity.Property(b => b.Author).HasMaxLength(100);
-            entity.Property(b => b.TitleTranslations).HasColumnType("jsonb").HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
-            entity.Property(b => b.ContentTranslations).HasColumnType("jsonb").HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
-            entity.Property(b => b.ExcerptTranslations).HasColumnType("jsonb").HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
+            ConfigureJsonProperty(entity.Property(b => b.TitleTranslations));
+            ConfigureJsonProperty(entity.Property(b => b.ContentTranslations));
+            ConfigureJsonProperty(entity.Property(b => b.ExcerptTranslations));
         });
 
         modelBuilder.Entity<MailingListSubscriber>(entity =>
@@ -272,10 +252,10 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(p => p.Size).HasMaxLength(20);
             entity.Property(p => p.Condition).HasMaxLength(20);
             entity.Property(p => p.ImageUrl).HasMaxLength(500);
-            entity.Property(p => p.AdditionalImageUrls).HasColumnType("jsonb").HasConversion(listConverter).Metadata.SetValueComparer(listComparer);
-            entity.Property(p => p.VideoUrls).HasColumnType("jsonb").HasConversion(listConverter).Metadata.SetValueComparer(listComparer);
-            entity.Property(p => p.NameTranslations).HasColumnType("jsonb").HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
-            entity.Property(p => p.DescriptionTranslations).HasColumnType("jsonb").HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
+            ConfigureJsonListProperty(entity.Property(p => p.AdditionalImageUrls));
+            ConfigureJsonListProperty(entity.Property(p => p.VideoUrls));
+            ConfigureJsonProperty(entity.Property(p => p.NameTranslations));
+            ConfigureJsonProperty(entity.Property(p => p.DescriptionTranslations));
 
             DateTime seededAt = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -444,6 +424,42 @@ public class EdenRelicsDbContext : DbContext
     {
         SetTimestamps();
         return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void ConfigureJsonProperty(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<Dictionary<string, string>> prop)
+    {
+        if (!Database.IsRelational())
+        {
+            var converter = new ValueConverter<Dictionary<string, string>, string>(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>());
+            prop.HasConversion(converter);
+            prop.Metadata.SetValueComparer(new ValueComparer<Dictionary<string, string>>(
+                (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+                v => v.GetHashCode(), v => new Dictionary<string, string>(v)));
+        }
+        else
+        {
+            prop.HasColumnType("jsonb");
+        }
+    }
+
+    private void ConfigureJsonListProperty(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<List<string>> prop)
+    {
+        if (!Database.IsRelational())
+        {
+            var converter = new ValueConverter<List<string>, string>(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+            prop.HasConversion(converter);
+            prop.Metadata.SetValueComparer(new ValueComparer<List<string>>(
+                (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+                v => v.GetHashCode(), v => new List<string>(v)));
+        }
+        else
+        {
+            prop.HasColumnType("jsonb");
+        }
     }
 
     private void SetTimestamps()
