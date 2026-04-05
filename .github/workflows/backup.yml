@@ -12,17 +12,14 @@ env:
 jobs:
   backup:
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
     steps:
       - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client
-
-      - name: Install AWS CLI
-        run: |
-          curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
-          unzip -q /tmp/awscliv2.zip -d /tmp
-          sudo /tmp/aws/install --update
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
 
       - name: Dump database
         run: |
@@ -36,74 +33,40 @@ jobs:
 
       - name: Upload daily backup to R2
         run: |
-          aws s3 cp "/tmp/edenrelics_${TIMESTAMP}.sql.gz" \
-            "s3://${R2_BUCKET}/daily/edenrelics_${TIMESTAMP}.sql.gz" \
-            --endpoint-url "$R2_ENDPOINT"          echo "Daily backup uploaded."
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+          aws s3 cp "/tmp/edenrelics_${TIMESTAMP}.sql.gz" "s3://${R2_BUCKET}/daily/edenrelics_${TIMESTAMP}.sql.gz" --endpoint-url "$R2_ENDPOINT"
+          echo "Daily backup uploaded."
 
       - name: Upload weekly backup (Sundays)
-        if: contains('0', github.event.schedule) || github.event_name == 'workflow_dispatch'
         run: |
           DOW=$(date -u +%u)
           if [ "$DOW" = "7" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            aws s3 cp "/tmp/edenrelics_${TIMESTAMP}.sql.gz" \
-              "s3://${R2_BUCKET}/weekly/edenrelics_${TIMESTAMP}.sql.gz" \
-              --endpoint-url "$R2_ENDPOINT"            echo "Weekly backup uploaded."
+            aws s3 cp "/tmp/edenrelics_${TIMESTAMP}.sql.gz" "s3://${R2_BUCKET}/weekly/edenrelics_${TIMESTAMP}.sql.gz" --endpoint-url "$R2_ENDPOINT"
+            echo "Weekly backup uploaded."
           else
-            echo "Not Sunday ($DOW), skipping weekly backup."
+            echo "Not Sunday (day $DOW), skipping weekly backup."
           fi
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
 
       - name: Prune old daily backups (keep 7)
         run: |
-          echo "Pruning daily backups..."
-          aws s3 ls "s3://${R2_BUCKET}/daily/" --endpoint-url "$R2_ENDPOINT" \
-            | sort -r | tail -n +8 | while read -r line; do
-              filename=$(echo "$line" | awk '{print $4}')
-              if [ -n "$filename" ]; then
-                echo "  Deleting: $filename"
-                aws s3 rm "s3://${R2_BUCKET}/daily/${filename}" --endpoint-url "$R2_ENDPOINT"              fi
-            done
-          echo "Done."
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+          aws s3 ls "s3://${R2_BUCKET}/daily/" --endpoint-url "$R2_ENDPOINT" | sort -r | tail -n +8 | while read -r line; do
+            filename=$(echo "$line" | awk '{print $4}')
+            if [ -n "$filename" ]; then
+              echo "Deleting: $filename"
+              aws s3 rm "s3://${R2_BUCKET}/daily/${filename}" --endpoint-url "$R2_ENDPOINT"
+            fi
+          done
 
       - name: Prune old weekly backups (keep 4)
         run: |
-          echo "Pruning weekly backups..."
-          aws s3 ls "s3://${R2_BUCKET}/weekly/" --endpoint-url "$R2_ENDPOINT" \
-            | sort -r | tail -n +5 | while read -r line; do
-              filename=$(echo "$line" | awk '{print $4}')
-              if [ -n "$filename" ]; then
-                echo "  Deleting: $filename"
-                aws s3 rm "s3://${R2_BUCKET}/weekly/${filename}" --endpoint-url "$R2_ENDPOINT"              fi
-            done
-          echo "Done."
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+          aws s3 ls "s3://${R2_BUCKET}/weekly/" --endpoint-url "$R2_ENDPOINT" | sort -r | tail -n +5 | while read -r line; do
+            filename=$(echo "$line" | awk '{print $4}')
+            if [ -n "$filename" ]; then
+              echo "Deleting: $filename"
+              aws s3 rm "s3://${R2_BUCKET}/weekly/${filename}" --endpoint-url "$R2_ENDPOINT"
+            fi
+          done
 
       - name: Verify backup exists
         run: |
-          echo "Verifying backup..."
-          aws s3 ls "s3://${R2_BUCKET}/daily/edenrelics_${TIMESTAMP}.sql.gz" \
-            --endpoint-url "$R2_ENDPOINT"
+          aws s3 ls "s3://${R2_BUCKET}/daily/edenrelics_${TIMESTAMP}.sql.gz" --endpoint-url "$R2_ENDPOINT"
           echo "Backup verified."
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
