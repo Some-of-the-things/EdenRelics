@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using Eden_Relics_BE.Data;
+using Npgsql;
 using Eden_Relics_BE.Repositories;
 using Eden_Relics_BE.Services;
 using Fido2NetLib;
@@ -65,8 +66,12 @@ builder.Services.AddHealthChecks();
 string connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") is { Length: > 0 } databaseUrl
     ? ConvertPostgresUrl(databaseUrl)
     : builder.Configuration.GetConnectionString("DefaultConnection")!;
+NpgsqlDataSourceBuilder dataSourceBuilder = new(connectionString);
+dataSourceBuilder.EnableDynamicJson();
+NpgsqlDataSource dataSource = dataSourceBuilder.Build();
+
 builder.Services.AddDbContext<EdenRelicsDbContext>(options =>
-    options.UseNpgsql(connectionString)
+    options.UseNpgsql(dataSource)
         .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 // Repositories
