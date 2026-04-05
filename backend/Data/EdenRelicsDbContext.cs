@@ -435,17 +435,15 @@ public class EdenRelicsDbContext : DbContext
 
     private void ConfigureJsonProperty(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<Dictionary<string, string>> prop)
     {
-        if (!_isRelational)
-        {
-            var converter = new ValueConverter<Dictionary<string, string>, string>(
-                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>());
-            prop.HasConversion(converter);
-            prop.Metadata.SetValueComparer(new ValueComparer<Dictionary<string, string>>(
-                (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-                v => v.GetHashCode(), v => new Dictionary<string, string>(v)));
-        }
-        else
+        var converter = new ValueConverter<Dictionary<string, string>, string>(
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+            v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>());
+        prop.HasConversion(converter);
+        prop.Metadata.SetValueComparer(new ValueComparer<Dictionary<string, string>>(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            v => v.GetHashCode(), v => new Dictionary<string, string>(v)));
+
+        if (_isRelational)
         {
             prop.HasColumnType("jsonb");
         }
