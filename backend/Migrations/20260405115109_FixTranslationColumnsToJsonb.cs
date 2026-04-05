@@ -10,8 +10,9 @@ namespace Eden_Relics_BE.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Fix empty strings and invalid JSON so they can be cast to jsonb.
-            // On fresh databases the defaults are already '{}', so these UPDATEs are harmless.
+            // Fix any empty strings in translation columns to valid JSON.
+            // The jsonb conversion is no longer needed — the model uses a
+            // string converter, so columns stay as text.
             migrationBuilder.Sql("""
                 UPDATE "Products" SET "NameTranslations" = '{}' WHERE "NameTranslations" IS NULL OR "NameTranslations" = '';
                 UPDATE "Products" SET "DescriptionTranslations" = '{}' WHERE "DescriptionTranslations" IS NULL OR "DescriptionTranslations" = '';
@@ -19,32 +20,12 @@ namespace Eden_Relics_BE.Migrations
                 UPDATE "BlogPosts" SET "ContentTranslations" = '{}' WHERE "ContentTranslations" IS NULL OR "ContentTranslations" = '';
                 UPDATE "BlogPosts" SET "ExcerptTranslations" = '{}' WHERE "ExcerptTranslations" IS NULL OR "ExcerptTranslations" = '';
             """);
-
-            // Convert text columns to jsonb (safe now that all values are valid JSON)
-            migrationBuilder.Sql("""
-                ALTER TABLE "Products" ALTER COLUMN "NameTranslations" SET DEFAULT '{}';
-                ALTER TABLE "Products" ALTER COLUMN "NameTranslations" TYPE jsonb USING "NameTranslations"::jsonb;
-                ALTER TABLE "Products" ALTER COLUMN "DescriptionTranslations" SET DEFAULT '{}';
-                ALTER TABLE "Products" ALTER COLUMN "DescriptionTranslations" TYPE jsonb USING "DescriptionTranslations"::jsonb;
-                ALTER TABLE "BlogPosts" ALTER COLUMN "TitleTranslations" SET DEFAULT '{}';
-                ALTER TABLE "BlogPosts" ALTER COLUMN "TitleTranslations" TYPE jsonb USING "TitleTranslations"::jsonb;
-                ALTER TABLE "BlogPosts" ALTER COLUMN "ContentTranslations" SET DEFAULT '{}';
-                ALTER TABLE "BlogPosts" ALTER COLUMN "ContentTranslations" TYPE jsonb USING "ContentTranslations"::jsonb;
-                ALTER TABLE "BlogPosts" ALTER COLUMN "ExcerptTranslations" SET DEFAULT '{}';
-                ALTER TABLE "BlogPosts" ALTER COLUMN "ExcerptTranslations" TYPE jsonb USING "ExcerptTranslations"::jsonb;
-            """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("""
-                ALTER TABLE "Products" ALTER COLUMN "NameTranslations" TYPE text;
-                ALTER TABLE "Products" ALTER COLUMN "DescriptionTranslations" TYPE text;
-                ALTER TABLE "BlogPosts" ALTER COLUMN "TitleTranslations" TYPE text;
-                ALTER TABLE "BlogPosts" ALTER COLUMN "ContentTranslations" TYPE text;
-                ALTER TABLE "BlogPosts" ALTER COLUMN "ExcerptTranslations" TYPE text;
-            """);
+            // Nothing to revert — data fix only
         }
     }
 }
