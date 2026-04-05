@@ -31,21 +31,21 @@ public class EdenRelicsDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        var dictConverter = new ValueConverter<Dictionary<string, string>, string>(
+        ValueConverter<Dictionary<string, string>, string> dictConverter = new(
             v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
             v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>()
         );
-        var dictComparer = new ValueComparer<Dictionary<string, string>>(
+        ValueComparer<Dictionary<string, string>> dictComparer = new(
             (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
             v => v.GetHashCode(),
             v => new Dictionary<string, string>(v)
         );
 
-        var listConverter = new ValueConverter<List<string>, string>(
+        ValueConverter<List<string>, string> listConverter = new(
             v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
             v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>()
         );
-        var listComparer = new ValueComparer<List<string>>(
+        ValueComparer<List<string>> listComparer = new(
             (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
             v => v.GetHashCode(),
             v => new List<string>(v)
@@ -173,9 +173,9 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(b => b.Excerpt).HasMaxLength(500);
             entity.Property(b => b.FeaturedImageUrl).HasMaxLength(500);
             entity.Property(b => b.Author).HasMaxLength(100);
-            entity.Property(b => b.TitleTranslations).HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
-            entity.Property(b => b.ContentTranslations).HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
-            entity.Property(b => b.ExcerptTranslations).HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
+            entity.Property(b => b.TitleTranslations).HasColumnType("jsonb").HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
+            entity.Property(b => b.ContentTranslations).HasColumnType("jsonb").HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
+            entity.Property(b => b.ExcerptTranslations).HasColumnType("jsonb").HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
         });
 
         modelBuilder.Entity<MailingListSubscriber>(entity =>
@@ -272,10 +272,10 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(p => p.Size).HasMaxLength(20);
             entity.Property(p => p.Condition).HasMaxLength(20);
             entity.Property(p => p.ImageUrl).HasMaxLength(500);
-            entity.Property(p => p.AdditionalImageUrls).HasConversion(listConverter).Metadata.SetValueComparer(listComparer);
-            entity.Property(p => p.VideoUrls).HasConversion(listConverter).Metadata.SetValueComparer(listComparer);
-            entity.Property(p => p.NameTranslations).HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
-            entity.Property(p => p.DescriptionTranslations).HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
+            entity.Property(p => p.AdditionalImageUrls).HasColumnType("jsonb").HasConversion(listConverter).Metadata.SetValueComparer(listComparer);
+            entity.Property(p => p.VideoUrls).HasColumnType("jsonb").HasConversion(listConverter).Metadata.SetValueComparer(listComparer);
+            entity.Property(p => p.NameTranslations).HasColumnType("jsonb").HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
+            entity.Property(p => p.DescriptionTranslations).HasColumnType("jsonb").HasConversion(dictConverter).Metadata.SetValueComparer(dictComparer);
 
             DateTime seededAt = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -451,7 +451,7 @@ public class EdenRelicsDbContext : DbContext
         IEnumerable<EntityEntry<BaseEntity>> entries = ChangeTracker.Entries<BaseEntity>();
         DateTime utcNow = DateTime.UtcNow;
 
-        foreach (var entry in entries)
+        foreach (EntityEntry<BaseEntity> entry in entries)
         {
             if (entry.State == EntityState.Added)
             {
