@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CurrencyPipe, DecimalPipe, isPlatformBrowser, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
+import { Product } from '../../models/product.model';
 import { SeoService } from '../../services/seo.service';
 import { ProductService } from '../../services/product.service';
 import { AnalyticsService } from '../../services/analytics.service';
@@ -32,8 +33,10 @@ export class ProductDetailComponent {
   readonly showSalePrompt = signal(false);
   private pendingFavouriteId: string | null = null;
 
+  private readonly fetchedProduct = signal<Product | null>(null);
+
   readonly product = computed(() =>
-    this.productStore.products().find(p => p.id === this.id())
+    this.productStore.products().find(p => p.id === this.id()) ?? this.fetchedProduct()
   );
 
   readonly allImages = computed(() => {
@@ -79,6 +82,16 @@ export class ProductDetailComponent {
     if (this.auth.isAuthenticated()) {
       this.favourites.load();
     }
+    // Fetch from API if not in store (e.g., direct navigation or newly created product)
+    effect(() => {
+      const id = this.id();
+      const inStore = this.productStore.products().find(p => p.id === id);
+      if (!inStore && !this.fetchedProduct() && id) {
+        this.productService.getById(id).subscribe({
+          next: (p) => this.fetchedProduct.set(p ?? null),
+        });
+      }
+    });
     effect(() => {
       const product = this.product();
       if (product) {

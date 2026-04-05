@@ -77,6 +77,7 @@ builder.Services.AddSingleton<ImageStorageService>();
 
 // Translation
 builder.Services.AddScoped<TranslationService>();
+builder.Services.AddHostedService<TranslationBackgroundService>();
 
 // SEO rank checking
 builder.Services.AddScoped<RankCheckerService>();

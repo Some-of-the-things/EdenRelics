@@ -117,8 +117,7 @@ public class ProductsController : ControllerBase
 
         await _repository.AddAsync(product);
 
-        // Translate name and description in the background
-        // Translation removed — was causing DbContext disposal issues with fire-and-forget
+        TranslationBackgroundService.EnqueueProduct(product.Id);
 
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, ToAdminDto(product));
     }
@@ -163,10 +162,9 @@ public class ProductsController : ControllerBase
 
         await _repository.UpdateAsync(product);
 
-        // Translate updated name/description in the background
         if (dto.Name is not null || dto.Description is not null)
         {
-            // Translation removed — was causing DbContext disposal issues with fire-and-forget
+            TranslationBackgroundService.EnqueueProduct(product.Id);
         }
 
         // Notify after update completes to avoid concurrent DbContext access

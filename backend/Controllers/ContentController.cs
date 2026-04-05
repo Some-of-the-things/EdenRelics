@@ -1,5 +1,6 @@
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
+using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -82,6 +83,8 @@ public class ContentController(EdenRelicsDbContext context) : ControllerBase
         }
 
         await context.SaveChangesAsync();
+
+        TranslationBackgroundService.EnqueueContent(content);
 
         // Return full English content including defaults
         List<SiteContent> updated = await context.SiteContent.ToListAsync();
