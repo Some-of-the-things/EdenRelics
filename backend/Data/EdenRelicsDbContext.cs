@@ -446,20 +446,13 @@ public class EdenRelicsDbContext : DbContext
 
     private void ConfigureJsonListProperty(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<List<string>> prop)
     {
-        if (!_isRelational)
-        {
-            var converter = new ValueConverter<List<string>, string>(
-                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
-            prop.HasConversion(converter);
-            prop.Metadata.SetValueComparer(new ValueComparer<List<string>>(
-                (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-                v => v.GetHashCode(), v => new List<string>(v)));
-        }
-        else
-        {
-            prop.HasColumnType("jsonb");
-        }
+        var converter = new ValueConverter<List<string>, string>(
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+            v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+        prop.HasConversion(converter);
+        prop.Metadata.SetValueComparer(new ValueComparer<List<string>>(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            v => v.GetHashCode(), v => new List<string>(v)));
     }
 
     private void SetTimestamps()
