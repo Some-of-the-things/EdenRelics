@@ -185,7 +185,8 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()";
-    context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["Content-Security-Policy"] = "frame-ancestors 'none'";
     await next();
 });
 app.UseStaticFiles(new StaticFileOptions
