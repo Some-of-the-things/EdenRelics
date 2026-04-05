@@ -40,11 +40,19 @@ export class SocialLoginComponent {
   loginWithGoogle(): void {
     if (!this.googleLoaded) {
       this.loadGoogleSdk();
+      return;
     }
     if (typeof google === 'undefined') {
       return;
     }
-    google.accounts.id.prompt();
+    // Click the hidden rendered Google button — prompt() doesn't reliably
+    // trigger the credential callback in newer GSI versions
+    const btn = document.querySelector('#g_id_signin div[role="button"]') as HTMLElement;
+    if (btn) {
+      btn.click();
+    } else {
+      google.accounts.id.prompt();
+    }
   }
 
   loginWithFacebook(): void {
