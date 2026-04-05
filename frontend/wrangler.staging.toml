@@ -1,0 +1,11 @@
+name = "eden-relics-staging"
+main = "dist/eden-relics/server/server.mjs"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "dist/eden-relics/browser"
+
+routes = [
+  { pattern = "staging.edenrelics.co.uk/*", zone_name = "edenrelics.co.uk" }
+]

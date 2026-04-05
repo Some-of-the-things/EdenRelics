@@ -138,8 +138,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // CORS
 string[] allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? ["https://edenrelics.co.uk"];
-// Ensure production origin is always included
-if (!allowedOrigins.Contains("https://edenrelics.co.uk"))
+// Ensure production origin is always included (but not in staging, which has its own origins)
+if (builder.Environment.IsProduction() && !allowedOrigins.Contains("https://edenrelics.co.uk"))
 {
     allowedOrigins = [..allowedOrigins, "https://edenrelics.co.uk"];
 }
@@ -198,6 +198,13 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// In staging, restrict all non-auth endpoints to Admin users only
+if (app.Environment.IsEnvironment("Staging"))
+{
+    app.UseMiddleware<Eden_Relics_BE.Middleware.StagingAccessMiddleware>();
+}
+
 app.MapControllers();
 app.MapHealthChecks("/healthz");
 
