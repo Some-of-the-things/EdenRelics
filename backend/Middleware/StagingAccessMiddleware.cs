@@ -9,27 +9,31 @@ namespace Eden_Relics_BE.Middleware;
 /// </summary>
 public class StagingAccessMiddleware(RequestDelegate next)
 {
-    private static readonly string[] ExemptPrefixes =
-    [
-        "/healthz",
-        "/api/auth/",
-        "/api/content",   // Allow content for the login page to render
-        "/api/branding",  // Allow branding for the staging site to load
-    ];
-
     public async Task InvokeAsync(HttpContext context)
     {
         string path = context.Request.Path.Value ?? "";
 
-        // Allow exempt endpoints without auth
-        if (ExemptPrefixes.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+        // Always allow health checks and auth endpoints
+        if (path.StartsWith("/healthz", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/auth/", StringComparison.OrdinalIgnoreCase))
         {
             await next(context);
             return;
         }
 
-        // Require Admin role for everything else
-        if (!context.User.Identity?.IsAuthenticated == true ||
+        // Allow all GET/HEAD/OPTIONS requests — the site is already behind
+        // Cloudflare Access so only authorised users can reach it.
+        // Write operations (POST/PUT/DELETE) require Admin role.
+        if (HttpMethods.IsGet(context.Request.Method) ||
+            HttpMethods.IsHead(context.Request.Method) ||
+            HttpMethods.IsOptions(context.Request.Method))
+        {
+            await next(context);
+            return;
+        }
+
+        // Require Admin role for write operations
+        if (context.User.Identity?.IsAuthenticated != true ||
             !context.User.IsInRole("Admin"))
         {
             context.Response.StatusCode = 403;
