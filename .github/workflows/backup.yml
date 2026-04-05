@@ -38,8 +38,7 @@ jobs:
         run: |
           aws s3 cp "/tmp/edenrelics_${TIMESTAMP}.sql.gz" \
             "s3://${R2_BUCKET}/daily/edenrelics_${TIMESTAMP}.sql.gz" \
-            --endpoint-url "$R2_ENDPOINT" --quiet
-          echo "Daily backup uploaded."
+            --endpoint-url "$R2_ENDPOINT"          echo "Daily backup uploaded."
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
@@ -53,8 +52,7 @@ jobs:
           if [ "$DOW" = "7" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             aws s3 cp "/tmp/edenrelics_${TIMESTAMP}.sql.gz" \
               "s3://${R2_BUCKET}/weekly/edenrelics_${TIMESTAMP}.sql.gz" \
-              --endpoint-url "$R2_ENDPOINT" --quiet
-            echo "Weekly backup uploaded."
+              --endpoint-url "$R2_ENDPOINT"            echo "Weekly backup uploaded."
           else
             echo "Not Sunday ($DOW), skipping weekly backup."
           fi
@@ -72,8 +70,7 @@ jobs:
               filename=$(echo "$line" | awk '{print $4}')
               if [ -n "$filename" ]; then
                 echo "  Deleting: $filename"
-                aws s3 rm "s3://${R2_BUCKET}/daily/${filename}" --endpoint-url "$R2_ENDPOINT" --quiet
-              fi
+                aws s3 rm "s3://${R2_BUCKET}/daily/${filename}" --endpoint-url "$R2_ENDPOINT"              fi
             done
           echo "Done."
         env:
@@ -90,8 +87,7 @@ jobs:
               filename=$(echo "$line" | awk '{print $4}')
               if [ -n "$filename" ]; then
                 echo "  Deleting: $filename"
-                aws s3 rm "s3://${R2_BUCKET}/weekly/${filename}" --endpoint-url "$R2_ENDPOINT" --quiet
-              fi
+                aws s3 rm "s3://${R2_BUCKET}/weekly/${filename}" --endpoint-url "$R2_ENDPOINT"              fi
             done
           echo "Done."
         env:
