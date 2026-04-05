@@ -78,6 +78,11 @@ test.describe('Sale Prices', () => {
     await page.goto('/');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 15_000 });
 
+    // The SSR-rendered page may not include the just-created product.
+    // Reload to ensure the client fetches fresh data from the API.
+    await page.reload();
+    await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 15_000 });
+
     // Find the sale product card
     const saleCard = page.locator('.product-card', { hasText: 'Discounted Vintage Dress' });
     await expect(saleCard).toBeVisible({ timeout: 10_000 });
