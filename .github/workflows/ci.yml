@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, integration]
   pull_request:
     branches: [main]
 
@@ -10,6 +10,18 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # ── PR source check ─────────────────────────────────────────────────
+  check-pr-source:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    steps:
+      - name: Verify PR comes from integration branch
+        run: |
+          if [ "${{ github.head_ref }}" != "integration" ]; then
+            echo "::error::PRs to main must come from the integration branch, not '${{ github.head_ref }}'"
+            exit 1
+          fi
+
   # ── Backend: build & test ────────────────────────────────────────────
   backend-test:
     runs-on: ubuntu-latest
@@ -138,7 +150,7 @@ jobs:
           name: playwright-report
           path: frontend/test-results/
 
-  # ── Deploy backend to Fly.io ─────────────────────────────────────────
+  # ── Deploy backend to Fly.io (production) ────────────────────────────
   deploy-backend:
     runs-on: ubuntu-latest
     needs: [backend-test, frontend-e2e]
@@ -157,20 +169,50 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-  # ── Post-deploy smoke tests ───────────────────────────────────────────
+  # ── Deploy frontend to Cloudflare Workers (production) ───────────────
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: [frontend-build, frontend-e2e]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/eden-relics
+
+      - name: Patch server bundle for Workers runtime
+        run: |
+          cd frontend/dist/eden-relics/server
+          sed -i "s/import { createRequire } from 'node:module';//g" *.mjs
+          sed -i "s/globalThis\['require'\] ??= createRequire(import.meta.url);//g" *.mjs
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: frontend
+          command: deploy
+
+  # ── Post-deploy smoke tests (production) ─────────────────────────────
   smoke-test:
     runs-on: ubuntu-latest
     needs: [deploy-backend, deploy-frontend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: Wait for deployment to stabilise
-        run: sleep 15
-
-      - name: Health check
+      - name: Wait for backend to become healthy
         run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" https://api.edenrelics.co.uk/healthz)
-          echo "Health check: $status"
-          [ "$status" = "200" ] || exit 1
+          for i in $(seq 1 20); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" https://api.edenrelics.co.uk/healthz)
+            echo "Attempt $i: $status"
+            [ "$status" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "Backend did not become healthy after 200s"
+          exit 1
 
       - name: Products API returns 200
         run: |
@@ -206,30 +248,104 @@ jobs:
           echo "Product count: $count"
           [ "$count" -ge 1 ] || { echo "No products returned!"; exit 1; }
 
-  # ── Deploy frontend to Cloudflare Workers ─────────────────────────────
-  deploy-frontend:
+  # ── Deploy backend to Fly.io (staging) ───────────────────────────────
+  deploy-backend-staging:
     runs-on: ubuntu-latest
-    needs: [frontend-build, frontend-e2e]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [backend-test, frontend-e2e]
+    if: github.ref == 'refs/heads/integration' && github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io (staging)
+        run: flyctl deploy --config fly.staging.toml --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  # ── Deploy frontend to Cloudflare Workers (staging) ──────────────────
+  deploy-frontend-staging:
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-e2e]
+    if: github.ref == 'refs/heads/integration' && github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          name: frontend-dist
-          path: frontend/dist/eden-relics
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for staging
+        run: npx ng build --configuration staging
 
       - name: Patch server bundle for Workers runtime
         run: |
-          cd frontend/dist/eden-relics/server
+          cd dist/eden-relics/server
           sed -i "s/import { createRequire } from 'node:module';//g" *.mjs
           sed -i "s/globalThis\['require'\] ??= createRequire(import.meta.url);//g" *.mjs
 
-      - name: Deploy to Cloudflare Workers
+      - name: Deploy to Cloudflare Workers (staging)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: frontend
-          command: deploy
+          command: deploy --config wrangler.staging.toml
+
+  # ── Post-deploy smoke tests (staging) ────────────────────────────────
+  smoke-test-staging:
+    runs-on: ubuntu-latest
+    needs: [deploy-backend-staging, deploy-frontend-staging]
+    if: github.ref == 'refs/heads/integration' && github.event_name == 'push'
+    steps:
+      - name: Wait for backend to become healthy
+        run: |
+          for i in $(seq 1 20); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" https://api-staging.edenrelics.co.uk/healthz)
+            echo "Attempt $i: $status"
+            [ "$status" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "Staging backend did not become healthy after 200s"
+          exit 1
+
+      - name: Products API requires admin (returns 403 without auth)
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://api-staging.edenrelics.co.uk/api/products)
+          echo "Staging products (no auth): $status"
+          [ "$status" = "403" ] || exit 1
+
+      - name: Content API is accessible (exempt from admin check)
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://api-staging.edenrelics.co.uk/api/content)
+          echo "Staging content: $status"
+          [ "$status" = "200" ] || exit 1
+
+      - name: CORS preflight returns staging origin
+        run: |
+          response=$(curl -s -D - -o /dev/null \
+            -X OPTIONS \
+            -H "Origin: https://staging.edenrelics.co.uk" \
+            -H "Access-Control-Request-Method: GET" \
+            https://api-staging.edenrelics.co.uk/api/products)
+          echo "$response"
+          echo "$response" | grep -qi "access-control-allow-origin" || { echo "CORS header missing!"; exit 1; }
+
+      - name: Staging frontend loads
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://staging.edenrelics.co.uk)
+          echo "Staging frontend: $status"
+          [ "$status" = "200" ] || exit 1
