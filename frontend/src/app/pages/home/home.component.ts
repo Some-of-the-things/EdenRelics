@@ -38,7 +38,7 @@ export class HomeComponent implements OnInit {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       name: 'Eden Relics',
-      url: 'https://www.edenrelics.co.uk',
+      url: 'https://edenrelics.co.uk',
       description: 'Curated vintage clothing from decades past.',
     });
   }
