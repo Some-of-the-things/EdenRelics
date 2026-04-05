@@ -15,9 +15,9 @@ test.describe('Product View Count', () => {
     await page.close();
   });
 
-  test('viewing a product increments the view count', async ({ request }) => {
+  test('viewing a product increments the view count', async ({ page }) => {
     // Create a product
-    const createRes = await request.post(`${API}/products`, {
+    const createRes = await page.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
         name: 'View Count Test Dress',
@@ -35,13 +35,13 @@ test.describe('Product View Count', () => {
     const product = await createRes.json();
 
     // Record a view via API (same endpoint the frontend calls)
-    const viewRes = await request.post(`${API}/products/${product.id}/view`, {
+    const viewRes = await page.request.post(`${API}/products/${product.id}/view`, {
       data: {},
     });
     expect(viewRes.ok()).toBeTruthy();
 
     // Verify view count incremented
-    const getRes = await request.get(`${API}/products/${product.id}`, {
+    const getRes = await page.request.get(`${API}/products/${product.id}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     const updated = await getRes.json();
