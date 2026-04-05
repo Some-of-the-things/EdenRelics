@@ -30,14 +30,16 @@ public class AuthController : ControllerBase
     private readonly PasswordHasher<User> _passwordHasher = new();
 
     private readonly IWebHostEnvironment _environment;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IRepository<User> userRepository, IConfiguration configuration, IHttpClientFactory httpClientFactory, IEmailService emailService, IWebHostEnvironment environment)
+    public AuthController(IRepository<User> userRepository, IConfiguration configuration, IHttpClientFactory httpClientFactory, IEmailService emailService, IWebHostEnvironment environment, ILogger<AuthController> logger)
     {
         _userRepository = userRepository;
         _configuration = configuration;
         _httpClientFactory = httpClientFactory;
         _emailService = emailService;
         _environment = environment;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -281,6 +283,7 @@ public class AuthController : ControllerBase
         try
         {
             string? clientId = _configuration["OAuth:Google:ClientId"];
+            _logger.LogInformation("Verifying Google token with ClientId: {ClientId}", clientId?[..20] + "...");
             GoogleJsonWebSignature.ValidationSettings settings = new()
             {
                 Audience = [clientId!]
@@ -288,8 +291,9 @@ public class AuthController : ControllerBase
             GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
             return new ExternalUserInfo(payload.Subject, payload.Email, payload.GivenName, payload.FamilyName);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Google token verification failed");
             return null;
         }
     }
