@@ -47,11 +47,12 @@ test.describe('Sale Prices', () => {
     expect(updated.salePrice).toBe(75);
   });
 
-  test('sale price shows on product card with discount badge', async ({ page }) => {
+  test('sale price shows on product card with discount badge', async ({ browser }) => {
     test.setTimeout(90_000);
-    await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
-    // Create a product with sale price via API
-    const createRes = await page.request.post(`${API}/products`, {
+    // Create product with a standalone request context to avoid page lifecycle issues
+    const ctx = await browser.newContext();
+    const apiPage = await ctx.newPage();
+    const createRes = await apiPage.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
         name: 'Discounted Vintage Dress',
@@ -67,7 +68,13 @@ test.describe('Sale Prices', () => {
       },
     });
     expect(createRes.status()).toBe(201);
+    await apiPage.close();
 
+    // Navigate with a fresh page that has cookie consent set
+    const page = await ctx.newPage();
+    await page.addInitScript(() => {
+      localStorage.setItem('eden_cookie_consent', 'all');
+    });
     await page.goto('/');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 15_000 });
 

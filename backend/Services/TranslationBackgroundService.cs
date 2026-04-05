@@ -30,28 +30,39 @@ public class TranslationBackgroundService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await foreach (TranslationWorkItem item in Queue.Reader.ReadAllAsync(stoppingToken))
+        try
         {
-            try
+            await foreach (TranslationWorkItem item in Queue.Reader.ReadAllAsync(stoppingToken))
             {
-                using IServiceScope scope = scopeFactory.CreateScope();
-                TranslationService translation = scope.ServiceProvider.GetRequiredService<TranslationService>();
-                EdenRelicsDbContext context = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
-
-                switch (item.Kind)
+                try
                 {
-                    case TranslationKind.Product:
-                        await TranslateProductAsync(item.ProductId!.Value, translation, context);
-                        break;
-                    case TranslationKind.Content:
-                        await TranslateContentAsync(item.Content!, translation, context);
-                        break;
+                    using IServiceScope scope = scopeFactory.CreateScope();
+                    TranslationService translation = scope.ServiceProvider.GetRequiredService<TranslationService>();
+                    EdenRelicsDbContext context = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+
+                    switch (item.Kind)
+                    {
+                        case TranslationKind.Product:
+                            await TranslateProductAsync(item.ProductId!.Value, translation, context);
+                            break;
+                        case TranslationKind.Content:
+                            await TranslateContentAsync(item.Content!, translation, context);
+                            break;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to process translation work item: {Kind}", item.Kind);
                 }
             }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to process translation work item: {Kind}", item.Kind);
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Host is shutting down — exit gracefully
         }
     }
 

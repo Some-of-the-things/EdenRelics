@@ -27,7 +27,9 @@ test.describe('Favourites', () => {
     // Click to favourite — prompt appears
     await favBtn.click();
     await expect(page.locator('.products__prompt')).toBeVisible({ timeout: 5_000 });
+    const addPromise = page.waitForResponse(r => r.url().includes('/api/favourites'));
     await page.locator('.products__prompt-btn--no').click();
+    await addPromise;
     await expect(favBtn).toHaveClass(/product-card__fav--active/, { timeout: 5_000 });
 
     // Click again to unfavourite (no prompt on removal)
@@ -69,7 +71,9 @@ test.describe('Favourites', () => {
     await expect(favBtn).toBeVisible({ timeout: 5_000 });
     await favBtn.click();
     await expect(page.locator('.detail__prompt')).toBeVisible({ timeout: 5_000 });
+    const detailAddPromise = page.waitForResponse(r => r.url().includes('/api/favourites'));
     await page.locator('.detail__prompt-btn--no').click();
+    await detailAddPromise;
     await expect(favBtn).toHaveClass(/detail__fav-btn--active/, { timeout: 5_000 });
   });
 
@@ -84,7 +88,8 @@ test.describe('Favourites', () => {
     // Favourite the first product — handle prompt and wait for API
     await page.locator('.product-card__fav').first().click();
     await expect(page.locator('.products__prompt')).toBeVisible({ timeout: 5_000 });
-    const favPromise = page.waitForResponse(r => r.url().includes('/api/favourites/') && r.status() < 400);
+    // Set up response listener BEFORE the click that triggers the API call
+    const favPromise = page.waitForResponse(r => r.url().includes('/api/favourites'));
     await page.locator('.products__prompt-btn--no').click();
     await favPromise;
     await expect(page.locator('.product-card__fav').first()).toHaveClass(/product-card__fav--active/, { timeout: 5_000 });

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Eden_Relics_BE.Tests;
 
@@ -39,27 +40,30 @@ public class ApiFactory : WebApplicationFactory<Program>
         builder.ConfigureServices(services =>
         {
             // Remove ALL EF Core service registrations to avoid provider conflicts
-            var efServiceTypes = services
+            List<ServiceDescriptor> efServiceTypes = services
                 .Where(d =>
                     d.ServiceType.FullName?.StartsWith("Microsoft.EntityFrameworkCore") == true
                     || d.ServiceType.FullName?.Contains("Npgsql") == true
                     || d.ImplementationType?.FullName?.Contains("Npgsql") == true
                     || d.ServiceType == typeof(EdenRelicsDbContext))
                 .ToList();
-            foreach (var d in efServiceTypes)
+            foreach (ServiceDescriptor d in efServiceTypes)
                 services.Remove(d);
 
             services.AddDbContext<EdenRelicsDbContext>(options =>
                 options.UseInMemoryDatabase(_dbName));
 
             // Replace email service with no-op
-            var emailDescriptor = services.SingleOrDefault(
+            ServiceDescriptor? emailDescriptor = services.SingleOrDefault(
                 d => d.ServiceType == typeof(IEmailService));
             if (emailDescriptor is not null)
             {
                 services.Remove(emailDescriptor);
             }
             services.AddTransient<IEmailService, FakeEmailService>();
+
+            // Remove background services that interfere with test host disposal
+            services.RemoveAll(typeof(Microsoft.Extensions.Hosting.IHostedService));
 
         });
     }
