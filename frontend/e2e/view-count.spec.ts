@@ -5,20 +5,13 @@ const API = 'http://localhost:5260/api';
 
 test.describe('Product View Count', () => {
 
-  let adminToken: string;
-  let adminEmail: string;
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    adminEmail = uniqueEmail('views-admin');
-    adminToken = await registerAdmin(page, adminEmail);
-    await page.close();
-  });
-
   test('viewing a product increments the view count', async ({ page }) => {
+    const email = uniqueEmail('views-admin');
+    const token = await registerAdmin(page, email);
+
     // Create a product
     const createRes = await page.request.post(`${API}/products`, {
-      headers: { Authorization: `Bearer ${adminToken}` },
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         name: 'View Count Test Dress',
         description: 'Testing view tracking',
@@ -42,14 +35,16 @@ test.describe('Product View Count', () => {
 
     // Verify view count incremented
     const getRes = await page.request.get(`${API}/products/${product.id}`, {
-      headers: { Authorization: `Bearer ${adminToken}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     const updated = await getRes.json();
     expect(updated.viewCount).toBeGreaterThanOrEqual(1);
   });
 
   test('admin products show view count', async ({ page }) => {
-    await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
+    const email = uniqueEmail('views-admin-ui');
+    const token = await registerAdmin(page, email);
+    await setAuthInBrowser(page, token, email, 'Test', 'User', 'Admin');
     await page.goto('/admin');
 
     // Wait for product cards

@@ -115,15 +115,10 @@ test.describe('Sale Prices', () => {
 });
 
 test.describe('Sale Price Clearing', () => {
-  let token: string;
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    token = await registerAdmin(page, uniqueEmail('sale-clear-admin'));
-    await page.close();
-  });
 
   test('admin can clear sale price by setting to 0', async ({ page }) => {
+    const token = await registerAdmin(page, uniqueEmail('sale-clear-admin'));
+
     // Create product with sale price
     const createRes = await page.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${token}` },
