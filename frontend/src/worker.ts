@@ -15,7 +15,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.clarity.ms https://accounts.google.com; " +
     "style-src 'self' 'unsafe-inline' https://accounts.google.com; " +
     "img-src 'self' data: https: blob:; " +
-    "connect-src 'self' https://api.edenrelics.co.uk https://www.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms https://accounts.google.com; " +
+    "connect-src 'self' https://api.edenrelics.co.uk https://api-staging.edenrelics.co.uk https://www.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms https://accounts.google.com; " +
     "font-src 'self'; " +
     "worker-src 'self' blob:; " +
     "frame-src https://accounts.google.com; " +
