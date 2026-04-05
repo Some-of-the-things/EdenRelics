@@ -66,7 +66,8 @@ string connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") is 
     ? ConvertPostgresUrl(databaseUrl)
     : builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Services.AddDbContext<EdenRelicsDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString)
+        .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 // Repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
