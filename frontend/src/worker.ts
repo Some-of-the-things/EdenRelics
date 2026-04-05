@@ -34,6 +34,21 @@ export default {
   async fetch(request: Request, env: { ASSETS: { fetch: typeof fetch } }, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    // Dynamic sitemap — proxy to API for live product/blog data
+    if (url.pathname === '/sitemap.xml') {
+      try {
+        const apiRes = await fetch('https://api.edenrelics.co.uk/api/sitemap.xml');
+        if (apiRes.ok) {
+          return withSecurityHeaders(new Response(apiRes.body, {
+            status: 200,
+            headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' },
+          }));
+        }
+      } catch {
+        // API unavailable — fall through to static sitemap
+      }
+    }
+
     // Serve static assets (files with extensions) via ASSETS binding
     if (url.pathname.includes('.')) {
       try {
