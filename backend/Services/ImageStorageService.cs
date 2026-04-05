@@ -54,7 +54,7 @@ public class ImageStorageService
             throw new InvalidOperationException("R2 is not configured.");
         }
 
-        var request = new PutObjectRequest
+        PutObjectRequest request = new()
         {
             BucketName = _bucketName,
             Key = fileName,

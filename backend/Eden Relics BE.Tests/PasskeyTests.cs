@@ -16,21 +16,21 @@ public class PasskeyTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task RegisterOptions_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsync("/api/passkey/register-options", null);
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsync("/api/passkey/register-options", null);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task RegisterOptions_Authenticated_ReturnsOptions()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "passkey@test.com");
 
-        var response = await client.PostAsync("/api/passkey/register-options", null);
+        HttpResponseMessage response = await client.PostAsync("/api/passkey/register-options", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var body = await response.Content.ReadAsStringAsync();
+        string body = await response.Content.ReadAsStringAsync();
         Assert.Contains("challenge", body);
         Assert.Contains("Eden Relics", body);
     }
@@ -38,14 +38,14 @@ public class PasskeyTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task LoginOptions_ReturnsOptions()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/passkey/login-options", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/passkey/login-options", new
         {
             email = "anyone@test.com"
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var body = await response.Content.ReadAsStringAsync();
+        string body = await response.Content.ReadAsStringAsync();
         Assert.Contains("sessionId", body);
         Assert.Contains("options", body);
     }
@@ -53,41 +53,41 @@ public class PasskeyTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetCredentials_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/passkey/credentials");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/passkey/credentials");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task GetCredentials_Authenticated_ReturnsEmptyList()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "passkeycreds@test.com");
 
-        var response = await client.GetAsync("/api/passkey/credentials");
+        HttpResponseMessage response = await client.GetAsync("/api/passkey/credentials");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var body = await response.Content.ReadAsStringAsync();
+        string body = await response.Content.ReadAsStringAsync();
         Assert.Equal("[]", body);
     }
 
     [Fact]
     public async Task DeleteCredential_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "deletecred@test.com");
 
-        var response = await client.DeleteAsync($"/api/passkey/credentials/{Guid.Empty}");
+        HttpResponseMessage response = await client.DeleteAsync($"/api/passkey/credentials/{Guid.Empty}");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task RenameCredential_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "renamecred@test.com");
 
-        var response = await client.PutAsJsonAsync($"/api/passkey/credentials/{Guid.Empty}", new
+        HttpResponseMessage response = await client.PutAsJsonAsync($"/api/passkey/credentials/{Guid.Empty}", new
         {
             nickname = "My Key"
         });

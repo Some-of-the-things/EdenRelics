@@ -156,7 +156,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
         client.DefaultRequestHeaders.Add("x-api-key", apiKey);
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
 
-        var listingData = new Dictionary<string, string>
+        Dictionary<string, string> listingData = new()
         {
             ["quantity"] = "1",
             ["title"] = dto.Title ?? product.Name,
@@ -169,7 +169,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
             ["type"] = "physical",
         };
 
-        var content = new FormUrlEncodedContent(listingData);
+        FormUrlEncodedContent content = new(listingData);
         HttpResponseMessage response = await client.PostAsync(
             $"https://openapi.etsy.com/v3/application/shops/{shopId}/listings", content);
 
@@ -252,7 +252,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
             client.DefaultRequestHeaders.Add("x-api-key", apiKey);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
 
-            var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            FormUrlEncodedContent content = new(new Dictionary<string, string>
             {
                 ["state"] = "inactive"
             });

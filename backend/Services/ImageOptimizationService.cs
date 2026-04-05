@@ -1,4 +1,5 @@
 using Eden_Relics_BE.Data;
+using Eden_Relics_BE.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
@@ -47,7 +48,7 @@ public class ImageOptimizationService(
                     continue;
                 }
 
-                using var image = await Image.LoadAsync(filePath);
+                using Image image = await Image.LoadAsync(filePath);
                 image.Mutate(x => x.AutoOrient());
 
                 if (image.Width > MaxWidth || image.Height > MaxHeight)
@@ -80,10 +81,10 @@ public class ImageOptimizationService(
 
     private async Task UpdateDatabaseImageUrls()
     {
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+        using IServiceScope scope = scopeFactory.CreateScope();
+        EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
 
-        var products = await db.Products
+        List<Product> products = await db.Products
             .Where(p => p.ImageUrl != null && !EF.Functions.Like(p.ImageUrl, "%.webp"))
             .ToListAsync();
 
@@ -93,7 +94,7 @@ public class ImageOptimizationService(
                 .Contains(Path.GetExtension(p.ImageUrl).ToLowerInvariant()))
             .ToList();
 
-        foreach (var product in products)
+        foreach (Product product in products)
         {
             string oldExt = Path.GetExtension(product.ImageUrl);
             string newUrl = product.ImageUrl[..^oldExt.Length] + ".webp";

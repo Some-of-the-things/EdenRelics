@@ -16,18 +16,18 @@ public class AccountTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetProfile_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/account/profile");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/account/profile");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task GetProfile_Authenticated_ReturnsProfile()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "profile@test.com");
 
-        var profile = await client.GetFromJsonAsync<ProfileResponse>("/api/account/profile", JsonOptions);
+        ProfileResponse? profile = await client.GetFromJsonAsync<ProfileResponse>("/api/account/profile", JsonOptions);
         Assert.NotNull(profile);
         Assert.Equal("profile@test.com", profile.Email);
         Assert.Equal("Test", profile.FirstName);
@@ -38,17 +38,17 @@ public class AccountTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task UpdateProfile_ChangesName()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "updatename@test.com");
 
-        var response = await client.PutAsJsonAsync("/api/account/profile", new
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/account/profile", new
         {
             firstName = "Updated",
             lastName = "Name"
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var profile = await response.Content.ReadFromJsonAsync<ProfileResponse>(JsonOptions);
+        ProfileResponse? profile = await response.Content.ReadFromJsonAsync<ProfileResponse>(JsonOptions);
         Assert.Equal("Updated", profile!.FirstName);
         Assert.Equal("Name", profile.LastName);
     }
@@ -56,10 +56,10 @@ public class AccountTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task UpdateDeliveryAddress_SavesAddress()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "delivery@test.com");
 
-        var response = await client.PutAsJsonAsync("/api/account/delivery-address", new
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/account/delivery-address", new
         {
             addressLine1 = "123 Test Street",
             addressLine2 = "Flat 4",
@@ -70,7 +70,7 @@ public class AccountTests : IClassFixture<ApiFactory>
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var profile = await response.Content.ReadFromJsonAsync<ProfileResponse>(JsonOptions);
+        ProfileResponse? profile = await response.Content.ReadFromJsonAsync<ProfileResponse>(JsonOptions);
         Assert.Equal("123 Test Street", profile!.DeliveryAddress.AddressLine1);
         Assert.Equal("London", profile.DeliveryAddress.City);
         Assert.Equal("SW1A 1AA", profile.DeliveryAddress.Postcode);
@@ -79,10 +79,10 @@ public class AccountTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task UpdateBillingAddress_SavesAddress()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "billing@test.com");
 
-        var response = await client.PutAsJsonAsync("/api/account/billing-address", new
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/account/billing-address", new
         {
             addressLine1 = "456 Billing Rd",
             city = "Manchester",
@@ -91,7 +91,7 @@ public class AccountTests : IClassFixture<ApiFactory>
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var profile = await response.Content.ReadFromJsonAsync<ProfileResponse>(JsonOptions);
+        ProfileResponse? profile = await response.Content.ReadFromJsonAsync<ProfileResponse>(JsonOptions);
         Assert.Equal("456 Billing Rd", profile!.BillingAddress.AddressLine1);
         Assert.Equal("Manchester", profile.BillingAddress.City);
     }
@@ -99,10 +99,10 @@ public class AccountTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task UpdatePayment_SavesCardInfo()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "payment@test.com");
 
-        var response = await client.PutAsJsonAsync("/api/account/payment", new
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/account/payment", new
         {
             cardholderName = "Test User",
             cardLast4 = "4242",
@@ -112,7 +112,7 @@ public class AccountTests : IClassFixture<ApiFactory>
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var profile = await response.Content.ReadFromJsonAsync<ProfileResponse>(JsonOptions);
+        ProfileResponse? profile = await response.Content.ReadFromJsonAsync<ProfileResponse>(JsonOptions);
         Assert.NotNull(profile!.Payment);
         Assert.Equal("4242", profile.Payment.CardLast4);
         Assert.Equal("Visa", profile.Payment.CardBrand);
@@ -121,10 +121,10 @@ public class AccountTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task ChangePassword_ValidCurrent_Succeeds()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "changepw@test.com");
 
-        var response = await client.PostAsJsonAsync("/api/account/change-password", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/account/change-password", new
         {
             currentPassword = "TestPass123!",
             newPassword = "NewPass456!"
@@ -132,8 +132,8 @@ public class AccountTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         // Verify can login with new password
-        var client2 = _factory.CreateClient();
-        var loginResponse = await client2.PostAsJsonAsync("/api/auth/login", new
+        HttpClient client2 = _factory.CreateClient();
+        HttpResponseMessage loginResponse = await client2.PostAsJsonAsync("/api/auth/login", new
         {
             email = "changepw@test.com",
             password = "NewPass456!"
@@ -144,10 +144,10 @@ public class AccountTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task ChangePassword_WrongCurrent_Returns400()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "wrongcurrent@test.com");
 
-        var response = await client.PostAsJsonAsync("/api/account/change-password", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/account/change-password", new
         {
             currentPassword = "WrongPassword!",
             newPassword = "NewPass456!"
@@ -158,13 +158,13 @@ public class AccountTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task MfaSetup_ReturnsSecretAndQrUri()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "mfa@test.com");
 
-        var response = await client.PostAsync("/api/account/mfa/setup", null);
+        HttpResponseMessage response = await client.PostAsync("/api/account/mfa/setup", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var setup = await response.Content.ReadFromJsonAsync<MfaSetupResponse>(JsonOptions);
+        MfaSetupResponse? setup = await response.Content.ReadFromJsonAsync<MfaSetupResponse>(JsonOptions);
         Assert.NotNull(setup);
         Assert.False(string.IsNullOrEmpty(setup.Secret));
         Assert.Contains("otpauth://totp/", setup.QrUri);

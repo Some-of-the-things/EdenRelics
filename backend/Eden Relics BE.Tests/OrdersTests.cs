@@ -19,8 +19,8 @@ public class OrdersTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Create_NoEmailNoAuth_Returns400()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/orders", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/orders", new
         {
             items = new[] { new { productId = SeededProductId, quantity = 1 } }
         });
@@ -30,8 +30,8 @@ public class OrdersTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Create_InvalidProduct_Returns400()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/orders", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/orders", new
         {
             items = new[] { new { productId = Guid.Empty, quantity = 1 } },
             guestEmail = "guest@test.com"
@@ -42,18 +42,18 @@ public class OrdersTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetMyOrders_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/orders");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/orders");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task GetMyOrders_Authenticated_ReturnsEmptyInitially()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "orders@test.com");
 
-        var orders = await client.GetFromJsonAsync<List<OrderResponse>>("/api/orders", JsonOptions);
+        List<OrderResponse>? orders = await client.GetFromJsonAsync<List<OrderResponse>>("/api/orders", JsonOptions);
         Assert.NotNull(orders);
         Assert.Empty(orders);
     }
@@ -61,8 +61,8 @@ public class OrdersTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetById_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync($"/api/orders/{Guid.Empty}");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync($"/api/orders/{Guid.Empty}");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

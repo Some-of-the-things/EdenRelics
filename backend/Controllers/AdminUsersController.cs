@@ -37,7 +37,7 @@ public class AdminUsersController(EdenRelicsDbContext context) : ControllerBase
             .Select(f => new { f.UserId, f.Product.Name })
             .ToListAsync();
 
-        var favouritesByUser = favourites
+        Dictionary<Guid, List<string>> favouritesByUser = favourites
             .GroupBy(f => f.UserId)
             .ToDictionary(g => g.Key, g => g.Select(f => f.Name).ToList());
 
@@ -47,7 +47,7 @@ public class AdminUsersController(EdenRelicsDbContext context) : ControllerBase
             .Select(s => s.Email.ToLower())
             .ToListAsync();
 
-        var subscribedSet = new HashSet<string>(subscribedEmails, StringComparer.OrdinalIgnoreCase);
+        HashSet<string> subscribedSet = new(subscribedEmails, StringComparer.OrdinalIgnoreCase);
 
         // Load order counts per user
         var orderCounts = await context.Orders
@@ -56,7 +56,7 @@ public class AdminUsersController(EdenRelicsDbContext context) : ControllerBase
             .Select(g => new { UserId = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        var orderCountByUser = orderCounts.ToDictionary(x => x.UserId, x => x.Count);
+        Dictionary<Guid, int> orderCountByUser = orderCounts.ToDictionary(x => x.UserId, x => x.Count);
 
         var result = users.Select(u => new
         {

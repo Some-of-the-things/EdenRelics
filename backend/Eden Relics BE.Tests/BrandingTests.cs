@@ -16,8 +16,8 @@ public class BrandingTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Get_ReturnsDefaults_WhenNoBrandingExists()
     {
-        var client = _factory.CreateClient();
-        var branding = await client.GetFromJsonAsync<BrandingResponse>("/api/branding", JsonOptions);
+        HttpClient client = _factory.CreateClient();
+        BrandingResponse? branding = await client.GetFromJsonAsync<BrandingResponse>("/api/branding", JsonOptions);
         Assert.NotNull(branding);
         Assert.Equal("#FAF9F7", branding.BgPrimary);
         Assert.Equal("#8F1D31", branding.Accent);
@@ -29,10 +29,10 @@ public class BrandingTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Update_AsAdmin_SavesAndReturnsBranding()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "branding-update@test.com");
 
-        var response = await client.PutAsJsonAsync("/api/branding", new
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/branding", new
         {
             logoUrl = "https://example.com/logo.png",
             bgPrimary = "#FFFFFF",
@@ -50,7 +50,7 @@ public class BrandingTests : IClassFixture<ApiFactory>
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var branding = await response.Content.ReadFromJsonAsync<BrandingResponse>(JsonOptions);
+        BrandingResponse? branding = await response.Content.ReadFromJsonAsync<BrandingResponse>(JsonOptions);
         Assert.NotNull(branding);
         Assert.Equal("https://example.com/logo.png", branding.LogoUrl);
         Assert.Equal("#FFFFFF", branding.BgPrimary);
@@ -61,8 +61,8 @@ public class BrandingTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Update_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PutAsJsonAsync("/api/branding", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/branding", new
         {
             bgPrimary = "#000000",
             bgSecondary = "#000000",
@@ -83,10 +83,10 @@ public class BrandingTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Update_AsCustomer_Returns403()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "branding-customer@test.com");
 
-        var response = await client.PutAsJsonAsync("/api/branding", new
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/branding", new
         {
             bgPrimary = "#000000",
             bgSecondary = "#000000",

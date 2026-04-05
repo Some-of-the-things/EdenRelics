@@ -16,8 +16,8 @@ public class ContactTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Submit_ValidMessage_Returns200()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/contact", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/contact", new
         {
             name = "Jane Doe",
             email = "jane@example.com",
@@ -26,7 +26,7 @@ public class ContactTests : IClassFixture<ApiFactory>
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<MessageResponse>(JsonOptions);
+        MessageResponse? result = await response.Content.ReadFromJsonAsync<MessageResponse>(JsonOptions);
         Assert.NotNull(result);
         Assert.Equal("Message sent successfully.", result.Message);
     }
@@ -34,8 +34,8 @@ public class ContactTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Submit_MissingName_Returns400()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/contact", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/contact", new
         {
             name = (string?)null,
             email = "jane@example.com",
@@ -48,8 +48,8 @@ public class ContactTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Submit_InvalidEmail_Returns400()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/contact", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/contact", new
         {
             name = "Jane",
             email = "not-an-email",
@@ -62,8 +62,8 @@ public class ContactTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Submit_MissingMessage_Returns400()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/contact", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/contact", new
         {
             name = "Jane",
             email = "jane@example.com",

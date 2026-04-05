@@ -17,22 +17,22 @@ public class AdminUsersTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetAll_AsAdmin_ReturnsUsers()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "admin-users-getall@test.com");
 
         // Register another user so there's more than one
-        var client2 = _factory.CreateClient();
+        HttpClient client2 = _factory.CreateClient();
         await RegisterAndLogin(client2, "admin-users-other@test.com");
 
-        var response = await client.GetAsync("/api/admin/users");
+        HttpResponseMessage response = await client.GetAsync("/api/admin/users");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadAsStringAsync();
-        var users = JsonDocument.Parse(json).RootElement;
+        string json = await response.Content.ReadAsStringAsync();
+        JsonElement users = JsonDocument.Parse(json).RootElement;
         Assert.True(users.GetArrayLength() >= 2);
 
         // Check that the response contains expected fields
-        var firstUser = users[0];
+        JsonElement firstUser = users[0];
         Assert.True(firstUser.TryGetProperty("id", out _));
         Assert.True(firstUser.TryGetProperty("email", out _));
         Assert.True(firstUser.TryGetProperty("firstName", out _));
@@ -45,17 +45,17 @@ public class AdminUsersTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetAll_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/admin/users");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/admin/users");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task GetAll_AsCustomer_Returns403()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "admin-users-customer@test.com");
-        var response = await client.GetAsync("/api/admin/users");
+        HttpResponseMessage response = await client.GetAsync("/api/admin/users");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }

@@ -16,7 +16,7 @@ public class ViewAnalyticsTests : IClassFixture<ApiFactory>
 
     private async Task<ProductResponse> CreateProduct(HttpClient client, string name)
     {
-        var response = await client.PostAsJsonAsync("/api/products", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/products", new
         {
             name,
             description = "Desc",
@@ -34,18 +34,18 @@ public class ViewAnalyticsTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetViewAnalytics_AsAdmin_ReturnsAnalytics()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "analytics-get@test.com");
-        var product = await CreateProduct(client, "Analytics Dress");
+        ProductResponse product = await CreateProduct(client, "Analytics Dress");
 
         // Record a view
         await client.PostAsync($"/api/products/{product.Id}/view", null);
 
-        var response = await client.GetAsync($"/api/products/{product.Id}/views");
+        HttpResponseMessage response = await client.GetAsync($"/api/products/{product.Id}/views");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadAsStringAsync();
-        var analytics = JsonDocument.Parse(json).RootElement;
+        string json = await response.Content.ReadAsStringAsync();
+        JsonElement analytics = JsonDocument.Parse(json).RootElement;
         Assert.True(analytics.GetProperty("totalViews").GetInt32() >= 1);
         Assert.True(analytics.TryGetProperty("trackedViews", out _));
         Assert.True(analytics.TryGetProperty("views", out _));
@@ -60,40 +60,40 @@ public class ViewAnalyticsTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetViewAnalytics_NonExistentProduct_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "analytics-404@test.com");
 
-        var response = await client.GetAsync($"/api/products/{Guid.Empty}/views");
+        HttpResponseMessage response = await client.GetAsync($"/api/products/{Guid.Empty}/views");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task GetViewAnalytics_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var id = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000001");
-        var response = await client.GetAsync($"/api/products/{id}/views");
+        HttpClient client = _factory.CreateClient();
+        Guid id = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000001");
+        HttpResponseMessage response = await client.GetAsync($"/api/products/{id}/views");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task GetViewAnalytics_AsCustomer_Returns403()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "analytics-customer@test.com");
-        var id = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000001");
-        var response = await client.GetAsync($"/api/products/{id}/views");
+        Guid id = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000001");
+        HttpResponseMessage response = await client.GetAsync($"/api/products/{id}/views");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
     public async Task RecordView_WithReferrer_TracksChannel()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "analytics-referrer@test.com");
-        var product = await CreateProduct(client, "Referrer Dress");
+        ProductResponse product = await CreateProduct(client, "Referrer Dress");
 
-        var response = await client.PostAsJsonAsync($"/api/products/{product.Id}/view", new
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/products/{product.Id}/view", new
         {
             referrer = "https://www.google.com/search?q=vintage+dress",
             utmSource = "google",
@@ -102,9 +102,9 @@ public class ViewAnalyticsTests : IClassFixture<ApiFactory>
         });
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        var analytics = await client.GetAsync($"/api/products/{product.Id}/views");
-        var json = await analytics.Content.ReadAsStringAsync();
-        var data = JsonDocument.Parse(json).RootElement;
+        HttpResponseMessage analytics = await client.GetAsync($"/api/products/{product.Id}/views");
+        string json = await analytics.Content.ReadAsStringAsync();
+        JsonElement data = JsonDocument.Parse(json).RootElement;
         Assert.True(data.GetProperty("trackedViews").GetInt32() >= 1);
     }
 }

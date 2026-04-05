@@ -18,10 +18,10 @@ public class SaleNotificationTests : IClassFixture<ApiFactory>
     public async Task UpdateProduct_SetSalePrice_WithFavourites_Returns200()
     {
         // 1. Admin creates a product
-        var adminClient = _factory.CreateClient();
+        HttpClient adminClient = _factory.CreateClient();
         await RegisterAdmin(adminClient, _factory, "admin-notify-fav@test.com");
 
-        var createResponse = await adminClient.PostAsJsonAsync("/api/products", new
+        HttpResponseMessage createResponse = await adminClient.PostAsJsonAsync("/api/products", new
         {
             name = "Notify Fav Product",
             description = "Desc",
@@ -34,21 +34,21 @@ public class SaleNotificationTests : IClassFixture<ApiFactory>
             inStock = true
         });
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
-        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        ProductResponse? created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
 
         // 2. A user favourites the product
-        var userClient = _factory.CreateClient();
+        HttpClient userClient = _factory.CreateClient();
         await RegisterAndLogin(userClient, "user-notify-fav@test.com");
-        var favResponse = await userClient.PostAsync($"/api/favourites/{created!.Id}", null);
+        HttpResponseMessage favResponse = await userClient.PostAsync($"/api/favourites/{created!.Id}", null);
         Assert.Equal(HttpStatusCode.Created, favResponse.StatusCode);
 
         // 3. Admin sets a sale price (triggers fire-and-forget notification)
-        var updateResponse = await adminClient.PutAsJsonAsync($"/api/products/{created.Id}", new
+        HttpResponseMessage updateResponse = await adminClient.PutAsJsonAsync($"/api/products/{created.Id}", new
         {
             salePrice = 79.99m
         });
         Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
-        var updated = await updateResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        ProductResponse? updated = await updateResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
         Assert.Equal(79.99m, updated!.SalePrice);
     }
 
@@ -56,10 +56,10 @@ public class SaleNotificationTests : IClassFixture<ApiFactory>
     public async Task UpdateProduct_SetSalePrice_NoFavourites_Returns200()
     {
         // Admin creates a product and sets sale price with no favourites
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "admin-notify-nofav@test.com");
 
-        var createResponse = await client.PostAsJsonAsync("/api/products", new
+        HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/products", new
         {
             name = "No Fav Sale Product",
             description = "Desc",
@@ -72,14 +72,14 @@ public class SaleNotificationTests : IClassFixture<ApiFactory>
             inStock = true
         });
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
-        var created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        ProductResponse? created = await createResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
 
-        var updateResponse = await client.PutAsJsonAsync($"/api/products/{created!.Id}", new
+        HttpResponseMessage updateResponse = await client.PutAsJsonAsync($"/api/products/{created!.Id}", new
         {
             salePrice = 69.99m
         });
         Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
-        var updated = await updateResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        ProductResponse? updated = await updateResponse.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
         Assert.Equal(69.99m, updated!.SalePrice);
     }
 }

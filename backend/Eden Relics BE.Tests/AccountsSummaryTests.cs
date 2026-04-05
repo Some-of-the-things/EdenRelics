@@ -17,14 +17,14 @@ public class AccountsSummaryTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetSummary_AsAdmin_ReturnsMetrics()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "accounts-summary@test.com");
 
-        var response = await client.GetAsync("/api/accounts/summary");
+        HttpResponseMessage response = await client.GetAsync("/api/accounts/summary");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadAsStringAsync();
-        var summary = JsonDocument.Parse(json).RootElement;
+        string json = await response.Content.ReadAsStringAsync();
+        JsonElement summary = JsonDocument.Parse(json).RootElement;
 
         Assert.True(summary.TryGetProperty("totalRevenue", out _));
         Assert.True(summary.TryGetProperty("totalCost", out _));
@@ -39,7 +39,7 @@ public class AccountsSummaryTests : IClassFixture<ApiFactory>
         Assert.True(summary.TryGetProperty("inventory", out _));
         Assert.True(summary.TryGetProperty("ordersByStatus", out _));
 
-        var inventory = summary.GetProperty("inventory");
+        JsonElement inventory = summary.GetProperty("inventory");
         Assert.True(inventory.TryGetProperty("inStock", out _));
         Assert.True(inventory.TryGetProperty("outOfStock", out _));
         Assert.True(inventory.TryGetProperty("retailValue", out _));
@@ -49,17 +49,17 @@ public class AccountsSummaryTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetSummary_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/accounts/summary");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/accounts/summary");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task GetSummary_AsCustomer_Returns403()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "accounts-customer@test.com");
-        var response = await client.GetAsync("/api/accounts/summary");
+        HttpResponseMessage response = await client.GetAsync("/api/accounts/summary");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }

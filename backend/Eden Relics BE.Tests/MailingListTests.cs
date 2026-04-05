@@ -16,8 +16,8 @@ public class MailingListTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Subscribe_ValidEmail_Returns200()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
         {
             email = "subscriber@test.com",
             firstName = "Jane",
@@ -25,20 +25,20 @@ public class MailingListTests : IClassFixture<ApiFactory>
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<MessageResponse>(JsonOptions);
+        MessageResponse? result = await response.Content.ReadFromJsonAsync<MessageResponse>(JsonOptions);
         Assert.Equal("You're on the list!", result!.Message);
     }
 
     [Fact]
     public async Task Subscribe_DuplicateEmail_Returns200()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
         {
             email = "dup-sub@test.com"
         });
 
-        var response = await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
         {
             email = "dup-sub@test.com"
         });
@@ -48,8 +48,8 @@ public class MailingListTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Subscribe_InvalidEmail_Returns400()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
         {
             email = "bad"
         });
@@ -59,8 +59,8 @@ public class MailingListTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Subscribe_EmptyEmail_Returns400()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
         {
             email = ""
         });
@@ -70,27 +70,27 @@ public class MailingListTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Unsubscribe_ExistingEmail_Returns200()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
         {
             email = "will-unsub@test.com"
         });
 
-        var response = await client.PostAsJsonAsync("/api/mailing-list/unsubscribe", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/mailing-list/unsubscribe", new
         {
             email = "will-unsub@test.com"
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<MessageResponse>(JsonOptions);
+        MessageResponse? result = await response.Content.ReadFromJsonAsync<MessageResponse>(JsonOptions);
         Assert.Equal("You have been unsubscribed.", result!.Message);
     }
 
     [Fact]
     public async Task Unsubscribe_NonExistentEmail_Returns200()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/mailing-list/unsubscribe", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/mailing-list/unsubscribe", new
         {
             email = "never-subscribed@test.com"
         });
@@ -100,8 +100,8 @@ public class MailingListTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Unsubscribe_EmptyEmail_Returns400()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/mailing-list/unsubscribe", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/mailing-list/unsubscribe", new
         {
             email = ""
         });
@@ -111,7 +111,7 @@ public class MailingListTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Resubscribe_AfterUnsubscribe_Returns200()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
         {
             email = "resub@test.com"
@@ -121,7 +121,7 @@ public class MailingListTests : IClassFixture<ApiFactory>
             email = "resub@test.com"
         });
 
-        var response = await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
         {
             email = "resub@test.com",
             source = "Popup"
@@ -132,7 +132,7 @@ public class MailingListTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetSubscribers_AsAdmin_ReturnsActiveSubscribers()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "mailing-admin@test.com");
 
         await client.PostAsJsonAsync("/api/mailing-list/subscribe", new
@@ -150,7 +150,7 @@ public class MailingListTests : IClassFixture<ApiFactory>
             email = "inactive-sub@test.com"
         });
 
-        var subs = await client.GetFromJsonAsync<List<SubscriberResponse>>("/api/mailing-list/subscribers", JsonOptions);
+        List<SubscriberResponse>? subs = await client.GetFromJsonAsync<List<SubscriberResponse>>("/api/mailing-list/subscribers", JsonOptions);
         Assert.NotNull(subs);
         Assert.Contains(subs, s => s.Email == "active-sub@test.com");
         Assert.DoesNotContain(subs, s => s.Email == "inactive-sub@test.com");
@@ -159,27 +159,27 @@ public class MailingListTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetSubscribers_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/mailing-list/subscribers");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/mailing-list/subscribers");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task GetSubscribers_AsCustomer_Returns403()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "mailing-customer@test.com");
-        var response = await client.GetAsync("/api/mailing-list/subscribers");
+        HttpResponseMessage response = await client.GetAsync("/api/mailing-list/subscribers");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
     public async Task GetCount_AsAdmin_ReturnsCount()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "mailing-count@test.com");
 
-        var result = await client.GetFromJsonAsync<CountResponse>("/api/mailing-list/count", JsonOptions);
+        CountResponse? result = await client.GetFromJsonAsync<CountResponse>("/api/mailing-list/count", JsonOptions);
         Assert.NotNull(result);
         Assert.True(result.Count >= 0);
     }
@@ -187,8 +187,8 @@ public class MailingListTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetCount_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/mailing-list/count");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/mailing-list/count");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 

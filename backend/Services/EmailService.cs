@@ -48,7 +48,7 @@ public class EmailService : IEmailService
 
         try
         {
-            var message = new EmailMessage
+            EmailMessage message = new()
             {
                 From = _fromEmail,
                 To = [toEmail],
@@ -85,7 +85,7 @@ public class EmailService : IEmailService
 
         try
         {
-            var message = new EmailMessage
+            EmailMessage message = new()
             {
                 From = _fromEmail,
                 To = [toEmail],
@@ -116,7 +116,7 @@ public class EmailService : IEmailService
 
         try
         {
-            var emailMessage = new EmailMessage
+            EmailMessage emailMessage = new()
             {
                 From = _fromEmail,
                 To = [_contactRecipient],
@@ -154,7 +154,7 @@ public class EmailService : IEmailService
 
         try
         {
-            var message = new EmailMessage
+            EmailMessage message = new()
             {
                 From = _fromEmail,
                 To = [toEmail],

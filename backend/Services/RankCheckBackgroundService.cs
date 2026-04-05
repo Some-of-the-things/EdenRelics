@@ -18,8 +18,8 @@ public class RankCheckBackgroundService(IServiceScopeFactory scopeFactory, ILogg
             try
             {
                 using IServiceScope scope = scopeFactory.CreateScope();
-                var checker = scope.ServiceProvider.GetRequiredService<RankCheckerService>();
-                var context = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+                RankCheckerService checker = scope.ServiceProvider.GetRequiredService<RankCheckerService>();
+                EdenRelicsDbContext context = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
                 await checker.CheckAllKeywordsAsync(context);
             }
             catch (Exception ex)

@@ -15,7 +15,7 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
 
     private async Task<ProductResponse> CreateTestProduct(HttpClient client, string name = "Marketplace Dress")
     {
-        var response = await client.PostAsJsonAsync("/api/products", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/products", new
         {
             name,
             description = "Desc",
@@ -33,11 +33,11 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetListings_EmptyProduct_ReturnsEmptyList()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-getlist@test.com");
-        var product = await CreateTestProduct(client, "No Listings Dress");
+        ProductResponse product = await CreateTestProduct(client, "No Listings Dress");
 
-        var listings = await client.GetFromJsonAsync<List<ListingResponse>>($"/api/marketplace/listings/{product.Id}", JsonOptions);
+        List<ListingResponse>? listings = await client.GetFromJsonAsync<List<ListingResponse>>($"/api/marketplace/listings/{product.Id}", JsonOptions);
         Assert.NotNull(listings);
         Assert.Empty(listings);
     }
@@ -45,11 +45,11 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task AddListing_AsAdmin_ReturnsListing()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-add@test.com");
-        var product = await CreateTestProduct(client, "Listed Dress");
+        ProductResponse product = await CreateTestProduct(client, "Listed Dress");
 
-        var response = await client.PostAsJsonAsync("/api/marketplace/listings", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/marketplace/listings", new
         {
             productId = product.Id,
             platform = "Depop",
@@ -58,7 +58,7 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var listing = await response.Content.ReadFromJsonAsync<ListingResponse>(JsonOptions);
+        ListingResponse? listing = await response.Content.ReadFromJsonAsync<ListingResponse>(JsonOptions);
         Assert.NotNull(listing);
         Assert.Equal("Depop", listing.Platform);
         Assert.Equal("Active", listing.Status);
@@ -68,10 +68,10 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task AddListing_NonExistentProduct_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-add-404@test.com");
 
-        var response = await client.PostAsJsonAsync("/api/marketplace/listings", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/marketplace/listings", new
         {
             productId = Guid.Empty,
             platform = "Depop"
@@ -82,17 +82,17 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task UpdateListingStatus_Sold_MarksProductOutOfStock()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-sold@test.com");
-        var product = await CreateTestProduct(client, "Sold Dress");
+        ProductResponse product = await CreateTestProduct(client, "Sold Dress");
 
         // Add two listings
-        var resp1 = await client.PostAsJsonAsync("/api/marketplace/listings", new
+        HttpResponseMessage resp1 = await client.PostAsJsonAsync("/api/marketplace/listings", new
         {
             productId = product.Id,
             platform = "Depop"
         });
-        var listing1 = await resp1.Content.ReadFromJsonAsync<ListingResponse>(JsonOptions);
+        ListingResponse? listing1 = await resp1.Content.ReadFromJsonAsync<ListingResponse>(JsonOptions);
 
         await client.PostAsJsonAsync("/api/marketplace/listings", new
         {
@@ -101,27 +101,27 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
         });
 
         // Mark first as sold
-        var updateResponse = await client.PutAsJsonAsync($"/api/marketplace/listings/{listing1!.Id}/status", new
+        HttpResponseMessage updateResponse = await client.PutAsJsonAsync($"/api/marketplace/listings/{listing1!.Id}/status", new
         {
             status = "Sold"
         });
         Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
 
-        var updated = await updateResponse.Content.ReadFromJsonAsync<ListingResponse>(JsonOptions);
+        ListingResponse? updated = await updateResponse.Content.ReadFromJsonAsync<ListingResponse>(JsonOptions);
         Assert.Equal("Sold", updated!.Status);
 
         // Product should be out of stock
-        var productResponse = await client.GetFromJsonAsync<ProductResponse>($"/api/products/{product.Id}", JsonOptions);
+        ProductResponse? productResponse = await client.GetFromJsonAsync<ProductResponse>($"/api/products/{product.Id}", JsonOptions);
         Assert.False(productResponse!.InStock);
     }
 
     [Fact]
     public async Task UpdateListingStatus_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-update-404@test.com");
 
-        var response = await client.PutAsJsonAsync($"/api/marketplace/listings/{Guid.Empty}/status", new
+        HttpResponseMessage response = await client.PutAsJsonAsync($"/api/marketplace/listings/{Guid.Empty}/status", new
         {
             status = "Sold"
         });
@@ -131,36 +131,36 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task RemoveListing_AsAdmin_Returns204()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-remove@test.com");
-        var product = await CreateTestProduct(client, "Remove Listing Dress");
+        ProductResponse product = await CreateTestProduct(client, "Remove Listing Dress");
 
-        var addResp = await client.PostAsJsonAsync("/api/marketplace/listings", new
+        HttpResponseMessage addResp = await client.PostAsJsonAsync("/api/marketplace/listings", new
         {
             productId = product.Id,
             platform = "eBay"
         });
-        var listing = await addResp.Content.ReadFromJsonAsync<ListingResponse>(JsonOptions);
+        ListingResponse? listing = await addResp.Content.ReadFromJsonAsync<ListingResponse>(JsonOptions);
 
-        var response = await client.DeleteAsync($"/api/marketplace/listings/{listing!.Id}");
+        HttpResponseMessage response = await client.DeleteAsync($"/api/marketplace/listings/{listing!.Id}");
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
     [Fact]
     public async Task RemoveListing_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-remove-404@test.com");
-        var response = await client.DeleteAsync($"/api/marketplace/listings/{Guid.Empty}");
+        HttpResponseMessage response = await client.DeleteAsync($"/api/marketplace/listings/{Guid.Empty}");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task MarkSold_AsAdmin_FlagsOtherListings()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-marksold@test.com");
-        var product = await CreateTestProduct(client, "Mark Sold Dress");
+        ProductResponse product = await CreateTestProduct(client, "Mark Sold Dress");
 
         await client.PostAsJsonAsync("/api/marketplace/listings", new
         {
@@ -173,14 +173,14 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
             platform = "Depop"
         });
 
-        var response = await client.PostAsJsonAsync($"/api/marketplace/mark-sold/{product.Id}", new
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/marketplace/mark-sold/{product.Id}", new
         {
             soldOn = "Website"
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         // Check pending removals
-        var pending = await client.GetFromJsonAsync<List<PendingRemovalResponse>>("/api/marketplace/pending-removals", JsonOptions);
+        List<PendingRemovalResponse>? pending = await client.GetFromJsonAsync<List<PendingRemovalResponse>>("/api/marketplace/pending-removals", JsonOptions);
         Assert.NotNull(pending);
         Assert.Contains(pending, p => p.ProductId == product.Id && p.Platform == "Depop");
     }
@@ -188,10 +188,10 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task MarkSold_NonExistentProduct_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-marksold-404@test.com");
 
-        var response = await client.PostAsJsonAsync($"/api/marketplace/mark-sold/{Guid.Empty}", new
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/marketplace/mark-sold/{Guid.Empty}", new
         {
             soldOn = "Website"
         });
@@ -201,16 +201,16 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task AcknowledgeRemoval_AsAdmin_Returns200()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-ack@test.com");
-        var product = await CreateTestProduct(client, "Ack Removal Dress");
+        ProductResponse product = await CreateTestProduct(client, "Ack Removal Dress");
 
-        var addResp = await client.PostAsJsonAsync("/api/marketplace/listings", new
+        HttpResponseMessage addResp = await client.PostAsJsonAsync("/api/marketplace/listings", new
         {
             productId = product.Id,
             platform = "Depop"
         });
-        var listing = await addResp.Content.ReadFromJsonAsync<ListingResponse>(JsonOptions);
+        ListingResponse? listing = await addResp.Content.ReadFromJsonAsync<ListingResponse>(JsonOptions);
 
         // Set to PendingRemoval via mark-sold
         await client.PostAsJsonAsync($"/api/marketplace/mark-sold/{product.Id}", new
@@ -218,30 +218,30 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
             soldOn = "Website"
         });
 
-        var response = await client.PostAsync($"/api/marketplace/acknowledge-removal/{listing!.Id}", null);
+        HttpResponseMessage response = await client.PostAsync($"/api/marketplace/acknowledge-removal/{listing!.Id}", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
     public async Task AcknowledgeRemoval_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-ack-404@test.com");
 
-        var response = await client.PostAsync($"/api/marketplace/acknowledge-removal/{Guid.Empty}", null);
+        HttpResponseMessage response = await client.PostAsync($"/api/marketplace/acknowledge-removal/{Guid.Empty}", null);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task EtsyStatus_ReturnsNotConfigured()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-etsy-status@test.com");
 
-        var response = await client.GetAsync("/api/marketplace/etsy/status");
+        HttpResponseMessage response = await client.GetAsync("/api/marketplace/etsy/status");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<EtsyStatusResponse>(JsonOptions);
+        EtsyStatusResponse? result = await response.Content.ReadFromJsonAsync<EtsyStatusResponse>(JsonOptions);
         Assert.NotNull(result);
         Assert.False(result.Configured);
     }
@@ -249,11 +249,11 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task CreateEtsyListing_NotConfigured_Returns400()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-etsy-create@test.com");
-        var product = await CreateTestProduct(client, "Etsy Dress");
+        ProductResponse product = await CreateTestProduct(client, "Etsy Dress");
 
-        var response = await client.PostAsJsonAsync("/api/marketplace/etsy/create-listing", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/marketplace/etsy/create-listing", new
         {
             productId = product.Id
         });
@@ -263,11 +263,11 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GenerateListingText_Depop_ReturnsFormattedText()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-gen-depop@test.com");
-        var product = await CreateTestProduct(client, "Depop Text Dress");
+        ProductResponse product = await CreateTestProduct(client, "Depop Text Dress");
 
-        var result = await client.GetFromJsonAsync<GeneratedListingResponse>(
+        GeneratedListingResponse? result = await client.GetFromJsonAsync<GeneratedListingResponse>(
             $"/api/marketplace/generate-listing/{product.Id}?platform=Depop", JsonOptions);
         Assert.NotNull(result);
         Assert.Contains("Depop Text Dress", result.Title);
@@ -278,11 +278,11 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GenerateListingText_Vinted_ReturnsFormattedText()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-gen-vinted@test.com");
-        var product = await CreateTestProduct(client, "Vinted Text Dress");
+        ProductResponse product = await CreateTestProduct(client, "Vinted Text Dress");
 
-        var result = await client.GetFromJsonAsync<GeneratedListingResponse>(
+        GeneratedListingResponse? result = await client.GetFromJsonAsync<GeneratedListingResponse>(
             $"/api/marketplace/generate-listing/{product.Id}?platform=Vinted", JsonOptions);
         Assert.NotNull(result);
         Assert.Contains("Vinted Text Dress", result.Title);
@@ -292,18 +292,18 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GenerateListingText_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "market-gen-404@test.com");
 
-        var response = await client.GetAsync($"/api/marketplace/generate-listing/{Guid.Empty}?platform=Depop");
+        HttpResponseMessage response = await client.GetAsync($"/api/marketplace/generate-listing/{Guid.Empty}?platform=Depop");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task AllEndpoints_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var id = Guid.NewGuid();
+        HttpClient client = _factory.CreateClient();
+        Guid id = Guid.NewGuid();
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync($"/api/marketplace/listings/{id}")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/marketplace/listings", new { productId = id, platform = "X" })).StatusCode);
@@ -314,9 +314,9 @@ public class MarketplaceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task AllEndpoints_AsCustomer_Returns403()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "market-customer@test.com");
-        var id = Guid.NewGuid();
+        Guid id = Guid.NewGuid();
 
         Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/api/marketplace/listings/{id}")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync("/api/marketplace/listings", new { productId = id, platform = "X" })).StatusCode);

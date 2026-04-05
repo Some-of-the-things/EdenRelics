@@ -16,8 +16,8 @@ public class AnalyseImageTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task AnalyseImage_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/products/analyse-image", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/products/analyse-image", new
         {
             imageUrl = "https://example.com/image.webp"
         });
@@ -27,9 +27,9 @@ public class AnalyseImageTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task AnalyseImage_AsNonAdmin_Returns403()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "analyse-user@test.com");
-        var response = await client.PostAsJsonAsync("/api/products/analyse-image", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/products/analyse-image", new
         {
             imageUrl = "https://example.com/image.webp"
         });
@@ -40,15 +40,15 @@ public class AnalyseImageTests : IClassFixture<ApiFactory>
     public async Task AnalyseImage_NoApiKey_Returns503()
     {
         // The test environment has no Anthropic API key configured
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "analyse-admin@test.com");
-        var response = await client.PostAsJsonAsync("/api/products/analyse-image", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/products/analyse-image", new
         {
             imageUrl = "https://example.com/image.webp"
         });
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
 
-        var error = await response.Content.ReadFromJsonAsync<AnalyseImageError>(JsonOptions);
+        AnalyseImageError? error = await response.Content.ReadFromJsonAsync<AnalyseImageError>(JsonOptions);
         Assert.NotNull(error);
         Assert.Equal("Anthropic API key not configured.", error.Error);
     }

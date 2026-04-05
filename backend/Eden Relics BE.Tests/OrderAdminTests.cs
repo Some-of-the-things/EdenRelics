@@ -19,12 +19,12 @@ public class OrderAdminTests : IClassFixture<ApiFactory>
 
     private async Task<Guid> SeedOrder(string userEmail)
     {
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
-        var user = await db.Users.FindAsync(
+        using IServiceScope scope = _factory.Services.CreateScope();
+        EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+        User? user = await db.Users.FindAsync(
             db.Users.First(u => u.Email == userEmail).Id);
 
-        var order = new Order
+        Order order = new()
         {
             UserId = user!.Id,
             Status = "Paid",
@@ -50,19 +50,19 @@ public class OrderAdminTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetAllOrders_AsAdmin_ReturnsOrders()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         var (_, auth) = await RegisterAdmin(client, _factory, "order-admin-getall@test.com");
-        var orderId = await SeedOrder(auth.User.Email);
+        Guid orderId = await SeedOrder(auth.User.Email);
 
-        var response = await client.GetAsync("/api/orders/admin/all");
+        HttpResponseMessage response = await client.GetAsync("/api/orders/admin/all");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadAsStringAsync();
-        var orders = JsonDocument.Parse(json).RootElement;
+        string json = await response.Content.ReadAsStringAsync();
+        JsonElement orders = JsonDocument.Parse(json).RootElement;
         Assert.True(orders.GetArrayLength() >= 1);
 
         // Verify admin fields are present
-        var firstOrder = orders[0];
+        JsonElement firstOrder = orders[0];
         Assert.True(firstOrder.TryGetProperty("customerEmail", out _));
         Assert.True(firstOrder.TryGetProperty("customerName", out _));
     }
@@ -70,45 +70,45 @@ public class OrderAdminTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetAllOrders_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/orders/admin/all");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/orders/admin/all");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task GetAllOrders_AsCustomer_Returns403()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "order-admin-customer@test.com");
-        var response = await client.GetAsync("/api/orders/admin/all");
+        HttpResponseMessage response = await client.GetAsync("/api/orders/admin/all");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
     public async Task UpdateStatus_AsAdmin_ChangesStatus()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         var (_, auth) = await RegisterAdmin(client, _factory, "order-admin-status@test.com");
-        var orderId = await SeedOrder(auth.User.Email);
+        Guid orderId = await SeedOrder(auth.User.Email);
 
-        var response = await client.PutAsJsonAsync($"/api/orders/admin/{orderId}/status", new
+        HttpResponseMessage response = await client.PutAsJsonAsync($"/api/orders/admin/{orderId}/status", new
         {
             status = "Shipped"
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadAsStringAsync();
-        var order = JsonDocument.Parse(json).RootElement;
+        string json = await response.Content.ReadAsStringAsync();
+        JsonElement order = JsonDocument.Parse(json).RootElement;
         Assert.Equal("Shipped", order.GetProperty("status").GetString());
     }
 
     [Fact]
     public async Task UpdateStatus_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "order-admin-status-404@test.com");
 
-        var response = await client.PutAsJsonAsync($"/api/orders/admin/{Guid.Empty}/status", new
+        HttpResponseMessage response = await client.PutAsJsonAsync($"/api/orders/admin/{Guid.Empty}/status", new
         {
             status = "Shipped"
         });
@@ -118,24 +118,24 @@ public class OrderAdminTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task DeleteOrder_AsAdmin_Returns204()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         var (_, auth) = await RegisterAdmin(client, _factory, "order-admin-delete@test.com");
-        var orderId = await SeedOrder(auth.User.Email);
+        Guid orderId = await SeedOrder(auth.User.Email);
 
-        var response = await client.DeleteAsync($"/api/orders/admin/{orderId}");
+        HttpResponseMessage response = await client.DeleteAsync($"/api/orders/admin/{orderId}");
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        var getResponse = await client.GetAsync($"/api/orders/{orderId}");
+        HttpResponseMessage getResponse = await client.GetAsync($"/api/orders/{orderId}");
         Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
     }
 
     [Fact]
     public async Task DeleteOrder_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "order-admin-delete-404@test.com");
 
-        var response = await client.DeleteAsync($"/api/orders/admin/{Guid.Empty}");
+        HttpResponseMessage response = await client.DeleteAsync($"/api/orders/admin/{Guid.Empty}");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

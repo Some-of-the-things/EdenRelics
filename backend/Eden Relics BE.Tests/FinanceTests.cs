@@ -16,36 +16,36 @@ public class FinanceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetAll_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/finance");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/finance");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task GetAll_AsNonAdmin_Returns403()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "fin-user@test.com");
-        var response = await client.GetAsync("/api/finance");
+        HttpResponseMessage response = await client.GetAsync("/api/finance");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
     public async Task GetAll_AsAdmin_ReturnsEmptyList()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "fin-admin-getall@test.com");
-        var transactions = await client.GetFromJsonAsync<List<TransactionResponse>>("/api/finance", JsonOptions);
+        List<TransactionResponse>? transactions = await client.GetFromJsonAsync<List<TransactionResponse>>("/api/finance", JsonOptions);
         Assert.NotNull(transactions);
     }
 
     [Fact]
     public async Task Create_AsAdmin_ReturnsCreatedTransaction()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "fin-admin-create@test.com");
 
-        var response = await client.PostAsJsonAsync("/api/finance", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/finance", new
         {
             date = "2026-03-15",
             description = "Stock purchase - vintage dresses",
@@ -57,7 +57,7 @@ public class FinanceTests : IClassFixture<ApiFactory>
         });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var txn = await response.Content.ReadFromJsonAsync<TransactionResponse>(JsonOptions);
+        TransactionResponse? txn = await response.Content.ReadFromJsonAsync<TransactionResponse>(JsonOptions);
         Assert.NotNull(txn);
         Assert.Equal("Stock purchase - vintage dresses", txn.Description);
         Assert.Equal(-45.50m, txn.Amount);
@@ -70,8 +70,8 @@ public class FinanceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Create_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/finance", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/finance", new
         {
             date = "2026-03-15",
             description = "Test",
@@ -84,21 +84,21 @@ public class FinanceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Update_AsAdmin_ReturnsUpdatedTransaction()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "fin-admin-update@test.com");
 
         // Create
-        var createResponse = await client.PostAsJsonAsync("/api/finance", new
+        HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/finance", new
         {
             date = "2026-03-10",
             description = "Shipping supplies",
             amount = -12.00m,
             category = "Shipping"
         });
-        var created = await createResponse.Content.ReadFromJsonAsync<TransactionResponse>(JsonOptions);
+        TransactionResponse? created = await createResponse.Content.ReadFromJsonAsync<TransactionResponse>(JsonOptions);
 
         // Update
-        var updateResponse = await client.PutAsJsonAsync($"/api/finance/{created!.Id}", new
+        HttpResponseMessage updateResponse = await client.PutAsJsonAsync($"/api/finance/{created!.Id}", new
         {
             description = "Shipping supplies (corrected)",
             amount = -15.00m,
@@ -107,7 +107,7 @@ public class FinanceTests : IClassFixture<ApiFactory>
         });
 
         Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
-        var updated = await updateResponse.Content.ReadFromJsonAsync<TransactionResponse>(JsonOptions);
+        TransactionResponse? updated = await updateResponse.Content.ReadFromJsonAsync<TransactionResponse>(JsonOptions);
         Assert.NotNull(updated);
         Assert.Equal("Shipping supplies (corrected)", updated.Description);
         Assert.Equal(-15.00m, updated.Amount);
@@ -118,10 +118,10 @@ public class FinanceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Update_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "fin-admin-update404@test.com");
 
-        var response = await client.PutAsJsonAsync($"/api/finance/{Guid.Empty}", new
+        HttpResponseMessage response = await client.PutAsJsonAsync($"/api/finance/{Guid.Empty}", new
         {
             description = "Should not exist"
         });
@@ -131,41 +131,41 @@ public class FinanceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Delete_AsAdmin_Returns204()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "fin-admin-delete@test.com");
 
         // Create
-        var createResponse = await client.PostAsJsonAsync("/api/finance", new
+        HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/finance", new
         {
             date = "2026-03-01",
             description = "To be deleted",
             amount = -5.00m,
             category = "Other"
         });
-        var created = await createResponse.Content.ReadFromJsonAsync<TransactionResponse>(JsonOptions);
+        TransactionResponse? created = await createResponse.Content.ReadFromJsonAsync<TransactionResponse>(JsonOptions);
 
         // Delete
-        var deleteResponse = await client.DeleteAsync($"/api/finance/{created!.Id}");
+        HttpResponseMessage deleteResponse = await client.DeleteAsync($"/api/finance/{created!.Id}");
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
         // Verify soft-deleted (should not appear in list)
-        var transactions = await client.GetFromJsonAsync<List<TransactionResponse>>("/api/finance", JsonOptions);
+        List<TransactionResponse>? transactions = await client.GetFromJsonAsync<List<TransactionResponse>>("/api/finance", JsonOptions);
         Assert.DoesNotContain(transactions!, t => t.Id == created.Id);
     }
 
     [Fact]
     public async Task Delete_NonExistent_Returns404()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "fin-admin-delete404@test.com");
-        var response = await client.DeleteAsync($"/api/finance/{Guid.Empty}");
+        HttpResponseMessage response = await client.DeleteAsync($"/api/finance/{Guid.Empty}");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task Summary_AsAdmin_ReturnsCorrectTotals()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "fin-admin-summary@test.com");
 
         // Create income and expense transactions
@@ -195,7 +195,7 @@ public class FinanceTests : IClassFixture<ApiFactory>
             platform = "Etsy"
         });
 
-        var summary = await client.GetFromJsonAsync<FinanceSummaryResponse>("/api/finance/summary", JsonOptions);
+        FinanceSummaryResponse? summary = await client.GetFromJsonAsync<FinanceSummaryResponse>("/api/finance/summary", JsonOptions);
         Assert.NotNull(summary);
         Assert.True(summary.TotalIncome >= 150.00m, $"Expected income >= 150, got {summary.TotalIncome}");
         Assert.True(summary.TotalExpenses >= 20.00m, $"Expected expenses >= 20, got {summary.TotalExpenses}");
@@ -207,15 +207,15 @@ public class FinanceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Summary_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/finance/summary");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/finance/summary");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task Export_AsAdmin_ReturnsCsv()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "fin-admin-export@test.com");
 
         // Create a transaction so there's data to export
@@ -227,11 +227,11 @@ public class FinanceTests : IClassFixture<ApiFactory>
             category = "Stock"
         });
 
-        var response = await client.GetAsync("/api/finance/export");
+        HttpResponseMessage response = await client.GetAsync("/api/finance/export");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
 
-        var csv = await response.Content.ReadAsStringAsync();
+        string csv = await response.Content.ReadAsStringAsync();
         Assert.StartsWith("Date,Description,Amount,Category,Platform,Reference,Notes", csv);
         Assert.Contains("Export test item", csv);
     }
@@ -239,15 +239,15 @@ public class FinanceTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Export_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/finance/export");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/finance/export");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task GetAll_FilterByYearAndMonth_FiltersCorrectly()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "fin-admin-filter@test.com");
 
         await client.PostAsJsonAsync("/api/finance", new
@@ -266,7 +266,7 @@ public class FinanceTests : IClassFixture<ApiFactory>
             category = "Stock"
         });
 
-        var janOnly = await client.GetFromJsonAsync<List<TransactionResponse>>("/api/finance?year=2026&month=1", JsonOptions);
+        List<TransactionResponse>? janOnly = await client.GetFromJsonAsync<List<TransactionResponse>>("/api/finance?year=2026&month=1", JsonOptions);
         Assert.NotNull(janOnly);
         Assert.All(janOnly, t => Assert.Equal(1, t.Date.Month));
         Assert.Contains(janOnly, t => t.Description == "January item");

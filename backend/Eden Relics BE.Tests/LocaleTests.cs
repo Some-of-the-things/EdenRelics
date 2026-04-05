@@ -17,12 +17,12 @@ public class LocaleTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Detect_ReturnsDefaultUK_WhenNoGeoIp()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/locale/detect");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/locale/detect");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadAsStringAsync();
-        var result = JsonDocument.Parse(json).RootElement;
+        string json = await response.Content.ReadAsStringAsync();
+        JsonElement result = JsonDocument.Parse(json).RootElement;
 
         Assert.Equal("GB", result.GetProperty("countryCode").GetString());
         Assert.Equal("GBP", result.GetProperty("currency").GetString());
@@ -33,8 +33,8 @@ public class LocaleTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Detect_ReturnsCurrencySymbol()
     {
-        var client = _factory.CreateClient();
-        var result = await client.GetFromJsonAsync<LocaleResponse>("/api/locale/detect", JsonOptions);
+        HttpClient client = _factory.CreateClient();
+        LocaleResponse? result = await client.GetFromJsonAsync<LocaleResponse>("/api/locale/detect", JsonOptions);
         Assert.NotNull(result);
         Assert.False(string.IsNullOrEmpty(result.CurrencySymbol));
     }
@@ -42,11 +42,11 @@ public class LocaleTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetRates_ReturnsAllCurrencies()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/locale/rates");
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/api/locale/rates");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var rates = await response.Content.ReadFromJsonAsync<Dictionary<string, decimal>>(JsonOptions);
+        Dictionary<string, decimal>? rates = await response.Content.ReadFromJsonAsync<Dictionary<string, decimal>>(JsonOptions);
         Assert.NotNull(rates);
         Assert.True(rates.ContainsKey("GBP"));
         Assert.Equal(1m, rates["GBP"]);
@@ -61,8 +61,8 @@ public class LocaleTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetRates_ContainsAllShippingCountryCurrencies()
     {
-        var client = _factory.CreateClient();
-        var rates = await client.GetFromJsonAsync<Dictionary<string, decimal>>("/api/locale/rates", JsonOptions);
+        HttpClient client = _factory.CreateClient();
+        Dictionary<string, decimal>? rates = await client.GetFromJsonAsync<Dictionary<string, decimal>>("/api/locale/rates", JsonOptions);
         Assert.NotNull(rates);
 
         // Verify currencies for all shipping zones are present

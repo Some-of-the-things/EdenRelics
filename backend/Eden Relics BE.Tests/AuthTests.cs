@@ -16,8 +16,8 @@ public class AuthTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Register_ReturnsTokenAndUser()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/auth/register", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/register", new
         {
             email = "register@test.com",
             password = "TestPass123!",
@@ -26,7 +26,7 @@ public class AuthTests : IClassFixture<ApiFactory>
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions);
+        AuthResponse? auth = await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions);
         Assert.NotNull(auth);
         Assert.False(string.IsNullOrEmpty(auth.Token));
         Assert.Equal("register@test.com", auth.User.Email);
@@ -38,7 +38,7 @@ public class AuthTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Register_DuplicateEmail_Returns409()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         var body = new
         {
             email = "dup@test.com",
@@ -47,14 +47,14 @@ public class AuthTests : IClassFixture<ApiFactory>
             lastName = "B"
         };
         await client.PostAsJsonAsync("/api/auth/register", body);
-        var response = await client.PostAsJsonAsync("/api/auth/register", body);
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/register", body);
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]
     public async Task Login_ValidCredentials_ReturnsToken()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/auth/register", new
         {
             email = "login@test.com",
@@ -63,14 +63,14 @@ public class AuthTests : IClassFixture<ApiFactory>
             lastName = "B"
         });
 
-        var response = await client.PostAsJsonAsync("/api/auth/login", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/login", new
         {
             email = "login@test.com",
             password = "TestPass123!"
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions);
+        AuthResponse? auth = await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions);
         Assert.NotNull(auth);
         Assert.False(string.IsNullOrEmpty(auth.Token));
     }
@@ -78,7 +78,7 @@ public class AuthTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Login_WrongPassword_Returns401()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/auth/register", new
         {
             email = "wrongpw@test.com",
@@ -87,7 +87,7 @@ public class AuthTests : IClassFixture<ApiFactory>
             lastName = "B"
         });
 
-        var response = await client.PostAsJsonAsync("/api/auth/login", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/login", new
         {
             email = "wrongpw@test.com",
             password = "WrongPassword!"
@@ -98,8 +98,8 @@ public class AuthTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Login_NonExistentUser_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/auth/login", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/login", new
         {
             email = "nobody@test.com",
             password = "TestPass123!"
@@ -110,8 +110,8 @@ public class AuthTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task ForgotPassword_ReturnsOk_EvenForUnknownEmail()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/forgot-password", new
         {
             email = "unknown@test.com"
         });
@@ -121,7 +121,7 @@ public class AuthTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task VerifyEmail_InvalidToken_Returns400()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/auth/register", new
         {
             email = "verify@test.com",
@@ -130,7 +130,7 @@ public class AuthTests : IClassFixture<ApiFactory>
             lastName = "B"
         });
 
-        var response = await client.PostAsJsonAsync("/api/auth/verify-email", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/verify-email", new
         {
             email = "verify@test.com",
             token = "wrong-token"
@@ -141,18 +141,18 @@ public class AuthTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task ResendVerification_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsync("/api/auth/resend-verification", null);
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsync("/api/auth/resend-verification", null);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task ResendVerification_Authenticated_ReturnsOk()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "resend@test.com");
 
-        var response = await client.PostAsync("/api/auth/resend-verification", null);
+        HttpResponseMessage response = await client.PostAsync("/api/auth/resend-verification", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }

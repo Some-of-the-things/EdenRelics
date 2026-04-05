@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Eden_Relics_BE.Data;
+using Eden_Relics_BE.Data.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Eden_Relics_BE.Tests;
@@ -15,7 +16,7 @@ public static class Helpers
 
     public static async Task<(string Token, AuthResponse Auth)> RegisterAndLogin(HttpClient client, string email = "test@example.com")
     {
-        var response = await client.PostAsJsonAsync("/api/auth/register", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/register", new
         {
             email,
             password = "TestPass123!",
@@ -23,7 +24,7 @@ public static class Helpers
             lastName = "User"
         });
         response.EnsureSuccessStatusCode();
-        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions);
+        AuthResponse? auth = await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.Token);
         return (auth.Token, auth);
     }
@@ -34,21 +35,21 @@ public static class Helpers
         var (_, auth) = await RegisterAndLogin(client, email);
 
         // Promote to Admin in the database
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
-        var user = await db.Users.FindAsync(auth.User.Id);
+        using IServiceScope scope = factory.Services.CreateScope();
+        EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+        User? user = await db.Users.FindAsync(auth.User.Id);
         user!.Role = "Admin";
         await db.SaveChangesAsync();
 
         // Re-login to get a token with the Admin role claim
         client.DefaultRequestHeaders.Authorization = null;
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        HttpResponseMessage loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
         {
             email,
             password = "TestPass123!"
         });
         loginResponse.EnsureSuccessStatusCode();
-        var adminAuth = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions);
+        AuthResponse? adminAuth = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.Token);
         return (adminAuth.Token, adminAuth);
     }

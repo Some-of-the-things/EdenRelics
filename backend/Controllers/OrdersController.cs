@@ -90,7 +90,7 @@ public class OrdersController : ControllerBase
         StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"];
         string frontendUrl = _configuration["Stripe:FrontendUrl"] ?? "http://localhost:4200";
 
-        var lineItems = order.Items.Select(item => new SessionLineItemOptions
+        List<SessionLineItemOptions> lineItems = order.Items.Select(item => new SessionLineItemOptions
         {
             PriceData = new SessionLineItemPriceDataOptions
             {
@@ -121,7 +121,7 @@ public class OrdersController : ControllerBase
             });
         }
 
-        var sessionOptions = new SessionCreateOptions
+        SessionCreateOptions sessionOptions = new()
         {
             PaymentMethodTypes = ["card"],
             LineItems = lineItems,
@@ -139,7 +139,7 @@ public class OrdersController : ControllerBase
             sessionOptions.CustomerEmail = dto.GuestEmail!.Trim().ToLowerInvariant();
         }
 
-        var service = new SessionService();
+        SessionService service = new();
         Session session = await service.CreateAsync(sessionOptions);
 
         order.StripeSessionId = session.Id;
@@ -161,7 +161,7 @@ public class OrdersController : ControllerBase
 
             if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted)
             {
-                var session = stripeEvent.Data.Object as Session;
+                Session? session = stripeEvent.Data.Object as Session;
                 if (session?.Metadata.TryGetValue("order_id", out string? orderIdStr) == true
                     && Guid.TryParse(orderIdStr, out Guid orderId))
                 {

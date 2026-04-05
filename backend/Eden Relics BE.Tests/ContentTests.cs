@@ -16,8 +16,8 @@ public class ContentTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetAll_ReturnsDefaults()
     {
-        var client = _factory.CreateClient();
-        var content = await client.GetFromJsonAsync<Dictionary<string, string>>("/api/content", JsonOptions);
+        HttpClient client = _factory.CreateClient();
+        Dictionary<string, string>? content = await client.GetFromJsonAsync<Dictionary<string, string>>("/api/content", JsonOptions);
         Assert.NotNull(content);
         Assert.True(content.ContainsKey("home.hero.title"));
         Assert.Equal("Curated Vintage", content["home.hero.title"]);
@@ -28,17 +28,17 @@ public class ContentTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task UpdateAll_AsAdmin_SavesAndReturnsContent()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "content-update@test.com");
 
-        var response = await client.PutAsJsonAsync("/api/content", new Dictionary<string, string>
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/content", new Dictionary<string, string>
         {
             ["home.hero.title"] = "Updated Title",
             ["custom.key"] = "Custom Value"
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var content = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>(JsonOptions);
+        Dictionary<string, string>? content = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>(JsonOptions);
         Assert.NotNull(content);
         Assert.Equal("Updated Title", content["home.hero.title"]);
         Assert.Equal("Custom Value", content["custom.key"]);
@@ -49,8 +49,8 @@ public class ContentTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task UpdateAll_Unauthenticated_Returns401()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PutAsJsonAsync("/api/content", new Dictionary<string, string>
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/content", new Dictionary<string, string>
         {
             ["home.hero.title"] = "Hacked"
         });
@@ -60,10 +60,10 @@ public class ContentTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task UpdateAll_AsCustomer_Returns403()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAndLogin(client, "content-customer@test.com");
 
-        var response = await client.PutAsJsonAsync("/api/content", new Dictionary<string, string>
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/content", new Dictionary<string, string>
         {
             ["home.hero.title"] = "Hacked"
         });
@@ -73,7 +73,7 @@ public class ContentTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task GetAll_AfterUpdate_ReturnsMergedContent()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "content-merged@test.com");
 
         await client.PutAsJsonAsync("/api/content", new Dictionary<string, string>
@@ -82,8 +82,8 @@ public class ContentTests : IClassFixture<ApiFactory>
         });
 
         // Fetch with public client
-        var publicClient = _factory.CreateClient();
-        var content = await publicClient.GetFromJsonAsync<Dictionary<string, string>>("/api/content", JsonOptions);
+        HttpClient publicClient = _factory.CreateClient();
+        Dictionary<string, string>? content = await publicClient.GetFromJsonAsync<Dictionary<string, string>>("/api/content", JsonOptions);
         Assert.NotNull(content);
         Assert.Equal("New Eyebrow", content["home.hero.eyebrow"]);
         // Other defaults still present

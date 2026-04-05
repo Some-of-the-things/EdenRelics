@@ -23,10 +23,10 @@ public class OrderShippingTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task ShippingRate_Europe_MatchesZoneConfig()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
         // Verify Europe zone pricing via shipping API
-        var rate = await client.GetFromJsonAsync<RateResponse>("/api/shipping/rate?country=DE", JsonOptions);
+        RateResponse? rate = await client.GetFromJsonAsync<RateResponse>("/api/shipping/rate?country=DE", JsonOptions);
         Assert.NotNull(rate);
         Assert.Equal(9.95m, rate.Price);
         Assert.Equal("europe", rate.Zone);
@@ -35,12 +35,12 @@ public class OrderShippingTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task ShippingRate_AllEuropeCountries_SamePrice()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         string[] euCountries = ["FR", "DE", "NL", "BE", "ES", "PT", "IT", "AT", "SE", "DK", "NO", "FI", "PL", "CZ", "GR", "HR", "HU", "RO", "LU", "IE", "CH"];
 
-        foreach (var code in euCountries)
+        foreach (string code in euCountries)
         {
-            var rate = await client.GetFromJsonAsync<RateResponse>($"/api/shipping/rate?country={code}", JsonOptions);
+            RateResponse? rate = await client.GetFromJsonAsync<RateResponse>($"/api/shipping/rate?country={code}", JsonOptions);
             Assert.NotNull(rate);
             if (code == "CH")
             {
@@ -57,12 +57,12 @@ public class OrderShippingTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task ShippingRate_MiddleEast_CorrectPrice()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
         string[] meCountries = ["AE", "SA", "QA", "IL"];
 
-        foreach (var code in meCountries)
+        foreach (string code in meCountries)
         {
-            var rate = await client.GetFromJsonAsync<RateResponse>($"/api/shipping/rate?country={code}", JsonOptions);
+            RateResponse? rate = await client.GetFromJsonAsync<RateResponse>($"/api/shipping/rate?country={code}", JsonOptions);
             Assert.NotNull(rate);
             Assert.Equal(14.95m, rate.Price);
         }
@@ -71,8 +71,8 @@ public class OrderShippingTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Create_WithNoEmail_AndNoAuth_Returns400()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/orders", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/orders", new
         {
             items = new[] { new { productId = SeededProductId, quantity = 1 } },
             shippingAddress = new { addressLine1 = "1 Rue de Rivoli", city = "Paris", postcode = "75001", country = "FR" },
@@ -84,8 +84,8 @@ public class OrderShippingTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Create_WithInvalidProduct_Returns400()
     {
-        var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/orders", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/orders", new
         {
             items = new[] { new { productId = Guid.Empty, quantity = 1 } },
             guestEmail = "intl@test.com",

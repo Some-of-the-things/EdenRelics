@@ -122,12 +122,12 @@ public class TranslationService
     private async Task<Dictionary<string, string>> TranslateToLocaleAsync(
         string apiKey, Dictionary<string, string> content, string locale, string language)
     {
-        var client = new AnthropicClient(apiKey);
+        AnthropicClient client = new(apiKey);
 
         // Build a compact representation for the prompt
         string entries = string.Join("\n", content.Select(kv => $"{kv.Key}|||{kv.Value}"));
 
-        var messages = new List<Message>
+        List<Message> messages = new()
         {
             new()
             {
@@ -151,7 +151,7 @@ public class TranslationService
             }
         };
 
-        var parameters = new MessageParameters
+        MessageParameters parameters = new()
         {
             Messages = messages,
             MaxTokens = 4096,
@@ -160,7 +160,7 @@ public class TranslationService
             Temperature = 0.2m,
         };
 
-        var result = await client.Messages.GetClaudeMessageAsync(parameters);
+        MessageResponse result = await client.Messages.GetClaudeMessageAsync(parameters);
         string response = result.Message.ToString().Trim();
 
         Dictionary<string, string> translated = [];
@@ -186,9 +186,9 @@ public class TranslationService
 
     private async Task<string> TranslateSingleAsync(string apiKey, string text, string language)
     {
-        var client = new AnthropicClient(apiKey);
+        AnthropicClient client = new(apiKey);
 
-        var messages = new List<Message>
+        List<Message> messages = new()
         {
             new()
             {
@@ -210,7 +210,7 @@ public class TranslationService
             }
         };
 
-        var parameters = new MessageParameters
+        MessageParameters parameters = new()
         {
             Messages = messages,
             MaxTokens = 2048,
@@ -219,7 +219,7 @@ public class TranslationService
             Temperature = 0.2m,
         };
 
-        var result = await client.Messages.GetClaudeMessageAsync(parameters);
+        MessageResponse result = await client.Messages.GetClaudeMessageAsync(parameters);
         return result.Message.ToString().Trim();
     }
 
