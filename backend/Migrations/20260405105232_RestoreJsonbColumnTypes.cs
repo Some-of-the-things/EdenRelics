@@ -10,44 +10,15 @@ namespace Eden_Relics_BE.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // The AddTranslationColumns migration created these as 'text' columns.
-            // Npgsql needs them as 'jsonb' for native Dictionary<string,string> mapping.
-            // Drop defaults first, alter type, then restore defaults.
-            string[] productCols = ["NameTranslations", "DescriptionTranslations"];
-            string[] blogCols = ["TitleTranslations", "ContentTranslations", "ExcerptTranslations"];
-
-            foreach (string col in productCols)
-            {
-                migrationBuilder.Sql($"ALTER TABLE \"Products\" ALTER COLUMN \"{col}\" DROP DEFAULT");
-                migrationBuilder.Sql($"ALTER TABLE \"Products\" ALTER COLUMN \"{col}\" TYPE jsonb USING \"{col}\"::jsonb");
-                migrationBuilder.Sql($"ALTER TABLE \"Products\" ALTER COLUMN \"{col}\" SET DEFAULT '{{}}'::jsonb");
-            }
-
-            foreach (string col in blogCols)
-            {
-                migrationBuilder.Sql($"ALTER TABLE \"BlogPosts\" ALTER COLUMN \"{col}\" DROP DEFAULT");
-                migrationBuilder.Sql($"ALTER TABLE \"BlogPosts\" ALTER COLUMN \"{col}\" TYPE jsonb USING \"{col}\"::jsonb");
-                migrationBuilder.Sql($"ALTER TABLE \"BlogPosts\" ALTER COLUMN \"{col}\" SET DEFAULT '{{}}'::jsonb");
-            }
+            // No-op: the model now uses EF value converters with text columns
+            // instead of native jsonb. The original ALTER to jsonb was causing
+            // failures due to empty string values that can't be cast to json.
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            string[] productCols = ["NameTranslations", "DescriptionTranslations"];
-            string[] blogCols = ["TitleTranslations", "ContentTranslations", "ExcerptTranslations"];
-
-            foreach (string col in productCols)
-            {
-                migrationBuilder.Sql($"ALTER TABLE \"Products\" ALTER COLUMN \"{col}\" DROP DEFAULT");
-                migrationBuilder.Sql($"ALTER TABLE \"Products\" ALTER COLUMN \"{col}\" TYPE text");
-            }
-
-            foreach (string col in blogCols)
-            {
-                migrationBuilder.Sql($"ALTER TABLE \"BlogPosts\" ALTER COLUMN \"{col}\" DROP DEFAULT");
-                migrationBuilder.Sql($"ALTER TABLE \"BlogPosts\" ALTER COLUMN \"{col}\" TYPE text");
-            }
+            // No-op
         }
     }
 }

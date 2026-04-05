@@ -71,7 +71,7 @@ public class PostgresApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 services.Remove(d);
             }
 
-            NpgsqlDataSourceBuilder dsBuilder = new(_postgres.GetConnectionString());
+            NpgsqlDataSourceBuilder dsBuilder = new(_postgres.GetConnectionString() + ";Include Error Detail=true");
             dsBuilder.EnableDynamicJson();
             NpgsqlDataSource ds = dsBuilder.Build();
 
