@@ -442,11 +442,6 @@ public class EdenRelicsDbContext : DbContext
         prop.Metadata.SetValueComparer(new ValueComparer<Dictionary<string, string>>(
             (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
             v => v.GetHashCode(), v => new Dictionary<string, string>(v)));
-
-        if (_isRelational)
-        {
-            prop.HasColumnType("jsonb");
-        }
     }
 
     private void ConfigureJsonListProperty(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<List<string>> prop)

@@ -32,35 +32,35 @@ namespace Eden_Relics_BE.Migrations
                 table: "Products",
                 type: "text",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "{}");
 
             migrationBuilder.AddColumn<string>(
                 name: "NameTranslations",
                 table: "Products",
                 type: "text",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "{}");
 
             migrationBuilder.AddColumn<string>(
                 name: "ContentTranslations",
                 table: "BlogPosts",
                 type: "text",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "{}");
 
             migrationBuilder.AddColumn<string>(
                 name: "ExcerptTranslations",
                 table: "BlogPosts",
                 type: "text",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "{}");
 
             migrationBuilder.AddColumn<string>(
                 name: "TitleTranslations",
                 table: "BlogPosts",
                 type: "text",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "{}");
 
             migrationBuilder.UpdateData(
                 table: "Products",

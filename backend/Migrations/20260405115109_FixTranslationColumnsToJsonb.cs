@@ -10,16 +10,17 @@ namespace Eden_Relics_BE.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Fix empty strings and invalid JSON in translation columns so they can be cast to jsonb
+            // Fix empty strings and invalid JSON so they can be cast to jsonb.
+            // On fresh databases the defaults are already '{}', so these UPDATEs are harmless.
             migrationBuilder.Sql("""
-                UPDATE "Products" SET "NameTranslations" = '{}' WHERE "NameTranslations" IS NULL OR "NameTranslations" = '' OR "NameTranslations" = '""';
-                UPDATE "Products" SET "DescriptionTranslations" = '{}' WHERE "DescriptionTranslations" IS NULL OR "DescriptionTranslations" = '' OR "DescriptionTranslations" = '""';
-                UPDATE "BlogPosts" SET "TitleTranslations" = '{}' WHERE "TitleTranslations" IS NULL OR "TitleTranslations" = '' OR "TitleTranslations" = '""';
-                UPDATE "BlogPosts" SET "ContentTranslations" = '{}' WHERE "ContentTranslations" IS NULL OR "ContentTranslations" = '' OR "ContentTranslations" = '""';
-                UPDATE "BlogPosts" SET "ExcerptTranslations" = '{}' WHERE "ExcerptTranslations" IS NULL OR "ExcerptTranslations" = '' OR "ExcerptTranslations" = '""';
+                UPDATE "Products" SET "NameTranslations" = '{}' WHERE "NameTranslations" IS NULL OR "NameTranslations" = '';
+                UPDATE "Products" SET "DescriptionTranslations" = '{}' WHERE "DescriptionTranslations" IS NULL OR "DescriptionTranslations" = '';
+                UPDATE "BlogPosts" SET "TitleTranslations" = '{}' WHERE "TitleTranslations" IS NULL OR "TitleTranslations" = '';
+                UPDATE "BlogPosts" SET "ContentTranslations" = '{}' WHERE "ContentTranslations" IS NULL OR "ContentTranslations" = '';
+                UPDATE "BlogPosts" SET "ExcerptTranslations" = '{}' WHERE "ExcerptTranslations" IS NULL OR "ExcerptTranslations" = '';
             """);
 
-            // Now safely convert to jsonb
+            // Convert text columns to jsonb (safe now that all values are valid JSON)
             migrationBuilder.Sql("""
                 ALTER TABLE "Products" ALTER COLUMN "NameTranslations" SET DEFAULT '{}';
                 ALTER TABLE "Products" ALTER COLUMN "NameTranslations" TYPE jsonb USING "NameTranslations"::jsonb;
