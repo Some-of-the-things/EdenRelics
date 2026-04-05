@@ -1,0 +1,13 @@
+app = 'eden-relics-backup'
+primary_region = 'ams'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+# This app runs as a Fly Machine scheduled via `fly machines run`
+# It does NOT run continuously — it starts, backs up, and exits.
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
