@@ -21,6 +21,7 @@ export default defineConfig({
       url: 'http://localhost:5260/healthz',
       reuseExistingServer: true,
       timeout: 60_000,
+      env: { ASPNETCORE_ENVIRONMENT: 'Development' },
     },
     {
       command: 'npx ng serve --configuration development',

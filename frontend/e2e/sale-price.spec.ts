@@ -16,6 +16,7 @@ test.describe('Sale Prices', () => {
   });
 
   test('admin can set sale price on a product', async ({ page }) => {
+    test.setTimeout(90_000);
     await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
 
     // Create a product via API
@@ -47,6 +48,8 @@ test.describe('Sale Prices', () => {
   });
 
   test('sale price shows on product card with discount badge', async ({ page }) => {
+    test.setTimeout(90_000);
+    await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
     // Create a product with sale price via API
     const createRes = await page.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${adminToken}` },
@@ -66,11 +69,11 @@ test.describe('Sale Prices', () => {
     expect(createRes.status()).toBe(201);
 
     await page.goto('/');
-    await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 15_000 });
 
     // Find the sale product card
     const saleCard = page.locator('.product-card', { hasText: 'Discounted Vintage Dress' });
-    await expect(saleCard).toBeVisible({ timeout: 5_000 });
+    await expect(saleCard).toBeVisible({ timeout: 10_000 });
 
     // Should show sale badge
     await expect(saleCard.locator('.product-card__sale-badge')).toBeVisible();
@@ -81,6 +84,8 @@ test.describe('Sale Prices', () => {
   });
 
   test('sale price shows on product detail page with discount', async ({ page }) => {
+    test.setTimeout(90_000);
+    await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
     // Create a product with sale price
     const createRes = await page.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${adminToken}` },

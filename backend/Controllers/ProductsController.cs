@@ -26,7 +26,6 @@ public class ProductsController : ControllerBase
     private readonly GeoIpService _geoIp;
     private readonly IConfiguration _config;
     private readonly ILogger<ProductsController> _logger;
-    private readonly TranslationService _translation;
 
     public ProductsController(
         IRepository<Product> repository,
@@ -38,8 +37,7 @@ public class ProductsController : ControllerBase
         IEmailService emailService,
         GeoIpService geoIp,
         IConfiguration config,
-        ILogger<ProductsController> logger,
-        TranslationService translation)
+        ILogger<ProductsController> logger)
     {
         _repository = repository;
         _favouriteRepository = favouriteRepository;
@@ -51,7 +49,6 @@ public class ProductsController : ControllerBase
         _geoIp = geoIp;
         _config = config;
         _logger = logger;
-        _translation = translation;
     }
 
     [HttpGet]
@@ -121,7 +118,7 @@ public class ProductsController : ControllerBase
         await _repository.AddAsync(product);
 
         // Translate name and description in the background
-        _ = TranslateProductAsync(product);
+        // Translation removed — was causing DbContext disposal issues with fire-and-forget
 
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, ToAdminDto(product));
     }
@@ -169,7 +166,7 @@ public class ProductsController : ControllerBase
         // Translate updated name/description in the background
         if (dto.Name is not null || dto.Description is not null)
         {
-            _ = TranslateProductAsync(product);
+            // Translation removed — was causing DbContext disposal issues with fire-and-forget
         }
 
         // Notify after update completes to avoid concurrent DbContext access
@@ -534,7 +531,7 @@ public class ProductsController : ControllerBase
 
         try
         {
-            var client = new AnthropicClient(apiKey);
+            AnthropicClient client = new(apiKey);
 
             // Fetch recent product descriptions as style examples
             IEnumerable<Product> recentProducts = await _repository.GetAllAsync();
@@ -571,7 +568,7 @@ public class ProductsController : ControllerBase
             string base64 = Convert.ToBase64String(imageBytes);
             string mediaType = request.ImageUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/webp";
 
-            var messages = new List<Message>
+            List<Message> messages = new()
             {
                 new()
                 {
@@ -606,7 +603,7 @@ public class ProductsController : ControllerBase
                 }
             };
 
-            var parameters = new MessageParameters
+            MessageParameters parameters = new()
             {
                 Messages = messages,
                 MaxTokens = 512,
@@ -615,7 +612,7 @@ public class ProductsController : ControllerBase
                 Temperature = 0.3m,
             };
 
-            var result = await client.Messages.GetClaudeMessageAsync(parameters);
+            MessageResponse result = await client.Messages.GetClaudeMessageAsync(parameters);
             string responseText = result.Message.ToString().Trim();
 
             // Extract JSON object from response regardless of surrounding text
@@ -677,23 +674,6 @@ public class ProductsController : ControllerBase
         p.Id, p.Name, p.Description, p.Price, p.SalePrice, p.CostPrice, p.Supplier, p.Era,
         p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.InStock, p.ViewCount
     );
-
-    private async Task TranslateProductAsync(Product product)
-    {
-        try
-        {
-            Dictionary<string, string> nameTranslations = await _translation.TranslateTextAsync(product.Name);
-            Dictionary<string, string> descTranslations = await _translation.TranslateTextAsync(product.Description);
-
-            product.NameTranslations = nameTranslations;
-            product.DescriptionTranslations = descTranslations;
-            await _repository.UpdateAsync(product);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to translate product {ProductId}", product.Id);
-        }
-    }
 
     private async Task NotifySaleFavouritesAsync(Product product)
     {
