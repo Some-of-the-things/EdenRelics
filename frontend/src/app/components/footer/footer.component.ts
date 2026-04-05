@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ContentService } from '../../services/content.service';
 
@@ -7,6 +7,7 @@ import { ContentService } from '../../services/content.service';
   imports: [RouterLink],
   templateUrl: './footer.component.html',
   styleUrl: './footer.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FooterComponent {
   readonly year = new Date().getFullYear();

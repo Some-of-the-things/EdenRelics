@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ProductListComponent } from '../../components/product-list/product-list.component';
@@ -11,6 +11,7 @@ import { environment } from '../../../environments/environment';
   imports: [ProductListComponent, FormsModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent implements OnInit {
   private readonly seo = inject(SeoService);

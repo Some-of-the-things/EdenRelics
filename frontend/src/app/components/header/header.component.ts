@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CartStore } from '../../store/cart.store';
 import { AuthService } from '../../services/auth.service';
@@ -9,6 +9,7 @@ import { BrandingService } from '../../services/branding.service';
   imports: [RouterLink],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HeaderComponent {
   readonly cartStore = inject(CartStore);

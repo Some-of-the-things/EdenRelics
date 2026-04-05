@@ -6,7 +6,7 @@ const API = 'http://localhost:5260/api';
 test.describe('Blog', () => {
   let adminToken: string;
   let adminEmail: string;
-  const postTitle = `E2E Test Post ${Date.now()}`;
+  let postTitle: string;
   const postContent = '<p>This is a test blog post created by e2e tests.</p>';
   const postExcerpt = 'A short test excerpt';
   const postAuthor = 'E2E Tester';
@@ -15,10 +15,9 @@ test.describe('Blog', () => {
     const page = await browser.newPage();
     adminEmail = uniqueEmail('blog-admin');
     adminToken = await registerAdmin(page, adminEmail);
-    await page.close();
-  });
 
-  test('admin can create a published blog post via API', async ({ page }) => {
+    // Create the post in beforeAll so dependent tests always find it
+    postTitle = `E2E Test Post ${Date.now()}`;
     const res = await page.request.post(`${API}/blog`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
@@ -30,19 +29,43 @@ test.describe('Blog', () => {
       },
     });
     expect(res.status()).toBe(201);
+
+    await page.close();
+  });
+
+  test('admin can create a published blog post via API', async ({ page }) => {
+    const title = `API Blog Post ${Date.now()}`;
+    const res = await page.request.post(`${API}/blog`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      data: {
+        title,
+        content: postContent,
+        excerpt: postExcerpt,
+        author: postAuthor,
+        published: true,
+      },
+    });
+    expect(res.status()).toBe(201);
     const body = await res.json();
-    expect(body.title).toBe(postTitle);
+    expect(body.title).toBe(title);
     expect(body.slug).toBeTruthy();
     expect(body.published).toBe(true);
   });
 
   test('blog list page shows the published post', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('eden_cookie_consent', 'all');
+    });
     await page.goto('/blog');
-    await expect(page.getByText(postTitle)).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(postExcerpt)).toBeVisible();
+    const postCard = page.locator('a', { hasText: postTitle });
+    await expect(postCard).toBeVisible({ timeout: 15_000 });
+    await expect(postCard.getByText(postExcerpt)).toBeVisible();
   });
 
   test('clicking a post navigates to the detail page', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('eden_cookie_consent', 'all');
+    });
     await page.goto('/blog');
     await page.getByText(postTitle).click();
     await expect(page).toHaveURL(/\/blog\//);
@@ -53,6 +76,9 @@ test.describe('Blog', () => {
   test('draft posts are not visible on the public blog page', async ({
     page,
   }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('eden_cookie_consent', 'all');
+    });
     const draftTitle = `Draft Post ${Date.now()}`;
     const res = await page.request.post(`${API}/blog`, {
       headers: { Authorization: `Bearer ${adminToken}` },
@@ -65,7 +91,7 @@ test.describe('Blog', () => {
     expect(res.status()).toBe(201);
 
     await page.goto('/blog');
-    await expect(page.getByText(postTitle)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(postTitle)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(draftTitle)).not.toBeVisible();
   });
 

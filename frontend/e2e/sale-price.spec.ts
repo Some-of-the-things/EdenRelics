@@ -75,16 +75,14 @@ test.describe('Sale Prices', () => {
     await page.addInitScript(() => {
       localStorage.setItem('eden_cookie_consent', 'all');
     });
-    await page.goto('/');
+    await page.goto('/cart');
+    // Navigate to home via client-side routing to get fresh product data
+    await page.getByRole('link', { name: /eden relics/i }).first().click();
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 15_000 });
 
-    // The SSR-rendered page may not include the just-created product.
-    // Reload to ensure the client fetches fresh data from the API.
-    await page.reload();
-    await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 15_000 });
-
-    // Find the sale product card
-    const saleCard = page.locator('.product-card', { hasText: 'Discounted Vintage Dress' });
+    // Find the first sale product card
+    const saleCard = page.locator('.product-card', { hasText: 'Discounted Vintage Dress' }).first();
+    await saleCard.scrollIntoViewIfNeeded();
     await expect(saleCard).toBeVisible({ timeout: 10_000 });
 
     // Should show sale badge

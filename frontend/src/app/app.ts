@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, afterNextRender } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
@@ -17,10 +17,13 @@ export class App {
   protected readonly title = 'Eden Relics';
   private readonly branding = inject(BrandingService);
   private readonly content = inject(ContentService);
+  private readonly analytics = inject(AnalyticsService);
 
   constructor() {
-    inject(AnalyticsService).init();
     this.branding.load();
     this.content.load();
+    afterNextRender(() => {
+      this.analytics.init();
+    });
   }
 }

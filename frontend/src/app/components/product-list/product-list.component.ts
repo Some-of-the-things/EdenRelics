@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
@@ -14,6 +14,7 @@ import { LocalPricePipe } from '../../pipes/local-price.pipe';
   imports: [RouterLink, CurrencyPipe, TitleCasePipe, FormsModule, NgOptimizedImage, DecimalPipe, LocalPricePipe],
   templateUrl: './product-list.component.html',
   styleUrl: './product-list.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductListComponent {
   readonly productStore = inject(ProductStore);
