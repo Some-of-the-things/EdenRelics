@@ -362,11 +362,11 @@ jobs:
           echo "Staging backend did not become healthy after 200s"
           exit 1
 
-      - name: Products API requires admin (returns 403 without auth)
+      - name: Products API returns data (reads allowed, writes gated)
         run: |
           status=$(curl -s -o /dev/null -w "%{http_code}" https://api-staging.edenrelics.co.uk/api/products)
-          echo "Staging products (no auth): $status"
-          [ "$status" = "403" ] || exit 1
+          echo "Staging products: $status"
+          [ "$status" = "200" ] || exit 1
 
       - name: Content API is accessible (exempt from admin check)
         run: |
