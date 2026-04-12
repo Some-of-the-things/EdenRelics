@@ -1049,6 +1049,7 @@ export class AdminPageComponent implements OnInit {
       condition: product.condition,
       imageUrl: product.imageUrl,
       additionalImageUrls: [...(product.additionalImageUrls ?? [])],
+      videoUrls: [...(product.videoUrls ?? [])],
       inStock: product.inStock,
     };
     this.showForm.set(true);
@@ -1152,6 +1153,7 @@ export class AdminPageComponent implements OnInit {
       condition: 'good',
       imageUrl: '',
       additionalImageUrls: [] as string[],
+      videoUrls: [] as string[],
       inStock: true,
     };
   }
@@ -1251,6 +1253,43 @@ export class AdminPageComponent implements OnInit {
       });
     }
     input.value = '';
+  }
+
+  readonly videoUploading = signal(false);
+  readonly videoUploadError = signal('');
+
+  onVideoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+    this.videoUploading.set(true);
+    this.videoUploadError.set('');
+    let pending = files.length;
+    for (let i = 0; i < files.length; i++) {
+      this.productService.uploadVideo(files[i]).subscribe({
+        next: (res) => {
+          this.form.videoUrls = [...(this.form.videoUrls ?? []), res.videoUrl];
+          pending--;
+          if (pending === 0) {
+            this.videoUploading.set(false);
+          }
+        },
+        error: () => {
+          pending--;
+          if (pending === 0) {
+            this.videoUploading.set(false);
+          }
+          this.videoUploadError.set('Video upload failed. Max size is 50MB.');
+        },
+      });
+    }
+    input.value = '';
+  }
+
+  removeVideo(url: string): void {
+    this.form.videoUrls = (this.form.videoUrls ?? []).filter(v => v !== url);
   }
 
   loadFinance(): void {

@@ -32,6 +32,13 @@
           <p class="detail__price">{{ product.price | currency:'GBP' }}</p>
           <p class="detail__local-price">{{ product.price | localPrice }}</p>
         }
+        @if (product.videoUrls?.length) {
+          <div class="detail__videos">
+            @for (video of product.videoUrls; track video) {
+              <video [src]="video" controls playsinline preload="metadata" class="detail__video"></video>
+            }
+          </div>
+        }
         <div class="detail__description" [innerHTML]="product.description"></div>
         <div class="detail__meta">
           <div class="detail__meta-item">

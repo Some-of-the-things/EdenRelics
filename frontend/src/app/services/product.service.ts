@@ -172,4 +172,10 @@ export class ProductService {
     formData.append('file', file);
     return this.http.post<{ imageUrl: string }>(`${this.apiUrl}/upload-image`, formData);
   }
+
+  uploadVideo(file: File): Observable<{ videoUrl: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ videoUrl: string }>(`${this.apiUrl}/upload-video`, formData);
+  }
 }

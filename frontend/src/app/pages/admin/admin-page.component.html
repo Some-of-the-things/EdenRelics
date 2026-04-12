@@ -240,6 +240,28 @@
               }
             }
           </div>
+          <div class="admin__field">
+            <span>Videos</span>
+            <div class="admin__gallery">
+              @for (video of form.videoUrls ?? []; track video) {
+                <div class="admin__gallery-item admin__gallery-item--video">
+                  <video [src]="video" class="admin__gallery-thumb" muted></video>
+                  <span class="admin__gallery-badge">Video</span>
+                  <button type="button" class="admin__gallery-remove" (click)="removeVideo(video)" aria-label="Remove video">&times;</button>
+                </div>
+              }
+              <label class="admin__gallery-add">
+                + Add Video
+                <input type="file" accept="video/mp4,video/mov,video/webm,video/avi" multiple (change)="onVideoSelected($event)" hidden />
+              </label>
+            </div>
+            @if (videoUploading()) {
+              <span class="admin__uploading">Uploading video...</span>
+            }
+            @if (videoUploadError()) {
+              <span class="admin__upload-error">{{ videoUploadError() }}</span>
+            }
+          </div>
           <div class="admin__actions">
             <button type="button" class="admin__cancel-btn" (click)="closeForm()">Cancel</button>
             <button type="submit" class="admin__save-btn">{{ editingId() ? 'Update' : 'Create' }}</button>

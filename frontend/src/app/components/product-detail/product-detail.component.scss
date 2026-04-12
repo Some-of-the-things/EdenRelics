@@ -76,6 +76,16 @@
   }
 }
 
+.detail__videos {
+  margin-bottom: 1.5rem;
+}
+
+.detail__video {
+  width: 100%;
+  border-radius: 0;
+  max-height: 400px;
+}
+
 .detail__era {
   display: inline-block;
   background: var(--bg-secondary);

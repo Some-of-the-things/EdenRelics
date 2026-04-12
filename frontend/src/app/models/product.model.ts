@@ -12,6 +12,7 @@ export interface Product {
   condition: 'mint' | 'excellent' | 'very good' | 'good' | 'fair';
   imageUrl: string;
   additionalImageUrls?: string[];
+  videoUrls?: string[];
   inStock: boolean;
   viewCount?: number;
 }
