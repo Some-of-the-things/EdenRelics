@@ -27,6 +27,8 @@ public class ProductsController : ControllerBase
     private readonly IConfiguration _config;
     private readonly ILogger<ProductsController> _logger;
 
+    private readonly CartInterestService _cartInterest;
+
     public ProductsController(
         IRepository<Product> repository,
         IRepository<Favourite> favouriteRepository,
@@ -36,6 +38,7 @@ public class ProductsController : ControllerBase
         ImageStorageService storage,
         IEmailService emailService,
         GeoIpService geoIp,
+        CartInterestService cartInterest,
         IConfiguration config,
         ILogger<ProductsController> logger)
     {
@@ -47,6 +50,7 @@ public class ProductsController : ControllerBase
         _storage = storage;
         _emailService = emailService;
         _geoIp = geoIp;
+        _cartInterest = cartInterest;
         _config = config;
         _logger = logger;
     }
@@ -318,6 +322,38 @@ public class ProductsController : ControllerBase
     }
 
     public record RecordViewDto(string? Referrer = null, string? UtmSource = null, string? UtmMedium = null, string? UtmCampaign = null, string? ScreenResolution = null);
+
+    [HttpPost("{id:guid}/cart-interest")]
+    public IActionResult AddCartInterest(Guid id, [FromBody] CartInterestDto? dto = null)
+    {
+        string sessionId = dto?.SessionId
+            ?? Request.Headers["Fly-Client-IP"].FirstOrDefault()
+            ?? Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim()
+            ?? HttpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+        _cartInterest.Add(id, sessionId);
+        return Ok(new { count = _cartInterest.GetCount(id) });
+    }
+
+    [HttpDelete("{id:guid}/cart-interest")]
+    public IActionResult RemoveCartInterest(Guid id, [FromQuery] string? sessionId = null)
+    {
+        string sid = sessionId
+            ?? Request.Headers["Fly-Client-IP"].FirstOrDefault()
+            ?? Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim()
+            ?? HttpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+        _cartInterest.Remove(id, sid);
+        return Ok(new { count = _cartInterest.GetCount(id) });
+    }
+
+    [HttpGet("{id:guid}/cart-interest")]
+    public IActionResult GetCartInterest(Guid id)
+    {
+        return Ok(new { count = _cartInterest.GetCount(id) });
+    }
+
+    public record CartInterestDto(string? SessionId = null);
 
     [HttpGet("{id:guid}/views")]
     [Authorize(Roles = "Admin")]

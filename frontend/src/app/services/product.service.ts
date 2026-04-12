@@ -173,6 +173,18 @@ export class ProductService {
     return this.http.post<{ imageUrl: string }>(`${this.apiUrl}/upload-image`, formData);
   }
 
+  addCartInterest(productId: string, sessionId: string): Observable<{ count: number }> {
+    return this.http.post<{ count: number }>(`${this.apiUrl}/${productId}/cart-interest`, { sessionId });
+  }
+
+  removeCartInterest(productId: string, sessionId: string): Observable<{ count: number }> {
+    return this.http.delete<{ count: number }>(`${this.apiUrl}/${productId}/cart-interest?sessionId=${sessionId}`);
+  }
+
+  getCartInterest(productId: string): Observable<{ count: number }> {
+    return this.http.get<{ count: number }>(`${this.apiUrl}/${productId}/cart-interest`);
+  }
+
   uploadVideo(file: File): Observable<{ videoUrl: string }> {
     const formData = new FormData();
     formData.append('file', file);

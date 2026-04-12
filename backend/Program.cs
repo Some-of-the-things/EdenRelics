@@ -81,6 +81,9 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddSingleton<ImageOptimizationService>();
 builder.Services.AddSingleton<ImageStorageService>();
 
+// Cart interest tracking
+builder.Services.AddSingleton<CartInterestService>();
+
 // Translation
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddHostedService<TranslationBackgroundService>();
