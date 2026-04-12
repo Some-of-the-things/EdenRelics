@@ -686,6 +686,24 @@ public class ProductsController : ControllerBase
 
     public record AnalyseImageRequest(string ImageUrl);
 
+    /// <summary>Test helper: backdate PriceSetAtUtc for E2E testing of the 28-day rule.</summary>
+    [HttpPut("{id:guid}/backdate-price")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> BackdatePrice(Guid id, [FromBody] BackdatePriceRequest request)
+    {
+        Product? product = await _repository.GetByIdAsync(id);
+        if (product is null)
+        {
+            return NotFound();
+        }
+
+        product.PriceSetAtUtc = DateTime.UtcNow.AddDays(-request.Days);
+        await _repository.UpdateAsync(product);
+        return Ok();
+    }
+
+    public record BackdatePriceRequest(int Days);
+
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)

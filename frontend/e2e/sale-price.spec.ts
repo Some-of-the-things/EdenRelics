@@ -47,9 +47,9 @@ test.describe('Sale Prices', () => {
     expect(updated.salePrice).toBe(75);
   });
 
-  test('sale price shows on product card with discount badge', async ({ browser }) => {
+  test('sale price shows on product card with discount badge when 28-day rule met', async ({ browser }) => {
     test.setTimeout(90_000);
-    // Create product with a standalone request context to avoid page lifecycle issues
+    // Create product WITHOUT sale price first (to establish PriceSetAtUtc)
     const ctx = await browser.newContext();
     const apiPage = await ctx.newPage();
     const createRes = await apiPage.request.post(`${API}/products`, {
@@ -58,7 +58,6 @@ test.describe('Sale Prices', () => {
         name: 'Discounted Vintage Dress',
         description: 'On sale now',
         price: 200,
-        salePrice: 150,
         era: '1980s',
         category: '80s',
         size: '12',
@@ -68,6 +67,19 @@ test.describe('Sale Prices', () => {
       },
     });
     expect(createRes.status()).toBe(201);
+    const product = await createRes.json();
+
+    // Backdate PriceSetAtUtc via test helper endpoint so 28-day rule is met
+    await apiPage.request.put(`${API}/products/${product.id}/backdate-price`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      data: { days: 30 },
+    });
+
+    // Now set sale price
+    await apiPage.request.put(`${API}/products/${product.id}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      data: { salePrice: 150 },
+    });
     await apiPage.close();
 
     // Navigate with a fresh page that has cookie consent set
@@ -80,7 +92,7 @@ test.describe('Sale Prices', () => {
     await page.getByRole('link', { name: /eden relics/i }).first().click();
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 15_000 });
 
-    // Find the first sale product card
+    // Find the sale product card
     const saleCard = page.locator('.product-card', { hasText: 'Discounted Vintage Dress' }).first();
     await saleCard.scrollIntoViewIfNeeded();
     await expect(saleCard).toBeVisible({ timeout: 10_000 });
@@ -93,17 +105,16 @@ test.describe('Sale Prices', () => {
     await expect(saleCard.locator('.product-card__price--sale')).toBeVisible();
   });
 
-  test('sale price shows on product detail page with discount', async ({ page }) => {
+  test('sale price shows on product detail page with discount when 28-day rule met', async ({ page }) => {
     test.setTimeout(90_000);
     await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
-    // Create a product with sale price
+    // Create product at full price first
     const createRes = await page.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
         name: 'Detail Sale Dress',
         description: 'Sale detail test',
         price: 300,
-        salePrice: 210,
         era: '2020s',
         category: 'modern',
         size: '8',
@@ -114,6 +125,18 @@ test.describe('Sale Prices', () => {
     });
     expect(createRes.status()).toBe(201);
     const product = await createRes.json();
+
+    // Backdate PriceSetAtUtc so 28-day rule is met
+    await page.request.put(`${API}/products/${product.id}/backdate-price`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      data: { days: 35 },
+    });
+
+    // Now set sale price
+    await page.request.put(`${API}/products/${product.id}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      data: { salePrice: 210 },
+    });
 
     await page.goto(`/product/${product.id}`);
     await expect(page.locator('.detail__name')).toBeVisible({ timeout: 10_000 });
