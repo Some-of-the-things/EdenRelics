@@ -661,6 +661,7 @@ export class AdminPageComponent implements OnInit {
 
     this.http.get<{ apiKeyConfigured: boolean; connected: boolean; shopId: string | null }>(`${environment.apiUrl}/api/marketplace/etsy/status`).subscribe({
       next: (r) => this.etsyStatus.set(r),
+      error: () => this.etsyStatus.set({ apiKeyConfigured: false, connected: false, shopId: null }),
     });
 
     // Load listings for all products
