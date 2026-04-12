@@ -70,16 +70,18 @@ test.describe('Sale Prices', () => {
     const product = await createRes.json();
 
     // Backdate PriceSetAtUtc via test helper endpoint so 28-day rule is met
-    await apiPage.request.put(`${API}/products/${product.id}/backdate-price`, {
+    const backdateRes = await apiPage.request.put(`${API}/products/${product.id}/backdate-price`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: { days: 30 },
     });
+    expect(backdateRes.ok()).toBeTruthy();
 
     // Now set sale price
-    await apiPage.request.put(`${API}/products/${product.id}`, {
+    const saleRes = await apiPage.request.put(`${API}/products/${product.id}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: { salePrice: 150 },
     });
+    expect(saleRes.ok()).toBeTruthy();
     await apiPage.close();
 
     // Navigate with a fresh page that has cookie consent set
@@ -127,16 +129,23 @@ test.describe('Sale Prices', () => {
     const product = await createRes.json();
 
     // Backdate PriceSetAtUtc so 28-day rule is met
-    await page.request.put(`${API}/products/${product.id}/backdate-price`, {
+    const backdateRes = await page.request.put(`${API}/products/${product.id}/backdate-price`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: { days: 35 },
     });
+    expect(backdateRes.ok()).toBeTruthy();
 
     // Now set sale price
-    await page.request.put(`${API}/products/${product.id}`, {
+    const saleRes = await page.request.put(`${API}/products/${product.id}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: { salePrice: 210 },
     });
+    expect(saleRes.ok()).toBeTruthy();
+
+    // Verify API returns showReduction: true before checking the UI
+    const getRes = await page.request.get(`${API}/products/${product.id}`);
+    const productData = await getRes.json();
+    expect(productData.showReduction).toBe(true);
 
     await page.goto(`/product/${product.id}`);
     await expect(page.locator('.detail__name')).toBeVisible({ timeout: 10_000 });
