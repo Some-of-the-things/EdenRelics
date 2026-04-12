@@ -1672,7 +1672,51 @@ export class AdminPageComponent implements OnInit {
 
   onDescriptionPaste(event: ClipboardEvent): void {
     event.preventDefault();
-    const text = event.clipboardData?.getData('text/plain') ?? '';
-    document.execCommand('insertText', false, text);
+    const html = event.clipboardData?.getData('text/html') ?? '';
+    if (html) {
+      const cleaned = this.sanitisePastedHtml(html);
+      document.execCommand('insertHTML', false, cleaned);
+    } else {
+      const text = event.clipboardData?.getData('text/plain') ?? '';
+      document.execCommand('insertText', false, text);
+    }
+  }
+
+  private sanitisePastedHtml(html: string): string {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const allowedTags = new Set(['P', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'UL', 'OL', 'LI', 'H2', 'H3', 'H4', 'A']);
+
+    function clean(node: Node): string {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent ?? '';
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return '';
+      }
+      const el = node as Element;
+      const tag = el.tagName;
+      const children = Array.from(el.childNodes).map(clean).join('');
+
+      if (allowedTags.has(tag)) {
+        if (tag === 'A') {
+          const href = el.getAttribute('href');
+          if (href && (href.startsWith('http') || href.startsWith('/'))) {
+            return `<a href="${href}">${children}</a>`;
+          }
+          return children;
+        }
+        return `<${tag.toLowerCase()}>${children}</${tag.toLowerCase()}>`;
+      }
+
+      // Convert divs and spans to their content, add line break for block elements
+      if (['DIV', 'SECTION', 'ARTICLE', 'HEADER', 'FOOTER', 'BLOCKQUOTE'].includes(tag)) {
+        return `<p>${children}</p>`;
+      }
+
+      return children;
+    }
+
+    return clean(doc.body);
   }
 }
