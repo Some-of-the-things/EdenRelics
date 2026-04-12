@@ -1652,8 +1652,17 @@ export class AdminPageComponent implements OnInit {
   execRichText(command: string): void {
     if (command === 'insertParagraph') {
       document.execCommand('insertHTML', false, '<p><br></p>');
+    } else if (command === 'insertLineBreak') {
+      document.execCommand('insertHTML', false, '<br>');
     } else {
       document.execCommand(command, false);
+    }
+  }
+
+  onDescriptionKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && event.shiftKey) {
+      event.preventDefault();
+      document.execCommand('insertHTML', false, '<br>');
     }
   }
 

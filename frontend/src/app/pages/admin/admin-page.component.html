@@ -118,6 +118,7 @@
               <button type="button" class="admin__richtext-btn" (click)="execRichText('italic')" title="Italic"><i>I</i></button>
               <button type="button" class="admin__richtext-btn" (click)="execRichText('underline')" title="Underline"><u>U</u></button>
               <button type="button" class="admin__richtext-btn" (click)="execRichText('insertParagraph')" title="New paragraph">P</button>
+              <button type="button" class="admin__richtext-btn" (click)="execRichText('insertLineBreak')" title="Line break (Shift+Enter)">BR</button>
             </div>
             <div
               class="admin__richtext"
@@ -125,6 +126,7 @@
               #descriptionEditor
               (input)="onDescriptionInput($event)"
               (paste)="onDescriptionPaste($event)"
+              (keydown)="onDescriptionKeydown($event)"
             ></div>
           </div>
           <div class="admin__row">
