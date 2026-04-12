@@ -53,6 +53,8 @@ export const ProductStore = signalStore(
     }),
     categories: computed(() => {
       const cats: Product['category'][] = [
+        '50s',
+        '60s',
         '70s',
         '80s',
         '90s',

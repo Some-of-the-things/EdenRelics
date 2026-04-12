@@ -107,11 +107,13 @@ describe('ProductStore', () => {
 
   it('should provide categories list', () => {
     const cats = store.categories();
+    expect(cats).toContain('50s');
+    expect(cats).toContain('60s');
     expect(cats).toContain('70s');
     expect(cats).toContain('80s');
     expect(cats).toContain('90s');
     expect(cats).toContain('y2k');
     expect(cats).toContain('modern');
-    expect(cats.length).toBe(5);
+    expect(cats.length).toBe(7);
   });
 });
