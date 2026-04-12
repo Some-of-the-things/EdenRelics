@@ -48,8 +48,10 @@
         <div class="product-card__image-link">
           <img [ngSrc]="product.imageUrl" [alt]="product.name" class="product-card__image" width="400" height="500" [priority]="idx < 4" sizes="(max-width: 600px) 100vw, (max-width: 960px) 50vw, 25vw" />
           <span class="product-card__era">{{ product.era }}</span>
-          @if (product.salePrice) {
-            <span class="product-card__sale-badge">{{ (1 - product.salePrice / product.price) * 100 | number:'1.0-0' }}% off</span>
+          @if (!product.inStock) {
+            <span class="product-card__sold-badge">Sold</span>
+          } @else if (product.showReduction) {
+            <span class="product-card__sale-badge">{{ product.discountPercent }}% off</span>
           }
           <button
             class="product-card__fav"
@@ -74,20 +76,27 @@
             </span>
           </div>
           <div class="product-card__footer">
-            @if (product.salePrice) {
+            @if (product.showReduction) {
               <div class="product-card__prices">
                 <span class="product-card__price product-card__price--original">{{ product.price | currency:'GBP' }}</span>
                 <span class="product-card__price product-card__price--sale">{{ product.salePrice | currency:'GBP' }}</span>
                 <span class="product-card__local-price">{{ product.salePrice | localPrice }}</span>
               </div>
             } @else {
-              <span class="product-card__price">{{ product.price | currency:'GBP' }}</span>
-              <span class="product-card__local-price">{{ product.price | localPrice }}</span>
+              <span class="product-card__price">{{ (product.salePrice ?? product.price) | currency:'GBP' }}</span>
+              <span class="product-card__local-price">{{ (product.salePrice ?? product.price) | localPrice }}</span>
             }
-            <button class="product-card__add-btn" (click)="addToCart(product)">
-              Add to Cart
-            </button>
+            @if (product.inStock) {
+              <button class="product-card__add-btn" (click)="addToCart(product)">
+                Add to Cart
+              </button>
+            } @else {
+              <span class="product-card__sold-text">Sold Out</span>
+            }
           </div>
+          @if (getCartCount(product.id) > 0) {
+            <p class="product-card__interest">In {{ getCartCount(product.id) }} {{ getCartCount(product.id) === 1 ? "person's" : "people's" }} basket</p>
+          }
         </div>
       </article>
     } @empty {

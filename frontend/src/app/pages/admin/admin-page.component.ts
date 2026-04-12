@@ -444,7 +444,8 @@ export class AdminPageComponent implements OnInit {
   readonly marketplaceProducts = signal<{ product: Product; listings: { id: string; platform: string; status: string; externalUrl: string | null }[] }[]>([]);
   readonly marketplaceLoading = signal(false);
   readonly generatedListing = signal<{ title: string; description: string; price: number; imageUrl: string } | null>(null);
-  readonly etsyConfigured = signal<boolean | null>(null);
+  readonly etsyStatus = signal<{ apiKeyConfigured: boolean; connected: boolean; shopId: string | null } | null>(null);
+  private etsyCodeVerifier = '';
   readonly marketplaceError = signal('');
   readonly marketplaceSuccess = signal('');
 
@@ -510,6 +511,11 @@ export class AdminPageComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       if (params['monzo'] === 'callback' && params['code']) {
         this.handleMonzoCallback(params['code'], params['state'] ?? '');
+      }
+      if (params['etsy'] === 'callback' && params['code']) {
+        this.switchTab('marketplace');
+        this.handleEtsyCallback(params['code']);
+        this.router.navigate(['/admin'], { queryParams: {} });
       }
     });
   }
@@ -653,8 +659,9 @@ export class AdminPageComponent implements OnInit {
       next: (r) => this.pendingRemovals.set(r),
     });
 
-    this.http.get<{ configured: boolean }>(`${environment.apiUrl}/api/marketplace/etsy/status`).subscribe({
-      next: (r) => this.etsyConfigured.set(r.configured),
+    this.http.get<{ apiKeyConfigured: boolean; connected: boolean; shopId: string | null }>(`${environment.apiUrl}/api/marketplace/etsy/status`).subscribe({
+      next: (r) => this.etsyStatus.set(r),
+      error: () => this.etsyStatus.set({ apiKeyConfigured: false, connected: false, shopId: null }),
     });
 
     // Load listings for all products
@@ -728,6 +735,48 @@ export class AdminPageComponent implements OnInit {
       next: () => {
         this.pendingRemovals.update(list => list.filter(r => r.listingId !== listingId));
       },
+    });
+  }
+
+  connectEtsy(): void {
+    this.marketplaceError.set('');
+    this.http.get<{ url: string; state: string; codeVerifier: string }>(`${environment.apiUrl}/api/marketplace/etsy/connect`).subscribe({
+      next: (r) => {
+        this.etsyCodeVerifier = r.codeVerifier;
+        localStorage.setItem('etsy_code_verifier', r.codeVerifier);
+        window.location.href = r.url;
+      },
+      error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to start Etsy connection.'),
+    });
+  }
+
+  handleEtsyCallback(code: string): void {
+    const codeVerifier = localStorage.getItem('etsy_code_verifier') || this.etsyCodeVerifier;
+    if (!codeVerifier) {
+      this.marketplaceError.set('Missing code verifier. Please try connecting again.');
+      return;
+    }
+    localStorage.removeItem('etsy_code_verifier');
+
+    this.http.post<{ message: string; shopId: string }>(`${environment.apiUrl}/api/marketplace/etsy/callback`, {
+      code,
+      codeVerifier,
+    }).subscribe({
+      next: (r) => {
+        this.marketplaceSuccess.set(r.message);
+        this.etsyStatus.set({ apiKeyConfigured: true, connected: true, shopId: r.shopId });
+      },
+      error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to complete Etsy connection.'),
+    });
+  }
+
+  disconnectEtsy(): void {
+    this.http.post(`${environment.apiUrl}/api/marketplace/etsy/disconnect`, {}).subscribe({
+      next: () => {
+        this.marketplaceSuccess.set('Etsy disconnected.');
+        this.etsyStatus.set({ apiKeyConfigured: true, connected: false, shopId: null });
+      },
+      error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to disconnect Etsy.'),
     });
   }
 
@@ -1049,6 +1098,7 @@ export class AdminPageComponent implements OnInit {
       condition: product.condition,
       imageUrl: product.imageUrl,
       additionalImageUrls: [...(product.additionalImageUrls ?? [])],
+      videoUrls: [...(product.videoUrls ?? [])],
       inStock: product.inStock,
     };
     this.showForm.set(true);
@@ -1152,8 +1202,43 @@ export class AdminPageComponent implements OnInit {
       condition: 'good',
       imageUrl: '',
       additionalImageUrls: [] as string[],
+      videoUrls: [] as string[],
       inStock: true,
     };
+  }
+
+  readonly dragOverIndex = signal<number | null>(null);
+  private dragStartIndex: number | null = null;
+
+  onImageDragStart(index: number): void {
+    this.dragStartIndex = index;
+  }
+
+  onImageDragOver(event: DragEvent, index: number): void {
+    event.preventDefault();
+    this.dragOverIndex.set(index);
+  }
+
+  onImageDragLeave(): void {
+    this.dragOverIndex.set(null);
+  }
+
+  onImageDrop(targetIndex: number): void {
+    this.dragOverIndex.set(null);
+    if (this.dragStartIndex === null || this.dragStartIndex === targetIndex) {
+      return;
+    }
+    const imgs = this.allProductImages();
+    const [moved] = imgs.splice(this.dragStartIndex, 1);
+    imgs.splice(targetIndex, 0, moved);
+    this.form.imageUrl = imgs[0] ?? '';
+    this.form.additionalImageUrls = imgs.slice(1);
+    this.dragStartIndex = null;
+  }
+
+  onImageDragEnd(): void {
+    this.dragOverIndex.set(null);
+    this.dragStartIndex = null;
   }
 
   allProductImages(): string[] {
@@ -1217,6 +1302,43 @@ export class AdminPageComponent implements OnInit {
       });
     }
     input.value = '';
+  }
+
+  readonly videoUploading = signal(false);
+  readonly videoUploadError = signal('');
+
+  onVideoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+    this.videoUploading.set(true);
+    this.videoUploadError.set('');
+    let pending = files.length;
+    for (let i = 0; i < files.length; i++) {
+      this.productService.uploadVideo(files[i]).subscribe({
+        next: (res) => {
+          this.form.videoUrls = [...(this.form.videoUrls ?? []), res.videoUrl];
+          pending--;
+          if (pending === 0) {
+            this.videoUploading.set(false);
+          }
+        },
+        error: () => {
+          pending--;
+          if (pending === 0) {
+            this.videoUploading.set(false);
+          }
+          this.videoUploadError.set('Video upload failed. Max size is 50MB.');
+        },
+      });
+    }
+    input.value = '';
+  }
+
+  removeVideo(url: string): void {
+    this.form.videoUrls = (this.form.videoUrls ?? []).filter(v => v !== url);
   }
 
   loadFinance(): void {
@@ -1615,11 +1737,40 @@ export class AdminPageComponent implements OnInit {
     return div.textContent ?? '';
   }
 
+  private savedRange: Range | null = null;
+
+  saveSelection(): void {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      this.savedRange = selection.getRangeAt(0);
+    }
+  }
+
+  private restoreSelection(): void {
+    if (this.savedRange) {
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(this.savedRange);
+      }
+    }
+  }
+
   execRichText(command: string): void {
+    this.restoreSelection();
     if (command === 'insertParagraph') {
       document.execCommand('insertHTML', false, '<p><br></p>');
+    } else if (command === 'insertLineBreak') {
+      document.execCommand('insertHTML', false, '<br>');
     } else {
       document.execCommand(command, false);
+    }
+  }
+
+  onDescriptionKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && event.shiftKey) {
+      event.preventDefault();
+      document.execCommand('insertHTML', false, '<br>');
     }
   }
 
@@ -1629,7 +1780,51 @@ export class AdminPageComponent implements OnInit {
 
   onDescriptionPaste(event: ClipboardEvent): void {
     event.preventDefault();
-    const text = event.clipboardData?.getData('text/plain') ?? '';
-    document.execCommand('insertText', false, text);
+    const html = event.clipboardData?.getData('text/html') ?? '';
+    if (html) {
+      const cleaned = this.sanitisePastedHtml(html);
+      document.execCommand('insertHTML', false, cleaned);
+    } else {
+      const text = event.clipboardData?.getData('text/plain') ?? '';
+      document.execCommand('insertText', false, text);
+    }
+  }
+
+  private sanitisePastedHtml(html: string): string {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const allowedTags = new Set(['P', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'UL', 'OL', 'LI', 'H2', 'H3', 'H4', 'A']);
+
+    function clean(node: Node): string {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent ?? '';
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return '';
+      }
+      const el = node as Element;
+      const tag = el.tagName;
+      const children = Array.from(el.childNodes).map(clean).join('');
+
+      if (allowedTags.has(tag)) {
+        if (tag === 'A') {
+          const href = el.getAttribute('href');
+          if (href && (href.startsWith('http') || href.startsWith('/'))) {
+            return `<a href="${href}">${children}</a>`;
+          }
+          return children;
+        }
+        return `<${tag.toLowerCase()}>${children}</${tag.toLowerCase()}>`;
+      }
+
+      // Convert divs and spans to their content, add line break for block elements
+      if (['DIV', 'SECTION', 'ARTICLE', 'HEADER', 'FOOTER', 'BLOCKQUOTE'].includes(tag)) {
+        return `<p>${children}</p>`;
+      }
+
+      return children;
+    }
+
+    return clean(doc.body);
   }
 }

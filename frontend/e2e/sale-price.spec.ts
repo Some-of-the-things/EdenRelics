@@ -19,7 +19,6 @@ test.describe('Sale Prices', () => {
     test.setTimeout(90_000);
     await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
 
-    // Create a product via API
     const createRes = await page.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
@@ -37,7 +36,6 @@ test.describe('Sale Prices', () => {
     expect(createRes.status()).toBe(201);
     const product = await createRes.json();
 
-    // Set sale price via API
     const updateRes = await page.request.put(`${API}/products/${product.id}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: { salePrice: 75 },
@@ -47,16 +45,51 @@ test.describe('Sale Prices', () => {
     expect(updated.salePrice).toBe(75);
   });
 
-  test('sale price shows on product card with discount badge', async ({ browser }) => {
+  test('API returns showReduction and discount when 28-day rule met', async ({ page }) => {
     test.setTimeout(90_000);
-    // Create product with a standalone request context to avoid page lifecycle issues
-    const ctx = await browser.newContext();
-    const apiPage = await ctx.newPage();
-    const createRes = await apiPage.request.post(`${API}/products`, {
+    // Ensure admin token is ready (beforeAll may still be running on first test)
+    expect(adminToken).toBeTruthy();
+    await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
+
+    // Create product with sale price AND backdated price in one step
+    const createRes = await page.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
-        name: 'Discounted Vintage Dress',
-        description: 'On sale now',
+        name: 'Reduction API Test Dress',
+        description: 'Testing showReduction flag',
+        price: 200,
+        salePrice: 150,
+        era: '1980s',
+        category: '80s',
+        size: '12',
+        condition: 'excellent',
+        imageUrl: 'https://placehold.co/400x500',
+        inStock: true,
+        backdatePriceDays: 35,
+      },
+    });
+    expect(createRes.status()).toBe(201);
+    const product = await createRes.json();
+
+    // Public API should return showReduction: true and correct discount
+    const publicRes = await page.request.get(`${API}/products/${product.id}`);
+    const publicData = await publicRes.json();
+    expect(publicData.showReduction).toBe(true);
+    expect(publicData.discountPercent).toBe(25);
+    expect(publicData.salePrice).toBe(150);
+    expect(publicData.price).toBe(200);
+  });
+
+  test('API returns showReduction false when price set less than 28 days ago', async ({ page }) => {
+    test.setTimeout(90_000);
+    await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
+
+    // Create product with sale price but NO backdating (price just set)
+    const createRes = await page.request.post(`${API}/products`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      data: {
+        name: 'No Reduction Test Dress',
+        description: 'Should not show as reduction',
         price: 200,
         salePrice: 150,
         era: '1980s',
@@ -68,35 +101,20 @@ test.describe('Sale Prices', () => {
       },
     });
     expect(createRes.status()).toBe(201);
-    await apiPage.close();
+    const product = await createRes.json();
 
-    // Navigate with a fresh page that has cookie consent set
-    const page = await ctx.newPage();
-    await page.addInitScript(() => {
-      localStorage.setItem('eden_cookie_consent', 'all');
-    });
-    await page.goto('/cart');
-    // Navigate to home via client-side routing to get fresh product data
-    await page.getByRole('link', { name: /eden relics/i }).first().click();
-    await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 15_000 });
-
-    // Find the first sale product card
-    const saleCard = page.locator('.product-card', { hasText: 'Discounted Vintage Dress' }).first();
-    await saleCard.scrollIntoViewIfNeeded();
-    await expect(saleCard).toBeVisible({ timeout: 10_000 });
-
-    // Should show sale badge
-    await expect(saleCard.locator('.product-card__sale-badge')).toBeVisible();
-    // Should show original price crossed out
-    await expect(saleCard.locator('.product-card__price--original')).toBeVisible();
-    // Should show sale price
-    await expect(saleCard.locator('.product-card__price--sale')).toBeVisible();
+    // Public API should return showReduction: false
+    const publicRes = await page.request.get(`${API}/products/${product.id}`);
+    const publicData = await publicRes.json();
+    expect(publicData.showReduction).toBe(false);
+    expect(publicData.salePrice).toBe(150);
   });
 
-  test('sale price shows on product detail page with discount', async ({ page }) => {
+  test('sale price shows on product detail page with discount when 28-day rule met', async ({ page }) => {
     test.setTimeout(90_000);
     await setAuthInBrowser(page, adminToken, adminEmail, 'Test', 'User', 'Admin');
-    // Create a product with sale price
+
+    // Create product with sale price and backdated price in one step
     const createRes = await page.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
@@ -110,21 +128,29 @@ test.describe('Sale Prices', () => {
         condition: 'mint',
         imageUrl: 'https://placehold.co/400x500',
         inStock: true,
+        backdatePriceDays: 35,
       },
     });
     expect(createRes.status()).toBe(201);
     const product = await createRes.json();
 
-    await page.goto(`/product/${product.id}`);
-    await expect(page.locator('.detail__name')).toBeVisible({ timeout: 10_000 });
+    // Verify API returns showReduction: true
+    const getRes = await page.request.get(`${API}/products/${product.id}`);
+    const productData = await getRes.json();
+    expect(productData.showReduction).toBe(true);
+    expect(productData.discountPercent).toBe(30);
 
-    // Should show original price crossed out
-    await expect(page.locator('.detail__price--original')).toBeVisible();
-    // Should show sale price
-    await expect(page.locator('.detail__price--sale')).toBeVisible();
-    // Should show discount badge
-    await expect(page.locator('.detail__discount')).toBeVisible();
-    await expect(page.locator('.detail__discount')).toContainText('30%');
+    // Fresh context for clean product store
+    const freshContext = await page.context().browser()!.newContext();
+    const freshPage = await freshContext.newPage();
+    await freshPage.goto(`/product/${product.id}`);
+    await expect(freshPage.locator('.detail__name')).toBeVisible({ timeout: 15_000 });
+
+    await expect(freshPage.locator('.detail__price--original')).toBeVisible({ timeout: 5_000 });
+    await expect(freshPage.locator('.detail__price--sale')).toBeVisible();
+    await expect(freshPage.locator('.detail__discount')).toBeVisible();
+    await expect(freshPage.locator('.detail__discount')).toContainText('30%');
+    await freshContext.close();
   });
 
 });
@@ -135,7 +161,6 @@ test.describe('Sale Price Clearing', () => {
     test.setTimeout(90_000);
     const token = await registerAdmin(page, uniqueEmail('sale-clear-admin'));
 
-    // Create product with sale price
     const createRes = await page.request.post(`${API}/products`, {
       headers: { Authorization: `Bearer ${token}` },
       data: {
@@ -154,7 +179,6 @@ test.describe('Sale Price Clearing', () => {
     expect(createRes.ok()).toBeTruthy();
     const product = await createRes.json();
 
-    // Clear sale price
     const updateRes = await page.request.put(`${API}/products/${product.id}`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { salePrice: 0 },

@@ -114,10 +114,10 @@
           <div class="admin__field">
             <span>Description</span>
             <div class="admin__richtext-toolbar">
-              <button type="button" class="admin__richtext-btn" (click)="execRichText('bold')" title="Bold"><b>B</b></button>
-              <button type="button" class="admin__richtext-btn" (click)="execRichText('italic')" title="Italic"><i>I</i></button>
-              <button type="button" class="admin__richtext-btn" (click)="execRichText('underline')" title="Underline"><u>U</u></button>
-              <button type="button" class="admin__richtext-btn" (click)="execRichText('insertParagraph')" title="New paragraph">P</button>
+              <button type="button" class="admin__richtext-btn" (mousedown)="$event.preventDefault(); execRichText('bold')" title="Bold"><b>B</b></button>
+              <button type="button" class="admin__richtext-btn" (mousedown)="$event.preventDefault(); execRichText('italic')" title="Italic"><i>I</i></button>
+              <button type="button" class="admin__richtext-btn" (mousedown)="$event.preventDefault(); execRichText('underline')" title="Underline"><u>U</u></button>
+              <button type="button" class="admin__richtext-btn" (mousedown)="$event.preventDefault(); execRichText('insertParagraph')" title="New paragraph">P</button>
             </div>
             <div
               class="admin__richtext"
@@ -125,6 +125,10 @@
               #descriptionEditor
               (input)="onDescriptionInput($event)"
               (paste)="onDescriptionPaste($event)"
+              (keydown)="onDescriptionKeydown($event)"
+              (mouseup)="saveSelection()"
+              (keyup)="saveSelection()"
+              (focusout)="saveSelection()"
             ></div>
           </div>
           <div class="admin__row">
@@ -200,7 +204,17 @@
             <span>Photos (click to set as primary)</span>
             <div class="admin__gallery">
               @for (img of allProductImages(); track img; let i = $index) {
-                <div class="admin__gallery-item" [class.admin__gallery-item--primary]="img === form.imageUrl">
+                <div
+                  class="admin__gallery-item"
+                  [class.admin__gallery-item--primary]="img === form.imageUrl"
+                  [class.admin__gallery-item--drag-over]="dragOverIndex() === i"
+                  draggable="true"
+                  (dragstart)="onImageDragStart(i)"
+                  (dragover)="onImageDragOver($event, i)"
+                  (dragleave)="onImageDragLeave()"
+                  (drop)="onImageDrop(i)"
+                  (dragend)="onImageDragEnd()"
+                >
                   <img [src]="img" alt="Product photo" class="admin__gallery-thumb" (click)="setPrimaryImage(img)" />
                   @if (img === form.imageUrl) {
                     <span class="admin__gallery-badge">Primary</span>
@@ -226,6 +240,28 @@
               @if (analyseError()) {
                 <span class="admin__upload-error">{{ analyseError() }}</span>
               }
+            }
+          </div>
+          <div class="admin__field">
+            <span>Videos</span>
+            <div class="admin__gallery">
+              @for (video of form.videoUrls ?? []; track video) {
+                <div class="admin__gallery-item admin__gallery-item--video">
+                  <video [src]="video" class="admin__gallery-thumb" muted></video>
+                  <span class="admin__gallery-badge">Video</span>
+                  <button type="button" class="admin__gallery-remove" (click)="removeVideo(video)" aria-label="Remove video">&times;</button>
+                </div>
+              }
+              <label class="admin__gallery-add">
+                + Add Video
+                <input type="file" accept="video/mp4,video/mov,video/webm,video/avi" multiple (change)="onVideoSelected($event)" hidden />
+              </label>
+            </div>
+            @if (videoUploading()) {
+              <span class="admin__uploading">Uploading video...</span>
+            }
+            @if (videoUploadError()) {
+              <span class="admin__upload-error">{{ videoUploadError() }}</span>
             }
           </div>
           <div class="admin__actions">
@@ -1459,7 +1495,7 @@
                           {{ listing.status }}
                         </span>
                       } @else if (item.product.inStock) {
-                        @if (platform === 'Etsy' && etsyConfigured()) {
+                        @if (platform === 'Etsy' && etsyStatus()?.connected) {
                           <button class="mkt__list-btn" (click)="listOnPlatform(item.product.id, platform)">List</button>
                         } @else if (platform === 'Depop' || platform === 'Vinted') {
                           <button class="mkt__list-btn" (click)="generateListing(item.product.id, platform); listOnPlatform(item.product.id, platform)">List</button>
@@ -1528,13 +1564,21 @@
         </div>
       }
 
-      <!-- Etsy setup hint -->
-      @if (etsyConfigured() === false) {
+      <!-- Etsy connection -->
+      @if (etsyStatus(); as etsy) {
         <div class="ig__setup">
-          <h3 class="ig__setup-title">Etsy Not Configured</h3>
-          <p class="ig__setup-text">To enable automatic Etsy listings, set these Fly secrets:</p>
-          <code class="ig__setup-code">fly secrets set "Etsy__ApiKey=YOUR_KEY" "Etsy__AccessToken=YOUR_TOKEN" "Etsy__ShopId=YOUR_SHOP_ID" --app eden-relics-api</code>
-          <p class="ig__setup-text">You need an Etsy developer app registered at <strong>developers.etsy.com</strong>.</p>
+          @if (etsy.connected) {
+            <h3 class="ig__setup-title">Etsy Connected</h3>
+            <p class="ig__setup-text">Shop ID: <strong>{{ etsy.shopId }}</strong></p>
+            <button class="admin__cancel-btn" (click)="disconnectEtsy()">Disconnect Etsy</button>
+          } @else if (etsy.apiKeyConfigured) {
+            <h3 class="ig__setup-title">Etsy Not Connected</h3>
+            <p class="ig__setup-text">Your API key is configured. Click below to authorize Eden Relics to manage your Etsy listings.</p>
+            <button class="admin__save-btn" (click)="connectEtsy()">Connect Etsy</button>
+          } @else {
+            <h3 class="ig__setup-title">Etsy Not Configured</h3>
+            <p class="ig__setup-text">To enable Etsy integration, set the <code>Etsy:ApiKey</code> secret with your Etsy developer app Keystring.</p>
+          }
         </div>
       }
     </div>

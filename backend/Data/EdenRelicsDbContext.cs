@@ -33,6 +33,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<MonzoTransaction> MonzoTransactions => Set<MonzoTransaction>();
     public DbSet<MonzoToken> MonzoTokens => Set<MonzoToken>();
+    public DbSet<EtsyToken> EtsyTokens => Set<EtsyToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

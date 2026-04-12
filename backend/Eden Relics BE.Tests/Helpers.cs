@@ -56,7 +56,7 @@ public static class Helpers
 
     public record AuthResponse(string Token, UserResponse User);
     public record UserResponse(Guid Id, string Email, string FirstName, string LastName, string Role, bool EmailVerified);
-    public record ProductResponse(Guid Id, string Name, string Description, decimal Price, decimal? SalePrice, string Era, string Category, string Size, string Condition, string ImageUrl, List<string> AdditionalImageUrls, List<string> VideoUrls, bool InStock, int ViewCount);
+    public record ProductResponse(Guid Id, string Name, string Description, decimal Price, decimal? SalePrice, bool ShowReduction, int DiscountPercent, string Era, string Category, string Size, string Condition, string ImageUrl, List<string> AdditionalImageUrls, List<string> VideoUrls, bool InStock, int ViewCount);
     public record OrderResponse(Guid Id, string Status, decimal Total, DateTime CreatedAtUtc, List<OrderItemResponse> Items);
     public record OrderItemResponse(Guid ProductId, string ProductName, decimal UnitPrice, int Quantity);
     public record ProfileResponse(Guid Id, string Email, string FirstName, string LastName, AddressResponse DeliveryAddress, AddressResponse BillingAddress, PaymentResponse? Payment, bool MfaEnabled, bool EmailVerified);
