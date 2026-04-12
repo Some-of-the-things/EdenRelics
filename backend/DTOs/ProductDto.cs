@@ -6,6 +6,8 @@ public record ProductDto(
     string Description,
     decimal Price,
     decimal? SalePrice,
+    bool ShowReduction,
+    int DiscountPercent,
     string Era,
     string Category,
     string Size,

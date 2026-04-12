@@ -21,16 +21,16 @@
       <div class="detail__info">
         <span class="detail__era">{{ product.era }}</span>
         <h1 class="detail__name">{{ product.name }}</h1>
-        @if (product.salePrice) {
+        @if (product.showReduction) {
           <div class="detail__price-wrap">
             <span class="detail__price detail__price--original">{{ product.price | currency:'GBP' }}</span>
             <span class="detail__price detail__price--sale">{{ product.salePrice | currency:'GBP' }}</span>
-            <span class="detail__discount">{{ (1 - product.salePrice / product.price) * 100 | number:'1.0-0' }}% off</span>
+            <span class="detail__discount">{{ product.discountPercent }}% off</span>
             <span class="detail__local-price">{{ product.salePrice | localPrice }}</span>
           </div>
         } @else {
-          <p class="detail__price">{{ product.price | currency:'GBP' }}</p>
-          <p class="detail__local-price">{{ product.price | localPrice }}</p>
+          <p class="detail__price">{{ (product.salePrice ?? product.price) | currency:'GBP' }}</p>
+          <p class="detail__local-price">{{ (product.salePrice ?? product.price) | localPrice }}</p>
         }
         @if (product.videoUrls?.length) {
           <div class="detail__videos">

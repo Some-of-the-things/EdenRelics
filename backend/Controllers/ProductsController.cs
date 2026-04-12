@@ -116,7 +116,9 @@ public class ProductsController : ControllerBase
             AdditionalImageUrls = dto.AdditionalImageUrls ?? [],
             VideoUrls = dto.VideoUrls ?? [],
             InStock = dto.InStock,
-            SalePrice = dto.SalePrice
+            SalePrice = dto.SalePrice,
+            PriceSetAtUtc = DateTime.UtcNow,
+            SalePriceSetAtUtc = dto.SalePrice.HasValue ? DateTime.UtcNow : null
         };
 
         await _repository.AddAsync(product);
@@ -138,7 +140,11 @@ public class ProductsController : ControllerBase
 
         if (dto.Name is not null) { product.Name = dto.Name; }
         if (dto.Description is not null) { product.Description = dto.Description; }
-        if (dto.Price.HasValue) { product.Price = dto.Price.Value; }
+        if (dto.Price.HasValue && dto.Price.Value != product.Price)
+        {
+            product.Price = dto.Price.Value;
+            product.PriceSetAtUtc = DateTime.UtcNow;
+        }
         if (dto.CostPrice.HasValue) { product.CostPrice = dto.CostPrice.Value; }
         if (dto.Supplier is not null) { product.Supplier = dto.Supplier; }
         if (dto.Era is not null) { product.Era = dto.Era; }
@@ -160,7 +166,16 @@ public class ProductsController : ControllerBase
         if (dto.SalePrice.HasValue)
         {
             decimal? oldSalePrice = product.SalePrice;
-            product.SalePrice = dto.SalePrice.Value == 0 ? null : dto.SalePrice.Value;
+            decimal? newSalePrice = dto.SalePrice.Value == 0 ? null : dto.SalePrice.Value;
+            product.SalePrice = newSalePrice;
+            if (newSalePrice.HasValue && oldSalePrice != newSalePrice)
+            {
+                product.SalePriceSetAtUtc = DateTime.UtcNow;
+            }
+            else if (!newSalePrice.HasValue)
+            {
+                product.SalePriceSetAtUtc = null;
+            }
             shouldNotifySale = product.SalePrice.HasValue && oldSalePrice != product.SalePrice;
         }
 
@@ -700,7 +715,29 @@ public class ProductsController : ControllerBase
                 description = td;
             }
         }
-        return new(p.Id, name, description, p.Price, p.SalePrice, p.Era,
+
+        // UK Pricing Practices Guide compliance:
+        // 1. Original price must have been the genuine selling price for at least
+        //    28 consecutive days before a reduction can be advertised
+        // 2. The reduced price should not run for longer than the product was at
+        //    the original price — after that, the sale price becomes the new
+        //    "normal" price and the reduction framing must stop
+        bool showReduction = false;
+        int discountPercent = 0;
+        if (p.SalePrice.HasValue && p.SalePrice.Value < p.Price)
+        {
+            DateTime priceSetAt = p.PriceSetAtUtc ?? p.CreatedAtUtc;
+            TimeSpan timeAtOriginalPrice = (p.SalePriceSetAtUtc ?? DateTime.UtcNow) - priceSetAt;
+            bool meetsMinimumDuration = timeAtOriginalPrice >= TimeSpan.FromDays(28);
+
+            TimeSpan timeOnSale = DateTime.UtcNow - (p.SalePriceSetAtUtc ?? DateTime.UtcNow);
+            bool saleNotExpired = timeOnSale <= timeAtOriginalPrice;
+
+            showReduction = meetsMinimumDuration && saleNotExpired;
+            discountPercent = (int)Math.Round((1 - p.SalePrice.Value / p.Price) * 100);
+        }
+
+        return new(p.Id, name, description, p.Price, p.SalePrice, showReduction, discountPercent, p.Era,
             p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.InStock);
     }
 

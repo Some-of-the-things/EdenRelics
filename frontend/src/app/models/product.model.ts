@@ -4,6 +4,8 @@ export interface Product {
   description: string;
   price: number;
   salePrice?: number | null;
+  showReduction?: boolean;
+  discountPercent?: number;
   costPrice?: number;
   supplier?: string;
   era: string;

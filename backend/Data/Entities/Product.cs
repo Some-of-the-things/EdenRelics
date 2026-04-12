@@ -16,6 +16,13 @@ public class Product : BaseEntity
     public List<string> VideoUrls { get; set; } = [];
     public bool InStock { get; set; }
     public decimal? SalePrice { get; set; }
+
+    /// <summary>When the current Price was set (for 28-day reduction rule compliance)</summary>
+    public DateTime? PriceSetAtUtc { get; set; }
+
+    /// <summary>When the sale price was applied (to enforce max reduction duration)</summary>
+    public DateTime? SalePriceSetAtUtc { get; set; }
+
     public int ViewCount { get; set; }
     public List<ProductListing> Listings { get; set; } = [];
 
