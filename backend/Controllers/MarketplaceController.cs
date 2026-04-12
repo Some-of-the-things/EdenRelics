@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
@@ -10,7 +12,7 @@ namespace Eden_Relics_BE.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
-public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFactory httpClientFactory, IConfiguration configuration) : ControllerBase
+public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<MarketplaceController> logger) : ControllerBase
 {
     // --- Listing management ---
 
@@ -53,7 +55,6 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
 
         listing.Status = dto.Status;
 
-        // If marked as sold, flag all other active listings for removal and mark product as out of stock
         if (dto.Status == "Sold")
         {
             listing.Product.InStock = false;
@@ -77,8 +78,6 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
         return NoContent();
     }
 
-    // --- Mark sold from any channel (called when Stripe webhook fires or manually) ---
-
     [HttpPost("mark-sold/{productId:guid}")]
     public async Task<ActionResult> MarkSold(Guid productId, [FromBody] MarkSoldDto dto)
     {
@@ -98,7 +97,6 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
             else
             {
                 listing.Status = "PendingRemoval";
-                // If it's an Etsy listing, try to deactivate it automatically
                 if (listing.Platform == "Etsy" && listing.ExternalListingId is not null)
                 {
                     await TryDeactivateEtsyListing(listing.ExternalListingId);
@@ -109,8 +107,6 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
         await context.SaveChangesAsync();
         return Ok(new { message = $"Product marked as sold on {dto.SoldOn}. Other listings flagged for removal." });
     }
-
-    // --- Get all products with pending removals ---
 
     [HttpGet("pending-removals")]
     public async Task<ActionResult<List<PendingRemovalDto>>> GetPendingRemovals()
@@ -135,18 +131,134 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
         return Ok();
     }
 
-    // --- Etsy integration ---
+    // --- Etsy OAuth ---
+
+    [HttpGet("etsy/connect")]
+    public ActionResult EtsyConnect()
+    {
+        string? apiKey = configuration["Etsy:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            return BadRequest(new { message = "Etsy API key not configured. Set Etsy:ApiKey." });
+        }
+
+        string redirectUri = configuration["Etsy:RedirectUri"] ?? "http://localhost:4200/admin?etsy=callback";
+
+        // Generate PKCE code verifier and challenge
+        byte[] verifierBytes = new byte[96];
+        RandomNumberGenerator.Fill(verifierBytes);
+        string codeVerifier = Convert.ToBase64String(verifierBytes)
+            .Replace("+", "-").Replace("/", "_").TrimEnd('=')[..128];
+
+        byte[] challengeBytes = SHA256.HashData(Encoding.ASCII.GetBytes(codeVerifier));
+        string codeChallenge = Convert.ToBase64String(challengeBytes)
+            .Replace("+", "-").Replace("/", "_").TrimEnd('=');
+
+        string state = Guid.NewGuid().ToString("N");
+        string scopes = "listings_r listings_w listings_d shops_r";
+
+        string url = $"https://www.etsy.com/oauth/connect" +
+            $"?response_type=code" +
+            $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
+            $"&scope={Uri.EscapeDataString(scopes)}" +
+            $"&client_id={Uri.EscapeDataString(apiKey)}" +
+            $"&state={Uri.EscapeDataString(state)}" +
+            $"&code_challenge={Uri.EscapeDataString(codeChallenge)}" +
+            $"&code_challenge_method=S256";
+
+        return Ok(new { url, state, codeVerifier });
+    }
+
+    [HttpPost("etsy/callback")]
+    public async Task<ActionResult> EtsyCallback([FromBody] EtsyCallbackDto dto)
+    {
+        string? apiKey = configuration["Etsy:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            return BadRequest(new { message = "Etsy API key not configured." });
+        }
+
+        string redirectUri = configuration["Etsy:RedirectUri"] ?? "http://localhost:4200/admin?etsy=callback";
+
+        HttpClient client = httpClientFactory.CreateClient();
+        FormUrlEncodedContent content = new([
+            new("grant_type", "authorization_code"),
+            new("client_id", apiKey),
+            new("redirect_uri", redirectUri),
+            new("code", dto.Code),
+            new("code_verifier", dto.CodeVerifier),
+        ]);
+
+        HttpResponseMessage response = await client.PostAsync("https://api.etsy.com/v3/public/oauth/token", content);
+        string body = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning("Etsy token exchange failed: {Status}", response.StatusCode);
+            return BadRequest(new { message = "Failed to exchange authorization code." });
+        }
+
+        using JsonDocument doc = JsonDocument.Parse(body);
+        JsonElement root = doc.RootElement;
+        string accessToken = root.GetProperty("access_token").GetString()!;
+        string refreshToken = root.GetProperty("refresh_token").GetString()!;
+        int expiresIn = root.GetProperty("expires_in").GetInt32();
+
+        // Fetch shop ID
+        string shopId = await FetchShopId(client, apiKey, accessToken) ?? "";
+
+        // Store token (replace any existing)
+        List<EtsyToken> existing = await context.EtsyTokens.ToListAsync();
+        context.EtsyTokens.RemoveRange(existing);
+
+        context.EtsyTokens.Add(new EtsyToken
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            ShopId = shopId,
+            ExpiresAtUtc = DateTime.UtcNow.AddSeconds(expiresIn),
+        });
+        await context.SaveChangesAsync();
+
+        return Ok(new { message = "Etsy connected.", shopId });
+    }
+
+    [HttpPost("etsy/disconnect")]
+    public async Task<ActionResult> EtsyDisconnect()
+    {
+        List<EtsyToken> tokens = await context.EtsyTokens.ToListAsync();
+        context.EtsyTokens.RemoveRange(tokens);
+        await context.SaveChangesAsync();
+        return Ok(new { message = "Etsy disconnected." });
+    }
+
+    [HttpGet("etsy/status")]
+    public async Task<ActionResult<object>> EtsyStatus()
+    {
+        EtsyToken? token = await context.EtsyTokens.FirstOrDefaultAsync();
+        bool connected = token is not null && !string.IsNullOrEmpty(token.ShopId);
+        bool apiKeyConfigured = !string.IsNullOrWhiteSpace(configuration["Etsy:ApiKey"]);
+
+        return Ok(new
+        {
+            apiKeyConfigured,
+            connected,
+            shopId = token?.ShopId
+        });
+    }
+
+    // --- Etsy listing operations ---
 
     [HttpPost("etsy/create-listing")]
     public async Task<ActionResult<ProductListingDto>> CreateEtsyListing([FromBody] EtsyListingRequest dto)
     {
         string? apiKey = configuration["Etsy:ApiKey"];
-        string? accessToken = configuration["Etsy:AccessToken"];
-        string? shopId = configuration["Etsy:ShopId"];
+        string? accessToken = await EnsureValidEtsyTokenAsync();
 
-        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(shopId))
+        EtsyToken? token = await context.EtsyTokens.FirstOrDefaultAsync();
+        if (string.IsNullOrWhiteSpace(apiKey) || accessToken is null || token is null || string.IsNullOrEmpty(token.ShopId))
         {
-            return BadRequest(new { message = "Etsy is not configured. Set Etsy:ApiKey, Etsy:AccessToken, and Etsy:ShopId." });
+            return BadRequest(new { message = "Etsy is not connected. Please connect via the Etsy OAuth flow first." });
         }
 
         Product? product = await context.Products.FindAsync(dto.ProductId);
@@ -164,14 +276,14 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
             ["price"] = product.Price.ToString("F2"),
             ["who_made"] = "someone_else",
             ["when_made"] = MapEraToEtsyWhenMade(product.Era),
-            ["taxonomy_id"] = "1759", // Clothing > Dresses
+            ["taxonomy_id"] = "1759",
             ["is_supply"] = "false",
             ["type"] = "physical",
         };
 
         FormUrlEncodedContent content = new(listingData);
         HttpResponseMessage response = await client.PostAsync(
-            $"https://openapi.etsy.com/v3/application/shops/{shopId}/listings", content);
+            $"https://openapi.etsy.com/v3/application/shops/{token.ShopId}/listings", content);
 
         string responseJson = await response.Content.ReadAsStringAsync();
 
@@ -181,8 +293,8 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
             return BadRequest(new { message = $"Etsy API error: {error}" });
         }
 
-        using JsonDocument doc = JsonDocument.Parse(responseJson);
-        string listingId = doc.RootElement.GetProperty("listing_id").GetInt64().ToString();
+        using JsonDocument listingDoc = JsonDocument.Parse(responseJson);
+        string listingId = listingDoc.RootElement.GetProperty("listing_id").GetInt64().ToString();
 
         ProductListing listing = new()
         {
@@ -198,16 +310,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
         return Ok(ToDto(listing));
     }
 
-    [HttpGet("etsy/status")]
-    public ActionResult<object> EtsyStatus()
-    {
-        bool configured = !string.IsNullOrWhiteSpace(configuration["Etsy:ApiKey"])
-            && !string.IsNullOrWhiteSpace(configuration["Etsy:AccessToken"])
-            && !string.IsNullOrWhiteSpace(configuration["Etsy:ShopId"]);
-        return Ok(new { configured });
-    }
-
-    // --- Listing text generator for Depop/Vinted ---
+    // --- Listing text generator ---
 
     [HttpGet("generate-listing/{productId:guid}")]
     public async Task<ActionResult<GeneratedListingDto>> GenerateListingText(Guid productId, [FromQuery] string platform)
@@ -238,13 +341,79 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
         return Ok(new GeneratedListingDto(title, description, product.Price, product.ImageUrl));
     }
 
-    // --- Helpers ---
+    // --- Etsy token management ---
+
+    private async Task<string?> EnsureValidEtsyTokenAsync()
+    {
+        EtsyToken? token = await context.EtsyTokens.FirstOrDefaultAsync();
+        if (token is null) { return null; }
+
+        if (token.ExpiresAtUtc > DateTime.UtcNow.AddMinutes(5))
+        {
+            return token.AccessToken;
+        }
+
+        string? apiKey = configuration["Etsy:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey)) { return null; }
+
+        HttpClient client = httpClientFactory.CreateClient();
+        FormUrlEncodedContent content = new([
+            new("grant_type", "refresh_token"),
+            new("client_id", apiKey),
+            new("refresh_token", token.RefreshToken),
+        ]);
+
+        HttpResponseMessage response = await client.PostAsync("https://api.etsy.com/v3/public/oauth/token", content);
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning("Etsy token refresh failed: {Status}", response.StatusCode);
+            return null;
+        }
+
+        string json = await response.Content.ReadAsStringAsync();
+        using JsonDocument doc = JsonDocument.Parse(json);
+        JsonElement root = doc.RootElement;
+
+        token.AccessToken = root.GetProperty("access_token").GetString()!;
+        token.RefreshToken = root.GetProperty("refresh_token").GetString()!;
+        token.ExpiresAtUtc = DateTime.UtcNow.AddSeconds(root.GetProperty("expires_in").GetInt32());
+        await context.SaveChangesAsync();
+
+        logger.LogInformation("Etsy token refreshed, expires at {ExpiresAt}", token.ExpiresAtUtc);
+        return token.AccessToken;
+    }
+
+    private async Task<string?> FetchShopId(HttpClient client, string apiKey, string accessToken)
+    {
+        try
+        {
+            client.DefaultRequestHeaders.Clear();
+            client.DefaultRequestHeaders.Add("x-api-key", apiKey);
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+
+            HttpResponseMessage response = await client.GetAsync("https://openapi.etsy.com/v3/application/users/me/shops");
+            if (!response.IsSuccessStatusCode) { return null; }
+
+            string json = await response.Content.ReadAsStringAsync();
+            using JsonDocument doc = JsonDocument.Parse(json);
+
+            if (doc.RootElement.TryGetProperty("results", out JsonElement results) && results.GetArrayLength() > 0)
+            {
+                return results[0].GetProperty("shop_id").GetInt64().ToString();
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to fetch Etsy shop ID");
+        }
+        return null;
+    }
 
     private async Task TryDeactivateEtsyListing(string listingId)
     {
         string? apiKey = configuration["Etsy:ApiKey"];
-        string? accessToken = configuration["Etsy:AccessToken"];
-        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(accessToken)) { return; }
+        string? accessToken = await EnsureValidEtsyTokenAsync();
+        if (string.IsNullOrWhiteSpace(apiKey) || accessToken is null) { return; }
 
         try
         {
@@ -296,4 +465,5 @@ public record UpdateListingStatusDto(string Status);
 public record MarkSoldDto(string SoldOn);
 public record PendingRemovalDto(Guid ListingId, Guid ProductId, string ProductName, string Platform, string? ExternalUrl);
 public record EtsyListingRequest(Guid ProductId, string? Title, string? Description);
+public record EtsyCallbackDto(string Code, string CodeVerifier);
 public record GeneratedListingDto(string Title, string Description, decimal Price, string ImageUrl);
