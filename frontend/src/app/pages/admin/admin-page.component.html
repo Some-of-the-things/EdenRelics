@@ -1493,7 +1493,7 @@
                           {{ listing.status }}
                         </span>
                       } @else if (item.product.inStock) {
-                        @if (platform === 'Etsy' && etsyConfigured()) {
+                        @if (platform === 'Etsy' && etsyStatus()?.connected) {
                           <button class="mkt__list-btn" (click)="listOnPlatform(item.product.id, platform)">List</button>
                         } @else if (platform === 'Depop' || platform === 'Vinted') {
                           <button class="mkt__list-btn" (click)="generateListing(item.product.id, platform); listOnPlatform(item.product.id, platform)">List</button>
@@ -1562,13 +1562,21 @@
         </div>
       }
 
-      <!-- Etsy setup hint -->
-      @if (etsyConfigured() === false) {
+      <!-- Etsy connection -->
+      @if (etsyStatus(); as etsy) {
         <div class="ig__setup">
-          <h3 class="ig__setup-title">Etsy Not Configured</h3>
-          <p class="ig__setup-text">To enable automatic Etsy listings, set these Fly secrets:</p>
-          <code class="ig__setup-code">fly secrets set "Etsy__ApiKey=YOUR_KEY" "Etsy__AccessToken=YOUR_TOKEN" "Etsy__ShopId=YOUR_SHOP_ID" --app eden-relics-api</code>
-          <p class="ig__setup-text">You need an Etsy developer app registered at <strong>developers.etsy.com</strong>.</p>
+          @if (etsy.connected) {
+            <h3 class="ig__setup-title">Etsy Connected</h3>
+            <p class="ig__setup-text">Shop ID: <strong>{{ etsy.shopId }}</strong></p>
+            <button class="admin__cancel-btn" (click)="disconnectEtsy()">Disconnect Etsy</button>
+          } @else if (etsy.apiKeyConfigured) {
+            <h3 class="ig__setup-title">Etsy Not Connected</h3>
+            <p class="ig__setup-text">Your API key is configured. Click below to authorize Eden Relics to manage your Etsy listings.</p>
+            <button class="admin__save-btn" (click)="connectEtsy()">Connect Etsy</button>
+          } @else {
+            <h3 class="ig__setup-title">Etsy Not Configured</h3>
+            <p class="ig__setup-text">To enable Etsy integration, set the <code>Etsy:ApiKey</code> secret with your Etsy developer app Keystring.</p>
+          }
         </div>
       }
     </div>

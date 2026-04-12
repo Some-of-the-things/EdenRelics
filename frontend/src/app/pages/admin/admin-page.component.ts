@@ -444,7 +444,8 @@ export class AdminPageComponent implements OnInit {
   readonly marketplaceProducts = signal<{ product: Product; listings: { id: string; platform: string; status: string; externalUrl: string | null }[] }[]>([]);
   readonly marketplaceLoading = signal(false);
   readonly generatedListing = signal<{ title: string; description: string; price: number; imageUrl: string } | null>(null);
-  readonly etsyConfigured = signal<boolean | null>(null);
+  readonly etsyStatus = signal<{ apiKeyConfigured: boolean; connected: boolean; shopId: string | null } | null>(null);
+  private etsyCodeVerifier = '';
   readonly marketplaceError = signal('');
   readonly marketplaceSuccess = signal('');
 
@@ -510,6 +511,11 @@ export class AdminPageComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       if (params['monzo'] === 'callback' && params['code']) {
         this.handleMonzoCallback(params['code'], params['state'] ?? '');
+      }
+      if (params['etsy'] === 'callback' && params['code']) {
+        this.switchTab('marketplace');
+        this.handleEtsyCallback(params['code']);
+        this.router.navigate(['/admin'], { queryParams: {} });
       }
     });
   }
@@ -653,8 +659,8 @@ export class AdminPageComponent implements OnInit {
       next: (r) => this.pendingRemovals.set(r),
     });
 
-    this.http.get<{ configured: boolean }>(`${environment.apiUrl}/api/marketplace/etsy/status`).subscribe({
-      next: (r) => this.etsyConfigured.set(r.configured),
+    this.http.get<{ apiKeyConfigured: boolean; connected: boolean; shopId: string | null }>(`${environment.apiUrl}/api/marketplace/etsy/status`).subscribe({
+      next: (r) => this.etsyStatus.set(r),
     });
 
     // Load listings for all products
@@ -728,6 +734,48 @@ export class AdminPageComponent implements OnInit {
       next: () => {
         this.pendingRemovals.update(list => list.filter(r => r.listingId !== listingId));
       },
+    });
+  }
+
+  connectEtsy(): void {
+    this.marketplaceError.set('');
+    this.http.get<{ url: string; state: string; codeVerifier: string }>(`${environment.apiUrl}/api/marketplace/etsy/connect`).subscribe({
+      next: (r) => {
+        this.etsyCodeVerifier = r.codeVerifier;
+        localStorage.setItem('etsy_code_verifier', r.codeVerifier);
+        window.location.href = r.url;
+      },
+      error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to start Etsy connection.'),
+    });
+  }
+
+  handleEtsyCallback(code: string): void {
+    const codeVerifier = localStorage.getItem('etsy_code_verifier') || this.etsyCodeVerifier;
+    if (!codeVerifier) {
+      this.marketplaceError.set('Missing code verifier. Please try connecting again.');
+      return;
+    }
+    localStorage.removeItem('etsy_code_verifier');
+
+    this.http.post<{ message: string; shopId: string }>(`${environment.apiUrl}/api/marketplace/etsy/callback`, {
+      code,
+      codeVerifier,
+    }).subscribe({
+      next: (r) => {
+        this.marketplaceSuccess.set(r.message);
+        this.etsyStatus.set({ apiKeyConfigured: true, connected: true, shopId: r.shopId });
+      },
+      error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to complete Etsy connection.'),
+    });
+  }
+
+  disconnectEtsy(): void {
+    this.http.post(`${environment.apiUrl}/api/marketplace/etsy/disconnect`, {}).subscribe({
+      next: () => {
+        this.marketplaceSuccess.set('Etsy disconnected.');
+        this.etsyStatus.set({ apiKeyConfigured: true, connected: false, shopId: null });
+      },
+      error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to disconnect Etsy.'),
     });
   }
 
