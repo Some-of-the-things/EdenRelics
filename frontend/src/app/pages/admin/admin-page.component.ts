@@ -1156,6 +1156,40 @@ export class AdminPageComponent implements OnInit {
     };
   }
 
+  readonly dragOverIndex = signal<number | null>(null);
+  private dragStartIndex: number | null = null;
+
+  onImageDragStart(index: number): void {
+    this.dragStartIndex = index;
+  }
+
+  onImageDragOver(event: DragEvent, index: number): void {
+    event.preventDefault();
+    this.dragOverIndex.set(index);
+  }
+
+  onImageDragLeave(): void {
+    this.dragOverIndex.set(null);
+  }
+
+  onImageDrop(targetIndex: number): void {
+    this.dragOverIndex.set(null);
+    if (this.dragStartIndex === null || this.dragStartIndex === targetIndex) {
+      return;
+    }
+    const imgs = this.allProductImages();
+    const [moved] = imgs.splice(this.dragStartIndex, 1);
+    imgs.splice(targetIndex, 0, moved);
+    this.form.imageUrl = imgs[0] ?? '';
+    this.form.additionalImageUrls = imgs.slice(1);
+    this.dragStartIndex = null;
+  }
+
+  onImageDragEnd(): void {
+    this.dragOverIndex.set(null);
+    this.dragStartIndex = null;
+  }
+
   allProductImages(): string[] {
     const imgs: string[] = [];
     if (this.form.imageUrl) {

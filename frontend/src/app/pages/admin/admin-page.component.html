@@ -200,7 +200,17 @@
             <span>Photos (click to set as primary)</span>
             <div class="admin__gallery">
               @for (img of allProductImages(); track img; let i = $index) {
-                <div class="admin__gallery-item" [class.admin__gallery-item--primary]="img === form.imageUrl">
+                <div
+                  class="admin__gallery-item"
+                  [class.admin__gallery-item--primary]="img === form.imageUrl"
+                  [class.admin__gallery-item--drag-over]="dragOverIndex() === i"
+                  draggable="true"
+                  (dragstart)="onImageDragStart(i)"
+                  (dragover)="onImageDragOver($event, i)"
+                  (dragleave)="onImageDragLeave()"
+                  (drop)="onImageDrop(i)"
+                  (dragend)="onImageDragEnd()"
+                >
                   <img [src]="img" alt="Product photo" class="admin__gallery-thumb" (click)="setPrimaryImage(img)" />
                   @if (img === form.imageUrl) {
                     <span class="admin__gallery-badge">Primary</span>

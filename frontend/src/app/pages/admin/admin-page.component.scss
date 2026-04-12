@@ -557,11 +557,21 @@
 .admin__gallery-item {
   position: relative;
   border: 2px solid var(--border-color);
-  cursor: pointer;
-  transition: border-color var(--transition);
+  cursor: grab;
+  transition: border-color var(--transition), opacity var(--transition);
+
+  &:active {
+    cursor: grabbing;
+  }
 
   &--primary {
     border-color: var(--accent);
+  }
+
+  &--drag-over {
+    border-color: var(--accent);
+    border-style: dashed;
+    opacity: 0.6;
   }
 
   &:hover {
