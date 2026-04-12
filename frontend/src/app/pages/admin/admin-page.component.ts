@@ -1736,7 +1736,27 @@ export class AdminPageComponent implements OnInit {
     return div.textContent ?? '';
   }
 
+  private savedRange: Range | null = null;
+
+  saveSelection(): void {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      this.savedRange = selection.getRangeAt(0);
+    }
+  }
+
+  private restoreSelection(): void {
+    if (this.savedRange) {
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(this.savedRange);
+      }
+    }
+  }
+
   execRichText(command: string): void {
+    this.restoreSelection();
     if (command === 'insertParagraph') {
       document.execCommand('insertHTML', false, '<p><br></p>');
     } else if (command === 'insertLineBreak') {

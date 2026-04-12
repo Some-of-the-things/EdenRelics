@@ -114,11 +114,11 @@
           <div class="admin__field">
             <span>Description</span>
             <div class="admin__richtext-toolbar">
-              <button type="button" class="admin__richtext-btn" (click)="execRichText('bold')" title="Bold"><b>B</b></button>
-              <button type="button" class="admin__richtext-btn" (click)="execRichText('italic')" title="Italic"><i>I</i></button>
-              <button type="button" class="admin__richtext-btn" (click)="execRichText('underline')" title="Underline"><u>U</u></button>
-              <button type="button" class="admin__richtext-btn" (click)="execRichText('insertParagraph')" title="New paragraph">P</button>
-              <button type="button" class="admin__richtext-btn" (click)="execRichText('insertLineBreak')" title="Line break (Shift+Enter)">BR</button>
+              <button type="button" class="admin__richtext-btn" (mousedown)="$event.preventDefault(); execRichText('bold')" title="Bold"><b>B</b></button>
+              <button type="button" class="admin__richtext-btn" (mousedown)="$event.preventDefault(); execRichText('italic')" title="Italic"><i>I</i></button>
+              <button type="button" class="admin__richtext-btn" (mousedown)="$event.preventDefault(); execRichText('underline')" title="Underline"><u>U</u></button>
+              <button type="button" class="admin__richtext-btn" (mousedown)="$event.preventDefault(); execRichText('insertParagraph')" title="New paragraph">P</button>
+              <button type="button" class="admin__richtext-btn" (mousedown)="$event.preventDefault(); execRichText('insertLineBreak')" title="Line break">BR</button>
             </div>
             <div
               class="admin__richtext"
@@ -127,6 +127,9 @@
               (input)="onDescriptionInput($event)"
               (paste)="onDescriptionPaste($event)"
               (keydown)="onDescriptionKeydown($event)"
+              (mouseup)="saveSelection()"
+              (keyup)="saveSelection()"
+              (focusout)="saveSelection()"
             ></div>
           </div>
           <div class="admin__row">
