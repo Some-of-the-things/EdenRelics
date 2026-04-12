@@ -51,7 +51,8 @@ public record CreateProductDto(
     string ImageUrl,
     List<string>? AdditionalImageUrls,
     List<string>? VideoUrls,
-    bool InStock
+    bool InStock,
+    int? BackdatePriceDays = null
 );
 
 public record UpdateProductDto(

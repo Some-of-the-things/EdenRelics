@@ -117,7 +117,9 @@ public class ProductsController : ControllerBase
             VideoUrls = dto.VideoUrls ?? [],
             InStock = dto.InStock,
             SalePrice = dto.SalePrice,
-            PriceSetAtUtc = DateTime.UtcNow,
+            PriceSetAtUtc = dto.BackdatePriceDays.HasValue
+                ? DateTime.UtcNow.AddDays(-dto.BackdatePriceDays.Value)
+                : DateTime.UtcNow,
             SalePriceSetAtUtc = dto.SalePrice.HasValue ? DateTime.UtcNow : null
         };
 
