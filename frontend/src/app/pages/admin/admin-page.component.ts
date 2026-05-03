@@ -282,6 +282,12 @@ export class AdminPageComponent implements OnInit {
 
   readonly contentSections = [
     {
+      title: 'Header Banner',
+      fields: [
+        { key: 'header.banner', label: 'Announcement (leave blank to hide)', type: 'text' },
+      ],
+    },
+    {
       title: 'Hero Section',
       fields: [
         { key: 'home.hero.eyebrow', label: 'Eyebrow Text', type: 'text' },
