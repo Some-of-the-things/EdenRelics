@@ -57,6 +57,14 @@ export class FavouritesService {
     }});
   }
 
+  toggle(productId: string, notifyOnSale = false): void {
+    if (this.isFavourite(productId)) {
+      this.remove(productId);
+    } else {
+      this.add(productId, notifyOnSale);
+    }
+  }
+
   reset(): void {
     this.favouriteIds.set(new Set());
     this.notifyOnSaleIds.set(new Set());

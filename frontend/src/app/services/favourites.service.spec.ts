@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { FavouritesService } from './favourites.service';
+import { AuthService } from './auth.service';
 import { PLATFORM_ID } from '@angular/core';
 
 describe('FavouritesService', () => {
@@ -14,6 +15,8 @@ describe('FavouritesService', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: PLATFORM_ID, useValue: 'browser' },
+        // load() short-circuits unless authenticated; stub it as logged-in
+        { provide: AuthService, useValue: { isAuthenticated: () => true } },
       ],
     });
     service = TestBed.inject(FavouritesService);
@@ -34,7 +37,10 @@ describe('FavouritesService', () => {
     service.load();
     const req = httpMock.expectOne(r => r.url.endsWith('/api/favourites'));
     expect(req.request.method).toBe('GET');
-    req.flush(['id-1', 'id-2']);
+    req.flush([
+      { productId: 'id-1', notifyOnSale: false },
+      { productId: 'id-2', notifyOnSale: true },
+    ]);
     expect(service.favouriteIds().size).toBe(2);
     expect(service.isFavourite('id-1')).toBe(true);
     expect(service.isFavourite('id-3')).toBe(false);

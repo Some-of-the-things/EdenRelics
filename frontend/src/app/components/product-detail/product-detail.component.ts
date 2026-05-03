@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, input, signal, PLATFORM_ID } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { CurrencyPipe, DecimalPipe, isPlatformBrowser, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, isPlatformBrowser, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
 import { Product } from '../../models/product.model';
@@ -13,7 +13,7 @@ import { LocalPricePipe } from '../../pipes/local-price.pipe';
 
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, CurrencyPipe, TitleCasePipe, DecimalPipe, LocalPricePipe],
+  imports: [RouterLink, CurrencyPipe, TitleCasePipe, LocalPricePipe],
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })

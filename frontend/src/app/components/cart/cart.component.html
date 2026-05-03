@@ -26,6 +26,10 @@
     </div>
 
     <div class="cart__summary">
+      <div class="cart__shipping">
+        <span>Shipping</span>
+        <span class="cart__shipping-value">Free (UK)</span>
+      </div>
       <div class="cart__total">
         <span>Subtotal</span>
         <span class="cart__total-price">{{ cartStore.totalPrice() | currency:'GBP' }}</span>
@@ -170,7 +174,6 @@
           <span>Total</span>
           <span>{{ orderTotal | currency:'GBP' }}</span>
         </div>
-        <p class="checkout__vat-note">All prices include VAT.</p>
 
         @if (error()) {
           <p class="cart__error" role="alert">{{ error() }}</p>

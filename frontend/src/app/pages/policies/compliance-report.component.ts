@@ -13,8 +13,8 @@ export class ComplianceReportComponent implements OnInit {
 
   ngOnInit(): void {
     this.seo.updateTags({
-      title: 'Shareholders Compliance Report',
-      description: 'Eden Relics shareholders compliance report — regulatory and governance overview.',
+      title: 'Compliance Report',
+      description: 'Eden Relics compliance report — regulatory and governance overview.',
       url: '/compliance-report',
     });
   }

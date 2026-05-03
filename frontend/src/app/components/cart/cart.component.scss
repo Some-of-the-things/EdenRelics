@@ -106,6 +106,19 @@
   gap: 1.25rem;
 }
 
+.cart__shipping {
+  display: flex;
+  gap: 2rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.cart__shipping-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
 .cart__total {
   display: flex;
   gap: 2rem;
@@ -418,12 +431,6 @@
   margin-bottom: 0.5rem;
   border-top: 2px solid var(--border-dark);
   font-family: var(--font-display);
-}
-
-.checkout__vat-note {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin: 0 0 1rem;
 }
 
 .checkout__legal {

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { PLATFORM_ID } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ProductStore } from './product.store';
@@ -50,7 +51,12 @@ describe('ProductStore', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        // Suppress LocaleService's /api/locale/detect call (browser-only init)
+        { provide: PLATFORM_ID, useValue: 'server' },
+      ],
     });
     httpMock = TestBed.inject(HttpTestingController);
     store = TestBed.inject(ProductStore);

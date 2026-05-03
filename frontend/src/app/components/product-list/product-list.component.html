@@ -26,6 +26,20 @@
         </button>
       }
     </div>
+    <label class="products__size-filter">
+      <span class="products__size-label">Size</span>
+      <select
+        class="products__size-select"
+        aria-label="Filter by size"
+        [ngModel]="productStore.selectedSize()"
+        (ngModelChange)="productStore.setSize($event)"
+      >
+        <option value="all">All sizes</option>
+        @for (size of productStore.sizes(); track size) {
+          <option [value]="size">{{ size }}</option>
+        }
+      </select>
+    </label>
   </div>
 
   <div class="products__grid" [class.products__grid--loading]="productStore.isLoading()">

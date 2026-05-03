@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { CartStore } from '../../store/cart.store';
 import { AuthService } from '../../services/auth.service';
 import { BrandingService } from '../../services/branding.service';
+import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-header',
@@ -14,6 +15,7 @@ import { BrandingService } from '../../services/branding.service';
 export class HeaderComponent {
   readonly cartStore = inject(CartStore);
   readonly auth = inject(AuthService);
+  readonly cms = inject(ContentService);
   private readonly brandingService = inject(BrandingService);
   readonly logoUrl = computed(() => this.brandingService.branding()?.logoUrl ?? 'logo.webp');
 }

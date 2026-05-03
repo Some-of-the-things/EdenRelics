@@ -16,6 +16,7 @@ import { ProductService } from '../services/product.service';
 interface ProductState {
   products: Product[];
   selectedCategory: Product['category'] | 'all';
+  selectedSize: Product['size'] | 'all';
   searchQuery: string;
   isLoading: boolean;
   error: string;
@@ -24,6 +25,7 @@ interface ProductState {
 const initialState: ProductState = {
   products: [],
   selectedCategory: 'all',
+  selectedSize: 'all',
   searchQuery: '',
   isLoading: false,
   error: '',
@@ -36,10 +38,14 @@ export const ProductStore = signalStore(
     filteredProducts: computed(() => {
       let products = store.products();
       const category = store.selectedCategory();
+      const size = store.selectedSize();
       const query = store.searchQuery().toLowerCase();
 
       if (category !== 'all') {
         products = products.filter((p) => p.category === category);
+      }
+      if (size !== 'all') {
+        products = products.filter((p) => p.size === size);
       }
       if (query) {
         products = products.filter(
@@ -63,6 +69,21 @@ export const ProductStore = signalStore(
       ];
       return cats;
     }),
+    sizes: computed(() => {
+      const sizes: Product['size'][] = [
+        '6',
+        '6/8',
+        '8',
+        '8/10',
+        '10',
+        '10/12',
+        '12',
+        '12/14',
+        '14',
+        '16',
+      ];
+      return sizes;
+    }),
   })),
   withMethods((store, productService = inject(ProductService)) => ({
     loadProducts: rxMethod<void>(
@@ -77,6 +98,9 @@ export const ProductStore = signalStore(
     ),
     setCategory(category: Product['category'] | 'all'): void {
       patchState(store, { selectedCategory: category });
+    },
+    setSize(size: Product['size'] | 'all'): void {
+      patchState(store, { selectedSize: size });
     },
     setSearchQuery(query: string): void {
       patchState(store, { searchQuery: query });

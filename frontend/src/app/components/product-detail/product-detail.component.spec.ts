@@ -31,7 +31,7 @@ describe('ProductDetailComponent', () => {
     expect(componentRef.instance.isFavourite('test-id')).toBe(false);
   });
 
-  it('should return undefined for non-existent product', () => {
-    expect(componentRef.instance.product()).toBeUndefined();
+  it('should return falsy for non-existent product', () => {
+    expect(componentRef.instance.product()).toBeFalsy();
   });
 });

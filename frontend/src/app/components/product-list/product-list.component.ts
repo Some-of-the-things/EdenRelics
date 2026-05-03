@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
 import { Product } from '../../models/product.model';
-import { CurrencyPipe, DecimalPipe, NgOptimizedImage, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, NgOptimizedImage, TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { FavouritesService } from '../../services/favourites.service';
@@ -12,7 +12,7 @@ import { LocalPricePipe } from '../../pipes/local-price.pipe';
 
 @Component({
   selector: 'app-product-list',
-  imports: [RouterLink, CurrencyPipe, TitleCasePipe, FormsModule, NgOptimizedImage, DecimalPipe, LocalPricePipe],
+  imports: [RouterLink, CurrencyPipe, TitleCasePipe, FormsModule, NgOptimizedImage, LocalPricePipe],
   templateUrl: './product-list.component.html',
   styleUrl: './product-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

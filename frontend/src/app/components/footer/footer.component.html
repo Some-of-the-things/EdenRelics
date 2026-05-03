@@ -4,9 +4,15 @@
       <div class="footer__section">
         <h2 class="footer__heading">Eden Relics</h2>
         <p class="footer__text">{{ cms.get('footer.tagline', 'Carefully sourced & lovingly preserved vintage clothing.') }}</p>
-        <p class="footer__text footer__legal">{{ cms.get('footer.company.line1', 'Company No. 15734157') }}</p>
-        <p class="footer__text footer__legal">{{ cms.get('footer.company.line2', 'VAT Reg. No. 512 3682 13') }}</p>
-        <p class="footer__text footer__legal">{{ cms.get('footer.company.line3', 'Eden Relics is a trading name of DCPNET LTD.') }}</p>
+        @if (cms.get('footer.company.line1', 'Company No. 17153907'); as l1) {
+          @if (l1) { <p class="footer__text footer__legal">{{ l1 }}</p> }
+        }
+        @if (cms.get('footer.company.line2', 'Registered in England and Wales'); as l2) {
+          @if (l2) { <p class="footer__text footer__legal">{{ l2 }}</p> }
+        }
+        @if (cms.get('footer.company.line3', ''); as l3) {
+          @if (l3) { <p class="footer__text footer__legal">{{ l3 }}</p> }
+        }
       </div>
 
       <div class="footer__section">
@@ -38,14 +44,13 @@
         <div class="footer__contact">
           <p class="footer__text">{{ cms.get('footer.contact.email', 'edenrelics@dcp-net.com') }}</p>
           <p class="footer__text">{{ cms.get('footer.contact.phone', '+44 (0) 7454 705183') }}</p>
-          <p class="footer__text footer__address">{{ cms.get('footer.contact.address', 'DCPNET LTD\n30 Vane Close\nNorwich, NR7 0US\nUnited Kingdom') }}</p>
+          <p class="footer__text footer__address">{{ cms.get('footer.contact.address', 'EDEN RELICS LTD\n30 Vane Close\nNorwich, NR7 0US\nUnited Kingdom') }}</p>
         </div>
       </div>
     </div>
 
     <div class="footer__bottom">
-      <p class="footer__copyright">&copy; {{ year }} DCPNET LTD. All rights reserved.</p>
-      <p class="footer__vat-notice">All prices shown are inclusive of VAT where applicable.</p>
+      <p class="footer__copyright">&copy; {{ year }} EDEN RELICS LTD. All rights reserved.</p>
       <p class="footer__wcag">This website is tested compliant with WCAG 2.1 Level AA accessibility standards.</p>
     </div>
   </div>
