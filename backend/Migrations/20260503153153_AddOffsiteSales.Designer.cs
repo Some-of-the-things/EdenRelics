@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Eden_Relics_BE.Migrations
 {
     [DbContext(typeof(EdenRelicsDbContext))]
-    [Migration("20260503133337_AddOffsiteSales")]
+    [Migration("20260503153153_AddOffsiteSales")]
     partial class AddOffsiteSales
     {
         /// <inheritdoc />
@@ -39,12 +39,20 @@ namespace Eden_Relics_BE.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ContentTranslations")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Excerpt")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ExcerptTranslations")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("FeaturedImageUrl")
                         .HasMaxLength(500)
@@ -69,6 +77,10 @@ namespace Eden_Relics_BE.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
+                    b.Property<string>("TitleTranslations")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -78,6 +90,75 @@ namespace Eden_Relics_BE.Migrations
                         .IsUnique();
 
                     b.ToTable("BlogPosts");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.EtsyToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ShopId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EtsyTokens");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Favourite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("NotifyOnSale")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("Favourites");
                 });
 
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.MailingListSubscriber", b =>
@@ -118,6 +199,132 @@ namespace Eden_Relics_BE.Migrations
                         .IsUnique();
 
                     b.ToTable("MailingListSubscribers");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.MonzoToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("AccountId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MonzoTokens");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.MonzoTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeclineReason")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsLoad")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MerchantLogo")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("MerchantName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("MonzoId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Platform")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("ReceiptUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("SettledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Tags")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserCategory")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MonzoId")
+                        .IsUnique();
+
+                    b.ToTable("MonzoTransactions");
                 });
 
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.OffsiteSale", b =>
@@ -191,6 +398,30 @@ namespace Eden_Relics_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("BillAddressLine1")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("BillAddressLine2")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("BillCity")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("BillCountry")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("BillCounty")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("BillPostcode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -200,6 +431,38 @@ namespace Eden_Relics_BE.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("ShipAddressLine1")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ShipAddressLine2")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ShipCity")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ShipCountry")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ShipCounty")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ShipPostcode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal>("ShippingCost")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("ShippingMethod")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -266,9 +529,9 @@ namespace Eden_Relics_BE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.PrimitiveCollection<string>("AdditionalImageUrls")
+                    b.Property<string>("AdditionalImageUrls")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -288,6 +551,10 @@ namespace Eden_Relics_BE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DescriptionTranslations")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -312,9 +579,23 @@ namespace Eden_Relics_BE.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("NameTranslations")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<decimal>("Price")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTime?>("PriceSetAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("SalePrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTime?>("SalePriceSetAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Size")
                         .IsRequired()
@@ -327,6 +608,13 @@ namespace Eden_Relics_BE.Migrations
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VideoUrls")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -342,14 +630,18 @@ namespace Eden_Relics_BE.Migrations
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Flowing 1970s bohemian maxi dress with earthy floral print. Empire waist and angel sleeves in lightweight cotton gauze.",
+                            DescriptionTranslations = "{}",
                             Era = "1970s",
                             ImageUrl = "https://placehold.co/400x500/FF6347/FFF?text=Boho+Maxi+Dress",
                             InStock = true,
                             IsDeleted = false,
                             Name = "Bohemian Maxi Dress",
+                            NameTranslations = "{}",
                             Price = 195m,
                             Size = "10",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            VideoUrls = "[]",
+                            ViewCount = 0
                         },
                         new
                         {
@@ -360,14 +652,18 @@ namespace Eden_Relics_BE.Migrations
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Iconic 1970s wrap dress in a bold geometric print. Flattering silhouette with tie waist and flutter sleeves.",
+                            DescriptionTranslations = "{}",
                             Era = "1970s",
                             ImageUrl = "https://placehold.co/400x500/556B2F/FFF?text=Wrap+Dress",
                             InStock = true,
                             IsDeleted = false,
                             Name = "Wrap Dress",
+                            NameTranslations = "{}",
                             Price = 275m,
                             Size = "12",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            VideoUrls = "[]",
+                            ViewCount = 0
                         },
                         new
                         {
@@ -378,14 +674,18 @@ namespace Eden_Relics_BE.Migrations
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Bold 1980s power dress in electric blue with structured shoulders and nipped waist. Gold button details down the front.",
+                            DescriptionTranslations = "{}",
                             Era = "1980s",
                             ImageUrl = "https://placehold.co/400x500/191970/FFF?text=Power+Dress",
                             InStock = true,
                             IsDeleted = false,
                             Name = "Power Shoulder Dress",
+                            NameTranslations = "{}",
                             Price = 185m,
                             Size = "8",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            VideoUrls = "[]",
+                            ViewCount = 0
                         },
                         new
                         {
@@ -396,14 +696,18 @@ namespace Eden_Relics_BE.Migrations
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Dazzling 1980s sequin mini dress in hot pink. All-over sequin embellishment with dramatic puff sleeves.",
+                            DescriptionTranslations = "{}",
                             Era = "1980s",
                             ImageUrl = "https://placehold.co/400x500/8B0000/FFF?text=Sequin+Dress",
                             InStock = true,
                             IsDeleted = false,
                             Name = "Sequin Party Dress",
+                            NameTranslations = "{}",
                             Price = 220m,
                             Size = "6",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            VideoUrls = "[]",
+                            ViewCount = 0
                         },
                         new
                         {
@@ -414,14 +718,18 @@ namespace Eden_Relics_BE.Migrations
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Minimalist 1990s silk slip dress in champagne. Bias-cut with delicate spaghetti straps and lace trim at the hem.",
+                            DescriptionTranslations = "{}",
                             Era = "1990s",
                             ImageUrl = "https://placehold.co/400x500/DAA520/FFF?text=Silk+Slip+Dress",
                             InStock = true,
                             IsDeleted = false,
                             Name = "Silk Slip Dress",
+                            NameTranslations = "{}",
                             Price = 210m,
                             Size = "8",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            VideoUrls = "[]",
+                            ViewCount = 0
                         },
                         new
                         {
@@ -432,14 +740,18 @@ namespace Eden_Relics_BE.Migrations
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Classic 1990s babydoll dress in dark floral. Oversized fit with empire waist and velvet ribbon trim.",
+                            DescriptionTranslations = "{}",
                             Era = "1990s",
                             ImageUrl = "https://placehold.co/400x500/2F4F4F/FFF?text=Babydoll+Dress",
                             InStock = true,
                             IsDeleted = false,
                             Name = "Grunge Babydoll Dress",
+                            NameTranslations = "{}",
                             Price = 145m,
                             Size = "14",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            VideoUrls = "[]",
+                            ViewCount = 0
                         },
                         new
                         {
@@ -450,14 +762,18 @@ namespace Eden_Relics_BE.Migrations
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Early 2000s halter dress with butterfly print. Low-rise fit with handkerchief hem and rhinestone buckle detail.",
+                            DescriptionTranslations = "{}",
                             Era = "2000s",
                             ImageUrl = "https://placehold.co/400x500/FF69B4/FFF?text=Y2K+Halter",
                             InStock = true,
                             IsDeleted = false,
                             Name = "Butterfly Halter Dress",
+                            NameTranslations = "{}",
                             Price = 165m,
                             Size = "6",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            VideoUrls = "[]",
+                            ViewCount = 0
                         },
                         new
                         {
@@ -468,14 +784,18 @@ namespace Eden_Relics_BE.Migrations
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Y2K velvet mini dress in deep plum. Scooped neckline with ruched sides and subtle stretch for a perfect fit.",
+                            DescriptionTranslations = "{}",
                             Era = "2000s",
                             ImageUrl = "https://placehold.co/400x500/8B4513/FFF?text=Velvet+Mini",
                             InStock = true,
                             IsDeleted = false,
                             Name = "Velvet Mini Dress",
+                            NameTranslations = "{}",
                             Price = 135m,
                             Size = "10",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            VideoUrls = "[]",
+                            ViewCount = 0
                         },
                         new
                         {
@@ -486,14 +806,18 @@ namespace Eden_Relics_BE.Migrations
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Contemporary asymmetric midi dress in sage green. One-shoulder design with pleated skirt and clean modern lines.",
+                            DescriptionTranslations = "{}",
                             Era = "2020s",
                             ImageUrl = "https://placehold.co/400x500/556B2F/FFF?text=Asymmetric+Midi",
                             InStock = true,
                             IsDeleted = false,
                             Name = "Asymmetric Midi Dress",
+                            NameTranslations = "{}",
                             Price = 285m,
                             Size = "12",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            VideoUrls = "[]",
+                            ViewCount = 0
                         },
                         new
                         {
@@ -504,14 +828,18 @@ namespace Eden_Relics_BE.Migrations
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Modern cut-out maxi dress in black. Strategic side cut-outs with a high neck and flowing skirt.",
+                            DescriptionTranslations = "{}",
                             Era = "2020s",
                             ImageUrl = "https://placehold.co/400x500/1C1C1C/FFF?text=Cut-Out+Maxi",
                             InStock = true,
                             IsDeleted = false,
                             Name = "Cut-Out Maxi Dress",
+                            NameTranslations = "{}",
                             Price = 320m,
                             Size = "16",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            VideoUrls = "[]",
+                            ViewCount = 0
                         });
                 });
 
@@ -556,6 +884,78 @@ namespace Eden_Relics_BE.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("ProductListings");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.ProductView", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Channel")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Country")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeviceType")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OperatingSystem")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReferrerUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ScreenResolution")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UtmCampaign")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("UtmMedium")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("UtmSource")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductViews");
                 });
 
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.SiteBranding", b =>
@@ -701,6 +1101,59 @@ namespace Eden_Relics_BE.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TrackedKeywords");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Transaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Platform")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("ReceiptUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Transactions");
                 });
 
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.User", b =>
@@ -902,6 +1355,25 @@ namespace Eden_Relics_BE.Migrations
                     b.ToTable("UserCredentials");
                 });
 
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Favourite", b =>
+                {
+                    b.HasOne("Eden_Relics_BE.Data.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Eden_Relics_BE.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Order", b =>
                 {
                     b.HasOne("Eden_Relics_BE.Data.Entities.User", "User")
@@ -934,6 +1406,17 @@ namespace Eden_Relics_BE.Migrations
                 {
                     b.HasOne("Eden_Relics_BE.Data.Entities.Product", "Product")
                         .WithMany("Listings")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.ProductView", b =>
+                {
+                    b.HasOne("Eden_Relics_BE.Data.Entities.Product", "Product")
+                        .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
