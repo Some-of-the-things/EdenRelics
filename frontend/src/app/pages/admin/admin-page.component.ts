@@ -385,7 +385,7 @@ export class AdminPageComponent implements OnInit {
       ],
     },
     {
-      title: 'Shareholders Compliance Report',
+      title: 'Compliance Report',
       fields: [
         { key: 'report.compliance.updated', label: 'Last Updated', type: 'text' },
         { key: 'report.compliance.content', label: 'Content (HTML)', type: 'html' },
