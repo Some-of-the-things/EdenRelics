@@ -14,6 +14,11 @@ import {
 import { environment } from '../../../environments/environment';
 import { BrandingService, Branding } from '../../services/branding.service';
 import { ContentService } from '../../services/content.service';
+import {
+  OffsiteSaleService,
+  OffsiteSale,
+  CreateOffsiteSale,
+} from '../../services/offsite-sale.service';
 
 interface AdminUser {
   id: string;
@@ -221,9 +226,10 @@ export class AdminPageComponent implements OnInit {
 
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
+  private readonly offsiteSaleService = inject(OffsiteSaleService);
 
   @ViewChild('descriptionEditor') descriptionEditor!: ElementRef<HTMLElement>;
-  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'>('products');
+  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales'>('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
@@ -238,6 +244,22 @@ export class AdminPageComponent implements OnInit {
   readonly statusFilter = signal<string>('all');
 
   readonly statuses = ['Pending', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+
+  // Offsite Sales (dresses sold elsewhere — captured for analytics)
+  readonly offsiteSales = signal<OffsiteSale[]>([]);
+  readonly offsiteLoading = signal(false);
+  readonly offsiteError = signal('');
+  readonly offsiteSuccess = signal('');
+  readonly showOffsiteForm = signal(false);
+  readonly editingOffsiteId = signal<string | null>(null);
+  offsiteForm: CreateOffsiteSale = this.emptyOffsiteForm();
+
+  readonly offsitePlatforms = ['Etsy', 'Depop', 'Vinted', 'Instagram', 'In Person', 'Other'];
+
+  // Product stats
+  readonly totalItems = computed(() => this.store.products().length);
+  readonly itemsForSale = computed(() => this.store.products().filter((p) => p.inStock).length);
+  readonly itemsSold = computed(() => this.store.products().filter((p) => !p.inStock).length);
 
   // SEO
   seoUrl = 'https://edenrelics.co.uk';
@@ -524,7 +546,7 @@ export class AdminPageComponent implements OnInit {
     this.mobileMenuOpen.update(v => !v);
   }
 
-  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog'): void {
+  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales'): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
@@ -552,6 +574,110 @@ export class AdminPageComponent implements OnInit {
     if (tab === 'blog') {
       this.loadBlogPosts();
     }
+    if (tab === 'offsite-sales' && this.offsiteSales().length === 0) {
+      this.loadOffsiteSales();
+    }
+  }
+
+  loadOffsiteSales(): void {
+    this.offsiteLoading.set(true);
+    this.offsiteError.set('');
+    this.offsiteSaleService.getAll().subscribe({
+      next: (sales) => {
+        this.offsiteSales.set(sales);
+        this.offsiteLoading.set(false);
+      },
+      error: () => {
+        this.offsiteError.set('Failed to load offsite sales.');
+        this.offsiteLoading.set(false);
+      },
+    });
+  }
+
+  openOffsiteForm(): void {
+    this.editingOffsiteId.set(null);
+    this.offsiteForm = this.emptyOffsiteForm();
+    this.offsiteError.set('');
+    this.offsiteSuccess.set('');
+    this.showOffsiteForm.set(true);
+  }
+
+  editOffsiteSale(sale: OffsiteSale): void {
+    this.editingOffsiteId.set(sale.id);
+    this.offsiteForm = {
+      dressName: sale.dressName,
+      era: sale.era,
+      category: sale.category,
+      size: sale.size,
+      condition: sale.condition,
+      salePrice: sale.salePrice,
+      costPrice: sale.costPrice,
+      platform: sale.platform,
+      saleDateUtc: sale.saleDateUtc.slice(0, 10),
+      notes: sale.notes,
+    };
+    this.offsiteError.set('');
+    this.offsiteSuccess.set('');
+    this.showOffsiteForm.set(true);
+  }
+
+  saveOffsiteSale(): void {
+    this.offsiteError.set('');
+    this.offsiteSuccess.set('');
+    const id = this.editingOffsiteId();
+    const payload: CreateOffsiteSale = {
+      ...this.offsiteForm,
+      saleDateUtc: new Date(this.offsiteForm.saleDateUtc).toISOString(),
+    };
+    const req = id
+      ? this.offsiteSaleService.update(id, payload)
+      : this.offsiteSaleService.create(payload);
+
+    req.subscribe({
+      next: (saved) => {
+        if (id) {
+          this.offsiteSales.update((list) => list.map((s) => (s.id === id ? saved : s)));
+        } else {
+          this.offsiteSales.update((list) => [saved, ...list]);
+        }
+        this.offsiteSuccess.set(id ? 'Sale updated.' : 'Sale recorded.');
+        this.showOffsiteForm.set(false);
+      },
+      error: (err) => {
+        this.offsiteError.set(err.error?.message ?? 'Failed to save sale.');
+      },
+    });
+  }
+
+  deleteOffsiteSale(id: string): void {
+    if (!confirm('Delete this offsite sale?')) {
+      return;
+    }
+    this.offsiteSaleService.remove(id).subscribe({
+      next: () => {
+        this.offsiteSales.update((list) => list.filter((s) => s.id !== id));
+      },
+      error: () => this.offsiteError.set('Failed to delete sale.'),
+    });
+  }
+
+  closeOffsiteForm(): void {
+    this.showOffsiteForm.set(false);
+  }
+
+  private emptyOffsiteForm(): CreateOffsiteSale {
+    return {
+      dressName: '',
+      era: '',
+      category: '70s',
+      size: '10',
+      condition: 'good',
+      salePrice: 0,
+      costPrice: 0,
+      platform: 'Etsy',
+      saleDateUtc: new Date().toISOString().slice(0, 10),
+      notes: null,
+    };
   }
 
   loadBlogPosts(): void {

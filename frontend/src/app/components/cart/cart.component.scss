@@ -106,6 +106,19 @@
   gap: 1.25rem;
 }
 
+.cart__shipping {
+  display: flex;
+  gap: 2rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.cart__shipping-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
 .cart__total {
   display: flex;
   gap: 2rem;

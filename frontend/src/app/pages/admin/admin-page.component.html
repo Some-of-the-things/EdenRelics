@@ -22,6 +22,9 @@
       @if (activeTab() === 'blog') {
         <button class="admin__add-btn" (click)="openBlogForm()">+ New Post</button>
       }
+      @if (activeTab() === 'offsite-sales') {
+        <button class="admin__add-btn" (click)="openOffsiteForm()">+ Record Sale</button>
+      }
       <button class="admin__logout-btn" (click)="logout()">Logout</button>
     </div>
   </div>
@@ -59,6 +62,13 @@
       (click)="switchTab('finance')"
     >
       Finance
+    </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'offsite-sales'"
+      (click)="switchTab('offsite-sales')"
+    >
+      Offsite Sales
     </button>
     <button
       class="admin__tab"
@@ -101,6 +111,21 @@
     @if (store.error()) {
       <p class="admin__error" role="alert">{{ store.error() }}</p>
     }
+
+    <div class="admin__stats" role="group" aria-label="Product totals">
+      <div class="admin__stat">
+        <span class="admin__stat-value">{{ totalItems() }}</span>
+        <span class="admin__stat-label">Total items</span>
+      </div>
+      <div class="admin__stat">
+        <span class="admin__stat-value">{{ itemsForSale() }}</span>
+        <span class="admin__stat-label">For sale</span>
+      </div>
+      <div class="admin__stat">
+        <span class="admin__stat-value">{{ itemsSold() }}</span>
+        <span class="admin__stat-label">Sold</span>
+      </div>
+    </div>
 
     @if (showForm()) {
       <div class="admin__overlay" (click)="closeForm()"></div>
@@ -669,6 +694,143 @@
             } @empty {
               <tr>
                 <td colspan="5" class="admin__empty">No subscribers yet.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  @if (activeTab() === 'offsite-sales') {
+    @if (offsiteError()) {
+      <p class="admin__error" role="alert">{{ offsiteError() }}</p>
+    }
+    @if (offsiteSuccess()) {
+      <p class="admin__success" role="status">{{ offsiteSuccess() }}</p>
+    }
+
+    <p class="admin__hint">
+      Record dresses sold off-site (Etsy, Depop, Vinted, in-person, etc.) so they appear in Accounting.
+    </p>
+
+    @if (showOffsiteForm()) {
+      <div class="admin__overlay" (click)="closeOffsiteForm()"></div>
+      <div class="admin__form-panel" role="dialog" aria-modal="true" [attr.aria-label]="editingOffsiteId() ? 'Edit Offsite Sale' : 'Record Offsite Sale'">
+        <h2 class="admin__form-title">{{ editingOffsiteId() ? 'Edit' : 'Record' }} Offsite Sale</h2>
+        <form (ngSubmit)="saveOffsiteSale()" class="admin__form">
+          <label class="admin__field">
+            <span>Dress Name</span>
+            <input type="text" [(ngModel)]="offsiteForm.dressName" name="offsiteDressName" required />
+          </label>
+          <div class="admin__row">
+            <label class="admin__field">
+              <span>Era</span>
+              <input type="text" [(ngModel)]="offsiteForm.era" name="offsiteEra" required />
+            </label>
+            <label class="admin__field">
+              <span>Category</span>
+              <select [(ngModel)]="offsiteForm.category" name="offsiteCategory" required>
+                @for (cat of store.categories(); track cat) {
+                  <option [value]="cat">{{ cat }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <div class="admin__row">
+            <label class="admin__field">
+              <span>Size</span>
+              <select [(ngModel)]="offsiteForm.size" name="offsiteSize" required>
+                @for (size of store.sizes(); track size) {
+                  <option [value]="size">{{ size }}</option>
+                }
+              </select>
+            </label>
+            <label class="admin__field">
+              <span>Condition</span>
+              <select [(ngModel)]="offsiteForm.condition" name="offsiteCondition" required>
+                <option value="mint">Mint</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+              </select>
+            </label>
+          </div>
+          <div class="admin__row">
+            <label class="admin__field">
+              <span>Sale Price (£)</span>
+              <input type="number" [(ngModel)]="offsiteForm.salePrice" name="offsiteSalePrice" min="0" step="0.01" required />
+            </label>
+            <label class="admin__field">
+              <span>Cost Price (£)</span>
+              <input type="number" [(ngModel)]="offsiteForm.costPrice" name="offsiteCostPrice" min="0" step="0.01" />
+            </label>
+          </div>
+          <div class="admin__row">
+            <label class="admin__field">
+              <span>Platform</span>
+              <select [(ngModel)]="offsiteForm.platform" name="offsitePlatform" required>
+                @for (p of offsitePlatforms; track p) {
+                  <option [value]="p">{{ p }}</option>
+                }
+              </select>
+            </label>
+            <label class="admin__field">
+              <span>Sale Date</span>
+              <input type="date" [(ngModel)]="offsiteForm.saleDateUtc" name="offsiteSaleDate" required />
+            </label>
+          </div>
+          <label class="admin__field">
+            <span>Notes</span>
+            <textarea [(ngModel)]="offsiteForm.notes" name="offsiteNotes" rows="2"></textarea>
+          </label>
+          <div class="admin__actions">
+            <button type="button" class="admin__cancel-btn" (click)="closeOffsiteForm()">Cancel</button>
+            <button type="submit" class="admin__save-btn">{{ editingOffsiteId() ? 'Update' : 'Save' }}</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (offsiteLoading()) {
+      <p class="admin__loading">Loading offsite sales...</p>
+    } @else {
+      <div class="admin__table-wrap">
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Dress</th>
+              <th scope="col">Era</th>
+              <th scope="col">Category</th>
+              <th scope="col">Size</th>
+              <th scope="col">Sale</th>
+              <th scope="col">Cost</th>
+              <th scope="col">Profit</th>
+              <th scope="col">Platform</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (sale of offsiteSales(); track sale.id) {
+              <tr>
+                <td>{{ sale.saleDateUtc | date:'d MMM y' }}</td>
+                <td class="admin__name">{{ sale.dressName }}</td>
+                <td>{{ sale.era }}</td>
+                <td>{{ sale.category }}</td>
+                <td>{{ sale.size }}</td>
+                <td>{{ sale.salePrice | currency:'GBP' }}</td>
+                <td>{{ sale.costPrice | currency:'GBP' }}</td>
+                <td>{{ (sale.salePrice - sale.costPrice) | currency:'GBP' }}</td>
+                <td>{{ sale.platform }}</td>
+                <td class="admin__cell-actions">
+                  <button class="admin__edit-btn" (click)="editOffsiteSale(sale)">Edit</button>
+                  <button class="admin__delete-btn" (click)="deleteOffsiteSale(sale.id)">Delete</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="admin__empty">No offsite sales recorded yet.</td>
               </tr>
             }
           </tbody>

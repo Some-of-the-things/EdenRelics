@@ -34,6 +34,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<MonzoTransaction> MonzoTransactions => Set<MonzoTransaction>();
     public DbSet<MonzoToken> MonzoTokens => Set<MonzoToken>();
     public DbSet<EtsyToken> EtsyTokens => Set<EtsyToken>();
+    public DbSet<OffsiteSale> OffsiteSales => Set<OffsiteSale>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -173,6 +174,20 @@ public class EdenRelicsDbContext : DbContext
             entity.HasIndex(m => m.Email).IsUnique();
             entity.Property(m => m.FirstName).HasMaxLength(100);
             entity.Property(m => m.Source).HasMaxLength(30);
+        });
+
+        modelBuilder.Entity<OffsiteSale>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(s => s.DressName).HasMaxLength(200);
+            entity.Property(s => s.Era).HasMaxLength(50);
+            entity.Property(s => s.Category).HasMaxLength(20);
+            entity.Property(s => s.Size).HasMaxLength(20);
+            entity.Property(s => s.Condition).HasMaxLength(20);
+            entity.Property(s => s.Platform).HasMaxLength(50);
+            entity.Property(s => s.SalePrice).HasPrecision(10, 2);
+            entity.Property(s => s.CostPrice).HasPrecision(10, 2);
+            entity.Property(s => s.Notes).HasMaxLength(1000);
         });
 
         modelBuilder.Entity<ProductListing>(entity =>

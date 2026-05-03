@@ -132,6 +132,39 @@ public class OrdersController : ControllerBase
             {
                 { "order_id", order.Id.ToString() }
             },
+            ShippingAddressCollection = new SessionShippingAddressCollectionOptions
+            {
+                AllowedCountries = ["GB"],
+            },
+            ShippingOptions =
+            [
+                new SessionShippingOptionOptions
+                {
+                    ShippingRateData = new SessionShippingOptionShippingRateDataOptions
+                    {
+                        Type = "fixed_amount",
+                        DisplayName = "Free standard delivery",
+                        FixedAmount = new SessionShippingOptionShippingRateDataFixedAmountOptions
+                        {
+                            Amount = 0,
+                            Currency = "gbp",
+                        },
+                        DeliveryEstimate = new SessionShippingOptionShippingRateDataDeliveryEstimateOptions
+                        {
+                            Minimum = new SessionShippingOptionShippingRateDataDeliveryEstimateMinimumOptions
+                            {
+                                Unit = "business_day",
+                                Value = 3,
+                            },
+                            Maximum = new SessionShippingOptionShippingRateDataDeliveryEstimateMaximumOptions
+                            {
+                                Unit = "business_day",
+                                Value = 5,
+                            },
+                        },
+                    },
+                },
+            ],
         };
 
         if (userId is null)
