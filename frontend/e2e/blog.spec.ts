@@ -3,21 +3,34 @@ import { registerAdmin, setAuthInBrowser, uniqueEmail } from './helpers';
 
 const API = 'http://localhost:5260/api';
 
+// Tests share state (the post created in beforeAll is consumed by tests 2–4),
+// so they must run in one worker in declared order.
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Blog', () => {
   let adminToken: string;
   let adminEmail: string;
   let postTitle: string;
+  let postExcerpt: string;
+  let draftTitle: string;
+  let uiPostTitle: string;
   const postContent = '<p>This is a test blog post created by e2e tests.</p>';
-  const postExcerpt = 'A short test excerpt';
   const postAuthor = 'E2E Tester';
+  const createdPostIds: string[] = [];
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     adminEmail = uniqueEmail('blog-admin');
     adminToken = await registerAdmin(page, adminEmail);
 
+    // Set unique-per-run identifiers so reruns don't collide on prior data
+    const runId = Date.now();
+    postTitle = `E2E Test Post ${runId}`;
+    postExcerpt = `A short test excerpt ${runId}`;
+    draftTitle = `Draft Post ${runId}`;
+    uiPostTitle = `UI Blog Post ${runId}`;
+
     // Create the post in beforeAll so dependent tests always find it
-    postTitle = `E2E Test Post ${Date.now()}`;
     const res = await page.request.post(`${API}/blog`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
@@ -29,7 +42,22 @@ test.describe('Blog', () => {
       },
     });
     expect(res.status()).toBe(201);
+    const body = await res.json();
+    createdPostIds.push(body.id);
 
+    await page.close();
+  });
+
+  test.afterAll(async ({ browser }) => {
+    if (createdPostIds.length === 0) {
+      return;
+    }
+    const page = await browser.newPage();
+    for (const id of createdPostIds) {
+      await page.request.delete(`${API}/blog/${id}`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      }).catch(() => undefined);
+    }
     await page.close();
   });
 
@@ -47,6 +75,7 @@ test.describe('Blog', () => {
     });
     expect(res.status()).toBe(201);
     const body = await res.json();
+    createdPostIds.push(body.id);
     expect(body.title).toBe(title);
     expect(body.slug).toBeTruthy();
     expect(body.published).toBe(true);
@@ -79,7 +108,6 @@ test.describe('Blog', () => {
     await page.addInitScript(() => {
       localStorage.setItem('eden_cookie_consent', 'all');
     });
-    const draftTitle = `Draft Post ${Date.now()}`;
     const res = await page.request.post(`${API}/blog`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
@@ -89,6 +117,8 @@ test.describe('Blog', () => {
       },
     });
     expect(res.status()).toBe(201);
+    const body = await res.json();
+    createdPostIds.push(body.id);
 
     await page.goto('/blog');
     await expect(page.getByText(postTitle)).toBeVisible({ timeout: 15_000 });
@@ -106,7 +136,6 @@ test.describe('Blog', () => {
     await page.getByRole('button', { name: /new post/i }).click();
 
     // Fill the form
-    const uiPostTitle = `UI Blog Post ${Date.now()}`;
     await page.getByRole('textbox', { name: /title/i }).fill(uiPostTitle);
     await page.locator('textarea[name="blogContent"]').fill('<p>Post created from admin UI</p>');
     await page.locator('select[name="blogPublished"]').selectOption({ label: 'Published' });
@@ -120,5 +149,17 @@ test.describe('Blog', () => {
     // Verify it's visible on the public blog page
     await page.goto('/blog');
     await expect(page.getByText(uiPostTitle)).toBeVisible({ timeout: 10_000 });
+
+    // Track for cleanup
+    const list = await page.request.get(`${API}/blog/admin/all`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    if (list.ok()) {
+      const posts: Array<{ id: string; title: string }> = await list.json();
+      const created = posts.find((p) => p.title === uiPostTitle);
+      if (created) {
+        createdPostIds.push(created.id);
+      }
+    }
   });
 });

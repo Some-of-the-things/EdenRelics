@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 60_000,
   retries: 1,
   use: {
-    baseURL: 'http://localhost:4200',
+    baseURL: 'http://localhost:4201',
     headless: true,
     screenshot: 'only-on-failure',
   },
@@ -13,6 +13,14 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { browserName: 'chromium' },
+    },
+    {
+      name: 'firefox',
+      use: { browserName: 'firefox' },
+    },
+    {
+      name: 'webkit',
+      use: { browserName: 'webkit' },
     },
   ],
   webServer: [
@@ -24,10 +32,10 @@ export default defineConfig({
       env: { ASPNETCORE_ENVIRONMENT: 'Development' },
     },
     {
-      command: 'npx ng serve --configuration development',
-      url: 'http://localhost:4200',
+      command: 'npx ng serve --configuration development --port 4201',
+      url: 'http://localhost:4201',
       reuseExistingServer: true,
-      timeout: 60_000,
+      timeout: 120_000,
     },
   ],
 });
