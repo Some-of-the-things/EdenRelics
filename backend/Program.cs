@@ -175,6 +175,29 @@ using (IServiceScope scope = app.Services.CreateScope())
     {
         db.Database.EnsureCreated();
     }
+
+    // Backfill product slugs for any rows missing one (one-time, idempotent)
+    List<Eden_Relics_BE.Data.Entities.Product> missing = db.Products
+        .Where(p => p.Slug == "" || p.Slug == null!)
+        .ToList();
+    if (missing.Count > 0)
+    {
+        HashSet<string> taken = new(
+            db.Products.Where(p => p.Slug != "" && p.Slug != null!).Select(p => p.Slug),
+            StringComparer.OrdinalIgnoreCase);
+        foreach (Eden_Relics_BE.Data.Entities.Product product in missing)
+        {
+            string baseSlug = Eden_Relics_BE.Services.SlugHelper.Generate(product.Name);
+            if (string.IsNullOrEmpty(baseSlug))
+            {
+                baseSlug = product.Id.ToString();
+            }
+            string unique = Eden_Relics_BE.Services.SlugHelper.MakeUnique(baseSlug, taken);
+            product.Slug = unique;
+            taken.Add(unique);
+        }
+        db.SaveChanges();
+    }
 }
 
 app.UseResponseCompression();

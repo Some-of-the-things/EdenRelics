@@ -81,7 +81,7 @@
         </div>
         <div class="product-card__body">
           <h2 class="product-card__name">
-            <a [routerLink]="['/product', product.id]" class="product-card__link">{{ product.name }}</a>
+            <a [routerLink]="['/product', product.slug || product.id]" class="product-card__link">{{ product.name }}</a>
           </h2>
           <div class="product-card__meta">
             <span class="product-card__size">Size {{ product.size }}</span>

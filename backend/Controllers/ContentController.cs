@@ -123,7 +123,7 @@ public class ContentController(EdenRelicsDbContext context) : ControllerBase
         ["home.about.card4.text"] = "From flowing 1970s bohemian maxis and bold 1980s power dresses to minimalist 1990s slip dresses, nostalgic Y2K styles and contemporary pieces, our collection celebrates the best fashion from every era.",
 
         // Header announcement banner (set to empty string to hide)
-        ["header.banner"] = "Free shipping on domestic orders",
+        ["header.banner"] = "Free shipping on UK orders",
 
         // Footer
         ["footer.tagline"] = "Carefully sourced & lovingly preserved vintage clothing.",

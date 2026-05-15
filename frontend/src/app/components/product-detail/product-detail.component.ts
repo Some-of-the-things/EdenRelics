@@ -11,6 +11,37 @@ import { AuthService } from '../../services/auth.service';
 import { FavouritesService } from '../../services/favourites.service';
 import { LocalPricePipe } from '../../pipes/local-price.pipe';
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/p>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 300);
+}
+
+function schemaCondition(condition: string): string {
+  switch (condition.toLowerCase()) {
+    case 'mint':
+    case 'excellent':
+      return 'https://schema.org/NewCondition';
+    case 'very good':
+    case 'good':
+    case 'fair':
+    default:
+      return 'https://schema.org/UsedCondition';
+  }
+}
+
 @Component({
   selector: 'app-product-detail',
   imports: [RouterLink, CurrencyPipe, TitleCasePipe, LocalPricePipe],
@@ -35,9 +66,11 @@ export class ProductDetailComponent {
 
   private readonly fetchedProduct = signal<Product | null>(null);
 
-  readonly product = computed(() =>
-    this.productStore.products().find(p => p.id === this.id()) ?? this.fetchedProduct()
-  );
+  readonly product = computed(() => {
+    const param = this.id();
+    const store = this.productStore.products();
+    return store.find(p => p.id === param) ?? store.find(p => p.slug === param) ?? this.fetchedProduct();
+  });
 
   readonly allImages = computed(() => {
     const p = this.product();
@@ -55,7 +88,9 @@ export class ProductDetailComponent {
 
   toggleFavourite(productId: string): void {
     if (!this.auth.isAuthenticated()) {
-      this.router.navigate(['/login'], { queryParams: { returnUrl: `/product/${productId}` } });
+      const p = this.product();
+      const segment = p?.slug ?? productId;
+      this.router.navigate(['/login'], { queryParams: { returnUrl: `/product/${segment}` } });
       return;
     }
     if (this.favourites.isFavourite(productId)) {
@@ -84,21 +119,34 @@ export class ProductDetailComponent {
     }
     // Fetch from API if not in store (e.g., direct navigation or newly created product)
     effect(() => {
-      const id = this.id();
-      const inStore = this.productStore.products().find(p => p.id === id);
-      if (!inStore && !this.fetchedProduct() && id) {
-        this.productService.getById(id).subscribe({
+      const param = this.id();
+      const store = this.productStore.products();
+      const inStore = store.find(p => p.id === param || p.slug === param);
+      if (!inStore && !this.fetchedProduct() && param) {
+        const fetch$ = UUID_PATTERN.test(param)
+          ? this.productService.getById(param)
+          : this.productService.getBySlug(param);
+        fetch$.subscribe({
           next: (p) => this.fetchedProduct.set(p ?? null),
         });
+      }
+    });
+    // If we landed on a UUID URL but the product has a slug, swap the URL in-place
+    effect(() => {
+      const param = this.id();
+      const product = this.product();
+      if (this.isBrowser && product?.slug && param !== product.slug && UUID_PATTERN.test(param)) {
+        this.router.navigate(['/product', product.slug], { replaceUrl: true });
       }
     });
     effect(() => {
       const product = this.product();
       if (product) {
+        const canonicalPath = product.slug ? `/product/${product.slug}` : `/product/${product.id}`;
         this.seo.updateTags({
           title: product.name,
-          description: product.description,
-          url: `/product/${product.id}`,
+          description: stripHtml(product.description),
+          url: canonicalPath,
           image: product.imageUrl,
           type: 'product',
         });
@@ -113,19 +161,35 @@ export class ProductDetailComponent {
             screenResolution: `${window.screen.width}x${window.screen.height}`,
           }).subscribe();
         }
+        const activePrice = product.showReduction && product.salePrice ? product.salePrice : product.price;
+        const productUrl = `https://edenrelics.co.uk${canonicalPath}`;
         this.seo.setJsonLd({
           '@context': 'https://schema.org',
           '@type': 'Product',
           name: product.name,
-          description: product.description,
-          image: product.imageUrl,
+          description: stripHtml(product.description),
+          image: [product.imageUrl, ...(product.additionalImageUrls ?? [])],
+          sku: product.id,
+          url: productUrl,
+          brand: {
+            '@type': 'Brand',
+            name: 'Eden Relics',
+          },
+          category: product.era,
+          itemCondition: schemaCondition(product.condition),
           offers: {
             '@type': 'Offer',
-            price: product.price,
+            url: productUrl,
+            price: activePrice,
             priceCurrency: 'GBP',
             availability: product.inStock
               ? 'https://schema.org/InStock'
               : 'https://schema.org/OutOfStock',
+            itemCondition: schemaCondition(product.condition),
+            seller: {
+              '@type': 'Organization',
+              name: 'Eden Relics',
+            },
           },
         });
       }

@@ -3,6 +3,7 @@ namespace Eden_Relics_BE.DTOs;
 public record ProductDto(
     Guid Id,
     string Name,
+    string Slug,
     string Description,
     decimal Price,
     decimal? SalePrice,
@@ -21,6 +22,7 @@ public record ProductDto(
 public record ProductAdminDto(
     Guid Id,
     string Name,
+    string Slug,
     string Description,
     decimal Price,
     decimal? SalePrice,
@@ -57,6 +59,7 @@ public record CreateProductDto(
 
 public record UpdateProductDto(
     string? Name,
+    string? Slug,
     string? Description,
     decimal? Price,
     decimal? SalePrice,
