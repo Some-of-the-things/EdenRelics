@@ -38,14 +38,12 @@ export default {
     if (url.pathname === '/sitemap.xml') {
       try {
         const apiRes = await fetch('https://api.edenrelics.co.uk/api/sitemap.xml');
-        if (apiRes.ok) {
-          return withSecurityHeaders(new Response(apiRes.body, {
-            status: 200,
-            headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' },
-          }));
-        }
+        return withSecurityHeaders(new Response(apiRes.body, {
+          status: apiRes.status,
+          headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' },
+        }));
       } catch {
-        // API unavailable — fall through to static sitemap
+        return withSecurityHeaders(new Response('Sitemap temporarily unavailable', { status: 503 }));
       }
     }
 
