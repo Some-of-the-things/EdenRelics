@@ -58,7 +58,7 @@ export class HomeComponent implements OnInit {
         legalName: 'EDEN RELICS LTD',
         url: 'https://edenrelics.co.uk',
         logo: 'https://edenrelics.co.uk/logo.png',
-        description: 'Curated vintage clothing from decades past.',
+        description: 'Vintage women’s clothing from the 1960s, 70s, 80s and 90s. Thoughtfully sourced, carefully assessed — slow fashion worth wearing again.',
         email: 'edenrelics@dcp-net.com',
         telephone: '+44 7454 705183',
         address: {
@@ -82,7 +82,7 @@ export class HomeComponent implements OnInit {
         name: 'Eden Relics',
         url: 'https://edenrelics.co.uk',
         image: 'https://edenrelics.co.uk/og-image.png',
-        description: 'Carefully sourced and lovingly preserved vintage clothing from the 1970s to today.',
+        description: 'Vintage women’s clothing from the 1960s, 70s, 80s and 90s. Thoughtfully sourced, carefully assessed — slow fashion worth wearing again.',
         telephone: '+44 7454 705183',
         email: 'edenrelics@dcp-net.com',
         priceRange: '£££',

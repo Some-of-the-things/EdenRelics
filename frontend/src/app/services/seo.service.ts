@@ -9,7 +9,7 @@ export class SeoService {
   private readonly document = inject(DOCUMENT);
 
   private readonly defaultTitle = 'Eden Relics — Vintage Clothing';
-  private readonly defaultDescription = 'Shop curated vintage dresses from the 1970s to today at Eden Relics. Carefully sourced bohemian maxis, power dresses, silk slips and Y2K styles.';
+  private readonly defaultDescription = 'Vintage women’s clothing from the 1960s, 70s, 80s and 90s. Thoughtfully sourced, carefully assessed — slow fashion worth wearing again.';
   private readonly defaultImage = 'https://edenrelics.co.uk/og-image.png';
   private readonly siteUrl = 'https://edenrelics.co.uk';
 

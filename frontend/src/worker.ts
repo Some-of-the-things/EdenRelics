@@ -65,9 +65,13 @@ export default {
       const response = await angularApp.handle(request);
 
       if (response) {
-        const cached = new Response(response.body, response);
-        cached.headers.set('Cache-Control', 'public, max-age=60, must-revalidate');
-        return withSecurityHeaders(cached);
+        const propagated = new Response(response.body, response);
+        if (response.status >= 200 && response.status < 300) {
+          propagated.headers.set('Cache-Control', 'public, max-age=60, must-revalidate');
+        } else {
+          propagated.headers.set('Cache-Control', 'no-store');
+        }
+        return withSecurityHeaders(propagated);
       }
     } catch {
       // SSR failed, fall through to CSR shell
