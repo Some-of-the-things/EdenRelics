@@ -60,7 +60,7 @@ export class HomeComponent implements OnInit {
         logo: 'https://edenrelics.co.uk/logo.png',
         description: 'Vintage women’s clothing from the 1960s, 70s, 80s and 90s. Thoughtfully sourced, carefully assessed — slow fashion worth wearing again.',
         email: 'edenrelics@dcp-net.com',
-        telephone: '+44 7454 705183',
+        telephone: '+44 7454 905173',
         address: {
           '@type': 'PostalAddress',
           streetAddress: '30 Vane Close',
@@ -83,7 +83,7 @@ export class HomeComponent implements OnInit {
         url: 'https://edenrelics.co.uk',
         image: 'https://edenrelics.co.uk/og-image.png',
         description: 'Vintage women’s clothing from the 1960s, 70s, 80s and 90s. Thoughtfully sourced, carefully assessed — slow fashion worth wearing again.',
-        telephone: '+44 7454 705183',
+        telephone: '+44 7454 905173',
         email: 'edenrelics@dcp-net.com',
         priceRange: '£££',
         address: {

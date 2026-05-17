@@ -131,7 +131,7 @@ public class ContentController(EdenRelicsDbContext context) : ControllerBase
         ["footer.company.line2"] = "Registered in England and Wales",
         ["footer.company.line3"] = "",
         ["footer.contact.email"] = "edenrelics@dcp-net.com",
-        ["footer.contact.phone"] = "+44 (0) 7454 705183",
+        ["footer.contact.phone"] = "+44 (0) 7454 905173",
         ["footer.contact.address"] = "EDEN RELICS LTD\n30 Vane Close\nNorwich, NR7 0US\nUnited Kingdom",
 
         // Contact page
@@ -201,7 +201,7 @@ public class ContentController(EdenRelicsDbContext context) : ControllerBase
             <div class="policy__section"><h2>10. Data Protection</h2><p>Your personal data is handled in accordance with our <a href="/privacy-policy">Privacy Policy</a> and the UK General Data Protection Regulation (UK GDPR). By using our website, you consent to such processing and you warrant that all data provided by you is accurate.</p></div>
             <div class="policy__section"><h2>11. Dispute Resolution</h2><p>If you have a complaint about your order, please contact us at edenrelics&#64;dcp-net.com. We will endeavour to resolve your complaint promptly. If we cannot reach a resolution, you may refer the matter to an alternative dispute resolution (ADR) provider. The European Commission also provides an online dispute resolution platform at ec.europa.eu/consumers/odr. These Terms are governed by the laws of England and Wales, and any disputes shall be subject to the exclusive jurisdiction of the courts of England and Wales.</p></div>
             <div class="policy__section"><h2>12. Changes to These Terms</h2><p>We may update these Terms from time to time. Changes will be posted on this page with an updated revision date. Your continued use of the website after changes are posted constitutes acceptance of the revised Terms.</p></div>
-            <div class="policy__section"><h2>13. Contact Us</h2><p>EDEN RELICS LTD, 30 Vane Close, Norwich, NR7 0US, United Kingdom. Email: edenrelics&#64;dcp-net.com. Phone: +44 (0) 7454 705183.</p></div>
+            <div class="policy__section"><h2>13. Contact Us</h2><p>EDEN RELICS LTD, 30 Vane Close, Norwich, NR7 0US, United Kingdom. Email: edenrelics&#64;dcp-net.com. Phone: +44 (0) 7454 905173.</p></div>
             """,
 
         // Reports
