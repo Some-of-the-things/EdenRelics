@@ -37,10 +37,51 @@ export class HomeComponent implements OnInit {
     });
     this.seo.setJsonLd({
       '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: 'Eden Relics',
-      url: 'https://edenrelics.co.uk',
-      description: 'Curated vintage clothing from decades past.',
+      '@graph': [
+        {
+          '@type': 'Organization',
+          '@id': 'https://edenrelics.co.uk/#organization',
+          name: 'Eden Relics',
+          legalName: 'EDEN RELICS LTD',
+          url: 'https://edenrelics.co.uk',
+          logo: 'https://edenrelics.co.uk/logo.png',
+          description: 'Curated vintage clothing from decades past.',
+          email: 'edenrelics@dcp-net.com',
+          telephone: '+44 7454 705183',
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: '30 Vane Close',
+            addressLocality: 'Norwich',
+            postalCode: 'NR7 0US',
+            addressCountry: 'GB',
+          },
+        },
+        {
+          '@type': 'WebSite',
+          '@id': 'https://edenrelics.co.uk/#website',
+          url: 'https://edenrelics.co.uk',
+          name: 'Eden Relics',
+          publisher: { '@id': 'https://edenrelics.co.uk/#organization' },
+        },
+        {
+          '@type': 'Store',
+          '@id': 'https://edenrelics.co.uk/#store',
+          name: 'Eden Relics',
+          url: 'https://edenrelics.co.uk',
+          image: 'https://edenrelics.co.uk/og-image.png',
+          description: 'Carefully sourced and lovingly preserved vintage clothing from the 1970s to today.',
+          telephone: '+44 7454 705183',
+          email: 'edenrelics@dcp-net.com',
+          priceRange: '£££',
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: '30 Vane Close',
+            addressLocality: 'Norwich',
+            postalCode: 'NR7 0US',
+            addressCountry: 'GB',
+          },
+        },
+      ],
     });
   }
 }

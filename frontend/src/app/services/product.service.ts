@@ -151,6 +151,12 @@ export class ProductService {
     );
   }
 
+  getBySlug(slug: string): Observable<Product | undefined> {
+    return this.http.get<Product>(`${this.apiUrl}/by-slug/${encodeURIComponent(slug)}${this.localeParam}`).pipe(
+      catchError(() => of(undefined))
+    );
+  }
+
   add(product: Omit<Product, 'id'>): Observable<Product> {
     return this.http.post<Product>(this.apiUrl, product);
   }

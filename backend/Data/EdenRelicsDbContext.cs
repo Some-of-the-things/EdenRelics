@@ -270,6 +270,8 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(p => p.CostPrice).HasPrecision(10, 2);
             entity.Property(p => p.Supplier).HasMaxLength(200);
             entity.Property(p => p.Name).HasMaxLength(200);
+            entity.Property(p => p.Slug).HasMaxLength(200);
+            entity.HasIndex(p => p.Slug).IsUnique().HasFilter("\"Slug\" <> ''");
             entity.Property(p => p.Era).HasMaxLength(50);
             entity.Property(p => p.Category).HasMaxLength(20);
             entity.Property(p => p.Size).HasMaxLength(20);
@@ -287,6 +289,7 @@ public class EdenRelicsDbContext : DbContext
                 {
                     Id = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000001"),
                     Name = "Bohemian Maxi Dress",
+                    Slug = "bohemian-maxi-dress",
                     Description = "Flowing 1970s bohemian maxi dress with earthy floral print. Empire waist and angel sleeves in lightweight cotton gauze.",
                     Price = 195m,
                     Era = "1970s",
@@ -302,6 +305,7 @@ public class EdenRelicsDbContext : DbContext
                 {
                     Id = Guid.Parse("a1b2c3d4-0002-0000-0000-000000000002"),
                     Name = "Wrap Dress",
+                    Slug = "wrap-dress",
                     Description = "Iconic 1970s wrap dress in a bold geometric print. Flattering silhouette with tie waist and flutter sleeves.",
                     Price = 275m,
                     Era = "1970s",
@@ -317,6 +321,7 @@ public class EdenRelicsDbContext : DbContext
                 {
                     Id = Guid.Parse("a1b2c3d4-0003-0000-0000-000000000003"),
                     Name = "Power Shoulder Dress",
+                    Slug = "power-shoulder-dress",
                     Description = "Bold 1980s power dress in electric blue with structured shoulders and nipped waist. Gold button details down the front.",
                     Price = 185m,
                     Era = "1980s",
@@ -332,6 +337,7 @@ public class EdenRelicsDbContext : DbContext
                 {
                     Id = Guid.Parse("a1b2c3d4-0004-0000-0000-000000000004"),
                     Name = "Sequin Party Dress",
+                    Slug = "sequin-party-dress",
                     Description = "Dazzling 1980s sequin mini dress in hot pink. All-over sequin embellishment with dramatic puff sleeves.",
                     Price = 220m,
                     Era = "1980s",
@@ -347,6 +353,7 @@ public class EdenRelicsDbContext : DbContext
                 {
                     Id = Guid.Parse("a1b2c3d4-0005-0000-0000-000000000005"),
                     Name = "Silk Slip Dress",
+                    Slug = "silk-slip-dress",
                     Description = "Minimalist 1990s silk slip dress in champagne. Bias-cut with delicate spaghetti straps and lace trim at the hem.",
                     Price = 210m,
                     Era = "1990s",
@@ -362,6 +369,7 @@ public class EdenRelicsDbContext : DbContext
                 {
                     Id = Guid.Parse("a1b2c3d4-0006-0000-0000-000000000006"),
                     Name = "Grunge Babydoll Dress",
+                    Slug = "grunge-babydoll-dress",
                     Description = "Classic 1990s babydoll dress in dark floral. Oversized fit with empire waist and velvet ribbon trim.",
                     Price = 145m,
                     Era = "1990s",
@@ -377,6 +385,7 @@ public class EdenRelicsDbContext : DbContext
                 {
                     Id = Guid.Parse("a1b2c3d4-0007-0000-0000-000000000007"),
                     Name = "Butterfly Halter Dress",
+                    Slug = "butterfly-halter-dress",
                     Description = "Early 2000s halter dress with butterfly print. Low-rise fit with handkerchief hem and rhinestone buckle detail.",
                     Price = 165m,
                     Era = "2000s",
@@ -392,6 +401,7 @@ public class EdenRelicsDbContext : DbContext
                 {
                     Id = Guid.Parse("a1b2c3d4-0008-0000-0000-000000000008"),
                     Name = "Velvet Mini Dress",
+                    Slug = "velvet-mini-dress",
                     Description = "Y2K velvet mini dress in deep plum. Scooped neckline with ruched sides and subtle stretch for a perfect fit.",
                     Price = 135m,
                     Era = "2000s",
@@ -407,6 +417,7 @@ public class EdenRelicsDbContext : DbContext
                 {
                     Id = Guid.Parse("a1b2c3d4-0009-0000-0000-000000000009"),
                     Name = "Asymmetric Midi Dress",
+                    Slug = "asymmetric-midi-dress",
                     Description = "Contemporary asymmetric midi dress in sage green. One-shoulder design with pleated skirt and clean modern lines.",
                     Price = 285m,
                     Era = "2020s",
@@ -422,6 +433,7 @@ public class EdenRelicsDbContext : DbContext
                 {
                     Id = Guid.Parse("a1b2c3d4-0010-0000-0000-000000000010"),
                     Name = "Cut-Out Maxi Dress",
+                    Slug = "cut-out-maxi-dress",
                     Description = "Modern cut-out maxi dress in black. Strategic side cut-outs with a high neck and flowing skirt.",
                     Price = 320m,
                     Era = "2020s",

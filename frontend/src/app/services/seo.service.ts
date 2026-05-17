@@ -23,7 +23,7 @@ export class SeoService {
     const pageTitle = config.title
       ? `${config.title} | Eden Relics`
       : this.defaultTitle;
-    const description = config.description ?? this.defaultDescription;
+    const description = this.normaliseDescription(config.description) ?? this.defaultDescription;
     const url = config.url ? `${this.siteUrl}${config.url}` : this.siteUrl;
     const type = config.type ?? 'website';
 
@@ -58,6 +58,23 @@ export class SeoService {
       script.textContent = JSON.stringify(schema);
       this.document.head.appendChild(script);
     }
+  }
+
+  private normaliseDescription(raw: string | undefined): string | undefined {
+    if (!raw) return undefined;
+    const plain = raw
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<\/p>/gi, ' ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+    return plain.length > 300 ? plain.slice(0, 297).trimEnd() + '…' : plain;
   }
 
   private updateCanonical(url: string): void {

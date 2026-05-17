@@ -13,7 +13,7 @@
           <img [src]="item.product.imageUrl" [alt]="item.product.name" class="cart-item__image" />
           <div class="cart-item__info">
             <h3 class="cart-item__name">
-              <a [routerLink]="['/product', item.product.id]">{{ item.product.name }}</a>
+              <a [routerLink]="['/product', item.product.slug || item.product.id]">{{ item.product.name }}</a>
             </h3>
             <p class="cart-item__era">{{ item.product.era }} &middot; Size {{ item.product.size }}</p>
           </div>

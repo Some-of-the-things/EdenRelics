@@ -81,6 +81,22 @@ public class ProductsController : ControllerBase
         return Ok(ToDto(product, locale));
     }
 
+    [HttpGet("by-slug/{slug}")]
+    public async Task<ActionResult> GetBySlug(string slug, [FromQuery] string? locale = null)
+    {
+        IEnumerable<Product> matches = await _repository.FindAsync(p => p.Slug == slug);
+        Product? product = matches.FirstOrDefault();
+        if (product is null)
+        {
+            return NotFound();
+        }
+        if (User.IsInRole("Admin"))
+        {
+            return Ok(ToAdminDto(product));
+        }
+        return Ok(ToDto(product, locale));
+    }
+
     [HttpGet("category/{category}")]
     public async Task<ActionResult> GetByCategory(string category, [FromQuery] string? locale = null)
     {
@@ -101,9 +117,16 @@ public class ProductsController : ControllerBase
             return BadRequest(new { error = "A product can have at most 10 additional images." });
         }
 
+        IEnumerable<Product> existing = await _repository.GetAllAsync();
+        string baseSlug = SlugHelper.Generate(dto.Name);
+        string uniqueSlug = string.IsNullOrEmpty(baseSlug)
+            ? ""
+            : SlugHelper.MakeUnique(baseSlug, existing.Select(p => p.Slug));
+
         Product product = new()
         {
             Name = dto.Name,
+            Slug = uniqueSlug,
             Description = dto.Description,
             Price = dto.Price,
             CostPrice = dto.CostPrice,
@@ -141,6 +164,15 @@ public class ProductsController : ControllerBase
         }
 
         if (dto.Name is not null) { product.Name = dto.Name; }
+        if (dto.Slug is not null)
+        {
+            string normalized = SlugHelper.Generate(dto.Slug);
+            if (!string.IsNullOrEmpty(normalized) && normalized != product.Slug)
+            {
+                IEnumerable<Product> others = await _repository.FindAsync(p => p.Id != id);
+                product.Slug = SlugHelper.MakeUnique(normalized, others.Select(p => p.Slug));
+            }
+        }
         if (dto.Description is not null) { product.Description = dto.Description; }
         if (dto.Price.HasValue && dto.Price.Value != product.Price)
         {
@@ -757,12 +789,12 @@ public class ProductsController : ControllerBase
             discountPercent = (int)Math.Round((1 - p.SalePrice.Value / p.Price) * 100);
         }
 
-        return new(p.Id, name, description, p.Price, p.SalePrice, showReduction, discountPercent, p.Era,
+        return new(p.Id, name, p.Slug, description, p.Price, p.SalePrice, showReduction, discountPercent, p.Era,
             p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.InStock);
     }
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
-        p.Id, p.Name, p.Description, p.Price, p.SalePrice, p.CostPrice, p.Supplier, p.Era,
+        p.Id, p.Name, p.Slug, p.Description, p.Price, p.SalePrice, p.CostPrice, p.Supplier, p.Era,
         p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.InStock, p.ViewCount
     );
 

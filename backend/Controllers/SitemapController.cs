@@ -58,8 +58,11 @@ public class SitemapController(EdenRelicsDbContext context) : ControllerBase
         // Product pages
         foreach (Product product in products)
         {
+            string pathSegment = string.IsNullOrEmpty(product.Slug)
+                ? product.Id.ToString()
+                : Escape(product.Slug);
             xml.AppendLine("  <url>");
-            xml.AppendLine($"    <loc>{BaseUrl}/product/{product.Id}</loc>");
+            xml.AppendLine($"    <loc>{BaseUrl}/product/{pathSegment}</loc>");
             xml.AppendLine($"    <lastmod>{product.UpdatedAtUtc:yyyy-MM-dd}</lastmod>");
             xml.AppendLine("    <changefreq>weekly</changefreq>");
             xml.AppendLine("    <priority>0.8</priority>");
