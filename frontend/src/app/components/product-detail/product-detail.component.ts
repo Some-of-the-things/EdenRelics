@@ -165,32 +165,53 @@ export class ProductDetailComponent {
         const productUrl = `https://edenrelics.co.uk${canonicalPath}`;
         this.seo.setJsonLd({
           '@context': 'https://schema.org',
-          '@type': 'Product',
-          name: product.name,
-          description: stripHtml(product.description),
-          image: [product.imageUrl, ...(product.additionalImageUrls ?? [])],
-          sku: product.id,
-          url: productUrl,
-          brand: {
-            '@type': 'Brand',
-            name: 'Eden Relics',
-          },
-          category: product.era,
-          itemCondition: schemaCondition(product.condition),
-          offers: {
-            '@type': 'Offer',
-            url: productUrl,
-            price: activePrice,
-            priceCurrency: 'GBP',
-            availability: product.inStock
-              ? 'https://schema.org/InStock'
-              : 'https://schema.org/OutOfStock',
-            itemCondition: schemaCondition(product.condition),
-            seller: {
-              '@type': 'Organization',
-              name: 'Eden Relics',
+          '@graph': [
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                {
+                  '@type': 'ListItem',
+                  position: 1,
+                  name: 'Home',
+                  item: 'https://edenrelics.co.uk',
+                },
+                {
+                  '@type': 'ListItem',
+                  position: 2,
+                  name: product.name,
+                  item: productUrl,
+                },
+              ],
             },
-          },
+            {
+              '@type': 'Product',
+              name: product.name,
+              description: stripHtml(product.description),
+              image: [product.imageUrl, ...(product.additionalImageUrls ?? [])],
+              sku: product.id,
+              url: productUrl,
+              brand: {
+                '@type': 'Brand',
+                name: 'Eden Relics',
+              },
+              category: product.era,
+              itemCondition: schemaCondition(product.condition),
+              offers: {
+                '@type': 'Offer',
+                url: productUrl,
+                price: activePrice,
+                priceCurrency: 'GBP',
+                availability: product.inStock
+                  ? 'https://schema.org/InStock'
+                  : 'https://schema.org/OutOfStock',
+                itemCondition: schemaCondition(product.condition),
+                seller: {
+                  '@type': 'Organization',
+                  name: 'Eden Relics',
+                },
+              },
+            },
+          ],
         });
       }
     });
