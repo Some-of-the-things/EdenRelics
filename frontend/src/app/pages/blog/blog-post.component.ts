@@ -33,11 +33,73 @@ export class BlogPostComponent implements OnInit {
     this.http.get<BlogPost>(`${environment.apiUrl}/api/blog/${this.slug()}`).subscribe({
       next: (post) => {
         this.post.set(post);
+        const postUrl = `https://edenrelics.co.uk/blog/${post.slug}`;
         this.seo.updateTags({
           title: post.title,
           description: post.excerpt ?? undefined,
           url: `/blog/${post.slug}`,
           image: post.featuredImageUrl ?? undefined,
+          type: 'article',
+        });
+
+        const blogPosting: Record<string, unknown> = {
+          '@type': 'BlogPosting',
+          headline: post.title,
+          mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': postUrl,
+          },
+          author: {
+            '@type': 'Person',
+            name: post.author ?? 'Eden Relics',
+          },
+          publisher: {
+            '@type': 'Organization',
+            name: 'Eden Relics',
+            logo: {
+              '@type': 'ImageObject',
+              url: 'https://edenrelics.co.uk/logo.png',
+            },
+          },
+        };
+        if (post.featuredImageUrl) {
+          blogPosting['image'] = post.featuredImageUrl;
+        }
+        if (post.publishedAtUtc) {
+          blogPosting['datePublished'] = post.publishedAtUtc;
+        }
+        if (post.excerpt) {
+          blogPosting['description'] = post.excerpt;
+        }
+
+        this.seo.setJsonLd({
+          '@context': 'https://schema.org',
+          '@graph': [
+            blogPosting,
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                {
+                  '@type': 'ListItem',
+                  position: 1,
+                  name: 'Home',
+                  item: 'https://edenrelics.co.uk',
+                },
+                {
+                  '@type': 'ListItem',
+                  position: 2,
+                  name: 'Blog',
+                  item: 'https://edenrelics.co.uk/blog',
+                },
+                {
+                  '@type': 'ListItem',
+                  position: 3,
+                  name: post.title,
+                  item: postUrl,
+                },
+              ],
+            },
+          ],
         });
       },
       error: () => this.error.set(true),
