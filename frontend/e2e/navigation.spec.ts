@@ -21,9 +21,10 @@ test.describe('Navigation and pages', () => {
     await expect(page.getByText(/supply chain/i).first()).toBeVisible();
   });
 
-  test('unknown routes redirect to home', async ({ page }) => {
+  test('unknown routes show 404 page', async ({ page }) => {
     await page.goto('/this-does-not-exist');
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/this-does-not-exist');
+    await expect(page.getByRole('heading', { name: /page not found/i })).toBeVisible();
   });
 
   test('header navigation links are present', async ({ page }) => {
