@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-verify-email',
@@ -12,11 +13,13 @@ import { AuthService } from '../../services/auth.service';
 export class VerifyEmailComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly seo = inject(SeoService);
 
   email = '';
   tokenValue = '';
 
   ngOnInit(): void {
+    this.seo.updateTags({ title: 'Verify Email', url: '/verify-email', noIndex: true });
     const params = this.route.snapshot.queryParamMap;
     this.email = params.get('email') ?? '';
     this.tokenValue = params.get('token') ?? '';

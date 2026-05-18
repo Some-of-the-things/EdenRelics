@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { ProductStore } from '../../store/product.store';
 import { Product, ProductStatus } from '../../models/product.model';
 import { filterAdminProducts, productStatusLabel, resolveProductStatus } from '../../utils/product-status';
+import { SeoService } from '../../services/seo.service';
 import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
 import {
@@ -220,6 +221,7 @@ export class AdminPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly seo = inject(SeoService);
   private readonly http = inject(HttpClient);
   private readonly productService = inject(ProductService);
   private readonly orderService = inject(OrderAdminService);
@@ -572,6 +574,7 @@ export class AdminPageComponent implements OnInit {
   form: Omit<Product, 'id'> = this.emptyForm();
 
   ngOnInit(): void {
+    this.seo.updateTags({ title: 'Admin', url: '/admin', noIndex: true });
     this.route.queryParams.subscribe(params => {
       if (params['monzo'] === 'callback' && params['code']) {
         this.handleMonzoCallback(params['code'], params['state'] ?? '');

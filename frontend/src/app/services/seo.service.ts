@@ -2,6 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/common';
 
+/** Locales the backend can translate content into. Mirrors backend SupportedLocales. */
+export const SUPPORTED_LOCALES = [
+  'en', 'fr', 'de', 'es', 'it', 'nl', 'pt', 'sv', 'da', 'nb', 'ja', 'ko',
+] as const;
+
+export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
+
 @Injectable({ providedIn: 'root' })
 export class SeoService {
   private readonly title = inject(Title);
@@ -19,6 +26,9 @@ export class SeoService {
     url?: string;
     image?: string;
     type?: string;
+    noIndex?: boolean;
+    /** Emit hreflang alternates pointing to ?locale=X variants for this path. */
+    hreflang?: boolean;
   }): void {
     const pageTitle = config.title
       ? `${config.title} | Eden Relics`
@@ -46,6 +56,20 @@ export class SeoService {
 
     // Canonical URL
     this.updateCanonical(url);
+
+    // Robots
+    if (config.noIndex) {
+      this.meta.updateTag({ name: 'robots', content: 'noindex, nofollow' });
+    } else {
+      this.meta.removeTag('name="robots"');
+    }
+
+    // hreflang alternates
+    if (config.hreflang && config.url !== undefined) {
+      this.updateHreflang(config.url);
+    } else {
+      this.clearHreflang();
+    }
   }
 
   setJsonLd(schema: object): void {
@@ -87,5 +111,43 @@ export class SeoService {
       link.href = url;
       this.document.head.appendChild(link);
     }
+  }
+
+  private updateHreflang(path: string): void {
+    // Strip any existing locale query so we build clean variant URLs.
+    const [pathOnly, query] = path.split('?');
+    const params = new URLSearchParams(query ?? '');
+    params.delete('locale');
+    const cleanQuery = params.toString();
+    const basePath = cleanQuery ? `${pathOnly}?${cleanQuery}` : pathOnly;
+    const baseUrl = `${this.siteUrl}${basePath}`;
+
+    this.clearHreflang();
+
+    // English / canonical: the bare URL.
+    this.appendHreflang('en-GB', baseUrl);
+    this.appendHreflang('x-default', baseUrl);
+
+    for (const locale of SUPPORTED_LOCALES) {
+      if (locale === 'en') {
+        continue;
+      }
+      const sep = baseUrl.includes('?') ? '&' : '?';
+      this.appendHreflang(locale, `${baseUrl}${sep}locale=${locale}`);
+    }
+  }
+
+  private clearHreflang(): void {
+    this.document.head
+      .querySelectorAll('link[rel="alternate"][hreflang]')
+      .forEach((el) => el.remove());
+  }
+
+  private appendHreflang(hreflang: string, href: string): void {
+    const link = this.document.createElement('link');
+    link.rel = 'alternate';
+    link.setAttribute('hreflang', hreflang);
+    link.href = href;
+    this.document.head.appendChild(link);
   }
 }

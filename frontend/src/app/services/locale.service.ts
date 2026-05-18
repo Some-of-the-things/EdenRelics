@@ -43,6 +43,15 @@ export class LocaleService {
   }
 
   private init(): void {
+    // ?locale=XX in the URL overrides for this session (used for hreflang
+    // variant URLs that crawlers and language-switch links hit directly).
+    const urlLocale = this.readUrlLocale();
+    if (urlLocale) {
+      this._locale.set({ ...DEFAULT_LOCALE, locale: urlLocale });
+      this._ready.set(true);
+      return;
+    }
+
     // Check localStorage for saved preference
     const saved = localStorage.getItem('eden-locale');
     if (saved) {
@@ -69,6 +78,19 @@ export class LocaleService {
         this._ready.set(true);
       },
     });
+  }
+
+  private readUrlLocale(): string | null {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get('locale');
+      if (!raw) return null;
+      // Accept "fr", "en-GB", etc. Strip anything weird.
+      const cleaned = raw.toLowerCase().replace(/[^a-z-]/g, '').slice(0, 10);
+      return cleaned || null;
+    } catch {
+      return null;
+    }
   }
 
   /** Convert GBP amount to local currency */

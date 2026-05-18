@@ -1,8 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ContentService } from '../../services/content.service';
+import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-contact-page',
@@ -10,8 +11,9 @@ import { ContentService } from '../../services/content.service';
   templateUrl: './contact-page.component.html',
   styleUrl: './contact-page.component.scss',
 })
-export class ContactPageComponent {
+export class ContactPageComponent implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly seo = inject(SeoService);
   readonly cms = inject(ContentService);
 
   name = '';
@@ -21,6 +23,15 @@ export class ContactPageComponent {
   readonly sent = signal(false);
   readonly processing = signal(false);
   readonly error = signal('');
+
+  ngOnInit(): void {
+    this.seo.updateTags({
+      title: 'Contact',
+      description: 'Get in touch with Eden Relics — questions about a piece, sizing, sourcing, or partnership enquiries.',
+      url: '/contact',
+      hreflang: true,
+    });
+  }
 
   submit(): void {
     this.processing.set(true);

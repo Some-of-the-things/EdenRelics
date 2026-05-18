@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 import { ProductListComponent } from '../../components/product-list/product-list.component';
 import { SeoService } from '../../services/seo.service';
 import { ContentService } from '../../services/content.service';
@@ -19,6 +20,7 @@ export class HomeComponent implements OnInit {
   private readonly seo = inject(SeoService);
   private readonly http = inject(HttpClient);
   private readonly productStore = inject(ProductStore);
+  private readonly route = inject(ActivatedRoute);
   readonly cms = inject(ContentService);
 
   mailingEmail = '';
@@ -46,6 +48,13 @@ export class HomeComponent implements OnInit {
   ngOnInit(): void {
     this.seo.updateTags({
       url: '/',
+      hreflang: true,
+    });
+    this.route.queryParamMap.subscribe((params) => {
+      const q = params.get('q');
+      if (q !== null) {
+        this.productStore.setSearchQuery(q);
+      }
     });
   }
 
@@ -75,6 +84,14 @@ export class HomeComponent implements OnInit {
         url: 'https://edenrelics.co.uk',
         name: 'Eden Relics',
         publisher: { '@id': 'https://edenrelics.co.uk/#organization' },
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: 'https://edenrelics.co.uk/?q={search_term_string}',
+          },
+          'query-input': 'required name=search_term_string',
+        },
       },
       {
         '@type': 'Store',

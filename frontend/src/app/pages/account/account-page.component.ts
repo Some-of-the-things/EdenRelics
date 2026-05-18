@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AccountProfileDto, AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-account-page',
@@ -12,6 +13,7 @@ import { environment } from '../../../environments/environment';
 export class AccountPageComponent implements OnInit {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly seo = inject(SeoService);
 
   readonly profile = signal<AccountProfileDto | null>(null);
   readonly isDev = !environment.production;
@@ -21,6 +23,7 @@ export class AccountPageComponent implements OnInit {
   readonly profileError = signal(false);
 
   ngOnInit(): void {
+    this.seo.updateTags({ title: 'Account', url: '/account', noIndex: true });
     this.auth.getProfile().subscribe({
       next: (p) => this.profile.set(p),
       error: () => this.profileError.set(true),

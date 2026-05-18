@@ -1,7 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -9,13 +10,18 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './forgot-password.component.html',
   styleUrl: './forgot-password.component.scss',
 })
-export class ForgotPasswordComponent {
+export class ForgotPasswordComponent implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly seo = inject(SeoService);
 
   email = '';
   readonly sent = signal(false);
   readonly processing = signal(false);
   readonly error = signal('');
+
+  ngOnInit(): void {
+    this.seo.updateTags({ title: 'Forgot Password', url: '/forgot-password', noIndex: true });
+  }
 
   submit(): void {
     this.processing.set(true);

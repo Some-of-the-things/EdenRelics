@@ -27,7 +27,7 @@ public class SitemapController(EdenRelicsDbContext context) : ControllerBase
 
         StringBuilder xml = new();
         xml.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        xml.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
+        xml.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:image=\"http://www.google.com/schemas/sitemap-image/1.1\">");
 
         // Static pages
         string[][] staticPages =
@@ -66,6 +66,11 @@ public class SitemapController(EdenRelicsDbContext context) : ControllerBase
             xml.AppendLine($"    <lastmod>{product.UpdatedAtUtc:yyyy-MM-dd}</lastmod>");
             xml.AppendLine("    <changefreq>weekly</changefreq>");
             xml.AppendLine("    <priority>0.8</priority>");
+            AppendImage(xml, product.ImageUrl);
+            foreach (string additional in product.AdditionalImageUrls)
+            {
+                AppendImage(xml, additional);
+            }
             xml.AppendLine("  </url>");
         }
 
@@ -77,6 +82,7 @@ public class SitemapController(EdenRelicsDbContext context) : ControllerBase
             xml.AppendLine($"    <lastmod>{(post.PublishedAtUtc ?? post.UpdatedAtUtc):yyyy-MM-dd}</lastmod>");
             xml.AppendLine("    <changefreq>monthly</changefreq>");
             xml.AppendLine("    <priority>0.6</priority>");
+            AppendImage(xml, post.FeaturedImageUrl);
             xml.AppendLine("  </url>");
         }
 
@@ -87,4 +93,15 @@ public class SitemapController(EdenRelicsDbContext context) : ControllerBase
 
     private static string Escape(string value) =>
         value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
+    private static void AppendImage(StringBuilder xml, string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return;
+        }
+        xml.AppendLine("    <image:image>");
+        xml.AppendLine($"      <image:loc>{Escape(url)}</image:loc>");
+        xml.AppendLine("    </image:image>");
+    }
 }

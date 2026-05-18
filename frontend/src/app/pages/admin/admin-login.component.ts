@@ -1,9 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PasskeyService } from '../../services/passkey.service';
 import { SocialLoginComponent } from '../../components/social-login/social-login.component';
+import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-admin-login',
@@ -11,14 +12,19 @@ import { SocialLoginComponent } from '../../components/social-login/social-login
   templateUrl: './admin-login.component.html',
   styleUrl: './admin-login.component.scss',
 })
-export class AdminLoginComponent {
+export class AdminLoginComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly passkey = inject(PasskeyService);
   private readonly router = inject(Router);
+  private readonly seo = inject(SeoService);
   readonly passkeySupported = signal(false);
 
   constructor() {
     this.passkeySupported.set(this.passkey.supportsPasskeys());
+  }
+
+  ngOnInit(): void {
+    this.seo.updateTags({ title: 'Sign In', url: '/login', noIndex: true });
   }
 
   email = '';
