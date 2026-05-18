@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
 import { Product, ProductStatus } from '../../models/product.model';
 import { filterAdminProducts, productStatusLabel, resolveProductStatus } from '../../utils/product-status';
@@ -1544,7 +1545,7 @@ export class AdminPageComponent implements OnInit {
     }
   }
 
-  onProductImageSelected(event: Event): void {
+  async onProductImageSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const files = input.files;
     if (!files || files.length === 0) {
@@ -1556,36 +1557,31 @@ export class AdminPageComponent implements OnInit {
         filesToUpload.push(files[i]);
       }
     }
+    input.value = '';
     if (filesToUpload.length === 0) {
-      input.value = '';
       return;
     }
     this.uploading.set(true);
     this.uploadError.set('');
-    let pending = filesToUpload.length;
-    for (let i = 0; i < filesToUpload.length; i++) {
-      this.productService.uploadImage(filesToUpload[i]).subscribe({
-        next: (res) => {
-          if (!this.form.imageUrl) {
-            this.form.imageUrl = res.imageUrl;
-          } else {
-            this.form.additionalImageUrls = [...(this.form.additionalImageUrls ?? []), res.imageUrl];
-          }
-          pending--;
-          if (pending === 0) {
-            this.uploading.set(false);
-          }
-        },
-        error: () => {
-          pending--;
-          if (pending === 0) {
-            this.uploading.set(false);
-          }
-          this.uploadError.set('One or more uploads failed.');
-        },
-      });
+    let anyFailed = false;
+    // Upload sequentially: each image triggers a server-side decode + 4 webp variants,
+    // and running them in parallel can OOM the API instance.
+    for (const file of filesToUpload) {
+      try {
+        const res = await firstValueFrom(this.productService.uploadImage(file));
+        if (!this.form.imageUrl) {
+          this.form.imageUrl = res.imageUrl;
+        } else {
+          this.form.additionalImageUrls = [...(this.form.additionalImageUrls ?? []), res.imageUrl];
+        }
+      } catch {
+        anyFailed = true;
+      }
     }
-    input.value = '';
+    if (anyFailed) {
+      this.uploadError.set('One or more uploads failed.');
+    }
+    this.uploading.set(false);
   }
 
   readonly videoUploading = signal(false);

@@ -8,6 +8,11 @@ public static class ImageUploadHelper
 {
     public static readonly int[] DefaultVariantWidths = [400, 800, 1200, 1600];
 
+    // Bound concurrent image processing across the whole process. ImageSharp decodes the
+    // full bitmap into memory (~48 MB for a 4000x3000 phone photo); without this cap,
+    // a multi-image admin upload or a backfill colliding with live traffic OOMs the box.
+    public static readonly SemaphoreSlim ProcessingGate = new(2, 2);
+
     public static async Task<string> ProcessAndUploadAsync(
         Stream fileStream,
         ImageStorageService storage,
@@ -23,6 +28,26 @@ public static class ImageUploadHelper
             throw new ArgumentException("At least one variant width is required.", nameof(variantWidths));
         }
 
+        await ProcessingGate.WaitAsync();
+        try
+        {
+            return await ProcessAndUploadCoreAsync(fileStream, storage, env, request, folder, widths, quality);
+        }
+        finally
+        {
+            ProcessingGate.Release();
+        }
+    }
+
+    private static async Task<string> ProcessAndUploadCoreAsync(
+        Stream fileStream,
+        ImageStorageService storage,
+        IWebHostEnvironment env,
+        HttpRequest request,
+        string folder,
+        int[] widths,
+        int quality)
+    {
         using Image source = await Image.LoadAsync(fileStream);
         source.Mutate(x => x.AutoOrient());
 
@@ -31,12 +56,15 @@ public static class ImageUploadHelper
         int largestWidth = widths.Max();
         string canonicalUrl = "";
 
-        foreach (int targetWidth in widths)
+        // Process largest-to-smallest, mutating the source down through each size.
+        // A 4000x3000 phone photo decodes to ~48 MB; cloning per variant pushed peak
+        // memory above the 512 MB instance cap and OOM-killed the process during uploads.
+        int[] orderedWidths = widths.OrderByDescending(w => w).ToArray();
+        foreach (int targetWidth in orderedWidths)
         {
-            using Image variant = source.Clone(_ => { });
-            if (variant.Width > targetWidth)
+            if (source.Width > targetWidth)
             {
-                variant.Mutate(x => x.Resize(new ResizeOptions
+                source.Mutate(x => x.Resize(new ResizeOptions
                 {
                     Size = new Size(targetWidth, 0),
                     Mode = ResizeMode.Max,
@@ -45,7 +73,7 @@ public static class ImageUploadHelper
 
             string fileName = $"{folderPrefix}{baseName}-{targetWidth}.webp";
             using MemoryStream output = new();
-            await variant.SaveAsync(output, new WebpEncoder { Quality = quality });
+            await source.SaveAsync(output, new WebpEncoder { Quality = quality });
             output.Position = 0;
 
             string url = await StoreAsync(output, fileName, storage, env, request, folder);
@@ -68,26 +96,34 @@ public static class ImageUploadHelper
         int maxHeight,
         int quality)
     {
-        using Image image = await Image.LoadAsync(fileStream);
-        image.Mutate(x => x.AutoOrient());
-
-        if (image.Width > maxWidth || image.Height > maxHeight)
+        await ProcessingGate.WaitAsync();
+        try
         {
-            image.Mutate(x => x.Resize(new ResizeOptions
+            using Image image = await Image.LoadAsync(fileStream);
+            image.Mutate(x => x.AutoOrient());
+
+            if (image.Width > maxWidth || image.Height > maxHeight)
             {
-                Size = new Size(maxWidth, maxHeight),
-                Mode = ResizeMode.Max,
-            }));
+                image.Mutate(x => x.Resize(new ResizeOptions
+                {
+                    Size = new Size(maxWidth, maxHeight),
+                    Mode = ResizeMode.Max,
+                }));
+            }
+
+            string folderPrefix = string.IsNullOrEmpty(folder) ? "" : folder + "/";
+            string fileName = $"{folderPrefix}{Guid.NewGuid()}.webp";
+
+            using MemoryStream output = new();
+            await image.SaveAsync(output, new WebpEncoder { Quality = quality });
+            output.Position = 0;
+
+            return await StoreAsync(output, fileName, storage, env, request, folder);
         }
-
-        string folderPrefix = string.IsNullOrEmpty(folder) ? "" : folder + "/";
-        string fileName = $"{folderPrefix}{Guid.NewGuid()}.webp";
-
-        using MemoryStream output = new();
-        await image.SaveAsync(output, new WebpEncoder { Quality = quality });
-        output.Position = 0;
-
-        return await StoreAsync(output, fileName, storage, env, request, folder);
+        finally
+        {
+            ProcessingGate.Release();
+        }
     }
 
     private static async Task<string> StoreAsync(
