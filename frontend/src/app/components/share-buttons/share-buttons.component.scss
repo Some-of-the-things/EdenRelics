@@ -1,0 +1,47 @@
+.share {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.share__label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 0.25rem;
+}
+
+.share__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border-color, #d4d4d4);
+  background: var(--bg-card, #fff);
+  color: var(--text-secondary, #5a5858);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background var(--transition, 0.15s ease), color var(--transition, 0.15s ease), border-color var(--transition, 0.15s ease);
+
+  &:hover,
+  &:focus-visible {
+    background: var(--bg-secondary, #f3f1ee);
+    color: var(--accent, #8f1d31);
+    border-color: var(--accent, #8f1d31);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent, #8f1d31);
+    outline-offset: 2px;
+  }
+
+  &--copied {
+    background: var(--accent, #8f1d31);
+    color: var(--text-inverse, #fff);
+    border-color: var(--accent, #8f1d31);
+  }
+}

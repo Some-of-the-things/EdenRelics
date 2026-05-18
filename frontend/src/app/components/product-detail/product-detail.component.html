@@ -76,6 +76,12 @@
           </svg>
           {{ isFavourite(product.id) ? 'Favourited' : 'Add to Favourites' }}
         </button>
+        <app-share-buttons
+          [url]="productShareUrl()"
+          [title]="product.name"
+          [description]="productShareDescription()"
+          [image]="product.imageUrl"
+        />
       </div>
     </div>
 
