@@ -4,6 +4,7 @@ import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { SeoService } from '../../services/seo.service';
 import { environment } from '../../../environments/environment';
+import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 
 interface BlogPost {
   id: string;
@@ -28,6 +29,8 @@ export class BlogPostComponent implements OnInit {
   private readonly seo = inject(SeoService);
   readonly post = signal<BlogPost | null>(null);
   readonly error = signal(false);
+  readonly srcset = imageSrcset;
+  readonly srcAt = imageSrcAt;
 
   ngOnInit(): void {
     this.http.get<BlogPost>(`${environment.apiUrl}/api/blog/${this.slug()}`).subscribe({

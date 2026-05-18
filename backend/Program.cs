@@ -6,7 +6,9 @@ using Eden_Relics_BE.Repositories;
 using Eden_Relics_BE.Services;
 using Fido2NetLib;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -14,6 +16,18 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+
+// Allow large uploads; the real per-request cap is enforced in the upload
+// controllers using UploadLimits.MaxUploadBytes (4GB, under R2's 5GB single-part PUT limit).
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = null;
+});
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = long.MaxValue;
+    options.ValueLengthLimit = int.MaxValue;
+});
 builder.Services.AddProblemDetails(options =>
 {
     options.CustomizeProblemDetails = ctx =>
@@ -235,10 +249,16 @@ if (app.Environment.IsEnvironment("Staging"))
 app.MapControllers();
 app.MapHealthChecks("/healthz");
 
-// Optimize images in the background after the app starts accepting requests
+// Optimize images and backfill responsive variants in the background after the
+// app starts accepting requests. Both calls are idempotent.
 app.Lifetime.ApplicationStarted.Register(() =>
 {
-    _ = app.Services.GetRequiredService<ImageOptimizationService>().OptimizeExistingImagesAsync();
+    _ = Task.Run(async () =>
+    {
+        ImageOptimizationService optimizer = app.Services.GetRequiredService<ImageOptimizationService>();
+        await optimizer.OptimizeExistingImagesAsync();
+        await optimizer.BackfillImageVariantsAsync();
+    });
 });
 
 app.Run();

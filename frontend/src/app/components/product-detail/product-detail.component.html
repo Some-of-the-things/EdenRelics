@@ -11,12 +11,21 @@
                 [class.detail__thumb--active]="currentImage() === img"
                 (click)="selectImage(img)"
               >
-                <img [src]="img" [alt]="product.name" />
+                <img [src]="srcAt(img, 400)" [alt]="product.name" loading="lazy" decoding="async" />
               </button>
             }
           </div>
         }
-        <img [src]="currentImage()" [alt]="product.name" class="detail__image" loading="eager" decoding="async" />
+        <img
+          [src]="srcAt(currentImage(), 1200)"
+          [srcset]="srcset(currentImage())"
+          sizes="(max-width: 700px) 100vw, 600px"
+          [alt]="product.name"
+          class="detail__image"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
       </div>
       <div class="detail__info">
         <span class="detail__era">{{ product.era }}</span>

@@ -289,7 +289,7 @@ public class MonzoController(
             return BadRequest(new { error = "File size must be under 10MB." });
         }
 
-        string receiptUrl = await ImageUploadHelper.ProcessAndUploadAsync(
+        string receiptUrl = await ImageUploadHelper.ProcessAndUploadSingleAsync(
             file.OpenReadStream(), storage, env, Request, "receipts", maxWidth: 1200, maxHeight: 1600, quality: 80);
 
         txn.ReceiptUrl = receiptUrl;

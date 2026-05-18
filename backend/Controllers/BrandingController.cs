@@ -50,6 +50,7 @@ public class BrandingController(EdenRelicsDbContext context, IWebHostEnvironment
 
     [HttpPost("upload-logo")]
     [Authorize(Roles = "Admin")]
+    [RequestSizeLimit(long.MaxValue)]
     public async Task<ActionResult<object>> UploadLogo([FromForm] IFormFile file)
     {
         string[] allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".svg"];
@@ -60,12 +61,12 @@ public class BrandingController(EdenRelicsDbContext context, IWebHostEnvironment
             return BadRequest(new { error = "Only image files (jpg, png, webp, svg) are allowed." });
         }
 
-        if (file.Length > 5 * 1024 * 1024)
+        if (file.Length > UploadLimits.MaxUploadBytes)
         {
-            return BadRequest(new { error = "File size must be under 5MB." });
+            return BadRequest(new { error = $"File size must be under {UploadLimits.MaxUploadDisplay}." });
         }
 
-        string logoUrl = await ImageUploadHelper.ProcessAndUploadAsync(
+        string logoUrl = await ImageUploadHelper.ProcessAndUploadSingleAsync(
             file.OpenReadStream(), storage, env, Request, "branding", maxWidth: 400, maxHeight: 200, quality: 85);
 
         return Ok(new { logoUrl, faviconUrl = (string?)null });

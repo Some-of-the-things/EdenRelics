@@ -231,6 +231,7 @@ public class ProductsController : ControllerBase
 
     [HttpPost("upload-image")]
     [Authorize(Roles = "Admin")]
+    [RequestSizeLimit(long.MaxValue)]
     public async Task<ActionResult<object>> UploadImage([FromForm] IFormFile file)
     {
         string[] allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
@@ -241,15 +242,16 @@ public class ProductsController : ControllerBase
             return BadRequest(new { error = "Only image files (jpg, png, webp, gif) are allowed." });
         }
 
-        if (file.Length > 10 * 1024 * 1024)
+        if (file.Length > UploadLimits.MaxUploadBytes)
         {
-            return BadRequest(new { error = "File size must be under 10MB." });
+            return BadRequest(new { error = $"File size must be under {UploadLimits.MaxUploadDisplay}." });
         }
 
         try
         {
             string imageUrl = await ImageUploadHelper.ProcessAndUploadAsync(
-                file.OpenReadStream(), _storage, _env, Request, "products");
+                file.OpenReadStream(), _storage, _env, Request, "products",
+                ImageUploadHelper.DefaultVariantWidths, quality: 75);
             return Ok(new { imageUrl });
         }
         catch (Exception ex)
@@ -261,6 +263,7 @@ public class ProductsController : ControllerBase
 
     [HttpPost("upload-video")]
     [Authorize(Roles = "Admin")]
+    [RequestSizeLimit(long.MaxValue)]
     public async Task<ActionResult<object>> UploadVideo([FromForm] IFormFile file)
     {
         string[] allowedExtensions = [".mp4", ".mov", ".webm", ".avi"];
@@ -271,9 +274,9 @@ public class ProductsController : ControllerBase
             return BadRequest(new { error = "Only video files (mp4, mov, webm, avi) are allowed." });
         }
 
-        if (file.Length > 100 * 1024 * 1024)
+        if (file.Length > UploadLimits.MaxUploadBytes)
         {
-            return BadRequest(new { error = "File size must be under 100MB." });
+            return BadRequest(new { error = $"File size must be under {UploadLimits.MaxUploadDisplay}." });
         }
 
         try

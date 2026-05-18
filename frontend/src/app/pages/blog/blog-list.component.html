@@ -4,7 +4,15 @@
     @for (post of posts(); track post.id) {
       <a [routerLink]="['/blog', post.slug]" class="blog__card">
         @if (post.featuredImageUrl) {
-          <img [src]="post.featuredImageUrl" [alt]="post.title" class="blog__card-image" />
+          <img
+            [src]="srcAt(post.featuredImageUrl, 800)"
+            [srcset]="srcset(post.featuredImageUrl)"
+            sizes="(max-width: 600px) 100vw, 400px"
+            [alt]="post.title"
+            class="blog__card-image"
+            loading="lazy"
+            decoding="async"
+          />
         }
         <div class="blog__card-body">
           <h2 class="blog__card-title">{{ post.title }}</h2>
