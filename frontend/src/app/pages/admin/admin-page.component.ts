@@ -4,7 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ProductStore } from '../../store/product.store';
-import { Product } from '../../models/product.model';
+import { Product, ProductStatus } from '../../models/product.model';
+import { filterAdminProducts, productStatusLabel, resolveProductStatus } from '../../utils/product-status';
 import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
 import {
@@ -258,8 +259,24 @@ export class AdminPageComponent implements OnInit {
 
   // Product stats
   readonly totalItems = computed(() => this.store.products().length);
-  readonly itemsForSale = computed(() => this.store.products().filter((p) => p.inStock).length);
-  readonly itemsSold = computed(() => this.store.products().filter((p) => !p.inStock).length);
+  readonly itemsForSale = computed(() => this.store.products().filter((p) => this.resolveStatus(p) === 'live').length);
+  readonly itemsSold = computed(() => this.store.products().filter((p) => this.resolveStatus(p) === 'sold').length);
+  readonly itemsStock = computed(() => this.store.products().filter((p) => this.resolveStatus(p) === 'stock').length);
+
+  // Product list filters
+  readonly productSearch = signal('');
+  readonly productStatusFilter = signal<'all' | ProductStatus>('all');
+  readonly filteredProducts = computed(() =>
+    filterAdminProducts(this.store.products(), this.productSearch(), this.productStatusFilter())
+  );
+
+  resolveStatus(product: Product): ProductStatus {
+    return resolveProductStatus(product);
+  }
+
+  statusLabel(product: Product): string {
+    return productStatusLabel(resolveProductStatus(product));
+  }
 
   // SEO
   seoUrl = 'https://edenrelics.co.uk';
@@ -1252,6 +1269,7 @@ export class AdminPageComponent implements OnInit {
     this.uploadError.set('');
     this.form = {
       name: product.name,
+      sku: product.sku ?? '',
       description: product.description,
       price: product.price,
       salePrice: product.salePrice ?? null,
@@ -1265,6 +1283,7 @@ export class AdminPageComponent implements OnInit {
       additionalImageUrls: [...(product.additionalImageUrls ?? [])],
       videoUrls: [...(product.videoUrls ?? [])],
       inStock: product.inStock,
+      status: this.resolveStatus(product),
     };
     this.showForm.set(true);
     setTimeout(() => {
@@ -1360,6 +1379,7 @@ export class AdminPageComponent implements OnInit {
   private emptyForm(): Omit<Product, 'id'> {
     return {
       name: '',
+      sku: '',
       description: '',
       price: 0,
       salePrice: null,
@@ -1373,6 +1393,7 @@ export class AdminPageComponent implements OnInit {
       additionalImageUrls: [] as string[],
       videoUrls: [] as string[],
       inStock: true,
+      status: 'live',
     };
   }
 

@@ -218,11 +218,22 @@
               </select>
             </label>
             <label class="admin__field">
-              <span>In Stock</span>
-              <select [(ngModel)]="form.inStock" name="inStock">
-                <option [ngValue]="true">Yes</option>
-                <option [ngValue]="false">No</option>
+              <span>Status</span>
+              <select [(ngModel)]="form.status" name="status">
+                <option value="stock">Stock (admin only)</option>
+                <option value="live">Live (on sale)</option>
+                <option value="sold">Sold</option>
               </select>
+            </label>
+            <label class="admin__field">
+              <span>SKU</span>
+              <input
+                type="text"
+                [(ngModel)]="form.sku"
+                name="sku"
+                placeholder="Auto-generated if blank"
+                maxlength="50"
+              />
             </label>
           </div>
           <div class="admin__field">
@@ -444,16 +455,50 @@
       </div>
     }
 
+    <div class="admin__filters">
+      <label class="admin__filter-label">
+        <span>Search</span>
+        <input
+          type="search"
+          [ngModel]="productSearch()"
+          (ngModelChange)="productSearch.set($event)"
+          name="productSearch"
+          placeholder="Name or SKU"
+        />
+      </label>
+      <label class="admin__filter-label">
+        <span>Status</span>
+        <select
+          [ngModel]="productStatusFilter()"
+          (ngModelChange)="productStatusFilter.set($event)"
+          name="productStatusFilter"
+        >
+          <option value="all">All</option>
+          <option value="live">Live</option>
+          <option value="stock">Stock</option>
+          <option value="sold">Sold</option>
+        </select>
+      </label>
+      <span class="admin__order-count">{{ filteredProducts().length }} of {{ store.products().length }}</span>
+    </div>
+
     <div>
-      @for (product of store.products(); track product.id) {
+      @for (product of filteredProducts(); track product.id) {
         <div class="admin__card">
           <div class="admin__card-header">
             <img [src]="product.imageUrl" [alt]="product.name" class="admin__card-thumb" />
             <div class="admin__card-title">
               <strong>{{ product.name }}</strong>
-              <span class="admin__stock" [class.admin__stock--out]="!product.inStock">
-                {{ product.inStock ? 'In Stock' : 'Sold' }}
+              <span
+                class="admin__stock"
+                [class.admin__stock--out]="(product.status ?? (product.inStock ? 'live' : 'sold')) === 'sold'"
+                [class.admin__stock--draft]="(product.status ?? (product.inStock ? 'live' : 'sold')) === 'stock'"
+              >
+                {{ statusLabel(product) }}
               </span>
+              @if (product.sku) {
+                <span class="admin__sku">{{ product.sku }}</span>
+              }
             </div>
           </div>
           <div class="admin__card-details">

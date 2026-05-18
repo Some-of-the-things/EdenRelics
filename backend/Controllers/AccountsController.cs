@@ -157,11 +157,12 @@ public class AccountsController(EdenRelicsDbContext context) : ControllerBase
             .OrderByDescending(x => x.revenue)
             .ToList();
 
-        // Inventory summary
-        int totalInStock = products.Count(p => p.InStock);
-        int totalOutOfStock = products.Count(p => !p.InStock);
-        decimal inventoryRetailValue = products.Where(p => p.InStock).Sum(p => p.Price);
-        decimal inventoryCostValue = products.Where(p => p.InStock).Sum(p => p.CostPrice);
+        // Inventory summary — Stock + Live count as "owned" inventory you haven't sold yet.
+        int totalLive = products.Count(p => p.Status == ProductStatus.Live);
+        int totalStock = products.Count(p => p.Status == ProductStatus.Stock);
+        int totalSold = products.Count(p => p.Status == ProductStatus.Sold);
+        decimal inventoryRetailValue = products.Where(p => p.Status != ProductStatus.Sold).Sum(p => p.Price);
+        decimal inventoryCostValue = products.Where(p => p.Status != ProductStatus.Sold).Sum(p => p.CostPrice);
 
         // Orders by status (all orders, not just paid)
         List<Order> allOrders = await context.Orders.ToListAsync();
@@ -185,8 +186,9 @@ public class AccountsController(EdenRelicsDbContext context) : ControllerBase
             revenueByEra,
             inventory = new
             {
-                inStock = totalInStock,
-                outOfStock = totalOutOfStock,
+                inStock = totalLive,
+                stock = totalStock,
+                outOfStock = totalSold,
                 retailValue = Math.Round(inventoryRetailValue, 2),
                 costValue = Math.Round(inventoryCostValue, 2)
             },

@@ -272,6 +272,8 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(p => p.Name).HasMaxLength(200);
             entity.Property(p => p.Slug).HasMaxLength(200);
             entity.HasIndex(p => p.Slug).IsUnique().HasFilter("\"Slug\" <> ''");
+            entity.Property(p => p.Sku).HasMaxLength(50).IsRequired();
+            entity.HasIndex(p => p.Sku).IsUnique().HasFilter("\"Sku\" <> ''");
             entity.Property(p => p.Era).HasMaxLength(50);
             entity.Property(p => p.Category).HasMaxLength(20);
             entity.Property(p => p.Size).HasMaxLength(20);
@@ -290,6 +292,7 @@ public class EdenRelicsDbContext : DbContext
                     Id = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000001"),
                     Name = "Bohemian Maxi Dress",
                     Slug = "bohemian-maxi-dress",
+                    Sku = "ER-00001",
                     Description = "Flowing 1970s bohemian maxi dress with earthy floral print. Empire waist and angel sleeves in lightweight cotton gauze.",
                     Price = 195m,
                     Era = "1970s",
@@ -297,7 +300,7 @@ public class EdenRelicsDbContext : DbContext
                     Size = "10",
                     Condition = "good",
                     ImageUrl = "https://placehold.co/400x500/FF6347/FFF?text=Boho+Maxi+Dress",
-                    InStock = true,
+                    Status = ProductStatus.Live,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -306,6 +309,7 @@ public class EdenRelicsDbContext : DbContext
                     Id = Guid.Parse("a1b2c3d4-0002-0000-0000-000000000002"),
                     Name = "Wrap Dress",
                     Slug = "wrap-dress",
+                    Sku = "ER-00002",
                     Description = "Iconic 1970s wrap dress in a bold geometric print. Flattering silhouette with tie waist and flutter sleeves.",
                     Price = 275m,
                     Era = "1970s",
@@ -313,7 +317,7 @@ public class EdenRelicsDbContext : DbContext
                     Size = "12",
                     Condition = "excellent",
                     ImageUrl = "https://placehold.co/400x500/556B2F/FFF?text=Wrap+Dress",
-                    InStock = true,
+                    Status = ProductStatus.Live,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -322,6 +326,7 @@ public class EdenRelicsDbContext : DbContext
                     Id = Guid.Parse("a1b2c3d4-0003-0000-0000-000000000003"),
                     Name = "Power Shoulder Dress",
                     Slug = "power-shoulder-dress",
+                    Sku = "ER-00003",
                     Description = "Bold 1980s power dress in electric blue with structured shoulders and nipped waist. Gold button details down the front.",
                     Price = 185m,
                     Era = "1980s",
@@ -329,7 +334,7 @@ public class EdenRelicsDbContext : DbContext
                     Size = "8",
                     Condition = "excellent",
                     ImageUrl = "https://placehold.co/400x500/191970/FFF?text=Power+Dress",
-                    InStock = true,
+                    Status = ProductStatus.Live,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -338,6 +343,7 @@ public class EdenRelicsDbContext : DbContext
                     Id = Guid.Parse("a1b2c3d4-0004-0000-0000-000000000004"),
                     Name = "Sequin Party Dress",
                     Slug = "sequin-party-dress",
+                    Sku = "ER-00004",
                     Description = "Dazzling 1980s sequin mini dress in hot pink. All-over sequin embellishment with dramatic puff sleeves.",
                     Price = 220m,
                     Era = "1980s",
@@ -345,7 +351,7 @@ public class EdenRelicsDbContext : DbContext
                     Size = "6",
                     Condition = "good",
                     ImageUrl = "https://placehold.co/400x500/8B0000/FFF?text=Sequin+Dress",
-                    InStock = true,
+                    Status = ProductStatus.Live,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -354,6 +360,7 @@ public class EdenRelicsDbContext : DbContext
                     Id = Guid.Parse("a1b2c3d4-0005-0000-0000-000000000005"),
                     Name = "Silk Slip Dress",
                     Slug = "silk-slip-dress",
+                    Sku = "ER-00005",
                     Description = "Minimalist 1990s silk slip dress in champagne. Bias-cut with delicate spaghetti straps and lace trim at the hem.",
                     Price = 210m,
                     Era = "1990s",
@@ -361,7 +368,7 @@ public class EdenRelicsDbContext : DbContext
                     Size = "8",
                     Condition = "mint",
                     ImageUrl = "https://placehold.co/400x500/DAA520/FFF?text=Silk+Slip+Dress",
-                    InStock = true,
+                    Status = ProductStatus.Live,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -370,6 +377,7 @@ public class EdenRelicsDbContext : DbContext
                     Id = Guid.Parse("a1b2c3d4-0006-0000-0000-000000000006"),
                     Name = "Grunge Babydoll Dress",
                     Slug = "grunge-babydoll-dress",
+                    Sku = "ER-00006",
                     Description = "Classic 1990s babydoll dress in dark floral. Oversized fit with empire waist and velvet ribbon trim.",
                     Price = 145m,
                     Era = "1990s",
@@ -377,7 +385,7 @@ public class EdenRelicsDbContext : DbContext
                     Size = "14",
                     Condition = "good",
                     ImageUrl = "https://placehold.co/400x500/2F4F4F/FFF?text=Babydoll+Dress",
-                    InStock = true,
+                    Status = ProductStatus.Live,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -386,6 +394,7 @@ public class EdenRelicsDbContext : DbContext
                     Id = Guid.Parse("a1b2c3d4-0007-0000-0000-000000000007"),
                     Name = "Butterfly Halter Dress",
                     Slug = "butterfly-halter-dress",
+                    Sku = "ER-00007",
                     Description = "Early 2000s halter dress with butterfly print. Low-rise fit with handkerchief hem and rhinestone buckle detail.",
                     Price = 165m,
                     Era = "2000s",
@@ -393,7 +402,7 @@ public class EdenRelicsDbContext : DbContext
                     Size = "6",
                     Condition = "excellent",
                     ImageUrl = "https://placehold.co/400x500/FF69B4/FFF?text=Y2K+Halter",
-                    InStock = true,
+                    Status = ProductStatus.Live,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -402,6 +411,7 @@ public class EdenRelicsDbContext : DbContext
                     Id = Guid.Parse("a1b2c3d4-0008-0000-0000-000000000008"),
                     Name = "Velvet Mini Dress",
                     Slug = "velvet-mini-dress",
+                    Sku = "ER-00008",
                     Description = "Y2K velvet mini dress in deep plum. Scooped neckline with ruched sides and subtle stretch for a perfect fit.",
                     Price = 135m,
                     Era = "2000s",
@@ -409,7 +419,7 @@ public class EdenRelicsDbContext : DbContext
                     Size = "10",
                     Condition = "excellent",
                     ImageUrl = "https://placehold.co/400x500/8B4513/FFF?text=Velvet+Mini",
-                    InStock = true,
+                    Status = ProductStatus.Live,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -418,6 +428,7 @@ public class EdenRelicsDbContext : DbContext
                     Id = Guid.Parse("a1b2c3d4-0009-0000-0000-000000000009"),
                     Name = "Asymmetric Midi Dress",
                     Slug = "asymmetric-midi-dress",
+                    Sku = "ER-00009",
                     Description = "Contemporary asymmetric midi dress in sage green. One-shoulder design with pleated skirt and clean modern lines.",
                     Price = 285m,
                     Era = "2020s",
@@ -425,7 +436,7 @@ public class EdenRelicsDbContext : DbContext
                     Size = "12",
                     Condition = "mint",
                     ImageUrl = "https://placehold.co/400x500/556B2F/FFF?text=Asymmetric+Midi",
-                    InStock = true,
+                    Status = ProductStatus.Live,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -434,6 +445,7 @@ public class EdenRelicsDbContext : DbContext
                     Id = Guid.Parse("a1b2c3d4-0010-0000-0000-000000000010"),
                     Name = "Cut-Out Maxi Dress",
                     Slug = "cut-out-maxi-dress",
+                    Sku = "ER-00010",
                     Description = "Modern cut-out maxi dress in black. Strategic side cut-outs with a high neck and flowing skirt.",
                     Price = 320m,
                     Era = "2020s",
@@ -441,7 +453,7 @@ public class EdenRelicsDbContext : DbContext
                     Size = "16",
                     Condition = "mint",
                     ImageUrl = "https://placehold.co/400x500/1C1C1C/FFF?text=Cut-Out+Maxi",
-                    InStock = true,
+                    Status = ProductStatus.Live,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 }

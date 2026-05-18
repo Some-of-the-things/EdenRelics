@@ -1,9 +1,19 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Eden_Relics_BE.Data.Entities;
+
+public enum ProductStatus
+{
+    Stock = 0,
+    Live = 1,
+    Sold = 2,
+}
 
 public class Product : BaseEntity
 {
     public required string Name { get; set; }
     public string Slug { get; set; } = "";
+    public string Sku { get; set; } = "";
     public required string Description { get; set; }
     public decimal Price { get; set; }
     public decimal CostPrice { get; set; }
@@ -15,7 +25,7 @@ public class Product : BaseEntity
     public required string ImageUrl { get; set; }
     public List<string> AdditionalImageUrls { get; set; } = [];
     public List<string> VideoUrls { get; set; } = [];
-    public bool InStock { get; set; }
+    public ProductStatus Status { get; set; } = ProductStatus.Live;
     public decimal? SalePrice { get; set; }
 
     /// <summary>When the current Price was set (for 28-day reduction rule compliance)</summary>
@@ -32,4 +42,13 @@ public class Product : BaseEntity
 
     /// <summary>Locale -> translated description HTML</summary>
     public Dictionary<string, string> DescriptionTranslations { get; set; } = [];
+
+    [NotMapped]
+    public bool IsLive => Status == ProductStatus.Live;
+
+    [NotMapped]
+    public bool IsStock => Status == ProductStatus.Stock;
+
+    [NotMapped]
+    public bool IsSold => Status == ProductStatus.Sold;
 }
