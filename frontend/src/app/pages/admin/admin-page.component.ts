@@ -211,6 +211,34 @@ interface SeoResult {
   suggestedKeywords: KeywordSuggestion[];
 }
 
+interface SeoHealthSnapshot {
+  id: string;
+  takenAtUtc: string;
+  totalProducts: number;
+  liveProducts: number;
+  stockProducts: number;
+  soldProducts: number;
+  productsMissingImage: number;
+  productsMissingDescription: number;
+  productsMissingSlug: number;
+  productsMissingSku: number;
+  productsWithVideo: number;
+  productsWithAdditionalImages: number;
+  avgProductDescriptionWords: number;
+  totalBlogPosts: number;
+  publishedBlogPosts: number;
+  blogPostsMissingFeaturedImage: number;
+  blogPostsMissingExcerpt: number;
+  avgBlogPostWords: number;
+  sitemapUrlCount: number;
+  sitemapImageEntryCount: number;
+  trackedKeywords: number;
+  trackedKeywordsWithPosition: number;
+  avgKeywordPosition: number;
+  keywordsInTop10: number;
+  keywordsInTop3: number;
+}
+
 @Component({
   selector: 'app-admin-page',
   imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe],
@@ -283,6 +311,13 @@ export class AdminPageComponent implements OnInit {
   // SEO
   seoUrl = 'https://edenrelics.co.uk';
   readonly seoResult = signal<SeoResult | null>(null);
+
+  // SEO health snapshots (catalog quality + sitemap signals captured daily)
+  readonly seoHealthSnapshots = signal<SeoHealthSnapshot[]>([]);
+  readonly seoHealthLoading = signal(false);
+  readonly seoHealthRunning = signal(false);
+  readonly seoHealthError = signal('');
+  readonly latestSeoHealth = computed(() => this.seoHealthSnapshots()[0] ?? null);
   readonly seoLoading = signal(false);
   readonly seoError = signal('');
 
@@ -600,8 +635,11 @@ export class AdminPageComponent implements OnInit {
     if (tab === 'orders' && this.orders().length === 0) {
       this.loadOrders();
     }
-    if (tab === 'seo' && this.trackedKeywords().length === 0) {
-      this.loadTrackedKeywords();
+    if (tab === 'seo') {
+      if (this.trackedKeywords().length === 0) {
+        this.loadTrackedKeywords();
+      }
+      this.loadSeoHealth();
     }
     if (tab === 'branding') {
       this.loadBranding();
@@ -1143,6 +1181,36 @@ export class AdminPageComponent implements OnInit {
         this.trackedLoading.set(false);
       },
       error: () => this.trackedLoading.set(false),
+    });
+  }
+
+  loadSeoHealth(): void {
+    this.seoHealthLoading.set(true);
+    this.seoHealthError.set('');
+    this.http.get<SeoHealthSnapshot[]>(`${environment.apiUrl}/api/seo/health/snapshots?take=30`).subscribe({
+      next: (snapshots) => {
+        this.seoHealthSnapshots.set(snapshots);
+        this.seoHealthLoading.set(false);
+      },
+      error: () => {
+        this.seoHealthLoading.set(false);
+        this.seoHealthError.set('Failed to load SEO health snapshots.');
+      },
+    });
+  }
+
+  runSeoHealthSnapshot(): void {
+    this.seoHealthRunning.set(true);
+    this.seoHealthError.set('');
+    this.http.post<SeoHealthSnapshot>(`${environment.apiUrl}/api/seo/health/snapshots/run`, {}).subscribe({
+      next: (snapshot) => {
+        this.seoHealthRunning.set(false);
+        this.seoHealthSnapshots.update((list) => [snapshot, ...list]);
+      },
+      error: () => {
+        this.seoHealthRunning.set(false);
+        this.seoHealthError.set('Snapshot capture failed.');
+      },
     });
   }
 

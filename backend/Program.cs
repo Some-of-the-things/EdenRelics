@@ -113,6 +113,10 @@ builder.Services.AddHostedService<TranslationBackgroundService>();
 builder.Services.AddScoped<RankCheckerService>();
 builder.Services.AddHostedService<RankCheckBackgroundService>();
 
+// SEO health snapshots (catalog quality, sitemap counts, keyword positions)
+builder.Services.AddSingleton<SeoHealthService>();
+builder.Services.AddHostedService<SeoHealthBackgroundService>();
+
 // Monzo bank integration
 builder.Services.AddHttpClient<MonzoService>();
 builder.Services.AddScoped<MonzoService>();

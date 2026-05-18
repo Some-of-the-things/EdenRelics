@@ -22,6 +22,7 @@ export interface Product {
   inStock: boolean;
   status?: ProductStatus;
   viewCount?: number;
+  createdAtUtc?: string;
 }
 
 export interface CartItem {

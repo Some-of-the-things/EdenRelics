@@ -1430,6 +1430,101 @@
 
   @if (activeTab() === 'seo') {
     <div class="seo">
+      <section class="seo__health">
+        <div class="seo__health-header">
+          <h3>Site Health Snapshot</h3>
+          <button
+            type="button"
+            class="admin__add-btn"
+            (click)="runSeoHealthSnapshot()"
+            [disabled]="seoHealthRunning()"
+          >
+            {{ seoHealthRunning() ? 'Capturing...' : 'Capture now' }}
+          </button>
+        </div>
+        @if (seoHealthError()) {
+          <p class="admin__error" role="alert">{{ seoHealthError() }}</p>
+        }
+        @if (latestSeoHealth(); as h) {
+          <p class="seo__health-taken">Last captured {{ h.takenAtUtc | date:'d MMM y, HH:mm' }}</p>
+          <div class="seo__health-grid">
+            <div class="seo__health-card">
+              <span class="seo__health-label">Live products</span>
+              <span class="seo__health-value">{{ h.liveProducts }} / {{ h.totalProducts }}</span>
+              <span class="seo__health-sub">{{ h.stockProducts }} stock · {{ h.soldProducts }} sold</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Sitemap URLs</span>
+              <span class="seo__health-value">{{ h.sitemapUrlCount }}</span>
+              <span class="seo__health-sub">{{ h.sitemapImageEntryCount }} image entries</span>
+            </div>
+            <div class="seo__health-card" [class.seo__health-card--warn]="h.productsMissingImage > 0">
+              <span class="seo__health-label">Missing primary image</span>
+              <span class="seo__health-value">{{ h.productsMissingImage }}</span>
+              <span class="seo__health-sub">products</span>
+            </div>
+            <div class="seo__health-card" [class.seo__health-card--warn]="h.productsMissingDescription > 0">
+              <span class="seo__health-label">Thin descriptions</span>
+              <span class="seo__health-value">{{ h.productsMissingDescription }}</span>
+              <span class="seo__health-sub">&lt; 20 words</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Avg product words</span>
+              <span class="seo__health-value">{{ h.avgProductDescriptionWords }}</span>
+              <span class="seo__health-sub">target 50+</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Published posts</span>
+              <span class="seo__health-value">{{ h.publishedBlogPosts }} / {{ h.totalBlogPosts }}</span>
+              <span class="seo__health-sub">avg {{ h.avgBlogPostWords }} words</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Tracked keywords</span>
+              <span class="seo__health-value">{{ h.trackedKeywordsWithPosition }} / {{ h.trackedKeywords }}</span>
+              <span class="seo__health-sub">avg pos {{ h.avgKeywordPosition }}</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Top-10 keywords</span>
+              <span class="seo__health-value">{{ h.keywordsInTop10 }}</span>
+              <span class="seo__health-sub">{{ h.keywordsInTop3 }} in top-3</span>
+            </div>
+          </div>
+          @if (seoHealthSnapshots().length > 1) {
+            <details class="seo__health-history">
+              <summary>Snapshot history ({{ seoHealthSnapshots().length }})</summary>
+              <table class="admin__table">
+                <thead>
+                  <tr>
+                    <th>Captured</th>
+                    <th>Live</th>
+                    <th>Sitemap URLs</th>
+                    <th>Missing img</th>
+                    <th>Thin desc</th>
+                    <th>Avg words</th>
+                    <th>Top-10</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (snap of seoHealthSnapshots(); track snap.id) {
+                    <tr>
+                      <td>{{ snap.takenAtUtc | date:'d MMM, HH:mm' }}</td>
+                      <td>{{ snap.liveProducts }}</td>
+                      <td>{{ snap.sitemapUrlCount }}</td>
+                      <td>{{ snap.productsMissingImage }}</td>
+                      <td>{{ snap.productsMissingDescription }}</td>
+                      <td>{{ snap.avgProductDescriptionWords }}</td>
+                      <td>{{ snap.keywordsInTop10 }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </details>
+          }
+        } @else if (!seoHealthLoading()) {
+          <p class="admin__empty">No snapshots yet. Background capture runs daily; click <strong>Capture now</strong> to record the first one.</p>
+        }
+      </section>
+
       <form class="seo__url-bar" (ngSubmit)="analyseSeo()">
         <input
           type="url"

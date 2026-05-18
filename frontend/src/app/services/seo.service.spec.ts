@@ -54,6 +54,18 @@ describe('SeoService', () => {
       expect(canonical?.href).toBe('https://edenrelics.co.uk/test');
     });
 
+    it('emits og:locale=en_GB and og:site_name', () => {
+      service.updateTags({ url: '/' });
+      expect(metaProp('og:locale')).toBe('en_GB');
+      expect(metaProp('og:site_name')).toBe('Eden Relics');
+    });
+
+    it('emits twitter:site and twitter:creator handles', () => {
+      service.updateTags({ url: '/' });
+      expect(meta('twitter:site')).toBe('@edenrelics');
+      expect(meta('twitter:creator')).toBe('@edenrelics');
+    });
+
     it('strips HTML and truncates description over 300 chars', () => {
       const long = '<p>' + 'Word '.repeat(80) + '</p>';
       service.updateTags({ description: long, url: '/' });

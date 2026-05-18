@@ -19,6 +19,9 @@ export class SeoService {
   private readonly defaultDescription = 'Vintage women’s clothing from the 1960s, 70s, 80s and 90s. Thoughtfully sourced, carefully assessed — slow fashion worth wearing again.';
   private readonly defaultImage = 'https://edenrelics.co.uk/og-image.png';
   private readonly siteUrl = 'https://edenrelics.co.uk';
+  private readonly ogLocale = 'en_GB';
+  /** Twitter handle for site / creator attribution. Set to '' to disable. */
+  private readonly twitterSite = '@edenrelics';
 
   updateTags(config: {
     title?: string;
@@ -45,6 +48,8 @@ export class SeoService {
     this.meta.updateTag({ property: 'og:description', content: description });
     this.meta.updateTag({ property: 'og:url', content: url });
     this.meta.updateTag({ property: 'og:type', content: type });
+    this.meta.updateTag({ property: 'og:locale', content: this.ogLocale });
+    this.meta.updateTag({ property: 'og:site_name', content: 'Eden Relics' });
     const image = config.image ?? this.defaultImage;
     this.meta.updateTag({ property: 'og:image', content: image });
 
@@ -53,6 +58,10 @@ export class SeoService {
     this.meta.updateTag({ name: 'twitter:title', content: pageTitle });
     this.meta.updateTag({ name: 'twitter:description', content: description });
     this.meta.updateTag({ name: 'twitter:image', content: image });
+    if (this.twitterSite) {
+      this.meta.updateTag({ name: 'twitter:site', content: this.twitterSite });
+      this.meta.updateTag({ name: 'twitter:creator', content: this.twitterSite });
+    }
 
     // Canonical URL
     this.updateCanonical(url);

@@ -181,55 +181,51 @@ export class ProductDetailComponent {
         }
         const activePrice = product.showReduction && product.salePrice ? product.salePrice : product.price;
         const productUrl = `https://edenrelics.co.uk${canonicalPath}`;
+        const description = stripHtml(product.description);
+        const uploadDate = product.createdAtUtc ?? new Date().toISOString();
+        const videos = (product.videoUrls ?? []).map((url, idx) => ({
+          '@type': 'VideoObject',
+          name: `${product.name}${product.videoUrls && product.videoUrls.length > 1 ? ` — Video ${idx + 1}` : ''}`,
+          description,
+          thumbnailUrl: product.imageUrl,
+          uploadDate,
+          contentUrl: url,
+        }));
+        const graph: object[] = [
+          {
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://edenrelics.co.uk' },
+              { '@type': 'ListItem', position: 2, name: product.name, item: productUrl },
+            ],
+          },
+          {
+            '@type': 'Product',
+            name: product.name,
+            description,
+            image: [product.imageUrl, ...(product.additionalImageUrls ?? [])],
+            sku: product.id,
+            url: productUrl,
+            brand: { '@type': 'Brand', name: 'Eden Relics' },
+            category: product.era,
+            itemCondition: schemaCondition(product.condition),
+            ...(videos.length > 0 ? { video: videos.length === 1 ? videos[0] : videos } : {}),
+            offers: {
+              '@type': 'Offer',
+              url: productUrl,
+              price: activePrice,
+              priceCurrency: 'GBP',
+              availability: product.inStock
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
+              itemCondition: schemaCondition(product.condition),
+              seller: { '@type': 'Organization', name: 'Eden Relics' },
+            },
+          },
+        ];
         this.seo.setJsonLd({
           '@context': 'https://schema.org',
-          '@graph': [
-            {
-              '@type': 'BreadcrumbList',
-              itemListElement: [
-                {
-                  '@type': 'ListItem',
-                  position: 1,
-                  name: 'Home',
-                  item: 'https://edenrelics.co.uk',
-                },
-                {
-                  '@type': 'ListItem',
-                  position: 2,
-                  name: product.name,
-                  item: productUrl,
-                },
-              ],
-            },
-            {
-              '@type': 'Product',
-              name: product.name,
-              description: stripHtml(product.description),
-              image: [product.imageUrl, ...(product.additionalImageUrls ?? [])],
-              sku: product.id,
-              url: productUrl,
-              brand: {
-                '@type': 'Brand',
-                name: 'Eden Relics',
-              },
-              category: product.era,
-              itemCondition: schemaCondition(product.condition),
-              offers: {
-                '@type': 'Offer',
-                url: productUrl,
-                price: activePrice,
-                priceCurrency: 'GBP',
-                availability: product.inStock
-                  ? 'https://schema.org/InStock'
-                  : 'https://schema.org/OutOfStock',
-                itemCondition: schemaCondition(product.condition),
-                seller: {
-                  '@type': 'Organization',
-                  name: 'Eden Relics',
-                },
-              },
-            },
-          ],
+          '@graph': graph,
         });
       }
     });

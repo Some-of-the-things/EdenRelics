@@ -893,6 +893,82 @@
   &[data-status='Pending'] { color: var(--text-muted); }
 }
 
+/* SEO Health Snapshot */
+.seo__health {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.seo__health-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.seo__health-taken {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.seo__health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.seo__health-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  border-left: 3px solid var(--accent);
+
+  &--warn {
+    border-left-color: #c44569;
+  }
+}
+
+.seo__health-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.seo__health-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 0.25rem;
+}
+
+.seo__health-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.seo__health-history {
+  margin-top: 1rem;
+
+  summary {
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+}
+
 /* SEO Analyser */
 .seo__url-bar {
   display: flex;
