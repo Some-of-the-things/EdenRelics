@@ -3,6 +3,9 @@
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color, #d4d4d4);
 }
 
 .share__label {
