@@ -299,11 +299,14 @@ export class AdminPageComponent implements OnInit {
   readonly contentSuccess = signal('');
   readonly contentError = signal('');
 
-  readonly contentSections = [
+  readonly contentSections: {
+    title: string;
+    fields: { key: string; label: string; type: 'text' | 'textarea' | 'html'; fallback?: string }[];
+  }[] = [
     {
       title: 'Header Banner',
       fields: [
-        { key: 'header.banner', label: 'Announcement (leave blank to hide)', type: 'text' },
+        { key: 'header.banner', label: 'Announcement (leave blank to hide)', type: 'text', fallback: 'Free shipping on UK orders' },
       ],
     },
     {
@@ -317,96 +320,96 @@ export class AdminPageComponent implements OnInit {
     {
       title: 'About Section',
       fields: [
-        { key: 'home.about.title', label: 'Section Title', type: 'text' },
-        { key: 'home.about.card1.title', label: 'Card 1 Title', type: 'text' },
+        { key: 'home.about.title', label: 'Section Title', type: 'text', fallback: 'Why Eden Relics?' },
+        { key: 'home.about.card1.title', label: 'Card 1 Title', type: 'text', fallback: 'Authentically Vintage' },
         { key: 'home.about.card1.text', label: 'Card 1 Text', type: 'textarea' },
-        { key: 'home.about.card2.title', label: 'Card 2 Title', type: 'text' },
+        { key: 'home.about.card2.title', label: 'Card 2 Title', type: 'text', fallback: 'Quality Assured' },
         { key: 'home.about.card2.text', label: 'Card 2 Text', type: 'textarea' },
-        { key: 'home.about.card3.title', label: 'Card 3 Title', type: 'text' },
+        { key: 'home.about.card3.title', label: 'Card 3 Title', type: 'text', fallback: 'Sustainable Fashion' },
         { key: 'home.about.card3.text', label: 'Card 3 Text', type: 'textarea' },
-        { key: 'home.about.card4.title', label: 'Card 4 Title', type: 'text' },
+        { key: 'home.about.card4.title', label: 'Card 4 Title', type: 'text', fallback: 'Spanning the Decades' },
         { key: 'home.about.card4.text', label: 'Card 4 Text', type: 'textarea' },
       ],
     },
     {
       title: 'Footer',
       fields: [
-        { key: 'footer.tagline', label: 'Tagline', type: 'text' },
-        { key: 'footer.company.line1', label: 'Company Line 1', type: 'text' },
-        { key: 'footer.company.line2', label: 'Company Line 2', type: 'text' },
+        { key: 'footer.tagline', label: 'Tagline', type: 'text', fallback: 'Carefully sourced & lovingly preserved vintage clothing.' },
+        { key: 'footer.company.line1', label: 'Company Line 1', type: 'text', fallback: 'Company No. 17153907' },
+        { key: 'footer.company.line2', label: 'Company Line 2', type: 'text', fallback: 'Registered in England and Wales' },
         { key: 'footer.company.line3', label: 'Company Line 3', type: 'text' },
-        { key: 'footer.contact.email', label: 'Email', type: 'text' },
-        { key: 'footer.contact.phone', label: 'Phone', type: 'text' },
-        { key: 'footer.contact.address', label: 'Address', type: 'textarea' },
+        { key: 'footer.contact.email', label: 'Email', type: 'text', fallback: 'edenrelics@dcp-net.com' },
+        { key: 'footer.contact.phone', label: 'Phone', type: 'text', fallback: '+44 (0) 7454 905173' },
+        { key: 'footer.contact.address', label: 'Address', type: 'textarea', fallback: 'EDEN RELICS LTD\n30 Vane Close\nNorwich, NR7 0US\nUnited Kingdom' },
       ],
     },
     {
       title: 'Contact Page',
       fields: [
-        { key: 'contact.title', label: 'Title', type: 'text' },
-        { key: 'contact.subtitle', label: 'Subtitle', type: 'text' },
+        { key: 'contact.title', label: 'Title', type: 'text', fallback: 'Get in Touch' },
+        { key: 'contact.subtitle', label: 'Subtitle', type: 'text', fallback: 'Have a question or want to know more? Drop us a message.' },
       ],
     },
     {
       title: 'Privacy Policy',
       fields: [
-        { key: 'policy.privacy.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.privacy.updated', label: 'Last Updated', type: 'text', fallback: 'March 2026' },
         { key: 'policy.privacy.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Returns Policy',
       fields: [
-        { key: 'policy.returns.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.returns.updated', label: 'Last Updated', type: 'text', fallback: 'March 2026' },
         { key: 'policy.returns.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Supply Chain Policy',
       fields: [
-        { key: 'policy.supply-chain.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.supply-chain.updated', label: 'Last Updated', type: 'text', fallback: 'March 2026' },
         { key: 'policy.supply-chain.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Modern Slavery Policy',
       fields: [
-        { key: 'policy.modern-slavery.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.modern-slavery.updated', label: 'Last Updated', type: 'text', fallback: 'March 2026' },
         { key: 'policy.modern-slavery.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Terms & Conditions',
       fields: [
-        { key: 'policy.terms.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.terms.updated', label: 'Last Updated', type: 'text', fallback: 'April 2026' },
         { key: 'policy.terms.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Cookie Policy',
       fields: [
-        { key: 'policy.cookies.updated', label: 'Last Updated', type: 'text' },
+        { key: 'policy.cookies.updated', label: 'Last Updated', type: 'text', fallback: 'April 2026' },
         { key: 'policy.cookies.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Latest Security Report',
       fields: [
-        { key: 'report.security.updated', label: 'Last Updated', type: 'text' },
+        { key: 'report.security.updated', label: 'Last Updated', type: 'text', fallback: 'April 2026' },
         { key: 'report.security.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Accessibility Report',
       fields: [
-        { key: 'report.accessibility.updated', label: 'Last Updated', type: 'text' },
+        { key: 'report.accessibility.updated', label: 'Last Updated', type: 'text', fallback: 'April 2026' },
         { key: 'report.accessibility.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Compliance Report',
       fields: [
-        { key: 'report.compliance.updated', label: 'Last Updated', type: 'text' },
+        { key: 'report.compliance.updated', label: 'Last Updated', type: 'text', fallback: 'April 2026' },
         { key: 'report.compliance.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
@@ -1034,7 +1037,17 @@ export class AdminPageComponent implements OnInit {
   loadContent(): void {
     this.http.get<Record<string, string>>(`${environment.apiUrl}/api/content`).subscribe({
       next: (c) => {
-        this.contentForm = { ...c };
+        const merged: Record<string, string> = { ...c };
+        // Prefill each editor field with the template-level fallback so admins see
+        // the current public-facing text, not an empty input.
+        for (const section of this.contentSections) {
+          for (const field of section.fields) {
+            if (merged[field.key] === undefined && field.fallback !== undefined) {
+              merged[field.key] = field.fallback;
+            }
+          }
+        }
+        this.contentForm = merged;
       },
     });
   }
