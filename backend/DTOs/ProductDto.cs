@@ -18,7 +18,8 @@ public record ProductDto(
     string ImageUrl,
     List<string> AdditionalImageUrls,
     List<string> VideoUrls,
-    bool InStock
+    bool InStock,
+    DateTime CreatedAtUtc
 );
 
 public record ProductAdminDto(

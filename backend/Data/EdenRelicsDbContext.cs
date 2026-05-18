@@ -35,6 +35,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<MonzoToken> MonzoTokens => Set<MonzoToken>();
     public DbSet<EtsyToken> EtsyTokens => Set<EtsyToken>();
     public DbSet<OffsiteSale> OffsiteSales => Set<OffsiteSale>();
+    public DbSet<SeoHealthSnapshot> SeoHealthSnapshots => Set<SeoHealthSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -174,6 +175,12 @@ public class EdenRelicsDbContext : DbContext
             entity.HasIndex(m => m.Email).IsUnique();
             entity.Property(m => m.FirstName).HasMaxLength(100);
             entity.Property(m => m.Source).HasMaxLength(30);
+        });
+
+        modelBuilder.Entity<SeoHealthSnapshot>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.HasIndex(s => s.TakenAtUtc);
         });
 
         modelBuilder.Entity<OffsiteSale>(entity =>

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
 import { Product, ProductStatus } from '../../models/product.model';
 import { filterAdminProducts, productStatusLabel, resolveProductStatus } from '../../utils/product-status';
@@ -211,6 +212,34 @@ interface SeoResult {
   suggestedKeywords: KeywordSuggestion[];
 }
 
+interface SeoHealthSnapshot {
+  id: string;
+  takenAtUtc: string;
+  totalProducts: number;
+  liveProducts: number;
+  stockProducts: number;
+  soldProducts: number;
+  productsMissingImage: number;
+  productsMissingDescription: number;
+  productsMissingSlug: number;
+  productsMissingSku: number;
+  productsWithVideo: number;
+  productsWithAdditionalImages: number;
+  avgProductDescriptionWords: number;
+  totalBlogPosts: number;
+  publishedBlogPosts: number;
+  blogPostsMissingFeaturedImage: number;
+  blogPostsMissingExcerpt: number;
+  avgBlogPostWords: number;
+  sitemapUrlCount: number;
+  sitemapImageEntryCount: number;
+  trackedKeywords: number;
+  trackedKeywordsWithPosition: number;
+  avgKeywordPosition: number;
+  keywordsInTop10: number;
+  keywordsInTop3: number;
+}
+
 @Component({
   selector: 'app-admin-page',
   imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe],
@@ -283,6 +312,13 @@ export class AdminPageComponent implements OnInit {
   // SEO
   seoUrl = 'https://edenrelics.co.uk';
   readonly seoResult = signal<SeoResult | null>(null);
+
+  // SEO health snapshots (catalog quality + sitemap signals captured daily)
+  readonly seoHealthSnapshots = signal<SeoHealthSnapshot[]>([]);
+  readonly seoHealthLoading = signal(false);
+  readonly seoHealthRunning = signal(false);
+  readonly seoHealthError = signal('');
+  readonly latestSeoHealth = computed(() => this.seoHealthSnapshots()[0] ?? null);
   readonly seoLoading = signal(false);
   readonly seoError = signal('');
 
@@ -600,8 +636,11 @@ export class AdminPageComponent implements OnInit {
     if (tab === 'orders' && this.orders().length === 0) {
       this.loadOrders();
     }
-    if (tab === 'seo' && this.trackedKeywords().length === 0) {
-      this.loadTrackedKeywords();
+    if (tab === 'seo') {
+      if (this.trackedKeywords().length === 0) {
+        this.loadTrackedKeywords();
+      }
+      this.loadSeoHealth();
     }
     if (tab === 'branding') {
       this.loadBranding();
@@ -1146,6 +1185,36 @@ export class AdminPageComponent implements OnInit {
     });
   }
 
+  loadSeoHealth(): void {
+    this.seoHealthLoading.set(true);
+    this.seoHealthError.set('');
+    this.http.get<SeoHealthSnapshot[]>(`${environment.apiUrl}/api/seo/health/snapshots?take=30`).subscribe({
+      next: (snapshots) => {
+        this.seoHealthSnapshots.set(snapshots);
+        this.seoHealthLoading.set(false);
+      },
+      error: () => {
+        this.seoHealthLoading.set(false);
+        this.seoHealthError.set('Failed to load SEO health snapshots.');
+      },
+    });
+  }
+
+  runSeoHealthSnapshot(): void {
+    this.seoHealthRunning.set(true);
+    this.seoHealthError.set('');
+    this.http.post<SeoHealthSnapshot>(`${environment.apiUrl}/api/seo/health/snapshots/run`, {}).subscribe({
+      next: (snapshot) => {
+        this.seoHealthRunning.set(false);
+        this.seoHealthSnapshots.update((list) => [snapshot, ...list]);
+      },
+      error: () => {
+        this.seoHealthRunning.set(false);
+        this.seoHealthError.set('Snapshot capture failed.');
+      },
+    });
+  }
+
   trackKeyword(keyword?: string): void {
     const kw = keyword ?? this.newKeyword;
     if (!kw.trim()) return;
@@ -1476,7 +1545,7 @@ export class AdminPageComponent implements OnInit {
     }
   }
 
-  onProductImageSelected(event: Event): void {
+  async onProductImageSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const files = input.files;
     if (!files || files.length === 0) {
@@ -1488,36 +1557,31 @@ export class AdminPageComponent implements OnInit {
         filesToUpload.push(files[i]);
       }
     }
+    input.value = '';
     if (filesToUpload.length === 0) {
-      input.value = '';
       return;
     }
     this.uploading.set(true);
     this.uploadError.set('');
-    let pending = filesToUpload.length;
-    for (let i = 0; i < filesToUpload.length; i++) {
-      this.productService.uploadImage(filesToUpload[i]).subscribe({
-        next: (res) => {
-          if (!this.form.imageUrl) {
-            this.form.imageUrl = res.imageUrl;
-          } else {
-            this.form.additionalImageUrls = [...(this.form.additionalImageUrls ?? []), res.imageUrl];
-          }
-          pending--;
-          if (pending === 0) {
-            this.uploading.set(false);
-          }
-        },
-        error: () => {
-          pending--;
-          if (pending === 0) {
-            this.uploading.set(false);
-          }
-          this.uploadError.set('One or more uploads failed.');
-        },
-      });
+    let anyFailed = false;
+    // Upload sequentially: each image triggers a server-side decode + 4 webp variants,
+    // and running them in parallel can OOM the API instance.
+    for (const file of filesToUpload) {
+      try {
+        const res = await firstValueFrom(this.productService.uploadImage(file));
+        if (!this.form.imageUrl) {
+          this.form.imageUrl = res.imageUrl;
+        } else {
+          this.form.additionalImageUrls = [...(this.form.additionalImageUrls ?? []), res.imageUrl];
+        }
+      } catch {
+        anyFailed = true;
+      }
     }
-    input.value = '';
+    if (anyFailed) {
+      this.uploadError.set('One or more uploads failed.');
+    }
+    this.uploading.set(false);
   }
 
   readonly videoUploading = signal(false);

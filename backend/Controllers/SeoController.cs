@@ -11,8 +11,35 @@ namespace Eden_Relics_BE.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
-public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRelicsDbContext context, RankCheckerService rankChecker) : ControllerBase
+public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRelicsDbContext context, RankCheckerService rankChecker, SeoHealthService seoHealth) : ControllerBase
 {
+    [HttpGet("health/snapshots")]
+    public async Task<ActionResult<List<SeoHealthSnapshot>>> GetHealthSnapshots([FromQuery] int take = 30)
+    {
+        int clamped = Math.Clamp(take, 1, 365);
+        List<SeoHealthSnapshot> snapshots = await context.SeoHealthSnapshots
+            .OrderByDescending(s => s.TakenAtUtc)
+            .Take(clamped)
+            .ToListAsync();
+        return Ok(snapshots);
+    }
+
+    [HttpGet("health/snapshots/latest")]
+    public async Task<ActionResult<SeoHealthSnapshot>> GetLatestHealthSnapshot()
+    {
+        SeoHealthSnapshot? snapshot = await context.SeoHealthSnapshots
+            .OrderByDescending(s => s.TakenAtUtc)
+            .FirstOrDefaultAsync();
+        return snapshot is null ? NotFound() : Ok(snapshot);
+    }
+
+    [HttpPost("health/snapshots/run")]
+    public async Task<ActionResult<SeoHealthSnapshot>> RunHealthSnapshot()
+    {
+        SeoHealthSnapshot snapshot = await seoHealth.CaptureAsync();
+        return Ok(snapshot);
+    }
+
     [HttpPost("analyse")]
     public async Task<ActionResult<SeoAnalysisResult>> Analyse([FromBody] SeoAnalyseRequest request)
     {

@@ -879,7 +879,7 @@ public class ProductsController : ControllerBase
         }
 
         return new(p.Id, name, p.Slug, description, p.Price, p.SalePrice, showReduction, discountPercent, p.Era,
-            p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive);
+            p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.CreatedAtUtc);
     }
 
     private static ProductAdminDto ToAdminDto(Product p) => new(

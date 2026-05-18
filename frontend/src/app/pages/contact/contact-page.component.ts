@@ -31,6 +31,47 @@ export class ContactPageComponent implements OnInit {
       url: '/contact',
       hreflang: true,
     });
+    this.seo.setJsonLd({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'ContactPage',
+          '@id': 'https://edenrelics.co.uk/contact#contactpage',
+          url: 'https://edenrelics.co.uk/contact',
+          name: 'Contact Eden Relics',
+          inLanguage: 'en-GB',
+        },
+        {
+          '@type': 'Organization',
+          '@id': 'https://edenrelics.co.uk/#organization',
+          name: 'Eden Relics',
+          url: 'https://edenrelics.co.uk',
+          email: 'edenrelics@dcp-net.com',
+          telephone: '+44 7454 905173',
+          contactPoint: {
+            '@type': 'ContactPoint',
+            contactType: 'customer support',
+            email: 'edenrelics@dcp-net.com',
+            telephone: '+44 7454 905173',
+            availableLanguage: ['English'],
+          },
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: '30 Vane Close',
+            addressLocality: 'Norwich',
+            postalCode: 'NR7 0US',
+            addressCountry: 'GB',
+          },
+        },
+        {
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://edenrelics.co.uk' },
+            { '@type': 'ListItem', position: 2, name: 'Contact', item: 'https://edenrelics.co.uk/contact' },
+          ],
+        },
+      ],
+    });
   }
 
   submit(): void {

@@ -14,7 +14,10 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'reset-password', renderMode: RenderMode.Client },
   { path: 'verify-email', renderMode: RenderMode.Client },
 
-  // Public routes — SSR for SEO
+  // Public routes — SSR on-demand for SEO. (Prerender would be a perf win for
+  // the policy pages, but the App-root constructor calls BrandingService and
+  // ContentService.load(), which need a live API at build time. Keeping SSR
+  // until those are made SSR-skip-safe.)
   { path: '', renderMode: RenderMode.Server },
   { path: 'product/:id', renderMode: RenderMode.Server },
   { path: 'blog', renderMode: RenderMode.Server },

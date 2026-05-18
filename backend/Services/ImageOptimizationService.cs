@@ -162,39 +162,51 @@ public class ImageOptimizationService(
                     continue;
                 }
 
-                await using Stream sourceStream = await http.GetStreamAsync(legacyUrl);
-                using Image source = await Image.LoadAsync(sourceStream);
-                source.Mutate(x => x.AutoOrient());
-
-                int largest = ImageUploadHelper.DefaultVariantWidths.Max();
-                string newCanonical = "";
-
-                foreach (int width in ImageUploadHelper.DefaultVariantWidths)
+                // Share the upload pipeline's concurrency gate so the backfill cannot
+                // run image decodes in parallel with live admin uploads.
+                await ImageUploadHelper.ProcessingGate.WaitAsync();
+                try
                 {
-                    using Image variant = source.Clone(_ => { });
-                    if (variant.Width > width)
+                    await using Stream sourceStream = await http.GetStreamAsync(legacyUrl);
+                    using Image source = await Image.LoadAsync(sourceStream);
+                    source.Mutate(x => x.AutoOrient());
+
+                    int largest = ImageUploadHelper.DefaultVariantWidths.Max();
+                    string newCanonical = "";
+
+                    // Largest-to-smallest, mutating the source in place to avoid full-bitmap clones.
+                    int[] orderedWidths = ImageUploadHelper.DefaultVariantWidths
+                        .OrderByDescending(w => w).ToArray();
+                    foreach (int width in orderedWidths)
                     {
-                        variant.Mutate(x => x.Resize(new ResizeOptions
+                        if (source.Width > width)
                         {
-                            Size = new Size(width, 0),
-                            Mode = ResizeMode.Max,
-                        }));
+                            source.Mutate(x => x.Resize(new ResizeOptions
+                            {
+                                Size = new Size(width, 0),
+                                Mode = ResizeMode.Max,
+                            }));
+                        }
+
+                        string fileName = $"{folder}/{baseName}-{width}.webp";
+                        using MemoryStream output = new();
+                        await source.SaveAsync(output, new WebpEncoder { Quality = Quality });
+                        output.Position = 0;
+
+                        string url = await storage.UploadAsync(output, fileName, "image/webp");
+                        if (width == largest)
+                        {
+                            newCanonical = url;
+                        }
                     }
 
-                    string fileName = $"{folder}/{baseName}-{width}.webp";
-                    using MemoryStream output = new();
-                    await variant.SaveAsync(output, new WebpEncoder { Quality = Quality });
-                    output.Position = 0;
-
-                    string url = await storage.UploadAsync(output, fileName, "image/webp");
-                    if (width == largest)
-                    {
-                        newCanonical = url;
-                    }
+                    urlMap[legacyUrl] = newCanonical;
+                    logger.LogInformation("Backfilled {Legacy} -> {New}", legacyUrl, newCanonical);
                 }
-
-                urlMap[legacyUrl] = newCanonical;
-                logger.LogInformation("Backfilled {Legacy} -> {New}", legacyUrl, newCanonical);
+                finally
+                {
+                    ImageUploadHelper.ProcessingGate.Release();
+                }
             }
             catch (Exception ex)
             {
