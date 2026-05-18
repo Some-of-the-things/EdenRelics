@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { OrderService, OrderDto } from '../../services/order.service';
 import { environment } from '../../../environments/environment';
+import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-order-confirmation',
@@ -16,6 +17,7 @@ export class OrderConfirmationComponent implements OnInit {
   readonly id = input.required<string>();
   private readonly orderService = inject(OrderService);
   private readonly http = inject(HttpClient);
+  private readonly seo = inject(SeoService);
   readonly order = signal<OrderDto | null>(null);
   readonly error = signal('');
 
@@ -23,6 +25,7 @@ export class OrderConfirmationComponent implements OnInit {
   readonly mailingSubscribed = signal(false);
 
   ngOnInit(): void {
+    this.seo.updateTags({ title: 'Order Confirmation', url: `/order-confirmation/${this.id()}`, noIndex: true });
     this.orderService.getById(this.id()).subscribe({
       next: (order) => this.order.set(order),
       error: () => this.error.set('Could not load order details. Please check the link and try again.'),

@@ -1,3 +1,5 @@
+using Eden_Relics_BE.Data.Entities;
+
 namespace Eden_Relics_BE.DTOs;
 
 public record ProductDto(
@@ -23,6 +25,7 @@ public record ProductAdminDto(
     Guid Id,
     string Name,
     string Slug,
+    string Sku,
     string Description,
     decimal Price,
     decimal? SalePrice,
@@ -36,6 +39,7 @@ public record ProductAdminDto(
     List<string> AdditionalImageUrls,
     List<string> VideoUrls,
     bool InStock,
+    ProductStatus Status,
     int ViewCount
 );
 
@@ -54,12 +58,15 @@ public record CreateProductDto(
     List<string>? AdditionalImageUrls,
     List<string>? VideoUrls,
     bool InStock,
+    ProductStatus? Status = null,
+    string? Sku = null,
     int? BackdatePriceDays = null
 );
 
 public record UpdateProductDto(
     string? Name,
     string? Slug,
+    string? Sku,
     string? Description,
     decimal? Price,
     decimal? SalePrice,
@@ -72,5 +79,6 @@ public record UpdateProductDto(
     string? ImageUrl,
     List<string>? AdditionalImageUrls,
     List<string>? VideoUrls,
-    bool? InStock
+    bool? InStock,
+    ProductStatus? Status
 );

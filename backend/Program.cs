@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Eden_Relics_BE.Data;
 using Npgsql;
@@ -14,7 +15,13 @@ using Microsoft.IdentityModel.Tokens;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Serialize enums (e.g. ProductStatus) as kebab-case strings rather than ints
+        // so frontend payloads stay readable.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.KebabCaseLower));
+    });
 builder.Services.AddOpenApi();
 
 // Allow large uploads; the real per-request cap is enforced in the upload

@@ -43,6 +43,7 @@ export class BlogPostComponent implements OnInit {
           url: `/blog/${post.slug}`,
           image: post.featuredImageUrl ?? undefined,
           type: 'article',
+          hreflang: true,
         });
 
         const blogPosting: Record<string, unknown> = {

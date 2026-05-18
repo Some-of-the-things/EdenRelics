@@ -1,7 +1,10 @@
+export type ProductStatus = 'stock' | 'live' | 'sold';
+
 export interface Product {
   id: string;
   name: string;
   slug?: string;
+  sku?: string;
   description: string;
   price: number;
   salePrice?: number | null;
@@ -17,6 +20,7 @@ export interface Product {
   additionalImageUrls?: string[];
   videoUrls?: string[];
   inStock: boolean;
+  status?: ProductStatus;
   viewCount?: number;
 }
 

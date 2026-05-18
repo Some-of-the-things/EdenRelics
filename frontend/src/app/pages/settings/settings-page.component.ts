@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService, AccountProfileDto, AddressDto } from '../../services/auth.service';
 import { PasskeyService, PasskeyInfo } from '../../services/passkey.service';
+import { SeoService } from '../../services/seo.service';
 
 type Section = 'name' | 'delivery' | 'billing' | 'payment' | 'password' | 'mfa' | 'passkeys' | 'data';
 
@@ -17,6 +18,7 @@ export class SettingsPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly passkeyService = inject(PasskeyService);
   private readonly router = inject(Router);
+  private readonly seo = inject(SeoService);
 
   readonly active = signal<Section | null>(null);
   readonly saving = signal(false);
@@ -70,6 +72,7 @@ export class SettingsPageComponent implements OnInit {
   readonly confirmDelete = signal(false);
 
   ngOnInit(): void {
+    this.seo.updateTags({ title: 'Settings', url: '/settings', noIndex: true });
     this.auth.getProfile().subscribe({
       next: (p) => this.populateForm(p),
       error: () => {},

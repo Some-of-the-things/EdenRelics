@@ -240,6 +240,14 @@
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
+.product-card__image--placeholder {
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
 .skeleton-line {
   height: 1rem;
   background: var(--bg-secondary);

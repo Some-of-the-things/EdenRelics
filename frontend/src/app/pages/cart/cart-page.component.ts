@@ -16,6 +16,7 @@ export class CartPageComponent implements OnInit {
       title: 'Shopping Cart',
       description: 'Your Eden Relics shopping cart.',
       url: '/cart',
+      noIndex: true,
     });
   }
 }

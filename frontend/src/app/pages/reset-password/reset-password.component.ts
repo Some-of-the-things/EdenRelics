@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -12,11 +13,13 @@ import { AuthService } from '../../services/auth.service';
 export class ResetPasswordComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly seo = inject(SeoService);
 
   email = '';
   tokenValue = '';
 
   ngOnInit(): void {
+    this.seo.updateTags({ title: 'Reset Password', url: '/reset-password', noIndex: true });
     const params = this.route.snapshot.queryParamMap;
     this.email = params.get('email') ?? '';
     this.tokenValue = params.get('token') ?? '';

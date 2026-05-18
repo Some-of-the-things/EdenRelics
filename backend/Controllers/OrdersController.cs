@@ -43,6 +43,10 @@ public class OrdersController : ControllerBase
             {
                 return BadRequest(new { message = $"Product {item.ProductId} not found." });
             }
+            if (product.Status == ProductStatus.Stock)
+            {
+                return BadRequest(new { message = $"Product {item.ProductId} is not available for purchase." });
+            }
             products.Add(product);
         }
 
@@ -213,7 +217,7 @@ public class OrdersController : ControllerBase
                                 .FirstOrDefaultAsync(p => p.Id == item.ProductId);
                             if (product is not null)
                             {
-                                product.InStock = false;
+                                product.Status = ProductStatus.Sold;
                                 foreach (ProductListing listing in product.Listings.Where(l => l.Status == "Active"))
                                 {
                                     listing.Status = listing.Platform == "Website" ? "Sold" : "PendingRemoval";

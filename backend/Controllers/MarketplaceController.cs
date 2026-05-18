@@ -57,7 +57,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
 
         if (dto.Status == "Sold")
         {
-            listing.Product.InStock = false;
+            listing.Product.Status = ProductStatus.Sold;
             foreach (ProductListing other in listing.Product.Listings.Where(l => l.Id != id && l.Status == "Active"))
             {
                 other.Status = "PendingRemoval";
@@ -86,7 +86,7 @@ public class MarketplaceController(EdenRelicsDbContext context, IHttpClientFacto
             .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null) { return NotFound(); }
 
-        product.InStock = false;
+        product.Status = ProductStatus.Sold;
 
         foreach (ProductListing listing in product.Listings.Where(l => l.Status == "Active"))
         {
