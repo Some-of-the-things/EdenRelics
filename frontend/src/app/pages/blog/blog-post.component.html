@@ -22,6 +22,12 @@
       }
     </div>
     <div class="blog-post__content" [innerHTML]="post.content"></div>
+    <app-share-buttons
+      [url]="'https://edenrelics.co.uk/blog/' + post.slug"
+      [title]="post.title"
+      [description]="post.excerpt ?? ''"
+      [image]="post.featuredImageUrl ?? ''"
+    />
     <a routerLink="/blog" class="blog-post__back">Back to Blog</a>
   </article>
 } @else if (error()) {

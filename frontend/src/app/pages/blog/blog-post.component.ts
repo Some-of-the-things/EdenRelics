@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { SeoService } from '../../services/seo.service';
 import { environment } from '../../../environments/environment';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
+import { ShareButtonsComponent } from '../../components/share-buttons/share-buttons.component';
 
 interface BlogPost {
   id: string;
@@ -19,7 +20,7 @@ interface BlogPost {
 
 @Component({
   selector: 'app-blog-post',
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, ShareButtonsComponent],
   templateUrl: './blog-post.component.html',
   styleUrl: './blog.component.scss',
 })

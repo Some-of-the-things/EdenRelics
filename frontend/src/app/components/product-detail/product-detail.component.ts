@@ -11,6 +11,7 @@ import { AuthService } from '../../services/auth.service';
 import { FavouritesService } from '../../services/favourites.service';
 import { LocalPricePipe } from '../../pipes/local-price.pipe';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
+import { ShareButtonsComponent } from '../share-buttons/share-buttons.component';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -45,7 +46,7 @@ function schemaCondition(condition: string): string {
 
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, CurrencyPipe, TitleCasePipe, LocalPricePipe],
+  imports: [RouterLink, CurrencyPipe, TitleCasePipe, LocalPricePipe, ShareButtonsComponent],
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })
@@ -85,6 +86,18 @@ export class ProductDetailComponent {
 
   readonly srcset = imageSrcset;
   readonly srcAt = imageSrcAt;
+
+  readonly productShareUrl = computed(() => {
+    const p = this.product();
+    if (!p) return '';
+    const segment = p.slug || p.id;
+    return `https://edenrelics.co.uk/product/${segment}`;
+  });
+
+  readonly productShareDescription = computed(() => {
+    const p = this.product();
+    return p ? stripHtml(p.description) : '';
+  });
 
   selectImage(url: string): void {
     this.selectedImage.set(url);
