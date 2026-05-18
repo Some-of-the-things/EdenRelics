@@ -4,6 +4,7 @@ import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { SeoService } from '../../services/seo.service';
 import { environment } from '../../../environments/environment';
+import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 
 interface BlogSummary {
   id: string;
@@ -25,6 +26,8 @@ export class BlogListComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly seo = inject(SeoService);
   readonly posts = signal<BlogSummary[]>([]);
+  readonly srcset = imageSrcset;
+  readonly srcAt = imageSrcAt;
 
   private readonly platformId = inject(PLATFORM_ID);
 

@@ -1,7 +1,16 @@
 @if (post(); as post) {
   <article class="blog-post">
     @if (post.featuredImageUrl) {
-      <img [src]="post.featuredImageUrl" [alt]="post.title" class="blog-post__hero" />
+      <img
+        [src]="srcAt(post.featuredImageUrl, 1200)"
+        [srcset]="srcset(post.featuredImageUrl)"
+        sizes="(max-width: 800px) 100vw, 800px"
+        [alt]="post.title"
+        class="blog-post__hero"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
+      />
     }
     <h1 class="blog-post__title">{{ post.title }}</h1>
     <div class="blog-post__meta">

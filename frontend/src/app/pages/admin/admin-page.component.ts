@@ -450,6 +450,25 @@ export class AdminPageComponent implements OnInit {
     return (lighter + 0.05) / (darker + 0.05);
   }
 
+  private static readonly IMAGE_RESIZE_WARN_BYTES = 10 * 1024 * 1024;
+  private static readonly LOGO_RESIZE_WARN_BYTES = 5 * 1024 * 1024;
+  private static readonly MAX_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024;
+  private static readonly MAX_UPLOAD_DISPLAY = '4 GB';
+
+  private confirmLargeImageUpload(file: File, warnBytes: number): boolean {
+    if (file.size > AdminPageComponent.MAX_UPLOAD_BYTES) {
+      alert(`"${file.name}" is over the ${AdminPageComponent.MAX_UPLOAD_DISPLAY} upload maximum and cannot be uploaded.`);
+      return false;
+    }
+    if (file.size <= warnBytes) {
+      return true;
+    }
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+    return confirm(
+      `"${file.name}" is ${sizeMb} MB. It will be resized to fit our display dimensions, which may reduce image quality. For best results, we recommend resizing it manually before uploading.\n\nContinue with the upload?`
+    );
+  }
+
   readonly fontOptions = [
     'Playfair Display', 'Work Sans', 'Inter', 'Lora', 'Merriweather',
     'Montserrat', 'Open Sans', 'Poppins', 'Raleway', 'Roboto',
@@ -749,8 +768,13 @@ export class AdminPageComponent implements OnInit {
   }
 
   onBlogImageUpload(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file) return;
+    if (!this.confirmLargeImageUpload(file, AdminPageComponent.IMAGE_RESIZE_WARN_BYTES)) {
+      input.value = '';
+      return;
+    }
     this.blogUploading.set(true);
     const formData = new FormData();
     formData.append('file', file);
@@ -764,8 +788,13 @@ export class AdminPageComponent implements OnInit {
   }
 
   onFeaturedImageUpload(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file) return;
+    if (!this.confirmLargeImageUpload(file, AdminPageComponent.IMAGE_RESIZE_WARN_BYTES)) {
+      input.value = '';
+      return;
+    }
     this.blogUploading.set(true);
     const formData = new FormData();
     formData.append('file', file);
@@ -1043,6 +1072,10 @@ export class AdminPageComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+    if (!this.confirmLargeImageUpload(file, AdminPageComponent.LOGO_RESIZE_WARN_BYTES)) {
+      input.value = '';
+      return;
+    }
 
     this.logoUploading.set(true);
     this.logoPreview.set(URL.createObjectURL(file));
@@ -1245,6 +1278,10 @@ export class AdminPageComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+    if (!this.confirmLargeImageUpload(file, AdminPageComponent.IMAGE_RESIZE_WARN_BYTES)) {
+      input.value = '';
+      return;
+    }
 
     this.uploadError.set('');
     this.imagePreview.set(URL.createObjectURL(file));
@@ -1408,11 +1445,21 @@ export class AdminPageComponent implements OnInit {
     if (!files || files.length === 0) {
       return;
     }
+    const filesToUpload: File[] = [];
+    for (let i = 0; i < files.length; i++) {
+      if (this.confirmLargeImageUpload(files[i], AdminPageComponent.IMAGE_RESIZE_WARN_BYTES)) {
+        filesToUpload.push(files[i]);
+      }
+    }
+    if (filesToUpload.length === 0) {
+      input.value = '';
+      return;
+    }
     this.uploading.set(true);
     this.uploadError.set('');
-    let pending = files.length;
-    for (let i = 0; i < files.length; i++) {
-      this.productService.uploadImage(files[i]).subscribe({
+    let pending = filesToUpload.length;
+    for (let i = 0; i < filesToUpload.length; i++) {
+      this.productService.uploadImage(filesToUpload[i]).subscribe({
         next: (res) => {
           if (!this.form.imageUrl) {
             this.form.imageUrl = res.imageUrl;
@@ -1462,7 +1509,7 @@ export class AdminPageComponent implements OnInit {
           if (pending === 0) {
             this.videoUploading.set(false);
           }
-          this.videoUploadError.set('Video upload failed. Max size is 50MB.');
+          this.videoUploadError.set(`Video upload failed. Max size is ${AdminPageComponent.MAX_UPLOAD_DISPLAY}.`);
         },
       });
     }

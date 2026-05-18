@@ -47,6 +47,8 @@ public class ImageStorageService
 
     public bool IsConfigured => _configured;
 
+    public string PublicUrl => _publicUrl;
+
     public async Task<string> UploadAsync(Stream stream, string fileName, string contentType)
     {
         if (!_configured || _client is null)

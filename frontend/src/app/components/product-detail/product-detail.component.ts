@@ -10,6 +10,7 @@ import { AnalyticsService } from '../../services/analytics.service';
 import { AuthService } from '../../services/auth.service';
 import { FavouritesService } from '../../services/favourites.service';
 import { LocalPricePipe } from '../../pipes/local-price.pipe';
+import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -81,6 +82,9 @@ export class ProductDetailComponent {
   readonly currentImage = computed(() =>
     this.selectedImage() ?? this.product()?.imageUrl ?? ''
   );
+
+  readonly srcset = imageSrcset;
+  readonly srcAt = imageSrcAt;
 
   selectImage(url: string): void {
     this.selectedImage.set(url);

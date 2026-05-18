@@ -120,6 +120,7 @@ public partial class BlogController(EdenRelicsDbContext context, IWebHostEnviron
 
     [HttpPost("upload-image")]
     [Authorize(Roles = "Admin")]
+    [RequestSizeLimit(long.MaxValue)]
     public async Task<ActionResult<object>> UploadImage([FromForm] IFormFile file)
     {
         string[] allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
@@ -130,13 +131,14 @@ public partial class BlogController(EdenRelicsDbContext context, IWebHostEnviron
             return BadRequest(new { error = "Only image files are allowed." });
         }
 
-        if (file.Length > 10 * 1024 * 1024)
+        if (file.Length > UploadLimits.MaxUploadBytes)
         {
-            return BadRequest(new { error = "File size must be under 10MB." });
+            return BadRequest(new { error = $"File size must be under {UploadLimits.MaxUploadDisplay}." });
         }
 
         string imageUrl = await ImageUploadHelper.ProcessAndUploadAsync(
-            file.OpenReadStream(), storage, env, Request, "blog", maxWidth: 1200, maxHeight: 2000, quality: 80);
+            file.OpenReadStream(), storage, env, Request, "blog",
+            ImageUploadHelper.DefaultVariantWidths, quality: 80);
         return Ok(new { imageUrl });
     }
 
