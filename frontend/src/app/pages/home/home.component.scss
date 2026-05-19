@@ -10,9 +10,59 @@
 }
 
 .hero__banner {
+  // Crop the banner via CSS — the source image has ~30% empty ivory above and
+  // below the logotype. A 5:1 aspect ratio keeps the logo centred with a small
+  // amount of breathing room and avoids re-encoding the webp variants.
   width: 100%;
+  aspect-ratio: 3.2 / 1;
   height: auto;
   display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero__heading {
+  // Same cream as banner-1200.webp edges (#FFFFF6) so the section reads as
+  // a visual continuation of the banner image. Width is left as the natural
+  // block width — same as .hero__banner — so the heading band lines up with
+  // the banner image edge-to-edge.
+  background: #FFFFF6;
+  text-align: center;
+  padding: 5rem 2rem 4.5rem;
+  box-sizing: border-box;
+  position: relative;
+}
+
+// Short divider centred above the heading, sitting between the two ivory
+// sections without spanning their full width.
+.hero__heading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 3.2vw, 2rem);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  margin: 0 0 0.75rem;
+  // Sampled from the "CURATED VINTAGE & TIMELESS PIECES" tagline in the banner
+  // image so the heading reads as visually continuous with the logo above.
+  color: #575446;
+}
+
+.hero__subtitle {
+  font-size: clamp(0.9rem, 1.4vw, 1.05rem);
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 .visually-hidden {

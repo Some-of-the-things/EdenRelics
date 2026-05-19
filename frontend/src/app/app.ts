@@ -4,7 +4,6 @@ import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { CookieBannerComponent } from './components/cookie-banner/cookie-banner.component';
 import { AnalyticsService } from './services/analytics.service';
-import { BrandingService } from './services/branding.service';
 import { ContentService } from './services/content.service';
 
 @Component({
@@ -15,12 +14,11 @@ import { ContentService } from './services/content.service';
 })
 export class App {
   protected readonly title = 'Eden Relics';
-  private readonly branding = inject(BrandingService);
   private readonly content = inject(ContentService);
   private readonly analytics = inject(AnalyticsService);
 
   constructor() {
-    this.branding.load();
+    // Branding is resolved during app initialisation (see appConfig) — no call here.
     this.content.load();
     afterNextRender(() => {
       this.analytics.init();
