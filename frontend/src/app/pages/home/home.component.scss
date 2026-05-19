@@ -47,14 +47,17 @@
 }
 
 .hero__title {
+  // Playfair Display italic — classic editorial pair with the Work Sans
+  // tagline above (the canonical "serif heading + sans tagline" combination).
+  // Italic gives it an editorial flourish without competing with the logotype.
   font-family: var(--font-display);
-  font-size: clamp(1.25rem, 3.2vw, 2rem);
-  font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
+  font-size: clamp(1.4rem, 2.8vw, 1.9rem);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.25;
+  letter-spacing: 0.005em;
   margin: 0 0 0.75rem;
-  // Sampled from the "CURATED VINTAGE & TIMELESS PIECES" tagline in the banner
-  // image so the heading reads as visually continuous with the logo above.
+  // Sampled from the rendered tagline letters in banner-1200.webp.
   color: #575446;
 }
 
