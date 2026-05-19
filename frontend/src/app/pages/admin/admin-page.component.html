@@ -105,6 +105,13 @@
     >
       Content
     </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'reviews'"
+      (click)="switchTab('reviews')"
+    >
+      Reviews
+    </button>
   </div>
 
   @if (activeTab() === 'products') {
@@ -2407,5 +2414,74 @@
         <button class="admin__cancel-btn" (click)="loadContent()">Reset</button>
       </div>
     </div>
+  }
+
+  @if (activeTab() === 'reviews') {
+    <section class="admin__reviews">
+      <div class="admin__reviews-filters">
+        <button class="admin__reviews-filter"
+                [class.admin__reviews-filter--active]="reviewsFilter() === 'Pending'"
+                (click)="setReviewsFilter('Pending')">Pending</button>
+        <button class="admin__reviews-filter"
+                [class.admin__reviews-filter--active]="reviewsFilter() === 'Approved'"
+                (click)="setReviewsFilter('Approved')">Approved</button>
+        <button class="admin__reviews-filter"
+                [class.admin__reviews-filter--active]="reviewsFilter() === 'Rejected'"
+                (click)="setReviewsFilter('Rejected')">Rejected</button>
+        <button class="admin__reviews-filter"
+                [class.admin__reviews-filter--active]="reviewsFilter() === 'all'"
+                (click)="setReviewsFilter('all')">All</button>
+      </div>
+
+      @if (reviewsLoading()) {
+        <p class="admin__reviews-empty">Loading…</p>
+      } @else if (reviews().length === 0) {
+        <p class="admin__reviews-empty">No reviews in this category.</p>
+      } @else {
+        <ul class="admin__reviews-list">
+          @for (r of reviews(); track r.id) {
+            <li class="admin__reviews-card">
+              <div class="admin__reviews-card-head">
+                <div>
+                  <strong>{{ r.authorDisplayName }}</strong>
+                  <span class="admin__reviews-email">({{ r.userEmail }})</span>
+                </div>
+                <span class="admin__reviews-status admin__reviews-status--{{ r.status.toLowerCase() }}">{{ r.status }}</span>
+              </div>
+              <p class="admin__reviews-order">
+                Order {{ r.orderId.substring(0, 8) }}… · {{ r.orderTotal | currency:'GBP' }} · {{ r.productNames.join(', ') }}
+              </p>
+              <div class="admin__reviews-ratings">
+                <span>Transaction: <strong>{{ r.transactionRating }}/5</strong></span>
+                <span>Delivery: <strong>{{ r.deliveryRating }}/5</strong></span>
+                <span>Product: <strong>{{ r.productRating }}/5</strong></span>
+                <span>Overall: <strong>{{ reviewOverall(r) }}/5</strong></span>
+              </div>
+              <p class="admin__reviews-comment">{{ r.comment }}</p>
+              <div class="admin__reviews-meta">
+                <span>Submitted {{ r.createdAtUtc | date:'medium' }}</span>
+                @if (r.moderatedAtUtc) {
+                  <span>Moderated {{ r.moderatedAtUtc | date:'medium' }}</span>
+                }
+              </div>
+              @if (r.status === 'Pending') {
+                <div class="admin__reviews-actions">
+                  <button class="admin__save-btn"
+                          [disabled]="reviewsModerating() === r.id"
+                          (click)="approveReview(r.id)">
+                    {{ reviewsModerating() === r.id ? 'Working…' : 'Approve' }}
+                  </button>
+                  <button class="admin__cancel-btn"
+                          [disabled]="reviewsModerating() === r.id"
+                          (click)="rejectReview(r.id)">
+                    Reject
+                  </button>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
   }
 </div>

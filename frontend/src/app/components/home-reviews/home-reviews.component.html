@@ -1,0 +1,38 @@
+@if (items().length) {
+  <section class="home-reviews">
+    <div class="home-reviews__header">
+      <h2 class="home-reviews__title">What customers say</h2>
+      @if (summary(); as s) {
+        <div class="home-reviews__summary">
+          <div class="home-reviews__summary-stars" aria-hidden="true">
+            @for (n of stars; track n) {
+              <span class="home-reviews__star"
+                    [class.home-reviews__star--filled]="n <= s.overall">★</span>
+            }
+          </div>
+          <span class="home-reviews__summary-text">
+            {{ s.overall | number:'1.1-1' }} out of 5 · {{ s.count }} review{{ s.count === 1 ? '' : 's' }}
+          </span>
+        </div>
+      }
+    </div>
+
+    <ul class="home-reviews__list">
+      @for (r of items(); track r.id) {
+        <li class="home-reviews__item">
+          <div class="home-reviews__item-stars" aria-hidden="true">
+            @for (n of stars; track n) {
+              <span class="home-reviews__star"
+                    [class.home-reviews__star--filled]="n <= overall(r)">★</span>
+            }
+          </div>
+          <p class="home-reviews__comment">{{ r.comment }}</p>
+          <div class="home-reviews__meta">
+            <span class="home-reviews__author">{{ r.authorDisplayName }}</span>
+            <span class="home-reviews__date">{{ r.postedAtUtc | date:'mediumDate' }}</span>
+          </div>
+        </li>
+      }
+    </ul>
+  </section>
+}

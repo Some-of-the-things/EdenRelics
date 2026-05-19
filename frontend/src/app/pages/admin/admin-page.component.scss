@@ -1964,3 +1964,126 @@
   font-size: 0.95rem;
 }
 
+.admin__reviews {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin__reviews-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.admin__reviews-filter {
+  background: none;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  color: var(--text-secondary);
+
+  &--active {
+    background: var(--text-primary);
+    color: var(--text-inverse);
+    border-color: var(--text-primary);
+  }
+}
+
+.admin__reviews-empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.admin__reviews-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.admin__reviews-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.admin__reviews-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin__reviews-email {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-left: 0.4rem;
+}
+
+.admin__reviews-status {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+
+  &--pending {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--text-secondary);
+  }
+  &--approved {
+    background: rgba(27, 99, 39, 0.12);
+    color: #1b6327;
+  }
+  &--rejected {
+    background: rgba(181, 42, 42, 0.12);
+    color: #b52a2a;
+  }
+}
+
+.admin__reviews-order {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.admin__reviews-ratings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.admin__reviews-comment {
+  margin: 0.25rem 0;
+  white-space: pre-wrap;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.admin__reviews-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.admin__reviews-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+

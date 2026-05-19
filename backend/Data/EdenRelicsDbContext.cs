@@ -42,6 +42,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<AnalyticsDailyTotal> AnalyticsDailyTotals => Set<AnalyticsDailyTotal>();
     public DbSet<AnalyticsDailySource> AnalyticsDailySources => Set<AnalyticsDailySource>();
     public DbSet<AnalyticsDailyLandingPage> AnalyticsDailyLandingPages => Set<AnalyticsDailyLandingPage>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -229,6 +230,18 @@ public class EdenRelicsDbContext : DbContext
             entity.HasQueryFilter(e => !e.IsDeleted);
             entity.Property(a => a.LandingPage).HasMaxLength(1000);
             entity.HasIndex(a => new { a.Date, a.LandingPage }).IsUnique();
+        });
+
+        modelBuilder.Entity<Review>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(r => r.Comment).HasMaxLength(2000);
+            entity.Property(r => r.AuthorDisplayName).HasMaxLength(100);
+            entity.Property(r => r.ModerationNote).HasMaxLength(500);
+            entity.HasOne(r => r.Order).WithMany().HasForeignKey(r => r.OrderId);
+            entity.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId);
+            entity.HasIndex(r => r.OrderId).IsUnique();
+            entity.HasIndex(r => r.Status);
         });
 
         modelBuilder.Entity<OffsiteSale>(entity =>

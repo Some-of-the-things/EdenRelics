@@ -29,6 +29,8 @@ public class Order : BaseEntity
     public string? BillCounty { get; set; }
     public string? BillPostcode { get; set; }
     public string? BillCountry { get; set; }
+
+    public DateTime? ReviewRequestSentAtUtc { get; set; }
 }
 
 public class OrderItem

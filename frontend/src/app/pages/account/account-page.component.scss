@@ -114,6 +114,92 @@
   }
 }
 
+.account__section {
+  margin-bottom: 1.5rem;
+}
+
+.account__section-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+}
+
+.account__reviews {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.account__reviews-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.account__reviews-detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.account__reviews-date {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.account__reviews-items {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account__reviews-cta {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.account__reviews-status {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+
+  &--pending {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--text-secondary);
+  }
+  &--approved {
+    background: rgba(27, 99, 39, 0.12);
+    color: #1b6327;
+  }
+  &--rejected {
+    background: rgba(181, 42, 42, 0.12);
+    color: #b52a2a;
+  }
+}
+
 .account__logout {
   width: 100%;
   background: none;

@@ -79,4 +79,5 @@ public class FakeEmailService : IEmailService
     public Task SendPasswordResetEmailAsync(string toEmail, string firstName, string token) => Task.CompletedTask;
     public Task SendContactEmailAsync(string fromName, string fromEmail, string subject, string message) => Task.CompletedTask;
     public Task SendSaleNotificationAsync(string toEmail, string firstName, string productName, decimal originalPrice, decimal salePrice) => Task.CompletedTask;
+    public Task SendReviewRequestEmailAsync(string toEmail, string firstName, Guid orderId) => Task.CompletedTask;
 }

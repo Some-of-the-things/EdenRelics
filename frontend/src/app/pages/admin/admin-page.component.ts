@@ -22,6 +22,7 @@ import {
   OffsiteSale,
   CreateOffsiteSale,
 } from '../../services/offsite-sale.service';
+import { AdminReview, ReviewsService } from '../../services/reviews.service';
 
 interface AdminUser {
   id: string;
@@ -332,9 +333,10 @@ export class AdminPageComponent implements OnInit {
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
   private readonly offsiteSaleService = inject(OffsiteSaleService);
+  private readonly reviewsService = inject(ReviewsService);
 
   @ViewChild('descriptionEditor') descriptionEditor!: ElementRef<HTMLElement>;
-  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales'>('products');
+  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews'>('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
@@ -360,6 +362,59 @@ export class AdminPageComponent implements OnInit {
   offsiteForm: CreateOffsiteSale = this.emptyOffsiteForm();
 
   readonly offsitePlatforms = ['Etsy', 'Depop', 'Vinted', 'Instagram', 'In Person', 'Other'];
+
+  // Reviews moderation
+  readonly reviews = signal<AdminReview[]>([]);
+  readonly reviewsLoading = signal(false);
+  readonly reviewsFilter = signal<'Pending' | 'Approved' | 'Rejected' | 'all'>('Pending');
+  readonly reviewsModerating = signal<string | null>(null);
+
+  loadReviews(): void {
+    this.reviewsLoading.set(true);
+    const filter = this.reviewsFilter();
+    const status = filter === 'all' ? undefined : filter;
+    this.reviewsService.getAdmin(status).subscribe({
+      next: (r) => {
+        this.reviews.set(r);
+        this.reviewsLoading.set(false);
+      },
+      error: () => this.reviewsLoading.set(false),
+    });
+  }
+
+  setReviewsFilter(filter: 'Pending' | 'Approved' | 'Rejected' | 'all'): void {
+    this.reviewsFilter.set(filter);
+    this.loadReviews();
+  }
+
+  approveReview(id: string): void {
+    this.reviewsModerating.set(id);
+    this.reviewsService.approve(id).subscribe({
+      next: () => {
+        this.reviews.update((rs) => rs.filter((r) => r.id !== id || this.reviewsFilter() === 'all'));
+        this.reviewsModerating.set(null);
+        if (this.reviewsFilter() !== 'all') {
+          this.loadReviews();
+        }
+      },
+      error: () => this.reviewsModerating.set(null),
+    });
+  }
+
+  rejectReview(id: string): void {
+    this.reviewsModerating.set(id);
+    this.reviewsService.reject(id).subscribe({
+      next: () => {
+        this.reviewsModerating.set(null);
+        this.loadReviews();
+      },
+      error: () => this.reviewsModerating.set(null),
+    });
+  }
+
+  reviewOverall(r: AdminReview): number {
+    return Math.round(((r.transactionRating + r.deliveryRating + r.productRating) / 3) * 10) / 10;
+  }
 
   // Product stats
   readonly totalItems = computed(() => this.store.products().length);
@@ -716,7 +771,7 @@ export class AdminPageComponent implements OnInit {
     this.mobileMenuOpen.update(v => !v);
   }
 
-  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales'): void {
+  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews'): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
@@ -747,6 +802,9 @@ export class AdminPageComponent implements OnInit {
     }
     if (tab === 'blog') {
       this.loadBlogPosts();
+    }
+    if (tab === 'reviews') {
+      this.loadReviews();
     }
     if (tab === 'offsite-sales' && this.offsiteSales().length === 0) {
       this.loadOffsiteSales();
