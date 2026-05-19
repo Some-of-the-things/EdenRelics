@@ -1,9 +1,9 @@
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, forkJoin } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
 import { Product, ProductStatus } from '../../models/product.model';
 import { filterAdminProducts, productStatusLabel, resolveProductStatus } from '../../utils/product-status';
@@ -240,9 +240,82 @@ interface SeoHealthSnapshot {
   keywordsInTop3: number;
 }
 
+interface TrafficStatus {
+  gscConfigured: boolean;
+  ga4Configured: boolean;
+}
+
+interface TotalsSummary {
+  gscClicks: number;
+  gscImpressions: number;
+  gscCtr: number;
+  gscPosition: number;
+  gaSessions: number;
+  gaUsers: number;
+  gaConversions: number;
+}
+
+interface GscDaily {
+  date: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+interface GaDaily {
+  date: string;
+  sessions: number;
+  users: number;
+  newUsers: number;
+  engagedSessions: number;
+  conversions: number;
+  engagementRate: number;
+  averageSessionDuration: number;
+  screenPageViews: number;
+}
+
+interface TrafficOverview {
+  gsc: GscDaily[];
+  ga4: GaDaily[];
+  totals: TotalsSummary;
+}
+
+interface QueryRollup {
+  query: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+interface PageRollup {
+  page: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+interface SourceRollup {
+  source: string;
+  medium: string;
+  sessions: number;
+  users: number;
+  conversions: number;
+}
+
+interface LandingPageRollup {
+  landingPage: string;
+  sessions: number;
+  engagedSessions: number;
+  conversions: number;
+  averageSessionDuration: number;
+}
+
 @Component({
   selector: 'app-admin-page',
-  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe],
+  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe, DecimalPipe],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
@@ -321,6 +394,19 @@ export class AdminPageComponent implements OnInit {
   readonly latestSeoHealth = computed(() => this.seoHealthSnapshots()[0] ?? null);
   readonly seoLoading = signal(false);
   readonly seoError = signal('');
+
+  // SEO traffic & rankings (Google Search Console + GA4 daily ingest)
+  readonly trafficStatus = signal<TrafficStatus | null>(null);
+  readonly trafficOverview = signal<TrafficOverview | null>(null);
+  readonly trafficTopQueries = signal<QueryRollup[]>([]);
+  readonly trafficTopPages = signal<PageRollup[]>([]);
+  readonly trafficOpportunities = signal<QueryRollup[]>([]);
+  readonly trafficSources = signal<SourceRollup[]>([]);
+  readonly trafficLandingPages = signal<LandingPageRollup[]>([]);
+  readonly trafficLoading = signal(false);
+  readonly trafficRunning = signal(false);
+  readonly trafficError = signal('');
+  readonly trafficWindowDays = signal(28);
 
   // Tracked keywords
   readonly trackedKeywords = signal<TrackedKeyword[]>([]);
@@ -641,6 +727,7 @@ export class AdminPageComponent implements OnInit {
         this.loadTrackedKeywords();
       }
       this.loadSeoHealth();
+      this.loadTraffic();
     }
     if (tab === 'branding') {
       this.loadBranding();
@@ -1213,6 +1300,69 @@ export class AdminPageComponent implements OnInit {
         this.seoHealthError.set('Snapshot capture failed.');
       },
     });
+  }
+
+  loadTraffic(days?: number): void {
+    if (days !== undefined) {
+      this.trafficWindowDays.set(days);
+    }
+    const window = this.trafficWindowDays();
+    this.trafficLoading.set(true);
+    this.trafficError.set('');
+
+    this.http.get<TrafficStatus>(`${environment.apiUrl}/api/seo/traffic/status`).subscribe({
+      next: (status) => this.trafficStatus.set(status),
+      error: () => this.trafficStatus.set(null),
+    });
+
+    const overviewDays = Math.max(window, 30);
+    forkJoin({
+      overview: this.http.get<TrafficOverview>(
+        `${environment.apiUrl}/api/seo/traffic/overview?days=${overviewDays}`),
+      queries: this.http.get<QueryRollup[]>(
+        `${environment.apiUrl}/api/seo/traffic/queries?days=${window}&limit=50`),
+      pages: this.http.get<PageRollup[]>(
+        `${environment.apiUrl}/api/seo/traffic/pages?days=${window}&limit=50`),
+      opportunities: this.http.get<QueryRollup[]>(
+        `${environment.apiUrl}/api/seo/traffic/opportunities?days=${window}`),
+      sources: this.http.get<SourceRollup[]>(
+        `${environment.apiUrl}/api/seo/traffic/sources?days=${window}&limit=20`),
+      landingPages: this.http.get<LandingPageRollup[]>(
+        `${environment.apiUrl}/api/seo/traffic/landing-pages?days=${window}&limit=50`),
+    }).subscribe({
+      next: (r) => {
+        this.trafficOverview.set(r.overview);
+        this.trafficTopQueries.set(r.queries);
+        this.trafficTopPages.set(r.pages);
+        this.trafficOpportunities.set(r.opportunities);
+        this.trafficSources.set(r.sources);
+        this.trafficLandingPages.set(r.landingPages);
+        this.trafficLoading.set(false);
+      },
+      error: () => {
+        this.trafficLoading.set(false);
+        this.trafficError.set('Failed to load traffic data.');
+      },
+    });
+  }
+
+  runTrafficIngest(): void {
+    this.trafficRunning.set(true);
+    this.trafficError.set('');
+    this.http.post(`${environment.apiUrl}/api/seo/traffic/run`, {}).subscribe({
+      next: () => {
+        this.trafficRunning.set(false);
+        this.loadTraffic();
+      },
+      error: () => {
+        this.trafficRunning.set(false);
+        this.trafficError.set('Traffic ingest failed — check the service account is configured.');
+      },
+    });
+  }
+
+  changeTrafficWindow(days: number): void {
+    this.loadTraffic(days);
   }
 
   trackKeyword(keyword?: string): void {

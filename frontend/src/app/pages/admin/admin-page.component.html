@@ -1525,6 +1525,220 @@
         }
       </section>
 
+      <section class="seo__traffic">
+        <div class="seo__health-header">
+          <h3>Search Traffic & Rankings</h3>
+          <div class="seo__traffic-controls">
+            <select [value]="trafficWindowDays()" (change)="changeTrafficWindow(+$any($event.target).value)" class="seo__traffic-window">
+              <option [value]="7">Last 7 days</option>
+              <option [value]="28">Last 28 days</option>
+              <option [value]="90">Last 90 days</option>
+            </select>
+            <button
+              type="button"
+              class="admin__add-btn"
+              (click)="runTrafficIngest()"
+              [disabled]="trafficRunning()"
+            >
+              {{ trafficRunning() ? 'Pulling...' : 'Pull now' }}
+            </button>
+          </div>
+        </div>
+
+        @if (trafficStatus(); as status) {
+          @if (!status.gscConfigured || !status.ga4Configured) {
+            <p class="admin__error" role="alert">
+              @if (!status.gscConfigured && !status.ga4Configured) {
+                Google service account is not configured. Set the <code>Google__ServiceAccountJson</code> Fly secret and a GA4 property ID to start pulling data.
+              } @else if (!status.gscConfigured) {
+                Google Search Console is not configured — set the service account JSON secret.
+              } @else {
+                GA4 is not configured — set <code>Google__Analytics__PropertyId</code>.
+              }
+            </p>
+          }
+        }
+        @if (trafficError()) {
+          <p class="admin__error" role="alert">{{ trafficError() }}</p>
+        }
+
+        @if (trafficOverview(); as ov) {
+          <div class="seo__health-grid">
+            <div class="seo__health-card">
+              <span class="seo__health-label">Clicks</span>
+              <span class="seo__health-value">{{ ov.totals.gscClicks }}</span>
+              <span class="seo__health-sub">last 30 days</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Impressions</span>
+              <span class="seo__health-value">{{ ov.totals.gscImpressions }}</span>
+              <span class="seo__health-sub">last 30 days</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Avg CTR</span>
+              <span class="seo__health-value">{{ (ov.totals.gscCtr * 100) | number:'1.2-2' }}%</span>
+              <span class="seo__health-sub">clicks ÷ impressions</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Avg position</span>
+              <span class="seo__health-value">{{ ov.totals.gscPosition | number:'1.1-1' }}</span>
+              <span class="seo__health-sub">weighted by impressions</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Sessions</span>
+              <span class="seo__health-value">{{ ov.totals.gaSessions }}</span>
+              <span class="seo__health-sub">GA4, last 30 days</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Users</span>
+              <span class="seo__health-value">{{ ov.totals.gaUsers }}</span>
+              <span class="seo__health-sub">{{ ov.totals.gaConversions }} conversions</span>
+            </div>
+          </div>
+        } @else if (!trafficLoading()) {
+          <p class="admin__empty">No traffic data yet. Configure the Google service account and click <strong>Pull now</strong> to backfill 90 days.</p>
+        }
+
+        @if (trafficOpportunities().length > 0) {
+          <details class="seo__health-history" open>
+            <summary><strong>Opportunities</strong> — queries on page 2–3 ({{ trafficOpportunities().length }})</summary>
+            <p class="seo__traffic-hint">Queries with real impressions but stuck below position 5. Improving title/meta/internal links for these is the cheapest path to page 1.</p>
+            <table class="admin__table">
+              <thead>
+                <tr>
+                  <th>Query</th>
+                  <th>Impressions</th>
+                  <th>Clicks</th>
+                  <th>CTR</th>
+                  <th>Position</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (q of trafficOpportunities(); track q.query) {
+                  <tr>
+                    <td>{{ q.query }}</td>
+                    <td>{{ q.impressions }}</td>
+                    <td>{{ q.clicks }}</td>
+                    <td>{{ (q.ctr * 100) | number:'1.2-2' }}%</td>
+                    <td>{{ q.position }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </details>
+        }
+
+        @if (trafficTopQueries().length > 0) {
+          <details class="seo__health-history">
+            <summary>Top queries ({{ trafficTopQueries().length }})</summary>
+            <table class="admin__table">
+              <thead>
+                <tr>
+                  <th>Query</th>
+                  <th>Clicks</th>
+                  <th>Impressions</th>
+                  <th>CTR</th>
+                  <th>Position</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (q of trafficTopQueries(); track q.query) {
+                  <tr>
+                    <td>{{ q.query }}</td>
+                    <td>{{ q.clicks }}</td>
+                    <td>{{ q.impressions }}</td>
+                    <td>{{ (q.ctr * 100) | number:'1.2-2' }}%</td>
+                    <td>{{ q.position }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </details>
+        }
+
+        @if (trafficTopPages().length > 0) {
+          <details class="seo__health-history">
+            <summary>Top pages ({{ trafficTopPages().length }})</summary>
+            <table class="admin__table">
+              <thead>
+                <tr>
+                  <th>Page</th>
+                  <th>Clicks</th>
+                  <th>Impressions</th>
+                  <th>CTR</th>
+                  <th>Position</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of trafficTopPages(); track p.page) {
+                  <tr>
+                    <td><a [href]="p.page" target="_blank" rel="noopener">{{ p.page }}</a></td>
+                    <td>{{ p.clicks }}</td>
+                    <td>{{ p.impressions }}</td>
+                    <td>{{ (p.ctr * 100) | number:'1.2-2' }}%</td>
+                    <td>{{ p.position }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </details>
+        }
+
+        @if (trafficSources().length > 0) {
+          <details class="seo__health-history">
+            <summary>Top sources (GA4) ({{ trafficSources().length }})</summary>
+            <table class="admin__table">
+              <thead>
+                <tr>
+                  <th>Source / Medium</th>
+                  <th>Sessions</th>
+                  <th>Users</th>
+                  <th>Conversions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of trafficSources(); track s.source + '|' + s.medium) {
+                  <tr>
+                    <td>{{ s.source }} / {{ s.medium }}</td>
+                    <td>{{ s.sessions }}</td>
+                    <td>{{ s.users }}</td>
+                    <td>{{ s.conversions }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </details>
+        }
+
+        @if (trafficLandingPages().length > 0) {
+          <details class="seo__health-history">
+            <summary>Top landing pages (GA4) ({{ trafficLandingPages().length }})</summary>
+            <table class="admin__table">
+              <thead>
+                <tr>
+                  <th>Landing page</th>
+                  <th>Sessions</th>
+                  <th>Engaged</th>
+                  <th>Conversions</th>
+                  <th>Avg duration (s)</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (l of trafficLandingPages(); track l.landingPage) {
+                  <tr>
+                    <td>{{ l.landingPage }}</td>
+                    <td>{{ l.sessions }}</td>
+                    <td>{{ l.engagedSessions }}</td>
+                    <td>{{ l.conversions }}</td>
+                    <td>{{ l.averageSessionDuration | number:'1.0-0' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </details>
+        }
+      </section>
+
       <form class="seo__url-bar" (ngSubmit)="analyseSeo()">
         <input
           type="url"

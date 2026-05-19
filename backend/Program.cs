@@ -109,13 +109,18 @@ builder.Services.AddSingleton<CartInterestService>();
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddHostedService<TranslationBackgroundService>();
 
-// SEO rank checking
+// SEO rank checking (now backed by GSC position data instead of Custom Search API)
 builder.Services.AddScoped<RankCheckerService>();
 builder.Services.AddHostedService<RankCheckBackgroundService>();
 
 // SEO health snapshots (catalog quality, sitemap counts, keyword positions)
 builder.Services.AddSingleton<SeoHealthService>();
 builder.Services.AddHostedService<SeoHealthBackgroundService>();
+
+// Google Search Console + GA4 daily ingest
+builder.Services.AddSingleton<GoogleSearchConsoleService>();
+builder.Services.AddSingleton<GoogleAnalyticsService>();
+builder.Services.AddHostedService<TrafficIngestBackgroundService>();
 
 // Monzo bank integration
 builder.Services.AddHttpClient<MonzoService>();

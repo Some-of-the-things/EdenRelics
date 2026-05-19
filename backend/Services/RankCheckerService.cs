@@ -1,64 +1,59 @@
-using System.Text.Json;
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Eden_Relics_BE.Services;
 
-public class RankCheckerService(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<RankCheckerService> logger)
+/// <summary>
+/// Reports the average position for a tracked keyword over the last LookbackDays
+/// using Google Search Console data already ingested into our DB. Replaced the
+/// previous Custom Search API approach, which didn't reflect real google.com
+/// rankings and was returning 0 positions for every tracked keyword.
+/// </summary>
+public class RankCheckerService(IServiceScopeFactory scopeFactory, ILogger<RankCheckerService> logger)
 {
-    private const int MaxPages = 5; // Check up to page 5 (50 results)
-    private const string TargetDomain = "edenrelics.co.uk";
+    private const int LookbackDays = 28;
 
+    /// <summary>
+    /// Returns the impressions-weighted average position from GSC over the last
+    /// 28 days. Null if the keyword hasn't shown impressions in that window —
+    /// which means we don't appear in search for that query yet.
+    /// </summary>
     public async Task<int?> CheckRankAsync(string keyword)
     {
-        string? apiKey = configuration["Google:SearchApiKey"];
-        string? searchEngineId = configuration["Google:SearchEngineId"];
-
-        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(searchEngineId))
+        if (string.IsNullOrWhiteSpace(keyword))
         {
-            logger.LogWarning("Google Custom Search API not configured");
             return null;
         }
 
-        HttpClient client = httpClientFactory.CreateClient();
+        using IServiceScope scope = scopeFactory.CreateScope();
+        EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
 
-        for (int page = 0; page < MaxPages; page++)
+        DateOnly since = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-LookbackDays);
+        string needle = keyword.Trim().ToLowerInvariant();
+
+        List<SearchConsoleDailyQuery> rows = await db.SearchConsoleDailyQueries
+            .Where(q => q.Date >= since && q.Query.ToLower() == needle)
+            .ToListAsync();
+
+        if (rows.Count == 0)
         {
-            int startIndex = page * 10 + 1;
-            string url = $"https://www.googleapis.com/customsearch/v1?key={apiKey}&cx={searchEngineId}&q={Uri.EscapeDataString(keyword)}&start={startIndex}";
-
-            try
-            {
-                string json = await client.GetStringAsync(url);
-                using JsonDocument doc = JsonDocument.Parse(json);
-
-                if (!doc.RootElement.TryGetProperty("items", out JsonElement items))
-                {
-                    break;
-                }
-
-                int position = startIndex;
-                foreach (JsonElement item in items.EnumerateArray())
-                {
-                    string? link = item.TryGetProperty("link", out JsonElement linkEl) ? linkEl.GetString() : null;
-                    if (link is not null && link.Contains(TargetDomain, StringComparison.OrdinalIgnoreCase))
-                    {
-                        logger.LogInformation("Keyword '{Keyword}' found at position {Position}", keyword, position);
-                        return position;
-                    }
-                    position++;
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to check rank for '{Keyword}' at page {Page}", keyword, page);
-                return null;
-            }
+            logger.LogInformation("Keyword '{Keyword}' has no GSC impressions in last {Days} days", keyword, LookbackDays);
+            return null;
         }
 
-        logger.LogInformation("Keyword '{Keyword}' not found in top {Max} results", keyword, MaxPages * 10);
-        return null; // Not found in top results
+        long totalImpressions = rows.Sum(r => (long)r.Impressions);
+        if (totalImpressions == 0)
+        {
+            return null;
+        }
+
+        double weighted = rows.Sum(r => r.Position * r.Impressions) / totalImpressions;
+        int rounded = (int)Math.Round(weighted);
+        logger.LogInformation(
+            "Keyword '{Keyword}' avg position {Position:F2} over {Days}d ({Impressions} impressions)",
+            keyword, weighted, LookbackDays, totalImpressions);
+        return rounded;
     }
 
     public async Task CheckAllKeywordsAsync(EdenRelicsDbContext context)
@@ -67,19 +62,16 @@ public class RankCheckerService(IHttpClientFactory httpClientFactory, IConfigura
             .Where(k => !k.IsDeleted)
             .ToListAsync();
 
-        logger.LogInformation("Checking ranks for {Count} keywords", keywords.Count);
+        logger.LogInformation("Refreshing positions for {Count} tracked keywords from GSC", keywords.Count);
 
         foreach (TrackedKeyword keyword in keywords)
         {
             int? position = await CheckRankAsync(keyword.Keyword);
             keyword.LastPosition = position;
             keyword.LastCheckedUtc = DateTime.UtcNow;
-
-            // Small delay to avoid hitting rate limits
-            await Task.Delay(500);
         }
 
         await context.SaveChangesAsync();
-        logger.LogInformation("Rank check complete");
+        logger.LogInformation("Tracked keyword positions refreshed");
     }
 }

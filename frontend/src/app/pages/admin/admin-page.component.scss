@@ -969,6 +969,32 @@
   }
 }
 
+.seo__traffic {
+  margin-top: 2rem;
+}
+
+.seo__traffic-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.seo__traffic-window {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.seo__traffic-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+  font-style: italic;
+}
+
 /* SEO Analyser */
 .seo__url-bar {
   display: flex;
