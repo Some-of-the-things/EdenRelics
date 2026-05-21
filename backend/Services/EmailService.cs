@@ -9,6 +9,7 @@ public interface IEmailService
     Task SendPasswordResetEmailAsync(string toEmail, string firstName, string token);
     Task SendContactEmailAsync(string fromName, string fromEmail, string subject, string message);
     Task SendSaleNotificationAsync(string toEmail, string firstName, string productName, decimal originalPrice, decimal salePrice);
+    Task SendReviewRequestEmailAsync(string toEmail, string firstName, Guid orderId);
 }
 
 public class EmailService : IEmailService
@@ -131,6 +132,42 @@ public class EmailService : IEmailService
         {
             _logger.LogError(ex, "Failed to send contact email from {Email}", fromEmail);
             throw;
+        }
+    }
+
+    public async Task SendReviewRequestEmailAsync(string toEmail, string firstName, Guid orderId)
+    {
+        string reviewUrl = $"{_frontendUrl}/review/{orderId}";
+
+        string html = $"""
+            <div style="font-family: Georgia, serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
+                <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">How did we do?</h1>
+                <p>Hi {WebUtility.HtmlEncode(firstName)},</p>
+                <p>Your Eden Relics order has been delivered. We'd love to hear how the whole experience went — from checkout to delivery to the piece itself.</p>
+                <p>Reviews help other shoppers find us and help us improve.</p>
+                <a href="{reviewUrl}"
+                   style="display: inline-block; background: #1a1a1a; color: #fff; text-decoration: none; padding: 12px 28px; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; margin: 1.5rem 0;">
+                    Leave a review
+                </a>
+                <p style="color: #666; font-size: 0.85rem;">Reviews are moderated before being shown on the site.</p>
+            </div>
+            """;
+
+        try
+        {
+            EmailMessage message = new()
+            {
+                From = _fromEmail,
+                To = [toEmail],
+                Subject = "How did we do? — Eden Relics",
+                HtmlBody = html
+            };
+            await _resend.EmailSendAsync(message);
+            _logger.LogInformation("Review request email sent to {Email} for order {OrderId}", toEmail, orderId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send review request email to {Email}", toEmail);
         }
     }
 

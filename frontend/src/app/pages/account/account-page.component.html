@@ -54,6 +54,38 @@
         </div>
       }
     </div>
+    @if (eligibleReviews().length) {
+      <section class="account__section">
+        <h2 class="account__section-title">Reviews to leave</h2>
+        <ul class="account__reviews">
+          @for (o of eligibleReviews(); track o.orderId) {
+            <li class="account__reviews-item">
+              <div class="account__reviews-detail">
+                <span class="account__reviews-date">{{ o.placedAtUtc | date:'mediumDate' }}</span>
+                <span class="account__reviews-items">{{ o.productNames.join(', ') }}</span>
+              </div>
+              <a [routerLink]="['/review', o.orderId]" class="account__reviews-cta">Leave a review</a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+    @if (myReviews().length) {
+      <section class="account__section">
+        <h2 class="account__section-title">My reviews</h2>
+        <ul class="account__reviews">
+          @for (r of myReviews(); track r.id) {
+            <li class="account__reviews-item">
+              <div class="account__reviews-detail">
+                <span class="account__reviews-date">{{ r.createdAtUtc | date:'mediumDate' }}</span>
+                <span class="account__reviews-items">{{ r.comment.length > 100 ? r.comment.substring(0, 100) + '…' : r.comment }}</span>
+              </div>
+              <span class="account__reviews-status account__reviews-status--{{ r.status.toLowerCase() }}">{{ r.status }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
     <a routerLink="/settings" class="account__settings-link">Settings</a>
     @if (auth.isAdmin()) {
       <a routerLink="/admin" class="account__admin-link">Go to Admin Panel</a>

@@ -51,6 +51,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'review/:orderId',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/review/review-page.component').then(
+        (m) => m.ReviewPageComponent
+      ),
+  },
+  {
     path: 'admin/login',
     redirectTo: 'login',
   },

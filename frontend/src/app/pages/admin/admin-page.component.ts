@@ -1,9 +1,9 @@
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, forkJoin } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
 import { Product, ProductStatus } from '../../models/product.model';
 import { filterAdminProducts, productStatusLabel, resolveProductStatus } from '../../utils/product-status';
@@ -22,6 +22,7 @@ import {
   OffsiteSale,
   CreateOffsiteSale,
 } from '../../services/offsite-sale.service';
+import { AdminReview, ReviewsService } from '../../services/reviews.service';
 
 interface AdminUser {
   id: string;
@@ -240,9 +241,82 @@ interface SeoHealthSnapshot {
   keywordsInTop3: number;
 }
 
+interface TrafficStatus {
+  gscConfigured: boolean;
+  ga4Configured: boolean;
+}
+
+interface TotalsSummary {
+  gscClicks: number;
+  gscImpressions: number;
+  gscCtr: number;
+  gscPosition: number;
+  gaSessions: number;
+  gaUsers: number;
+  gaConversions: number;
+}
+
+interface GscDaily {
+  date: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+interface GaDaily {
+  date: string;
+  sessions: number;
+  users: number;
+  newUsers: number;
+  engagedSessions: number;
+  conversions: number;
+  engagementRate: number;
+  averageSessionDuration: number;
+  screenPageViews: number;
+}
+
+interface TrafficOverview {
+  gsc: GscDaily[];
+  ga4: GaDaily[];
+  totals: TotalsSummary;
+}
+
+interface QueryRollup {
+  query: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+interface PageRollup {
+  page: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+interface SourceRollup {
+  source: string;
+  medium: string;
+  sessions: number;
+  users: number;
+  conversions: number;
+}
+
+interface LandingPageRollup {
+  landingPage: string;
+  sessions: number;
+  engagedSessions: number;
+  conversions: number;
+  averageSessionDuration: number;
+}
+
 @Component({
   selector: 'app-admin-page',
-  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe],
+  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe, DecimalPipe],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
@@ -259,9 +333,10 @@ export class AdminPageComponent implements OnInit {
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
   private readonly offsiteSaleService = inject(OffsiteSaleService);
+  private readonly reviewsService = inject(ReviewsService);
 
   @ViewChild('descriptionEditor') descriptionEditor!: ElementRef<HTMLElement>;
-  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales'>('products');
+  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews'>('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
@@ -287,6 +362,59 @@ export class AdminPageComponent implements OnInit {
   offsiteForm: CreateOffsiteSale = this.emptyOffsiteForm();
 
   readonly offsitePlatforms = ['Etsy', 'Depop', 'Vinted', 'Instagram', 'In Person', 'Other'];
+
+  // Reviews moderation
+  readonly reviews = signal<AdminReview[]>([]);
+  readonly reviewsLoading = signal(false);
+  readonly reviewsFilter = signal<'Pending' | 'Approved' | 'Rejected' | 'all'>('Pending');
+  readonly reviewsModerating = signal<string | null>(null);
+
+  loadReviews(): void {
+    this.reviewsLoading.set(true);
+    const filter = this.reviewsFilter();
+    const status = filter === 'all' ? undefined : filter;
+    this.reviewsService.getAdmin(status).subscribe({
+      next: (r) => {
+        this.reviews.set(r);
+        this.reviewsLoading.set(false);
+      },
+      error: () => this.reviewsLoading.set(false),
+    });
+  }
+
+  setReviewsFilter(filter: 'Pending' | 'Approved' | 'Rejected' | 'all'): void {
+    this.reviewsFilter.set(filter);
+    this.loadReviews();
+  }
+
+  approveReview(id: string): void {
+    this.reviewsModerating.set(id);
+    this.reviewsService.approve(id).subscribe({
+      next: () => {
+        this.reviews.update((rs) => rs.filter((r) => r.id !== id || this.reviewsFilter() === 'all'));
+        this.reviewsModerating.set(null);
+        if (this.reviewsFilter() !== 'all') {
+          this.loadReviews();
+        }
+      },
+      error: () => this.reviewsModerating.set(null),
+    });
+  }
+
+  rejectReview(id: string): void {
+    this.reviewsModerating.set(id);
+    this.reviewsService.reject(id).subscribe({
+      next: () => {
+        this.reviewsModerating.set(null);
+        this.loadReviews();
+      },
+      error: () => this.reviewsModerating.set(null),
+    });
+  }
+
+  reviewOverall(r: AdminReview): number {
+    return Math.round(((r.transactionRating + r.deliveryRating + r.productRating) / 3) * 10) / 10;
+  }
 
   // Product stats
   readonly totalItems = computed(() => this.store.products().length);
@@ -321,6 +449,19 @@ export class AdminPageComponent implements OnInit {
   readonly latestSeoHealth = computed(() => this.seoHealthSnapshots()[0] ?? null);
   readonly seoLoading = signal(false);
   readonly seoError = signal('');
+
+  // SEO traffic & rankings (Google Search Console + GA4 daily ingest)
+  readonly trafficStatus = signal<TrafficStatus | null>(null);
+  readonly trafficOverview = signal<TrafficOverview | null>(null);
+  readonly trafficTopQueries = signal<QueryRollup[]>([]);
+  readonly trafficTopPages = signal<PageRollup[]>([]);
+  readonly trafficOpportunities = signal<QueryRollup[]>([]);
+  readonly trafficSources = signal<SourceRollup[]>([]);
+  readonly trafficLandingPages = signal<LandingPageRollup[]>([]);
+  readonly trafficLoading = signal(false);
+  readonly trafficRunning = signal(false);
+  readonly trafficError = signal('');
+  readonly trafficWindowDays = signal(28);
 
   // Tracked keywords
   readonly trackedKeywords = signal<TrackedKeyword[]>([]);
@@ -630,7 +771,7 @@ export class AdminPageComponent implements OnInit {
     this.mobileMenuOpen.update(v => !v);
   }
 
-  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales'): void {
+  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews'): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
@@ -641,6 +782,7 @@ export class AdminPageComponent implements OnInit {
         this.loadTrackedKeywords();
       }
       this.loadSeoHealth();
+      this.loadTraffic();
     }
     if (tab === 'branding') {
       this.loadBranding();
@@ -660,6 +802,9 @@ export class AdminPageComponent implements OnInit {
     }
     if (tab === 'blog') {
       this.loadBlogPosts();
+    }
+    if (tab === 'reviews') {
+      this.loadReviews();
     }
     if (tab === 'offsite-sales' && this.offsiteSales().length === 0) {
       this.loadOffsiteSales();
@@ -1213,6 +1358,69 @@ export class AdminPageComponent implements OnInit {
         this.seoHealthError.set('Snapshot capture failed.');
       },
     });
+  }
+
+  loadTraffic(days?: number): void {
+    if (days !== undefined) {
+      this.trafficWindowDays.set(days);
+    }
+    const window = this.trafficWindowDays();
+    this.trafficLoading.set(true);
+    this.trafficError.set('');
+
+    this.http.get<TrafficStatus>(`${environment.apiUrl}/api/seo/traffic/status`).subscribe({
+      next: (status) => this.trafficStatus.set(status),
+      error: () => this.trafficStatus.set(null),
+    });
+
+    const overviewDays = Math.max(window, 30);
+    forkJoin({
+      overview: this.http.get<TrafficOverview>(
+        `${environment.apiUrl}/api/seo/traffic/overview?days=${overviewDays}`),
+      queries: this.http.get<QueryRollup[]>(
+        `${environment.apiUrl}/api/seo/traffic/queries?days=${window}&limit=50`),
+      pages: this.http.get<PageRollup[]>(
+        `${environment.apiUrl}/api/seo/traffic/pages?days=${window}&limit=50`),
+      opportunities: this.http.get<QueryRollup[]>(
+        `${environment.apiUrl}/api/seo/traffic/opportunities?days=${window}`),
+      sources: this.http.get<SourceRollup[]>(
+        `${environment.apiUrl}/api/seo/traffic/sources?days=${window}&limit=20`),
+      landingPages: this.http.get<LandingPageRollup[]>(
+        `${environment.apiUrl}/api/seo/traffic/landing-pages?days=${window}&limit=50`),
+    }).subscribe({
+      next: (r) => {
+        this.trafficOverview.set(r.overview);
+        this.trafficTopQueries.set(r.queries);
+        this.trafficTopPages.set(r.pages);
+        this.trafficOpportunities.set(r.opportunities);
+        this.trafficSources.set(r.sources);
+        this.trafficLandingPages.set(r.landingPages);
+        this.trafficLoading.set(false);
+      },
+      error: () => {
+        this.trafficLoading.set(false);
+        this.trafficError.set('Failed to load traffic data.');
+      },
+    });
+  }
+
+  runTrafficIngest(): void {
+    this.trafficRunning.set(true);
+    this.trafficError.set('');
+    this.http.post(`${environment.apiUrl}/api/seo/traffic/run`, {}).subscribe({
+      next: () => {
+        this.trafficRunning.set(false);
+        this.loadTraffic();
+      },
+      error: () => {
+        this.trafficRunning.set(false);
+        this.trafficError.set('Traffic ingest failed — check the service account is configured.');
+      },
+    });
+  }
+
+  changeTrafficWindow(days: number): void {
+    this.loadTraffic(days);
   }
 
   trackKeyword(keyword?: string): void {

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
+using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,11 +18,15 @@ public class OrdersController : ControllerBase
 {
     private readonly EdenRelicsDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<OrdersController> _logger;
 
-    public OrdersController(EdenRelicsDbContext context, IConfiguration configuration)
+    public OrdersController(EdenRelicsDbContext context, IConfiguration configuration, IEmailService emailService, ILogger<OrdersController> logger)
     {
         _context = context;
         _configuration = configuration;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -311,8 +316,38 @@ public class OrdersController : ControllerBase
             return NotFound();
         }
 
+        string previousStatus = order.Status;
         order.Status = dto.Status;
+
+        bool justDelivered =
+            order.Status == "Delivered"
+            && previousStatus != "Delivered"
+            && order.ReviewRequestSentAtUtc is null
+            && order.UserId is not null
+            && order.User is not null
+            && !string.IsNullOrWhiteSpace(order.User.Email);
+
+        if (justDelivered)
+        {
+            order.ReviewRequestSentAtUtc = DateTime.UtcNow;
+        }
+
         await _context.SaveChangesAsync();
+
+        if (justDelivered)
+        {
+            try
+            {
+                await _emailService.SendReviewRequestEmailAsync(
+                    order.User!.Email,
+                    order.User.FirstName ?? "",
+                    order.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send review request email for order {OrderId}", order.Id);
+            }
+        }
 
         return Ok(ToAdminDto(order));
     }

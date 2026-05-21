@@ -29,8 +29,12 @@ export class SocialLoginComponent {
     afterNextRender({
       read: () => {
         this.ready.set(true);
+        // GSI script is preloaded unconditionally: it only renders the auth
+        // UI; tracking cookies aren't dropped until the user clicks through.
+        // Without this preload, the first click races the async SDK load and
+        // silently no-ops.
+        this.loadGoogleSdk();
         if (this.hasNonEssentialConsent()) {
-          this.loadGoogleSdk();
           this.loadFacebookSdk();
         }
       },

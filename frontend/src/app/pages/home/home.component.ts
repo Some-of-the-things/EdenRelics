@@ -3,15 +3,17 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { ProductListComponent } from '../../components/product-list/product-list.component';
+import { HomeReviewsComponent } from '../../components/home-reviews/home-reviews.component';
 import { SeoService } from '../../services/seo.service';
 import { ContentService } from '../../services/content.service';
+import { ReviewsService } from '../../services/reviews.service';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-home',
-  imports: [ProductListComponent, FormsModule],
+  imports: [ProductListComponent, HomeReviewsComponent, FormsModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,7 +23,10 @@ export class HomeComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly productStore = inject(ProductStore);
   private readonly route = inject(ActivatedRoute);
+  private readonly reviewsService = inject(ReviewsService);
   readonly cms = inject(ContentService);
+
+  private reviewSummary: { count: number; overall: number } | null = null;
 
   mailingEmail = '';
   readonly mailingSubscribed = signal(false);
@@ -56,6 +61,15 @@ export class HomeComponent implements OnInit {
         this.productStore.setSearchQuery(q);
       }
     });
+    this.reviewsService.getSummary().subscribe({
+      next: (s) => {
+        if (s.count > 0) {
+          this.reviewSummary = { count: s.count, overall: s.overall };
+          this.emitJsonLd(this.productStore.products());
+        }
+      },
+      error: () => {},
+    });
   }
 
   private emitJsonLd(products: readonly Product[]): void {
@@ -77,6 +91,17 @@ export class HomeComponent implements OnInit {
           postalCode: 'NR7 0US',
           addressCountry: 'GB',
         },
+        ...(this.reviewSummary
+          ? {
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: this.reviewSummary.overall.toFixed(1),
+                reviewCount: this.reviewSummary.count,
+                bestRating: '5',
+                worstRating: '1',
+              },
+            }
+          : {}),
       },
       {
         '@type': 'WebSite',

@@ -1,0 +1,94 @@
+<div class="review-page">
+  @if (loading()) {
+    <p class="review-page__hint">Loading…</p>
+  } @else if (submitted(); as r) {
+    <h1 class="review-page__title">Thanks for your review</h1>
+    <p>We've received your review. It'll appear on the site once we've checked it over.</p>
+    <a routerLink="/account" class="review-page__back">Back to your account</a>
+  } @else if (notEligible()) {
+    <h1 class="review-page__title">Review unavailable</h1>
+    <p>This order isn't eligible for review — it may not have been delivered yet, or you've already submitted a review for it.</p>
+    <a routerLink="/account" class="review-page__back">Back to your account</a>
+  } @else if (order(); as o) {
+    <h1 class="review-page__title">Leave a review</h1>
+    <p class="review-page__order">
+      Order placed {{ o.placedAtUtc | date:'mediumDate' }} — {{ o.total | currency:'GBP' }}
+    </p>
+    <p class="review-page__items">
+      @for (name of o.productNames; track name) {
+        <span>{{ name }}</span>
+      }
+    </p>
+
+    <div class="review-page__group">
+      <label class="review-page__label">Transaction</label>
+      <div class="review-page__stars" role="radiogroup">
+        @for (s of stars; track s) {
+          <button type="button"
+                  class="review-page__star"
+                  [class.review-page__star--filled]="s <= transactionRating()"
+                  (click)="setRating('transaction', s)"
+                  [attr.aria-label]="s + ' stars'">★</button>
+        }
+      </div>
+    </div>
+
+    <div class="review-page__group">
+      <label class="review-page__label">Delivery</label>
+      <div class="review-page__stars" role="radiogroup">
+        @for (s of stars; track s) {
+          <button type="button"
+                  class="review-page__star"
+                  [class.review-page__star--filled]="s <= deliveryRating()"
+                  (click)="setRating('delivery', s)"
+                  [attr.aria-label]="s + ' stars'">★</button>
+        }
+      </div>
+    </div>
+
+    <div class="review-page__group">
+      <label class="review-page__label">Product</label>
+      <div class="review-page__stars" role="radiogroup">
+        @for (s of stars; track s) {
+          <button type="button"
+                  class="review-page__star"
+                  [class.review-page__star--filled]="s <= productRating()"
+                  (click)="setRating('product', s)"
+                  [attr.aria-label]="s + ' stars'">★</button>
+        }
+      </div>
+    </div>
+
+    <div class="review-page__group">
+      <label class="review-page__label" for="review-comment">Your review</label>
+      <textarea id="review-comment"
+                class="review-page__textarea"
+                [ngModel]="comment()"
+                (ngModelChange)="comment.set($event)"
+                placeholder="What did you think of the checkout, the delivery, and the piece itself?"
+                rows="6"
+                maxlength="2000"></textarea>
+    </div>
+
+    <div class="review-page__group">
+      <label class="review-page__label" for="review-name">Display name (optional)</label>
+      <input id="review-name"
+             class="review-page__input"
+             [ngModel]="displayName()"
+             (ngModelChange)="displayName.set($event)"
+             placeholder="How should we credit you? (defaults to first name + initial)"
+             maxlength="100" />
+    </div>
+
+    @if (error(); as e) {
+      <p class="review-page__error">{{ e }}</p>
+    }
+
+    <button class="review-page__submit"
+            type="button"
+            [disabled]="submitting()"
+            (click)="submit()">
+      {{ submitting() ? 'Submitting…' : 'Submit review' }}
+    </button>
+  }
+</div>
