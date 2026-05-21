@@ -23,9 +23,11 @@
   <link rel="preload" href="/fonts/work-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preconnect" href="https://api.edenrelics.co.uk" crossorigin>
 
-  <!-- Google Analytics 4 (deferred) -->
+  <!-- Google Analytics 4 (deferred). Production host only — keeps E2E,
+       local dev, and any preview host out of the prod GA4 property. -->
   <script>
     window.addEventListener('load', function() {
+      if (location.hostname !== 'edenrelics.co.uk') return;
       var gaId = 'G-6XVT8D7PBL';
       if (gaId.indexOf('XXXX') !== -1) return;
       var s = document.createElement('script');
@@ -40,9 +42,10 @@
     });
   </script>
 
-  <!-- Microsoft Clarity (deferred) -->
+  <!-- Microsoft Clarity (deferred). Production host only — same reason. -->
   <script>
     window.addEventListener('load', function() {
+      if (location.hostname !== 'edenrelics.co.uk') return;
       var clarityId = "vzdovv3qx8";
       if (clarityId.indexOf("XXXX") !== -1) return;
       (function(c,l,a,r,i,t,y){
