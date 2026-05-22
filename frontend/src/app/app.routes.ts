@@ -170,6 +170,20 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'designers',
+    loadComponent: () =>
+      import('./pages/designers/designers-index.component').then(
+        (m) => m.DesignersIndexComponent
+      ),
+  },
+  {
+    path: 'designers/:slug',
+    loadComponent: () =>
+      import('./pages/designers/designer-page.component').then(
+        (m) => m.DesignerPageComponent
+      ),
+  },
+  {
     path: 'blog/:slug',
     loadComponent: () =>
       import('./pages/blog/blog-post.component').then(

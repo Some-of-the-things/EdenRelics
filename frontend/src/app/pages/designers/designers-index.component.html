@@ -1,0 +1,27 @@
+<article class="designers">
+  <header class="designers__header">
+    <h1 class="designers__title">Vintage Designers &amp; Labels</h1>
+    <p class="designers__lede">
+      Eden Relics stocks vintage clothing from American, British, and European labels active from the 1940s through the 1990s. Each piece is hand-picked, photographed, measured, and inspected before it lands. Below is an index of the named designers and houses you'll find on the site, with a short note on what to look for in each.
+    </p>
+  </header>
+
+  <ul class="designers__grid">
+    @for (card of cards(); track card.profile.slug) {
+      <li class="designer-card">
+        <a [routerLink]="['/designers', card.profile.slug]" class="designer-card__link">
+          <h2 class="designer-card__name">{{ card.profile.name }}</h2>
+          <p class="designer-card__origin">{{ card.profile.origin }}</p>
+          <p class="designer-card__intro">{{ card.profile.intro }}</p>
+          <p class="designer-card__count">
+            @if (card.productCount > 0) {
+              {{ card.productCount }} piece{{ card.productCount === 1 ? '' : 's' }} in stock →
+            } @else {
+              Currently between pieces — check back soon →
+            }
+          </p>
+        </a>
+      </li>
+    }
+  </ul>
+</article>

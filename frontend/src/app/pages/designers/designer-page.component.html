@@ -1,0 +1,78 @@
+@if (designer(); as d) {
+  <article class="designer-page">
+    <nav class="designer-page__breadcrumb" aria-label="Breadcrumb">
+      <a routerLink="/">Home</a>
+      <span>›</span>
+      <a routerLink="/designers">Designers</a>
+      <span>›</span>
+      <span>{{ d.name }}</span>
+    </nav>
+
+    <header class="designer-page__header">
+      <h1 class="designer-page__title">Vintage {{ d.name }}</h1>
+      <p class="designer-page__origin">{{ d.origin }}</p>
+      <p class="designer-page__intro">{{ d.intro }}</p>
+    </header>
+
+    <section class="designer-page__section">
+      <h2 class="designer-page__section-title">About {{ d.name }}</h2>
+      <div class="designer-page__prose">
+        @for (para of d.history; track $index) {
+          <p>{{ para }}</p>
+        }
+      </div>
+    </section>
+
+    <section class="designer-page__section">
+      <h2 class="designer-page__section-title">How to identify authentic {{ d.name }}</h2>
+      <ul class="designer-page__id-list">
+        @for (tip of d.identification; track $index) {
+          <li>{{ tip }}</li>
+        }
+      </ul>
+    </section>
+
+    <section class="designer-page__section">
+      <h2 class="designer-page__section-title">
+        {{ d.name }} at Eden Relics
+        @if (products().length > 0) {
+          <span class="designer-page__count">({{ products().length }})</span>
+        }
+      </h2>
+
+      @if (products().length > 0) {
+        <ul class="designer-products designer-page__products">
+          @for (product of products(); track product.id) {
+            <li class="designer-product">
+              <a [routerLink]="['/product', product.slug || product.id]" class="designer-product__link">
+                <div class="designer-product__image-wrap">
+                  @if (product.imageUrl) {
+                    <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+                  }
+                </div>
+                <div class="designer-product__body">
+                  <h3 class="designer-product__name">{{ product.name }}</h3>
+                  <span class="designer-product__price">
+                    {{ (product.salePrice ?? product.price) | currency:'GBP' }}
+                    @if (!product.inStock) {
+                      <span class="designer-product__sold">Sold</span>
+                    }
+                  </span>
+                </div>
+              </a>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="designer-page__empty">
+          Eden Relics is currently between {{ d.name }} pieces. Join the mailing list from the homepage to hear first when a new one lands, or
+          <a routerLink="/designers">browse other designers</a>.
+        </p>
+      }
+    </section>
+
+    <p class="designer-page__back">
+      <a routerLink="/designers">← Back to all designers</a>
+    </p>
+  </article>
+}
