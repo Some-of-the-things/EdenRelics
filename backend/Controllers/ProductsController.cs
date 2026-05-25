@@ -64,7 +64,7 @@ public class ProductsController : ControllerBase
         {
             return Ok(products.Select(ToAdminDto));
         }
-        return Ok(products.Where(p => p.Status != ProductStatus.Stock).Select(p => ToDto(p, locale)));
+        return Ok(products.Where(p => p.Status == ProductStatus.Live).Select(p => ToDto(p, locale)));
     }
 
     [HttpGet("{id:guid}")]
@@ -79,7 +79,7 @@ public class ProductsController : ControllerBase
         {
             return Ok(ToAdminDto(product));
         }
-        if (product.Status == ProductStatus.Stock)
+        if (!await IsVisibleToCurrentUserAsync(product))
         {
             return NotFound();
         }
@@ -99,11 +99,33 @@ public class ProductsController : ControllerBase
         {
             return Ok(ToAdminDto(product));
         }
-        if (product.Status == ProductStatus.Stock)
+        if (!await IsVisibleToCurrentUserAsync(product))
         {
             return NotFound();
         }
         return Ok(ToDto(product, locale));
+    }
+
+    /// Sold products are hidden from the public, except for the user who favourited them —
+    /// so their favourites list and any bookmarked URLs continue to render.
+    private async Task<bool> IsVisibleToCurrentUserAsync(Product product)
+    {
+        if (product.Status == ProductStatus.Live)
+        {
+            return true;
+        }
+        if (product.Status != ProductStatus.Sold)
+        {
+            return false;
+        }
+        string? userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdStr, out Guid userId))
+        {
+            return false;
+        }
+        IEnumerable<Favourite> favs = await _favouriteRepository.FindAsync(
+            f => f.UserId == userId && f.ProductId == product.Id);
+        return favs.Any();
     }
 
     [HttpGet("category/{category}")]
@@ -114,7 +136,7 @@ public class ProductsController : ControllerBase
         {
             return Ok(products.Select(ToAdminDto));
         }
-        return Ok(products.Where(p => p.Status != ProductStatus.Stock).Select(p => ToDto(p, locale)));
+        return Ok(products.Where(p => p.Status == ProductStatus.Live).Select(p => ToDto(p, locale)));
     }
 
     [HttpPost]
@@ -395,7 +417,7 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> RecordView(Guid id, [FromBody] RecordViewDto? dto = null)
     {
         Product? product = await _repository.GetByIdAsync(id);
-        if (product is null || (product.Status == ProductStatus.Stock && !User.IsInRole("Admin")))
+        if (product is null || (product.Status != ProductStatus.Live && !User.IsInRole("Admin")))
         {
             return NotFound();
         }
@@ -450,7 +472,7 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> AddCartInterest(Guid id, [FromBody] CartInterestDto? dto = null)
     {
         Product? product = await _repository.GetByIdAsync(id);
-        if (product is null || (product.Status == ProductStatus.Stock && !User.IsInRole("Admin")))
+        if (product is null || (product.Status != ProductStatus.Live && !User.IsInRole("Admin")))
         {
             return NotFound();
         }
@@ -467,7 +489,7 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> RemoveCartInterest(Guid id, [FromQuery] string? sessionId = null)
     {
         Product? product = await _repository.GetByIdAsync(id);
-        if (product is null || (product.Status == ProductStatus.Stock && !User.IsInRole("Admin")))
+        if (product is null || (product.Status != ProductStatus.Live && !User.IsInRole("Admin")))
         {
             return NotFound();
         }
@@ -484,7 +506,7 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> GetCartInterest(Guid id)
     {
         Product? product = await _repository.GetByIdAsync(id);
-        if (product is null || (product.Status == ProductStatus.Stock && !User.IsInRole("Admin")))
+        if (product is null || (product.Status != ProductStatus.Live && !User.IsInRole("Admin")))
         {
             return NotFound();
         }

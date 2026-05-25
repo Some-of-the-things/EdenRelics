@@ -48,7 +48,7 @@ public class OrdersController : ControllerBase
             {
                 return BadRequest(new { message = $"Product {item.ProductId} not found." });
             }
-            if (product.Status == ProductStatus.Stock)
+            if (product.Status != ProductStatus.Live)
             {
                 return BadRequest(new { message = $"Product {item.ProductId} is not available for purchase." });
             }

@@ -16,7 +16,7 @@ public class SitemapController(EdenRelicsDbContext context) : ControllerBase
     public async Task<IActionResult> GetSitemap()
     {
         List<Product> products = await context.Products
-            .Where(p => !p.IsDeleted && p.Status != ProductStatus.Stock)
+            .Where(p => !p.IsDeleted && p.Status == ProductStatus.Live)
             .OrderByDescending(p => p.UpdatedAtUtc)
             .ToListAsync();
 
