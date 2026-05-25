@@ -1,0 +1,40 @@
+.about {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+  color: var(--text-primary);
+}
+
+.about__title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  text-align: center;
+  margin: 0 0 2.5rem;
+  line-height: 1.2;
+}
+
+.about__prose {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--text-secondary);
+
+  p {
+    margin: 0 0 1.5rem;
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.about__signature {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  text-align: right;
+  margin: 2.5rem 0 0;
+  color: var(--text-primary);
+}

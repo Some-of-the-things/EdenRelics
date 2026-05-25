@@ -33,6 +33,7 @@ public class SitemapController(EdenRelicsDbContext context) : ControllerBase
         string[][] staticPages =
         [
             ["/", "daily", "1.0"],
+            ["/about", "monthly", "0.7"],
             ["/contact", "monthly", "0.6"],
             ["/blog", "weekly", "0.7"],
             ["/designers", "weekly", "0.8"],

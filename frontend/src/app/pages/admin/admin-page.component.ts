@@ -532,6 +532,14 @@ export class AdminPageComponent implements OnInit {
       ],
     },
     {
+      title: 'About Page',
+      fields: [
+        { key: 'page.about.title', label: 'Title', type: 'text', fallback: 'Lovingly handpicked vintage' },
+        { key: 'page.about.content', label: 'Body Content (HTML)', type: 'html', fallback: '<p>Eden Relics is a curated vintage shop based in Norwich, UK, specialising in dresses from the 1970s, 80s, and 90s — the kind that were made to last, cut with intention, and worn by someone who loved them first.</p>\n<p>Every piece is personally sourced and chosen for its quality, character, and the way it moves. Wherever possible the dresses are modelled — by me or a friend — so you can see how they actually fall on a real body. For pieces that don\'t suit a modelled shot, I photograph them carefully on a mannequin so nothing is left to guesswork.</p>\n<p>I started Eden Relics because I believe in buying less and buying better. Fast fashion has a cost the price tag doesn\'t show — in waste, in craft, in the stories we throw away. Vintage is the alternative: beautiful things that already exist, waiting to be worn again.</p>\n<p>Every purchase here is an act of intention. I hope you find something that feels like it was always meant to be yours.</p>' },
+        { key: 'page.about.signature', label: 'Signature', type: 'text', fallback: 'Teodora, Eden Relics' },
+      ],
+    },
+    {
       title: 'Privacy Policy',
       fields: [
         { key: 'policy.privacy.updated', label: 'Last Updated', type: 'text', fallback: 'March 2026' },
