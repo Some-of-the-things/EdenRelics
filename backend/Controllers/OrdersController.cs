@@ -48,7 +48,7 @@ public class OrdersController : ControllerBase
             {
                 return BadRequest(new { message = $"Product {item.ProductId} not found." });
             }
-            if (product.Status == ProductStatus.Stock)
+            if (product.Status != ProductStatus.Live)
             {
                 return BadRequest(new { message = $"Product {item.ProductId} is not available for purchase." });
             }
@@ -228,6 +228,26 @@ public class OrdersController : ControllerBase
                                     listing.Status = listing.Platform == "Website" ? "Sold" : "PendingRemoval";
                                 }
                             }
+                        }
+
+                        // Mirror the sale into the finance ledger. Idempotent by order-id Reference
+                        // so Stripe webhook retries don't create duplicates.
+                        string orderRef = order.Id.ToString();
+                        bool alreadyLogged = await _context.Transactions.AnyAsync(t => t.Reference == orderRef);
+                        if (!alreadyLogged)
+                        {
+                            string description = order.Items.Count == 1
+                                ? $"Sale: {order.Items[0].ProductName}"
+                                : $"Sale: {order.Items.Count} items";
+                            _context.Transactions.Add(new Transaction
+                            {
+                                Date = DateTime.UtcNow,
+                                Description = description,
+                                Amount = order.Total,
+                                Category = "Sales",
+                                Platform = "Website",
+                                Reference = orderRef,
+                            });
                         }
 
                         await _context.SaveChangesAsync();

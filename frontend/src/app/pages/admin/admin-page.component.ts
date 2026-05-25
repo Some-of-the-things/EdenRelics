@@ -723,6 +723,7 @@ export class AdminPageComponent implements OnInit {
   readonly editingTransactionId = signal<string | null>(null);
   readonly financeReceiptUploading = signal(false);
   readonly financeMonthFilter = signal<string>('all');
+  readonly backfillingSales = signal(false);
   financeForm = { date: '', description: '', amount: 0, category: 'Stock', platform: '', reference: '', notes: '' };
   financeReceiptUrl: string | null = null;
 
@@ -1844,6 +1845,31 @@ export class AdminPageComponent implements OnInit {
     });
     this.http.get<FinanceSummary>(`${environment.apiUrl}/api/finance/summary`).subscribe({
       next: (s) => this.financeSummary.set(s),
+    });
+  }
+
+  backfillSales(): void {
+    this.backfillingSales.set(true);
+    this.financeError.set('');
+    this.financeSuccess.set('');
+    this.http.post<{ backfilled: number; totalPaid: number }>(
+      `${environment.apiUrl}/api/finance/backfill-sales`, {}
+    ).subscribe({
+      next: (res) => {
+        this.backfillingSales.set(false);
+        this.financeSuccess.set(
+          res.backfilled === 0
+            ? `All ${res.totalPaid} paid orders are already in the ledger.`
+            : `Backfilled ${res.backfilled} sale${res.backfilled === 1 ? '' : 's'} from ${res.totalPaid} paid order${res.totalPaid === 1 ? '' : 's'}.`
+        );
+        if (res.backfilled > 0) {
+          this.loadFinance();
+        }
+      },
+      error: () => {
+        this.backfillingSales.set(false);
+        this.financeError.set('Failed to backfill sales.');
+      },
     });
   }
 

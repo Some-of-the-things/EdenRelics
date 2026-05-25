@@ -16,7 +16,7 @@ public class SitemapController(EdenRelicsDbContext context) : ControllerBase
     public async Task<IActionResult> GetSitemap()
     {
         List<Product> products = await context.Products
-            .Where(p => !p.IsDeleted && p.Status != ProductStatus.Stock)
+            .Where(p => !p.IsDeleted && p.Status == ProductStatus.Live)
             .OrderByDescending(p => p.UpdatedAtUtc)
             .ToListAsync();
 
@@ -35,6 +35,13 @@ public class SitemapController(EdenRelicsDbContext context) : ControllerBase
             ["/", "daily", "1.0"],
             ["/contact", "monthly", "0.6"],
             ["/blog", "weekly", "0.7"],
+            ["/designers", "weekly", "0.8"],
+            ["/designers/leslie-fay", "weekly", "0.7"],
+            ["/designers/carole-little", "weekly", "0.7"],
+            ["/designers/caroline-wells", "weekly", "0.7"],
+            ["/designers/laura-ashley", "weekly", "0.7"],
+            ["/designers/rockmount-ranch-wear", "weekly", "0.7"],
+            ["/designers/st-michael", "weekly", "0.7"],
             ["/privacy-policy", "yearly", "0.3"],
             ["/modern-slavery-policy", "yearly", "0.3"],
             ["/supply-chain-policy", "yearly", "0.3"],

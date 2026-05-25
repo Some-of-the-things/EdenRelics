@@ -98,6 +98,48 @@ public class FinanceController(
         return NoContent();
     }
 
+    /// One-shot backfill: ensures every paid order has a matching ledger transaction.
+    /// Idempotent — safe to re-run. Catches any orders that pre-date the webhook hook,
+    /// or where the webhook failed to record the ledger entry.
+    [HttpPost("backfill-sales")]
+    public async Task<ActionResult<object>> BackfillSales()
+    {
+        List<Order> paidOrders = await context.Orders
+            .Include(o => o.Items)
+            .Where(o => o.Status == "Paid" && !o.IsDeleted)
+            .ToListAsync();
+
+        int created = 0;
+        foreach (Order order in paidOrders)
+        {
+            string orderRef = order.Id.ToString();
+            bool exists = await context.Transactions.AnyAsync(t => t.Reference == orderRef);
+            if (exists) { continue; }
+
+            string description = order.Items.Count == 1
+                ? $"Sale: {order.Items[0].ProductName}"
+                : $"Sale: {order.Items.Count} items";
+
+            context.Transactions.Add(new Transaction
+            {
+                Date = order.UpdatedAtUtc,
+                Description = description,
+                Amount = order.Total,
+                Category = "Sales",
+                Platform = "Website",
+                Reference = orderRef,
+            });
+            created++;
+        }
+
+        if (created > 0)
+        {
+            await context.SaveChangesAsync();
+        }
+
+        return Ok(new { backfilled = created, totalPaid = paidOrders.Count });
+    }
+
     [HttpPost("upload-receipt")]
     public async Task<ActionResult> UploadReceipt(IFormFile file)
     {

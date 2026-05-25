@@ -13,6 +13,9 @@
       }
       @if (activeTab() === 'finance' && financeSubTab() === 'transactions') {
         <button class="admin__add-btn" (click)="openFinanceForm()">+ Add Transaction</button>
+        <button class="admin__add-btn" (click)="backfillSales()" [disabled]="backfillingSales()">
+          {{ backfillingSales() ? 'Backfilling...' : 'Backfill Sales' }}
+        </button>
         <button class="admin__add-btn" (click)="loadFinance(); loadAccounts()">Refresh</button>
       }
       @if (activeTab() === 'finance' && financeSubTab() === 'bank') {
