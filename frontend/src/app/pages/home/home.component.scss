@@ -80,6 +80,65 @@
   border: 0;
 }
 
+.home__journal {
+  margin-top: 4rem;
+}
+
+.home__journal-card {
+  display: block;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 2rem 2.25rem;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+    border-color: var(--border-dark);
+  }
+}
+
+.home__journal-eyebrow {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+.home__journal-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  margin: 0 0 0.75rem;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.home__journal-excerpt {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 1rem;
+  max-width: 60ch;
+}
+
+.home__journal-cta {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
 .home__about {
   margin-top: 4rem;
   padding-top: 3rem;

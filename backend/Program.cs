@@ -113,6 +113,10 @@ builder.Services.AddHostedService<TranslationBackgroundService>();
 builder.Services.AddScoped<RankCheckerService>();
 builder.Services.AddHostedService<RankCheckBackgroundService>();
 
+// Sitemap static-route list, sourced from the frontend's deployed assets
+// so the backend can't advertise URLs the frontend hasn't shipped.
+builder.Services.AddSingleton<SitemapRoutesService>();
+
 // SEO health snapshots (catalog quality, sitemap counts, keyword positions)
 builder.Services.AddSingleton<SeoHealthService>();
 builder.Services.AddHostedService<SeoHealthBackgroundService>();

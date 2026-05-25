@@ -16,6 +16,20 @@
     </div>
   </section>
   <app-product-list />
+
+  @if (latestBlogPost(); as post) {
+    <section class="home__journal">
+      <a [routerLink]="['/blog', post.slug]" class="home__journal-card">
+        <span class="home__journal-eyebrow">From the Journal</span>
+        <h2 class="home__journal-title">{{ post.title }}</h2>
+        @if (post.excerpt) {
+          <p class="home__journal-excerpt">{{ post.excerpt }}</p>
+        }
+        <span class="home__journal-cta">Read more →</span>
+      </a>
+    </section>
+  }
+
   <section class="home__about">
     <h2 class="home__about-title">{{ cms.get('home.about.title', 'Why Eden Relics?') }}</h2>
     <div class="home__about-grid">

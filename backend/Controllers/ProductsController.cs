@@ -21,6 +21,7 @@ public class ProductsController : ControllerBase
     private readonly IRepository<Favourite> _favouriteRepository;
     private readonly IRepository<User> _userRepository;
     private readonly IRepository<ProductView> _viewRepository;
+    private readonly IRepository<Transaction> _transactionRepository;
     private readonly IWebHostEnvironment _env;
     private readonly ImageStorageService _storage;
     private readonly IEmailService _emailService;
@@ -35,6 +36,7 @@ public class ProductsController : ControllerBase
         IRepository<Favourite> favouriteRepository,
         IRepository<User> userRepository,
         IRepository<ProductView> viewRepository,
+        IRepository<Transaction> transactionRepository,
         IWebHostEnvironment env,
         ImageStorageService storage,
         IEmailService emailService,
@@ -47,6 +49,7 @@ public class ProductsController : ControllerBase
         _favouriteRepository = favouriteRepository;
         _userRepository = userRepository;
         _viewRepository = viewRepository;
+        _transactionRepository = transactionRepository;
         _env = env;
         _storage = storage;
         _emailService = emailService;
@@ -185,6 +188,7 @@ public class ProductsController : ControllerBase
             Description = dto.Description,
             Price = dto.Price,
             CostPrice = dto.CostPrice,
+            StockPurchaseDate = dto.StockPurchaseDate,
             Supplier = dto.Supplier,
             Era = dto.Era,
             Category = dto.Category,
@@ -212,6 +216,28 @@ public class ProductsController : ControllerBase
             IEnumerable<Product> refetched = await _repository.GetAllAsync();
             product.Sku = SkuGenerator.Next(refetched.Select(p => p.Sku));
             await _repository.AddAsync(product);
+        }
+
+        // Mirror the stock purchase into the finance ledger when we know the cost and date.
+        // Failure here must not block product creation — log and move on.
+        if (product.CostPrice > 0 && product.StockPurchaseDate.HasValue)
+        {
+            try
+            {
+                await _transactionRepository.AddAsync(new Transaction
+                {
+                    Date = product.StockPurchaseDate.Value,
+                    Description = $"Stock: {product.Name}",
+                    Amount = -product.CostPrice,
+                    Category = "Stock",
+                    Platform = product.Supplier,
+                    Reference = product.Id.ToString(),
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create stock-purchase transaction for product {ProductId}", product.Id);
+            }
         }
 
         TranslationBackgroundService.EnqueueProduct(product.Id);
@@ -264,6 +290,7 @@ public class ProductsController : ControllerBase
             product.PriceSetAtUtc = DateTime.UtcNow;
         }
         if (dto.CostPrice.HasValue) { product.CostPrice = dto.CostPrice.Value; }
+        if (dto.StockPurchaseDate.HasValue) { product.StockPurchaseDate = dto.StockPurchaseDate.Value; }
         if (dto.Supplier is not null) { product.Supplier = dto.Supplier; }
         if (dto.Era is not null) { product.Era = dto.Era; }
         if (dto.Category is not null) { product.Category = dto.Category; }
@@ -784,8 +811,8 @@ public class ProductsController : ControllerBase
                                 Analyse this clothing image and return a JSON object with these fields:
                                 - "name": a short, appealing product name (e.g. "Silk Slip Dress", "Power Shoulder Blazer")
                                 - "description": a rich product description highlighting era, fabric, details, and styling. Use the same HTML formatting as the examples below if provided.
-                                - "era": the decade it's from as a string like "1970s", "1980s", "1990s", "2000s", or "2020s"
-                                - "category": one of "70s", "80s", "90s", "y2k", or "modern" (matching the era)
+                                - "era": the decade it's from as a string like "1950s", "1960s", "1970s", "1980s", "1990s", or "2000s"
+                                - "category": one of "50s", "60s", "70s", "80s", "90s", or "y2k" (matching the era)
                                 - "size": your best guess at UK size as a string (e.g. "8", "10", "12", "14", "16"), or "10" if unclear
                                 - "condition": one of "mint", "excellent", "very good", "good", or "fair"
                                 - "suggestedPrice": a suggested retail price in GBP as a number (no currency symbol)
@@ -905,7 +932,7 @@ public class ProductsController : ControllerBase
     }
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
-        p.Id, p.Name, p.Slug, p.Sku, p.Description, p.Price, p.SalePrice, p.CostPrice, p.Supplier, p.Era,
+        p.Id, p.Name, p.Slug, p.Sku, p.Description, p.Price, p.SalePrice, p.CostPrice, p.StockPurchaseDate, p.Supplier, p.Era,
         p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.Status, p.ViewCount
     );
 

@@ -18,7 +18,7 @@ export class DesignersIndexComponent implements OnInit {
   readonly designers = DESIGNERS;
 
   readonly cards = computed(() => {
-    const products = this.productStore.products();
+    const products = this.productStore.liveProducts();
     return DESIGNERS.map((d) => ({
       profile: d,
       productCount: matchProductsToDesigner(products, d).length,

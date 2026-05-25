@@ -119,7 +119,7 @@ describe('ProductStore', () => {
     expect(cats).toContain('80s');
     expect(cats).toContain('90s');
     expect(cats).toContain('y2k');
-    expect(cats).toContain('modern');
-    expect(cats.length).toBe(7);
+    expect(cats).not.toContain('modern');
+    expect(cats.length).toBe(6);
   });
 });

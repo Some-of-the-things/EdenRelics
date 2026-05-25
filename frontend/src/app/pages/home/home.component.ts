@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ProductListComponent } from '../../components/product-list/product-list.component';
 import { HomeReviewsComponent } from '../../components/home-reviews/home-reviews.component';
 import { SeoService } from '../../services/seo.service';
@@ -11,9 +11,19 @@ import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { environment } from '../../../environments/environment';
 
+interface BlogPostSummary {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  featuredImageUrl: string | null;
+  author: string | null;
+  publishedAtUtc: string | null;
+}
+
 @Component({
   selector: 'app-home',
-  imports: [ProductListComponent, HomeReviewsComponent, FormsModule],
+  imports: [ProductListComponent, HomeReviewsComponent, FormsModule, RouterLink],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,10 +40,13 @@ export class HomeComponent implements OnInit {
 
   mailingEmail = '';
   readonly mailingSubscribed = signal(false);
+  readonly latestBlogPost = signal<BlogPostSummary | null>(null);
 
   constructor() {
     effect(() => {
-      const products = this.productStore.products();
+      // JSON-LD for the home page should reflect what customers actually see,
+      // not what admin sees — so use the live-only filter.
+      const products = this.productStore.liveProducts();
       this.emitJsonLd(products);
     });
   }
@@ -61,11 +74,19 @@ export class HomeComponent implements OnInit {
         this.productStore.setSearchQuery(q);
       }
     });
+    this.http.get<BlogPostSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
+      next: (posts) => {
+        if (posts.length > 0) {
+          this.latestBlogPost.set(posts[0]);
+        }
+      },
+      error: () => {},
+    });
     this.reviewsService.getSummary().subscribe({
       next: (s) => {
         if (s.count > 0) {
           this.reviewSummary = { count: s.count, overall: s.overall };
-          this.emitJsonLd(this.productStore.products());
+          this.emitJsonLd(this.productStore.liveProducts());
         }
       },
       error: () => {},

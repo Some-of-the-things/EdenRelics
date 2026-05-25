@@ -6,7 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
 import { Product, ProductStatus } from '../../models/product.model';
-import { filterAdminProducts, productStatusLabel, resolveProductStatus } from '../../utils/product-status';
+import { filterAdminProducts, productStatusLabel, resolveProductStatus, sortAdminProducts, ProductSort } from '../../utils/product-status';
 import { SeoService } from '../../services/seo.service';
 import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
@@ -425,8 +425,12 @@ export class AdminPageComponent implements OnInit {
   // Product list filters
   readonly productSearch = signal('');
   readonly productStatusFilter = signal<'all' | ProductStatus>('all');
+  readonly productSort = signal<ProductSort>('newest');
   readonly filteredProducts = computed(() =>
-    filterAdminProducts(this.store.products(), this.productSearch(), this.productStatusFilter())
+    sortAdminProducts(
+      filterAdminProducts(this.store.products(), this.productSearch(), this.productStatusFilter()),
+      this.productSort()
+    )
   );
 
   resolveStatus(product: Product): ProductStatus {
@@ -525,6 +529,17 @@ export class AdminPageComponent implements OnInit {
       fields: [
         { key: 'contact.title', label: 'Title', type: 'text', fallback: 'Get in Touch' },
         { key: 'contact.subtitle', label: 'Subtitle', type: 'text', fallback: 'Have a question or want to know more? Drop us a message.' },
+      ],
+    },
+    {
+      title: 'About Page',
+      fields: [
+        { key: 'page.about.meta.title', label: 'SEO Title (browser tab + search results)', type: 'text', fallback: 'About Eden Relics — Lovingly Handpicked Vintage' },
+        { key: 'page.about.meta.description', label: 'SEO Meta Description (search results snippet)', type: 'textarea', fallback: 'Eden Relics is a curated vintage shop in Norwich, UK, specialising in 1970s, 80s, and 90s dresses — personally sourced, photographed, and chosen for their quality and character.' },
+        { key: 'page.about.title', label: 'Page Title (H1)', type: 'text', fallback: 'Lovingly handpicked vintage' },
+        { key: 'page.about.content', label: 'Body Content (HTML)', type: 'html', fallback: '<p>Eden Relics is a curated vintage shop based in Norwich, UK, specialising in dresses from the 1970s, 80s, and 90s — the kind that were made to last, cut with intention, and worn by someone who loved them first.</p>\n<p>Every piece is personally sourced and chosen for its quality, character, and the way it moves. Wherever possible the dresses are modelled — by me or a friend — so you can see how they actually fall on a real body. For pieces that don\'t suit a modelled shot, I photograph them carefully on a mannequin so nothing is left to guesswork.</p>\n<p>I started Eden Relics because I believe in buying less and buying better. Fast fashion has a cost the price tag doesn\'t show — in waste, in craft, in the stories we throw away. Vintage is the alternative: beautiful things that already exist, waiting to be worn again.</p>\n<p>Every purchase here is an act of intention. I hope you find something that feels like it was always meant to be yours.</p>' },
+        { key: 'page.about.signature', label: 'Signature', type: 'text', fallback: 'Teodora, Eden Relics' },
+        { key: 'page.about.jsonld.description', label: 'Structured Data — Organisation Description (one sentence, used by Google for the business)', type: 'textarea', fallback: 'A curated vintage shop based in Norwich, UK, specialising in dresses from the 1970s, 80s, and 90s.' },
       ],
     },
     {
@@ -1568,6 +1583,7 @@ export class AdminPageComponent implements OnInit {
       price: product.price,
       salePrice: product.salePrice ?? null,
       costPrice: product.costPrice ?? 0,
+      stockPurchaseDate: product.stockPurchaseDate ?? null,
       supplier: product.supplier ?? '',
       era: product.era,
       category: product.category,
@@ -1678,6 +1694,7 @@ export class AdminPageComponent implements OnInit {
       price: 0,
       salePrice: null,
       costPrice: 0,
+      stockPurchaseDate: null,
       supplier: '',
       era: '',
       category: '70s',

@@ -28,6 +28,26 @@
       [description]="post.excerpt ?? ''"
       [image]="post.featuredImageUrl ?? ''"
     />
+
+    @if (olderPost() || newerPost()) {
+      <nav class="blog-post__neighbours" aria-label="Other posts">
+        @if (olderPost(); as older) {
+          <a [routerLink]="['/blog', older.slug]" class="blog-post__neighbour blog-post__neighbour--older">
+            <span class="blog-post__neighbour-label">← Older post</span>
+            <span class="blog-post__neighbour-title">{{ older.title }}</span>
+          </a>
+        } @else {
+          <span></span>
+        }
+        @if (newerPost(); as newer) {
+          <a [routerLink]="['/blog', newer.slug]" class="blog-post__neighbour blog-post__neighbour--newer">
+            <span class="blog-post__neighbour-label">Newer post →</span>
+            <span class="blog-post__neighbour-title">{{ newer.title }}</span>
+          </a>
+        }
+      </nav>
+    }
+
     <a routerLink="/blog" class="blog-post__back">Back to Blog</a>
   </article>
 } @else if (error()) {

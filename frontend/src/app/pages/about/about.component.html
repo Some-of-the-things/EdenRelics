@@ -1,0 +1,7 @@
+<article class="about">
+  <h1 class="about__title">{{ content.get('page.about.title', 'Lovingly handpicked vintage') }}</h1>
+
+  <div class="about__prose" [innerHTML]="content.get('page.about.content', defaultContent)"></div>
+
+  <p class="about__signature">{{ content.get('page.about.signature', 'Teodora, Eden Relics') }}</p>
+</article>

@@ -3,6 +3,7 @@ using System;
 using Eden_Relics_BE.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Eden_Relics_BE.Migrations
 {
     [DbContext(typeof(EdenRelicsDbContext))]
-    partial class EdenRelicsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260525151002_AddProductStockPurchaseDate")]
+    partial class AddProductStockPurchaseDate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -976,7 +979,7 @@ namespace Eden_Relics_BE.Migrations
                         {
                             Id = new Guid("a1b2c3d4-0009-0000-0000-000000000009"),
                             AdditionalImageUrls = "[]",
-                            Category = "y2k",
+                            Category = "modern",
                             Condition = "mint",
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -1000,7 +1003,7 @@ namespace Eden_Relics_BE.Migrations
                         {
                             Id = new Guid("a1b2c3d4-0010-0000-0000-000000000010"),
                             AdditionalImageUrls = "[]",
-                            Category = "y2k",
+                            Category = "modern",
                             Condition = "mint",
                             CostPrice = 0m,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),

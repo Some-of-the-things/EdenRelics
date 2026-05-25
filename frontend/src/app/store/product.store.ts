@@ -12,6 +12,7 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap } from 'rxjs';
 import { Product } from '../models/product.model';
 import { ProductService } from '../services/product.service';
+import { resolveProductStatus } from '../utils/product-status';
 
 interface ProductState {
   products: Product[];
@@ -35,8 +36,19 @@ export const ProductStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
   withComputed((store) => ({
+    /**
+     * Customer-visible products: status === 'live' only. Use this for any
+     * public-facing list / count. Admin clients receive the full catalogue
+     * from the API, so without this filter sold and draft items would leak
+     * into the home page list when an admin is logged in. The raw
+     * `products()` signal is still available for admin-context consumers
+     * (admin panel, product detail page for direct/favourite access).
+     */
+    liveProducts: computed(() =>
+      store.products().filter((p) => resolveProductStatus(p) === 'live'),
+    ),
     filteredProducts: computed(() => {
-      let products = store.products();
+      let products = store.products().filter((p) => resolveProductStatus(p) === 'live');
       const category = store.selectedCategory();
       const size = store.selectedSize();
       const query = store.searchQuery().toLowerCase();
@@ -65,7 +77,6 @@ export const ProductStore = signalStore(
         '80s',
         '90s',
         'y2k',
-        'modern',
       ];
       return cats;
     }),

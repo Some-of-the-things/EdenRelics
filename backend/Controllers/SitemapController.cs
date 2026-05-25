@@ -1,13 +1,16 @@
 using System.Text;
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
+using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Eden_Relics_BE.Controllers;
 
 [ApiController]
-public class SitemapController(EdenRelicsDbContext context) : ControllerBase
+public class SitemapController(
+    EdenRelicsDbContext context,
+    SitemapRoutesService staticRoutes) : ControllerBase
 {
     private const string BaseUrl = "https://edenrelics.co.uk";
 
@@ -25,40 +28,20 @@ public class SitemapController(EdenRelicsDbContext context) : ControllerBase
             .OrderByDescending(b => b.PublishedAtUtc)
             .ToListAsync();
 
+        // Static pages — sourced from the frontend's deployed sitemap-routes.json
+        // so the sitemap can never advertise URLs the frontend doesn't actually serve.
+        IReadOnlyList<SitemapRoute> staticPages = await staticRoutes.GetAsync();
+
         StringBuilder xml = new();
         xml.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         xml.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:image=\"http://www.google.com/schemas/sitemap-image/1.1\">");
 
-        // Static pages
-        string[][] staticPages =
-        [
-            ["/", "daily", "1.0"],
-            ["/contact", "monthly", "0.6"],
-            ["/blog", "weekly", "0.7"],
-            ["/designers", "weekly", "0.8"],
-            ["/designers/leslie-fay", "weekly", "0.7"],
-            ["/designers/carole-little", "weekly", "0.7"],
-            ["/designers/caroline-wells", "weekly", "0.7"],
-            ["/designers/laura-ashley", "weekly", "0.7"],
-            ["/designers/rockmount-ranch-wear", "weekly", "0.7"],
-            ["/designers/st-michael", "weekly", "0.7"],
-            ["/privacy-policy", "yearly", "0.3"],
-            ["/modern-slavery-policy", "yearly", "0.3"],
-            ["/supply-chain-policy", "yearly", "0.3"],
-            ["/returns-policy", "yearly", "0.3"],
-            ["/terms-conditions", "yearly", "0.3"],
-            ["/cookie-policy", "yearly", "0.3"],
-            ["/accessibility-report", "yearly", "0.3"],
-            ["/security", "yearly", "0.3"],
-            ["/compliance-report", "yearly", "0.3"],
-        ];
-
-        foreach (string[] page in staticPages)
+        foreach (SitemapRoute page in staticPages)
         {
             xml.AppendLine("  <url>");
-            xml.AppendLine($"    <loc>{BaseUrl}{page[0]}</loc>");
-            xml.AppendLine($"    <changefreq>{page[1]}</changefreq>");
-            xml.AppendLine($"    <priority>{page[2]}</priority>");
+            xml.AppendLine($"    <loc>{BaseUrl}{page.Path}</loc>");
+            xml.AppendLine($"    <changefreq>{page.Changefreq}</changefreq>");
+            xml.AppendLine($"    <priority>{page.Priority}</priority>");
             xml.AppendLine("  </url>");
         }
 

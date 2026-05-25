@@ -177,6 +177,10 @@
             </label>
           </div>
           <label class="admin__field">
+            <span>Stock Purchase Date <small>(creates a "Stock" finance transaction when set with a cost price)</small></span>
+            <input type="date" [(ngModel)]="form.stockPurchaseDate" name="stockPurchaseDate" />
+          </label>
+          <label class="admin__field">
             <span>Sale Price (0 to clear)</span>
             <input type="number" [(ngModel)]="form.salePrice" name="salePrice" step="0.01" min="0" />
           </label>
@@ -487,6 +491,27 @@
           <option value="live">Live</option>
           <option value="stock">Stock</option>
           <option value="sold">Sold</option>
+        </select>
+      </label>
+      <label class="admin__filter-label">
+        <span>Sort</span>
+        <select
+          [ngModel]="productSort()"
+          (ngModelChange)="productSort.set($event)"
+          name="productSort"
+        >
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="name">Name (A→Z)</option>
+          <option value="era">Era (oldest first)</option>
+          <option value="size">Size (smallest first)</option>
+          <option value="price-low">Price (low→high)</option>
+          <option value="price-high">Price (high→low)</option>
+          <option value="cost-low">Cost (low→high)</option>
+          <option value="cost-high">Cost (high→low)</option>
+          <option value="views">Most viewed</option>
+          <option value="stock-date-old">Stock date (oldest first)</option>
+          <option value="stock-date-new">Stock date (newest first)</option>
         </select>
       </label>
       <span class="admin__order-count">{{ filteredProducts().length }} of {{ store.products().length }}</span>

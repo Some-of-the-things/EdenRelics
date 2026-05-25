@@ -18,6 +18,16 @@ interface BlogPost {
   publishedAtUtc: string | null;
 }
 
+interface BlogPostSummary {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  featuredImageUrl: string | null;
+  author: string | null;
+  publishedAtUtc: string | null;
+}
+
 @Component({
   selector: 'app-blog-post',
   imports: [RouterLink, DatePipe, ShareButtonsComponent],
@@ -30,10 +40,23 @@ export class BlogPostComponent implements OnInit {
   private readonly seo = inject(SeoService);
   readonly post = signal<BlogPost | null>(null);
   readonly error = signal(false);
+  readonly olderPost = signal<BlogPostSummary | null>(null);
+  readonly newerPost = signal<BlogPostSummary | null>(null);
   readonly srcset = imageSrcset;
   readonly srcAt = imageSrcAt;
 
   ngOnInit(): void {
+    this.http.get<BlogPostSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
+      next: (posts) => {
+        // API returns posts newest-first by publishedAtUtc.
+        const idx = posts.findIndex((p) => p.slug === this.slug());
+        if (idx >= 0) {
+          this.newerPost.set(idx > 0 ? posts[idx - 1] : null);
+          this.olderPost.set(idx < posts.length - 1 ? posts[idx + 1] : null);
+        }
+      },
+      error: () => {},
+    });
     this.http.get<BlogPost>(`${environment.apiUrl}/api/blog/${this.slug()}`).subscribe({
       next: (post) => {
         this.post.set(post);
