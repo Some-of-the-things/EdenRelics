@@ -65,7 +65,6 @@ export const ProductStore = signalStore(
         '80s',
         '90s',
         'y2k',
-        'modern',
       ];
       return cats;
     }),

@@ -811,8 +811,8 @@ public class ProductsController : ControllerBase
                                 Analyse this clothing image and return a JSON object with these fields:
                                 - "name": a short, appealing product name (e.g. "Silk Slip Dress", "Power Shoulder Blazer")
                                 - "description": a rich product description highlighting era, fabric, details, and styling. Use the same HTML formatting as the examples below if provided.
-                                - "era": the decade it's from as a string like "1970s", "1980s", "1990s", "2000s", or "2020s"
-                                - "category": one of "70s", "80s", "90s", "y2k", or "modern" (matching the era)
+                                - "era": the decade it's from as a string like "1950s", "1960s", "1970s", "1980s", "1990s", or "2000s"
+                                - "category": one of "50s", "60s", "70s", "80s", "90s", or "y2k" (matching the era)
                                 - "size": your best guess at UK size as a string (e.g. "8", "10", "12", "14", "16"), or "10" if unclear
                                 - "condition": one of "mint", "excellent", "very good", "good", or "fair"
                                 - "suggestedPrice": a suggested retail price in GBP as a number (no currency symbol)
