@@ -44,7 +44,9 @@ export class HomeComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      const products = this.productStore.products();
+      // JSON-LD for the home page should reflect what customers actually see,
+      // not what admin sees — so use the live-only filter.
+      const products = this.productStore.liveProducts();
       this.emitJsonLd(products);
     });
   }
@@ -84,7 +86,7 @@ export class HomeComponent implements OnInit {
       next: (s) => {
         if (s.count > 0) {
           this.reviewSummary = { count: s.count, overall: s.overall };
-          this.emitJsonLd(this.productStore.products());
+          this.emitJsonLd(this.productStore.liveProducts());
         }
       },
       error: () => {},

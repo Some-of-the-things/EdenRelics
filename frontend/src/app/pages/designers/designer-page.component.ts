@@ -35,7 +35,7 @@ export class DesignerPageComponent {
     if (!d) {
       return [];
     }
-    return matchProductsToDesigner(this.productStore.products(), d);
+    return matchProductsToDesigner(this.productStore.liveProducts(), d);
   });
 
   private readonly seoApplied = signal('');
@@ -66,7 +66,7 @@ export class DesignerPageComponent {
       url: `/designers/${d.slug}`,
     });
 
-    const products = matchProductsToDesigner(this.productStore.products(), d);
+    const products = matchProductsToDesigner(this.productStore.liveProducts(), d);
     this.seo.setJsonLd({
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
