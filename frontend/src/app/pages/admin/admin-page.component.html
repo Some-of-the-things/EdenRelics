@@ -177,6 +177,10 @@
             </label>
           </div>
           <label class="admin__field">
+            <span>Stock Purchase Date <small>(creates a "Stock" finance transaction when set with a cost price)</small></span>
+            <input type="date" [(ngModel)]="form.stockPurchaseDate" name="stockPurchaseDate" />
+          </label>
+          <label class="admin__field">
             <span>Sale Price (0 to clear)</span>
             <input type="number" [(ngModel)]="form.salePrice" name="salePrice" step="0.01" min="0" />
           </label>

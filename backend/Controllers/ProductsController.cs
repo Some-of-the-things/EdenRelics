@@ -21,6 +21,7 @@ public class ProductsController : ControllerBase
     private readonly IRepository<Favourite> _favouriteRepository;
     private readonly IRepository<User> _userRepository;
     private readonly IRepository<ProductView> _viewRepository;
+    private readonly IRepository<Transaction> _transactionRepository;
     private readonly IWebHostEnvironment _env;
     private readonly ImageStorageService _storage;
     private readonly IEmailService _emailService;
@@ -35,6 +36,7 @@ public class ProductsController : ControllerBase
         IRepository<Favourite> favouriteRepository,
         IRepository<User> userRepository,
         IRepository<ProductView> viewRepository,
+        IRepository<Transaction> transactionRepository,
         IWebHostEnvironment env,
         ImageStorageService storage,
         IEmailService emailService,
@@ -47,6 +49,7 @@ public class ProductsController : ControllerBase
         _favouriteRepository = favouriteRepository;
         _userRepository = userRepository;
         _viewRepository = viewRepository;
+        _transactionRepository = transactionRepository;
         _env = env;
         _storage = storage;
         _emailService = emailService;
@@ -185,6 +188,7 @@ public class ProductsController : ControllerBase
             Description = dto.Description,
             Price = dto.Price,
             CostPrice = dto.CostPrice,
+            StockPurchaseDate = dto.StockPurchaseDate,
             Supplier = dto.Supplier,
             Era = dto.Era,
             Category = dto.Category,
@@ -212,6 +216,28 @@ public class ProductsController : ControllerBase
             IEnumerable<Product> refetched = await _repository.GetAllAsync();
             product.Sku = SkuGenerator.Next(refetched.Select(p => p.Sku));
             await _repository.AddAsync(product);
+        }
+
+        // Mirror the stock purchase into the finance ledger when we know the cost and date.
+        // Failure here must not block product creation — log and move on.
+        if (product.CostPrice > 0 && product.StockPurchaseDate.HasValue)
+        {
+            try
+            {
+                await _transactionRepository.AddAsync(new Transaction
+                {
+                    Date = product.StockPurchaseDate.Value,
+                    Description = $"Stock: {product.Name}",
+                    Amount = -product.CostPrice,
+                    Category = "Stock",
+                    Platform = product.Supplier,
+                    Reference = product.Id.ToString(),
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create stock-purchase transaction for product {ProductId}", product.Id);
+            }
         }
 
         TranslationBackgroundService.EnqueueProduct(product.Id);
@@ -264,6 +290,7 @@ public class ProductsController : ControllerBase
             product.PriceSetAtUtc = DateTime.UtcNow;
         }
         if (dto.CostPrice.HasValue) { product.CostPrice = dto.CostPrice.Value; }
+        if (dto.StockPurchaseDate.HasValue) { product.StockPurchaseDate = dto.StockPurchaseDate.Value; }
         if (dto.Supplier is not null) { product.Supplier = dto.Supplier; }
         if (dto.Era is not null) { product.Era = dto.Era; }
         if (dto.Category is not null) { product.Category = dto.Category; }
@@ -905,7 +932,7 @@ public class ProductsController : ControllerBase
     }
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
-        p.Id, p.Name, p.Slug, p.Sku, p.Description, p.Price, p.SalePrice, p.CostPrice, p.Supplier, p.Era,
+        p.Id, p.Name, p.Slug, p.Sku, p.Description, p.Price, p.SalePrice, p.CostPrice, p.StockPurchaseDate, p.Supplier, p.Era,
         p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.Status, p.ViewCount
     );
 

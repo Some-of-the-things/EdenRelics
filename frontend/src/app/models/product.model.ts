@@ -11,6 +11,7 @@ export interface Product {
   showReduction?: boolean;
   discountPercent?: number;
   costPrice?: number;
+  stockPurchaseDate?: string | null;
   supplier?: string;
   era: string;
   category: '50s' | '60s' | '70s' | '80s' | '90s' | 'y2k' | 'modern';
