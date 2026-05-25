@@ -24,13 +24,16 @@
   <link rel="preconnect" href="https://api.edenrelics.co.uk" crossorigin>
 
   <!-- Google Analytics 4 (deferred). Production host only — keeps E2E,
-       local dev, and any preview host out of the prod GA4 property. -->
+       local dev, and any preview host out of the prod GA4 property.
+       Also gates headless browsers (Playwright/Puppeteer/Cypress) which
+       run against the prod hostname in CI and were polluting GA4. -->
   <script>
     window.addEventListener('load', function() {
       if (location.hostname !== 'edenrelics.co.uk') return;
-      var gaId = 'G-6XVT8D7PBL';
+      if (/HeadlessChrome|Playwright|Puppeteer|Cypress/i.test(navigator.userAgent)) return;
+      let gaId = 'G-6XVT8D7PBL';
       if (gaId.indexOf('XXXX') !== -1) return;
-      var s = document.createElement('script');
+      let s = document.createElement('script');
       s.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId;
       s.async = true;
       document.head.appendChild(s);
@@ -46,6 +49,7 @@
   <script>
     window.addEventListener('load', function() {
       if (location.hostname !== 'edenrelics.co.uk') return;
+      if (/HeadlessChrome|Playwright|Puppeteer|Cypress/i.test(navigator.userAgent)) return;
       var clarityId = "vzdovv3qx8";
       if (clarityId.indexOf("XXXX") !== -1) return;
       (function(c,l,a,r,i,t,y){
