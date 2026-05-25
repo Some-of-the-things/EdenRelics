@@ -6,7 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
 import { Product, ProductStatus } from '../../models/product.model';
-import { filterAdminProducts, productStatusLabel, resolveProductStatus } from '../../utils/product-status';
+import { filterAdminProducts, productStatusLabel, resolveProductStatus, sortAdminProducts, ProductSort } from '../../utils/product-status';
 import { SeoService } from '../../services/seo.service';
 import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
@@ -425,8 +425,12 @@ export class AdminPageComponent implements OnInit {
   // Product list filters
   readonly productSearch = signal('');
   readonly productStatusFilter = signal<'all' | ProductStatus>('all');
+  readonly productSort = signal<ProductSort>('newest');
   readonly filteredProducts = computed(() =>
-    filterAdminProducts(this.store.products(), this.productSearch(), this.productStatusFilter())
+    sortAdminProducts(
+      filterAdminProducts(this.store.products(), this.productSearch(), this.productStatusFilter()),
+      this.productSort()
+    )
   );
 
   resolveStatus(product: Product): ProductStatus {
