@@ -1869,17 +1869,34 @@ export class AdminPageComponent implements OnInit {
     this.backfillingSales.set(true);
     this.financeError.set('');
     this.financeSuccess.set('');
-    this.http.post<{ backfilled: number; totalPaid: number }>(
+    this.http.post<{
+      backfilled: number;
+      totalPaid: number;
+      totalSoldProducts: number;
+      breakdown: { fromOrders: number; fromProducts: number };
+    }>(
       `${environment.apiUrl}/api/finance/backfill-sales`, {}
     ).subscribe({
       next: (res) => {
         this.backfillingSales.set(false);
-        this.financeSuccess.set(
-          res.backfilled === 0
-            ? `All ${res.totalPaid} paid orders are already in the ledger.`
-            : `Backfilled ${res.backfilled} sale${res.backfilled === 1 ? '' : 's'} from ${res.totalPaid} paid order${res.totalPaid === 1 ? '' : 's'}.`
-        );
-        if (res.backfilled > 0) {
+        const totalKnownSales = res.totalPaid + res.totalSoldProducts;
+        if (res.backfilled === 0) {
+          this.financeSuccess.set(
+            totalKnownSales === 0
+              ? 'No known sales to backfill — nothing in the Orders table and no products marked Sold.'
+              : `All ${totalKnownSales} known sale${totalKnownSales === 1 ? '' : 's'} are already in the ledger.`,
+          );
+        } else {
+          const parts: string[] = [];
+          if (res.breakdown.fromOrders > 0) {
+            parts.push(`${res.breakdown.fromOrders} from paid order${res.breakdown.fromOrders === 1 ? '' : 's'}`);
+          }
+          if (res.breakdown.fromProducts > 0) {
+            parts.push(`${res.breakdown.fromProducts} from products marked Sold`);
+          }
+          this.financeSuccess.set(
+            `Backfilled ${res.backfilled} sale${res.backfilled === 1 ? '' : 's'} (${parts.join(', ')}).`,
+          );
           this.loadFinance();
         }
       },

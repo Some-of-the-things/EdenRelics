@@ -98,18 +98,28 @@ public class FinanceController(
         return NoContent();
     }
 
-    /// One-shot backfill: ensures every paid order has a matching ledger transaction.
-    /// Idempotent — safe to re-run. Catches any orders that pre-date the webhook hook,
-    /// or where the webhook failed to record the ledger entry.
+    /// One-shot backfill: ensures every known sale has a matching ledger transaction.
+    /// Two paths, both idempotent:
+    ///   1. Paid orders (Stripe checkout) — Reference = order.Id
+    ///   2. Products marked Status=Sold but without a corresponding Order
+    ///      (admin manually flipped them sold, sold offsite, etc.) — Reference = product.Id
+    /// Safe to re-run.
     [HttpPost("backfill-sales")]
     public async Task<ActionResult<object>> BackfillSales()
     {
+        int createdFromOrders = 0;
+        int createdFromProducts = 0;
+
+        // Path 1: paid orders → ledger
         List<Order> paidOrders = await context.Orders
             .Include(o => o.Items)
             .Where(o => o.Status == "Paid" && !o.IsDeleted)
             .ToListAsync();
 
-        int created = 0;
+        HashSet<Guid> productIdsCoveredByOrders = paidOrders
+            .SelectMany(o => o.Items.Select(i => i.ProductId))
+            .ToHashSet();
+
         foreach (Order order in paidOrders)
         {
             string orderRef = order.Id.ToString();
@@ -129,15 +139,51 @@ public class FinanceController(
                 Platform = "Website",
                 Reference = orderRef,
             });
-            created++;
+            createdFromOrders++;
         }
 
-        if (created > 0)
+        // Path 2: products marked Sold without a matching Order → ledger
+        // Skip any product that's already covered by an order-based transaction
+        // (above) to avoid double-counting the same sale.
+        List<Product> soldProducts = await context.Products
+            .Where(p => p.Status == ProductStatus.Sold && !p.IsDeleted)
+            .ToListAsync();
+
+        foreach (Product product in soldProducts)
+        {
+            if (productIdsCoveredByOrders.Contains(product.Id)) { continue; }
+
+            string productRef = product.Id.ToString();
+            bool exists = await context.Transactions.AnyAsync(t => t.Reference == productRef);
+            if (exists) { continue; }
+
+            decimal amount = product.SalePrice ?? product.Price;
+
+            context.Transactions.Add(new Transaction
+            {
+                Date = product.UpdatedAtUtc,
+                Description = $"Sale: {product.Name}",
+                Amount = amount,
+                Category = "Sales",
+                Platform = "Website",
+                Reference = productRef,
+            });
+            createdFromProducts++;
+        }
+
+        int totalCreated = createdFromOrders + createdFromProducts;
+        if (totalCreated > 0)
         {
             await context.SaveChangesAsync();
         }
 
-        return Ok(new { backfilled = created, totalPaid = paidOrders.Count });
+        return Ok(new
+        {
+            backfilled = totalCreated,
+            totalPaid = paidOrders.Count,
+            totalSoldProducts = soldProducts.Count,
+            breakdown = new { fromOrders = createdFromOrders, fromProducts = createdFromProducts },
+        });
     }
 
     [HttpPost("upload-receipt")]
