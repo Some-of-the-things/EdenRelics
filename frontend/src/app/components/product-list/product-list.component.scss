@@ -138,6 +138,20 @@
   }
 }
 
+.product-card__image--hover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+
+  .product-card:hover & {
+    opacity: 1;
+  }
+}
+
 .product-card__era {
   position: absolute;
   bottom: 12px;
