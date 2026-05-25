@@ -1123,6 +1123,14 @@
             }
           </select>
         </label>
+        <label class="fin__filter">
+          <span>Source:</span>
+          <select [ngModel]="financeSourceFilter()" (ngModelChange)="financeSourceFilter.set($event)" name="sourceFilter">
+            <option value="all">All sources</option>
+            <option value="site">Site sales only</option>
+            <option value="external">External sales only</option>
+          </select>
+        </label>
         <button type="button" class="admin__logout-btn" (click)="exportFinanceCsv()">Export CSV</button>
       </div>
 

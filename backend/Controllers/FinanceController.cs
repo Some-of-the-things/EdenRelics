@@ -165,7 +165,8 @@ public class FinanceController(
                 Description = $"Sale: {product.Name}",
                 Amount = amount,
                 Category = "Sales",
-                Platform = "Website",
+                // Platform unknown for the product-flip path — admin can fill in afterwards.
+                Platform = null,
                 Reference = productRef,
             });
             createdFromProducts++;

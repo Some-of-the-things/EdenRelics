@@ -738,6 +738,7 @@ export class AdminPageComponent implements OnInit {
   readonly editingTransactionId = signal<string | null>(null);
   readonly financeReceiptUploading = signal(false);
   readonly financeMonthFilter = signal<string>('all');
+  readonly financeSourceFilter = signal<'all' | 'site' | 'external'>('all');
   readonly backfillingSales = signal(false);
   financeForm = { date: '', description: '', amount: 0, category: 'Stock', platform: '', reference: '', notes: '' };
   financeReceiptUrl: string | null = null;
@@ -1908,11 +1909,21 @@ export class AdminPageComponent implements OnInit {
   }
 
   get filteredFinanceTransactions(): FinanceTransaction[] {
-    const filter = this.financeMonthFilter();
-    if (filter === 'all') {
-      return this.financeTransactions();
+    const monthFilter = this.financeMonthFilter();
+    const sourceFilter = this.financeSourceFilter();
+    let result = this.financeTransactions();
+    if (monthFilter !== 'all') {
+      result = result.filter(t => t.date.startsWith(monthFilter));
     }
-    return this.financeTransactions().filter(t => t.date.startsWith(filter));
+    if (sourceFilter === 'site') {
+      result = result.filter(t => t.platform === 'Website');
+    } else if (sourceFilter === 'external') {
+      // External = a known non-Website platform (Etsy, Depop, Vinted, eBay, etc.).
+      // Transactions with no platform set are considered Unspecified and excluded
+      // from both Site and External filters so the buckets don't overlap.
+      result = result.filter(t => !!t.platform && t.platform !== 'Website');
+    }
+    return result;
   }
 
   get selectedMonthSummary(): FinanceSummary['byMonth'][0] | null {
