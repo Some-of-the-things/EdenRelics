@@ -414,21 +414,24 @@ public class ProductSkuAndStatusTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task SoldProduct_StillVisibleToPublic()
+    public async Task SoldProduct_HiddenFromPublic_VisibleToAdmin()
     {
         HttpClient client = _factory.CreateClient();
-        await RegisterAdmin(client, _factory, "admin-sold-visible@test.com");
+        await RegisterAdmin(client, _factory, "admin-sold-hidden@test.com");
 
         HttpResponseMessage create = await client.PostAsJsonAsync(
             "/api/products",
             NewProductPayload(status: "sold"));
         AdminProductResponse? p = await create.Content.ReadFromJsonAsync<AdminProductResponse>(JsonOptions);
 
+        // Public users get 404 for sold products (vintage = one-of-one, gone is gone)
         HttpClient anon = _factory.CreateClient();
-        PublicProductResponse? public_ = await anon.GetFromJsonAsync<PublicProductResponse>(
-            $"/api/products/{p!.Id}", JsonOptions);
-        Assert.NotNull(public_);
-        Assert.False(public_.InStock); // Sold renders as not in stock (existing UX preserved)
+        HttpResponseMessage publicResponse = await anon.GetAsync($"/api/products/{p!.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, publicResponse.StatusCode);
+
+        // Admin can still see sold products for bookkeeping/management
+        HttpResponseMessage adminResponse = await client.GetAsync($"/api/products/{p.Id}");
+        Assert.Equal(HttpStatusCode.OK, adminResponse.StatusCode);
     }
 
     [Fact]
