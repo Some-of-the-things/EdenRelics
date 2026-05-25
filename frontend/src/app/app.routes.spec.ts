@@ -1,7 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Route } from '@angular/router';
 import { routes } from './app.routes';
+import sitemapRoutes from '../../public/sitemap-routes.json';
 
 interface SitemapEntry {
   path: string;
@@ -10,12 +9,10 @@ interface SitemapEntry {
 }
 
 /**
- * Routes intentionally excluded from the sitemap. Adding a route here is a
- * deliberate decision — auth flows, transactional pages, and admin shouldn't
- * be in Google's index. Keep this list narrow.
+ * Routes intentionally excluded from the sitemap. Auth flows, transactional
+ * pages, and admin shouldn't be in Google's index. Keep this list narrow.
  */
 const SITEMAP_EXCLUDED_PATHS: ReadonlySet<string> = new Set([
-  // Auth / account flows — not for public indexing
   'cart',
   'login',
   'register',
@@ -24,11 +21,8 @@ const SITEMAP_EXCLUDED_PATHS: ReadonlySet<string> = new Set([
   'forgot-password',
   'reset-password',
   'verify-email',
-  // Admin
   'admin',
   'admin/login',
-  // Dynamic landing pages handled separately (orders, reviews are per-user)
-  // — they're matched by `:` filter below rather than listed here.
 ]);
 
 function isDynamic(path: string): boolean {
@@ -39,18 +33,10 @@ function isWildcard(path: string): boolean {
   return path === '**';
 }
 
-function loadSitemapPaths(): Set<string> {
-  const json = readFileSync(
-    join(process.cwd(), 'public', 'sitemap-routes.json'),
-    'utf-8',
-  );
-  const entries = JSON.parse(json) as SitemapEntry[];
-  return new Set(entries.map((e) => e.path));
-}
+const sitemapEntries = sitemapRoutes as SitemapEntry[];
+const sitemapPaths = new Set(sitemapEntries.map((e) => e.path));
 
 describe('sitemap-routes.json vs app.routes.ts', () => {
-  const sitemapPaths = loadSitemapPaths();
-
   it('every public, static route is either in the sitemap or explicitly excluded', () => {
     const violations: string[] = [];
     for (const route of routes as Route[]) {
@@ -59,7 +45,7 @@ describe('sitemap-routes.json vs app.routes.ts', () => {
       if (SITEMAP_EXCLUDED_PATHS.has(path)) { continue; }
 
       // app.routes.ts paths are without a leading slash; sitemap-routes.json uses leading slash.
-      const sitemapKey = `/${path}`.replace(/\/+$/, '') || '/';
+      const sitemapKey = path === '' ? '/' : `/${path}`;
       if (!sitemapPaths.has(sitemapKey)) {
         violations.push(
           `Route "${path || '/'}" exists in app.routes.ts but is not in public/sitemap-routes.json — add it to the JSON or to SITEMAP_EXCLUDED_PATHS in this spec.`,
@@ -79,11 +65,11 @@ describe('sitemap-routes.json vs app.routes.ts', () => {
       const path = route.path ?? '';
       if (isWildcard(path)) { continue; }
       if (isDynamic(path)) {
-        // e.g. "designers/:slug" → prefix "designers/"
+        // "designers/:slug" → "designers/", "product/:id" → "product/"
         const prefix = path.split('/:')[0] + '/';
         dynamicRoutePrefixes.push(prefix);
       } else {
-        const key = `/${path}`.replace(/\/+$/, '') || '/';
+        const key = path === '' ? '/' : `/${path}`;
         staticRoutePaths.add(key);
       }
     }
@@ -91,7 +77,6 @@ describe('sitemap-routes.json vs app.routes.ts', () => {
     const orphans: string[] = [];
     for (const sitemapPath of sitemapPaths) {
       if (staticRoutePaths.has(sitemapPath)) { continue; }
-      // Allow paths that match a dynamic route, e.g. /designers/leslie-fay → designers/:slug
       const matchesDynamic = dynamicRoutePrefixes.some((prefix) =>
         sitemapPath.startsWith(`/${prefix}`),
       );
