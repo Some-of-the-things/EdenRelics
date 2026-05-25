@@ -1,0 +1,22 @@
+[
+  { "path": "/", "changefreq": "daily", "priority": "1.0" },
+  { "path": "/about", "changefreq": "monthly", "priority": "0.7" },
+  { "path": "/contact", "changefreq": "monthly", "priority": "0.6" },
+  { "path": "/blog", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/designers", "changefreq": "weekly", "priority": "0.8" },
+  { "path": "/designers/leslie-fay", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/designers/carole-little", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/designers/caroline-wells", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/designers/laura-ashley", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/designers/rockmount-ranch-wear", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/designers/st-michael", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/privacy-policy", "changefreq": "yearly", "priority": "0.3" },
+  { "path": "/modern-slavery-policy", "changefreq": "yearly", "priority": "0.3" },
+  { "path": "/supply-chain-policy", "changefreq": "yearly", "priority": "0.3" },
+  { "path": "/returns-policy", "changefreq": "yearly", "priority": "0.3" },
+  { "path": "/terms-conditions", "changefreq": "yearly", "priority": "0.3" },
+  { "path": "/cookie-policy", "changefreq": "yearly", "priority": "0.3" },
+  { "path": "/accessibility-report", "changefreq": "yearly", "priority": "0.3" },
+  { "path": "/security", "changefreq": "yearly", "priority": "0.3" },
+  { "path": "/compliance-report", "changefreq": "yearly", "priority": "0.3" }
+]
