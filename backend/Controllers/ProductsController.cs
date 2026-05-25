@@ -255,6 +255,8 @@ public class ProductsController : ControllerBase
             return NotFound();
         }
 
+        ProductStatus previousStatus = product.Status;
+
         if (dto.Name is not null) { product.Name = dto.Name; }
         if (dto.Slug is not null)
         {
@@ -334,6 +336,40 @@ public class ProductsController : ControllerBase
         }
 
         await _repository.UpdateAsync(product);
+
+        // If an admin just flipped this product to Sold (and it wasn't already Sold),
+        // mirror that into the finance ledger as a Sales transaction. Same idempotency
+        // rule as the Stripe-webhook path and the BackfillSales endpoint —
+        // Reference = product.Id, skip if a matching transaction already exists.
+        // Failure must not break the product update — log and move on.
+        if (product.Status == ProductStatus.Sold && previousStatus != ProductStatus.Sold)
+        {
+            try
+            {
+                string productRef = product.Id.ToString();
+                IEnumerable<Transaction> existing = await _transactionRepository.FindAsync(t => t.Reference == productRef);
+                if (!existing.Any())
+                {
+                    await _transactionRepository.AddAsync(new Transaction
+                    {
+                        Date = DateTime.UtcNow,
+                        Description = $"Sale: {product.Name}",
+                        Amount = product.SalePrice ?? product.Price,
+                        Category = "Sales",
+                        // Platform left null on the manual-flip path — admin can fill in
+                        // (Website / Etsy / Depop / etc.) after the fact via the
+                        // transactions table edit. The Stripe-webhook path sets it to
+                        // "Website" because it actually knows.
+                        Platform = null,
+                        Reference = productRef,
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create sale transaction for product {ProductId} on manual Sold transition", product.Id);
+            }
+        }
 
         if (dto.Name is not null || dto.Description is not null)
         {

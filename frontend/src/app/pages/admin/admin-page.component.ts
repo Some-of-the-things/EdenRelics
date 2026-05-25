@@ -738,6 +738,7 @@ export class AdminPageComponent implements OnInit {
   readonly editingTransactionId = signal<string | null>(null);
   readonly financeReceiptUploading = signal(false);
   readonly financeMonthFilter = signal<string>('all');
+  readonly financeSourceFilter = signal<'all' | 'site' | 'external'>('all');
   readonly backfillingSales = signal(false);
   financeForm = { date: '', description: '', amount: 0, category: 'Stock', platform: '', reference: '', notes: '' };
   financeReceiptUrl: string | null = null;
@@ -1869,17 +1870,34 @@ export class AdminPageComponent implements OnInit {
     this.backfillingSales.set(true);
     this.financeError.set('');
     this.financeSuccess.set('');
-    this.http.post<{ backfilled: number; totalPaid: number }>(
+    this.http.post<{
+      backfilled: number;
+      totalPaid: number;
+      totalSoldProducts: number;
+      breakdown: { fromOrders: number; fromProducts: number };
+    }>(
       `${environment.apiUrl}/api/finance/backfill-sales`, {}
     ).subscribe({
       next: (res) => {
         this.backfillingSales.set(false);
-        this.financeSuccess.set(
-          res.backfilled === 0
-            ? `All ${res.totalPaid} paid orders are already in the ledger.`
-            : `Backfilled ${res.backfilled} sale${res.backfilled === 1 ? '' : 's'} from ${res.totalPaid} paid order${res.totalPaid === 1 ? '' : 's'}.`
-        );
-        if (res.backfilled > 0) {
+        const totalKnownSales = res.totalPaid + res.totalSoldProducts;
+        if (res.backfilled === 0) {
+          this.financeSuccess.set(
+            totalKnownSales === 0
+              ? 'No known sales to backfill — nothing in the Orders table and no products marked Sold.'
+              : `All ${totalKnownSales} known sale${totalKnownSales === 1 ? '' : 's'} are already in the ledger.`,
+          );
+        } else {
+          const parts: string[] = [];
+          if (res.breakdown.fromOrders > 0) {
+            parts.push(`${res.breakdown.fromOrders} from paid order${res.breakdown.fromOrders === 1 ? '' : 's'}`);
+          }
+          if (res.breakdown.fromProducts > 0) {
+            parts.push(`${res.breakdown.fromProducts} from products marked Sold`);
+          }
+          this.financeSuccess.set(
+            `Backfilled ${res.backfilled} sale${res.backfilled === 1 ? '' : 's'} (${parts.join(', ')}).`,
+          );
           this.loadFinance();
         }
       },
@@ -1891,11 +1909,21 @@ export class AdminPageComponent implements OnInit {
   }
 
   get filteredFinanceTransactions(): FinanceTransaction[] {
-    const filter = this.financeMonthFilter();
-    if (filter === 'all') {
-      return this.financeTransactions();
+    const monthFilter = this.financeMonthFilter();
+    const sourceFilter = this.financeSourceFilter();
+    let result = this.financeTransactions();
+    if (monthFilter !== 'all') {
+      result = result.filter(t => t.date.startsWith(monthFilter));
     }
-    return this.financeTransactions().filter(t => t.date.startsWith(filter));
+    if (sourceFilter === 'site') {
+      result = result.filter(t => t.platform === 'Website');
+    } else if (sourceFilter === 'external') {
+      // External = a known non-Website platform (Etsy, Depop, Vinted, eBay, etc.).
+      // Transactions with no platform set are considered Unspecified and excluded
+      // from both Site and External filters so the buckets don't overlap.
+      result = result.filter(t => !!t.platform && t.platform !== 'Website');
+    }
+    return result;
   }
 
   get selectedMonthSummary(): FinanceSummary['byMonth'][0] | null {
