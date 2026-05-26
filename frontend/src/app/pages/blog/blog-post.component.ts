@@ -1,4 +1,4 @@
-import { Component, inject, input, signal, OnInit } from '@angular/core';
+import { Component, inject, input, signal, OnInit, RESPONSE_INIT } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -38,6 +38,8 @@ export class BlogPostComponent implements OnInit {
   readonly slug = input.required<string>();
   private readonly http = inject(HttpClient);
   private readonly seo = inject(SeoService);
+  // Present only during server render; null in the browser.
+  private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
   readonly post = signal<BlogPost | null>(null);
   readonly error = signal(false);
   readonly olderPost = signal<BlogPostSummary | null>(null);
@@ -130,7 +132,15 @@ export class BlogPostComponent implements OnInit {
           ],
         });
       },
-      error: () => this.error.set(true),
+      error: () => {
+        this.error.set(true);
+        // Unknown blog slug — emit a real 404 for crawlers (server-only),
+        // rather than a 200 soft-404. No-op in the browser.
+        if (this.responseInit) {
+          this.responseInit.status = 404;
+        }
+        this.seo.updateTags({ title: 'Post not found', noIndex: true });
+      },
     });
   }
 }

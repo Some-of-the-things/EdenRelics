@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, PLATFORM_ID, RESPONSE_INIT } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, isPlatformBrowser } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { SeoService } from '../../services/seo.service';
 import { ProductStore } from '../../store/product.store';
@@ -19,6 +19,9 @@ export class DesignerPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly productStore = inject(ProductStore);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  // Present only during server render; null in the browser.
+  private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
 
   private readonly slug = toSignal(
     this.route.paramMap,
@@ -44,9 +47,14 @@ export class DesignerPageComponent {
     effect(() => {
       const d = this.designer();
       if (!d) {
-        // Unknown slug — bounce to /designers.
+        // Unknown slug. Real visitors get bounced to /designers; crawlers get
+        // a genuine 404 (a soft redirect would otherwise be indexed as 200).
         if (this.slug().get('slug')) {
-          this.router.navigate(['/designers']);
+          if (this.isBrowser) {
+            this.router.navigate(['/designers']);
+          } else {
+            this.markNotFound();
+          }
         }
         return;
       }
@@ -57,6 +65,14 @@ export class DesignerPageComponent {
       this.seoApplied.set(d.slug);
       this.applySeo(d);
     });
+  }
+
+  /** Server-only: emit a 404 status for an unknown designer slug. No-op in the browser. */
+  private markNotFound(): void {
+    if (this.responseInit) {
+      this.responseInit.status = 404;
+    }
+    this.seo.updateTags({ title: 'Designer not found', noIndex: true });
   }
 
   private applySeo(d: DesignerProfile): void {
