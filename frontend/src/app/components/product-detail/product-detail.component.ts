@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, signal, PLATFORM_ID } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, PLATFORM_ID, RESPONSE_INIT } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CurrencyPipe, isPlatformBrowser, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
@@ -61,6 +61,10 @@ export class ProductDetailComponent {
   private readonly favourites = inject(FavouritesService);
   private readonly router = inject(Router);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  // Present only during server render; null in the browser. Lets us return a
+  // real 404 status for product URLs that don't resolve to a product (e.g.
+  // legacy numeric IDs) instead of a soft-404 (200 + "Product not found").
+  private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
 
   readonly selectedImage = signal<string | null>(null);
   readonly showSalePrompt = signal(false);
@@ -130,6 +134,19 @@ export class ProductDetailComponent {
     return this.favourites.isFavourite(productId);
   }
 
+  /**
+   * Marks the current render as a 404. On the server this mutates the shared
+   * RESPONSE_INIT (read when @angular/ssr builds the final Response), so the
+   * crawler gets a genuine 404 rather than a 200 soft-404. In the browser
+   * responseInit is null, so we only tag the page noindex.
+   */
+  private markNotFound(): void {
+    if (this.responseInit) {
+      this.responseInit.status = 404;
+    }
+    this.seo.updateTags({ title: 'Product not found', noIndex: true });
+  }
+
   constructor() {
     if (this.auth.isAuthenticated()) {
       this.favourites.load();
@@ -144,7 +161,12 @@ export class ProductDetailComponent {
           ? this.productService.getById(param)
           : this.productService.getBySlug(param);
         fetch$.subscribe({
-          next: (p) => this.fetchedProduct.set(p ?? null),
+          next: (p) => {
+            this.fetchedProduct.set(p ?? null);
+            if (!p) {
+              this.markNotFound();
+            }
+          },
         });
       }
     });
