@@ -15,6 +15,48 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair-display-italic-latin.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* EB Garamond — editorial body serif (variable) */
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('/fonts/eb-garamond-latin.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('/fonts/eb-garamond-italic-latin.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Cinzel Decorative — ornamental small-caps labels */
+@font-face {
+  font-family: 'Cinzel Decorative';
+  src: url('/fonts/cinzel-decorative-400-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cinzel Decorative';
+  src: url('/fonts/cinzel-decorative-700-latin.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Fallback fonts sized to match web fonts — prevents layout shift on swap */
 @font-face {
   font-family: 'Work Sans Fallback';
@@ -41,26 +83,32 @@
 }
 
 :root {
-  --bg-primary: #FAF9F7;
-  --bg-secondary: #F3F1EE;
-  --bg-card: #FFFFFF;
-  --bg-dark: #2E2E2E;
+  /* Warm vintage palette — all text/background pairings verified WCAG 2.1 AA. */
+  --bg-primary: #F5F0E6;   /* cream */
+  --bg-secondary: #EAE0CC; /* parchment */
+  --bg-card: #FBF8F1;      /* warm off-white */
+  --bg-dark: #1C1510;      /* dark brown — hero / footer blocks */
 
-  --text-primary: #2E2E2E;
-  --text-secondary: #5A5858;
-  --text-muted: #706E6C;
-  --text-inverse: #FAF9F7;
+  --text-primary: #2E1A0E;   /* dark brown — 14.6:1 on cream */
+  --text-secondary: #5C3D1E; /* warm brown — 8.6:1 on cream */
+  --text-muted: #6E4A22;     /* muted brown — 6.9:1 on cream */
+  --text-inverse: #F5F0E6;   /* cream — 14.8:1 on dark */
 
-  --accent: #8F1D31;
-  --accent-hover: #6E1526;
-  --accent-warm: #C96226;
-  --accent-sale: #DB2828;
+  --accent: #9B4A1E;       /* rust — 5.45:1 on cream */
+  --accent-hover: #7A3A16; /* deep rust */
+  --accent-warm: #B8903C;  /* gold — borders / on-dark / large only */
+  --accent-sale: #A8321E;  /* brick red */
 
-  --border-color: #E1E1E1;
-  --border-dark: #D0CCC7;
+  /* Gold: decorative. On light backgrounds use --gold-text for any small text. */
+  --gold: #B8903C;       /* rules, borders, on-dark text (6.1:1 on dark) */
+  --gold-text: #8A6A24;  /* text-safe gold for large text/UI on light */
+
+  --border-color: #E0D5BF; /* warm parchment border */
+  --border-dark: #C9B79A;  /* deeper warm border */
 
   --font-display: 'Playfair Display', 'Playfair Display Fallback', Georgia, serif;
-  --font-body: 'Work Sans', 'Work Sans Fallback', system-ui, sans-serif;
+  --font-body: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  --font-decorative: 'Cinzel Decorative', 'Playfair Display', Georgia, serif;
 
   --transition: 250ms ease;
 }
@@ -81,8 +129,9 @@ body {
   margin: 0;
   font-family: var(--font-body);
   font-weight: 400;
-  line-height: 1.6;
-  letter-spacing: 0.02em;
+  font-size: 1.0625rem; /* 17px — serif body reads a touch larger */
+  line-height: 1.7;
+  letter-spacing: normal;
   background: var(--bg-primary);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;

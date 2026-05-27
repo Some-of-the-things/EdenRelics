@@ -2,7 +2,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
-  color: #575446;
+  color: var(--text-primary);
 
   &__header {
     text-align: center;
@@ -10,21 +10,21 @@
   }
 
   &__title {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: var(--font-display);
     font-style: italic;
     font-weight: 500;
     font-size: clamp(2rem, 4vw, 3rem);
     margin: 0 0 1rem;
-    color: #575446;
+    color: var(--text-primary);
   }
 
   &__lede {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 1.05rem;
     line-height: 1.65;
     max-width: 760px;
     margin: 0 auto;
-    color: #6b6858;
+    color: var(--text-secondary);
   }
 
   &__grid {
@@ -38,15 +38,16 @@
 }
 
 .designer-card {
-  background: #fffdf5;
-  border: 1px solid #e9e4d3;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-top: 3px solid var(--gold);
   border-radius: 6px;
   transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(87, 84, 70, 0.08);
-    border-color: #d6cfb7;
+    box-shadow: 0 6px 20px rgba(46, 26, 14, 0.1);
+    border-color: var(--border-dark);
   }
 
   &__link {
@@ -58,35 +59,35 @@
   }
 
   &__name {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: var(--font-display);
     font-style: italic;
     font-weight: 500;
     font-size: 1.6rem;
     margin: 0 0 0.25rem;
-    color: #575446;
+    color: var(--text-primary);
   }
 
   &__origin {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.85rem;
-    color: #8a8674;
+    color: var(--text-muted);
     margin: 0 0 0.85rem;
     letter-spacing: 0.02em;
   }
 
   &__intro {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.95rem;
     line-height: 1.55;
     margin: 0 0 1rem;
-    color: #5e5b4d;
+    color: var(--text-secondary);
   }
 
   &__count {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.9rem;
     margin: 0;
-    color: #8a6f3e;
+    color: var(--accent);
     font-weight: 500;
   }
 }
@@ -95,15 +96,15 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
-  color: #575446;
+  color: var(--text-primary);
 
   &__breadcrumb {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.9rem;
     margin: 0 0 1.5rem;
 
     a {
-      color: #8a8674;
+      color: var(--text-muted);
       text-decoration: none;
 
       &:hover {
@@ -112,40 +113,40 @@
     }
 
     span {
-      color: #b5b09a;
+      color: var(--border-dark);
       margin: 0 0.4rem;
     }
   }
 
   &__header {
     margin-bottom: 2rem;
-    border-bottom: 1px solid #e9e4d3;
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 1.5rem;
   }
 
   &__title {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: var(--font-display);
     font-style: italic;
     font-weight: 500;
     font-size: clamp(2rem, 4vw, 3rem);
     margin: 0 0 0.5rem;
-    color: #575446;
+    color: var(--text-primary);
   }
 
   &__origin {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.95rem;
-    color: #8a8674;
+    color: var(--text-muted);
     margin: 0 0 1.25rem;
     letter-spacing: 0.02em;
   }
 
   &__intro {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 1.1rem;
     line-height: 1.65;
     margin: 0;
-    color: #5e5b4d;
+    color: var(--text-secondary);
     max-width: 760px;
   }
 
@@ -154,27 +155,27 @@
   }
 
   &__section-title {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: var(--font-display);
     font-style: italic;
     font-weight: 500;
     font-size: 1.6rem;
     margin: 0 0 1rem;
-    color: #575446;
+    color: var(--text-primary);
   }
 
   &__prose p {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 1rem;
     line-height: 1.7;
     margin: 0 0 1rem;
-    color: #5e5b4d;
+    color: var(--text-secondary);
     max-width: 760px;
   }
 
   &__id-list {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     line-height: 1.65;
-    color: #5e5b4d;
+    color: var(--text-secondary);
     max-width: 760px;
     padding-left: 1.2rem;
 
@@ -188,18 +189,18 @@
   }
 
   &__empty {
-    font-family: 'Work Sans', system-ui, sans-serif;
-    color: #8a8674;
+    font-family: var(--font-body);
+    color: var(--text-muted);
     font-style: italic;
     padding: 2rem 0;
   }
 
   &__back {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     margin-top: 2rem;
 
     a {
-      color: #8a6f3e;
+      color: var(--accent);
       text-decoration: none;
       font-weight: 500;
 
@@ -220,15 +221,15 @@
 }
 
 .designer-product {
-  background: #fffdf5;
-  border: 1px solid #e9e4d3;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
   transition: transform 150ms ease, box-shadow 150ms ease;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(87, 84, 70, 0.08);
+    box-shadow: 0 6px 20px rgba(46, 26, 14, 0.1);
   }
 
   &__link {
@@ -240,7 +241,7 @@
   &__image-wrap {
     position: relative;
     aspect-ratio: 4 / 5;
-    background: #f3efe1;
+    background: var(--bg-secondary);
     overflow: hidden;
 
     img {
@@ -268,24 +269,24 @@
   }
 
   &__name {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.95rem;
     line-height: 1.35;
     margin: 0 0 0.4rem;
-    color: #575446;
+    color: var(--text-primary);
   }
 
   &__price {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 1rem;
-    color: #8a6f3e;
+    color: var(--accent);
     font-weight: 500;
   }
 
   &__sold {
-    font-family: 'Work Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.85rem;
-    color: #b5b09a;
+    color: var(--text-muted);
     margin-left: 0.4rem;
   }
 }

@@ -24,6 +24,14 @@ const BRANDING_KEY = makeStateKey<Branding>('branding');
 
 @Injectable({ providedIn: 'root' })
 export class BrandingService {
+  /** Fonts shipped self-hosted in styles.scss — keyed to their full fallback stack. */
+  private static readonly SELF_HOSTED: Record<string, string> = {
+    'Playfair Display': "'Playfair Display', 'Playfair Display Fallback', Georgia, serif",
+    'Work Sans': "'Work Sans', 'Work Sans Fallback', system-ui, sans-serif",
+    'EB Garamond': "'EB Garamond', Georgia, 'Times New Roman', serif",
+    'Cinzel Decorative': "'Cinzel Decorative', 'Playfair Display', Georgia, serif",
+  };
+
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly document = inject(DOCUMENT);
@@ -81,13 +89,16 @@ export class BrandingService {
     root.style.setProperty('--accent', b.accent);
     root.style.setProperty('--accent-hover', b.accentHover);
 
-    // Fonts
-    if (b.fontDisplay !== 'Playfair Display' || b.fontBody !== 'Work Sans') {
+    // Fonts — self-hosted fonts use their bundled fallback stack and skip the
+    // Google Fonts fetch; anything else is loaded on demand.
+    if (!BrandingService.SELF_HOSTED[b.fontDisplay]) {
       this.loadGoogleFont(b.fontDisplay);
+    }
+    if (!BrandingService.SELF_HOSTED[b.fontBody]) {
       this.loadGoogleFont(b.fontBody);
     }
-    root.style.setProperty('--font-display', `'${b.fontDisplay}', Georgia, serif`);
-    root.style.setProperty('--font-body', `'${b.fontBody}', system-ui, sans-serif`);
+    root.style.setProperty('--font-display', this.fontStack(b.fontDisplay, 'serif'));
+    root.style.setProperty('--font-body', this.fontStack(b.fontBody, 'sans-serif'));
 
     // Favicon — only meaningful in the browser; server-side <link> mutation is harmless but pointless.
     if (b.logoUrl && isPlatformBrowser(this.platformId)) {
@@ -98,8 +109,14 @@ export class BrandingService {
     }
   }
 
+  /** Full CSS font stack for a configured font — self-hosted fonts keep their bundled fallbacks. */
+  private fontStack(name: string, generic: 'serif' | 'sans-serif'): string {
+    return BrandingService.SELF_HOSTED[name]
+      ?? `'${name}', ${generic === 'serif' ? 'Georgia, serif' : 'system-ui, sans-serif'}`;
+  }
+
   private loadGoogleFont(fontName: string): void {
-    if (fontName === 'Playfair Display' || fontName === 'Work Sans') {
+    if (BrandingService.SELF_HOSTED[fontName]) {
       return;
     }
     const id = `gfont-${fontName.replace(/\s+/g, '-').toLowerCase()}`;

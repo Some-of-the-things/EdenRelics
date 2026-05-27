@@ -1,5 +1,7 @@
 <div class="blog">
-  <h1 class="blog__title">Blog</h1>
+  <h1 class="blog__title">The Eden Relics Journal</h1>
+  <p class="blog__intro">Notes on vintage fabric, fit and the dresses worth keeping.</p>
+  <div class="blog__masthead-rule" aria-hidden="true">— ✦ —</div>
   <div class="blog__grid">
     @for (post of posts(); track post.id) {
       <a [routerLink]="['/blog', post.slug]" class="blog__card">
