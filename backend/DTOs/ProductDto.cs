@@ -42,7 +42,8 @@ public record ProductAdminDto(
     List<string> VideoUrls,
     bool InStock,
     ProductStatus Status,
-    int ViewCount
+    int ViewCount,
+    DateTime CreatedAtUtc
 );
 
 public record CreateProductDto(

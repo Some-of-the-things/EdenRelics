@@ -972,7 +972,8 @@ public class ProductsController : ControllerBase
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
         p.Id, p.Name, p.Slug, p.Sku, p.Description, p.Price, p.SalePrice, p.CostPrice, p.StockPurchaseDate, p.Supplier, p.Era,
-        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.Status, p.ViewCount
+        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.Status, p.ViewCount,
+        p.CreatedAtUtc
     );
 
     private async Task NotifySaleFavouritesAsync(Product product)
