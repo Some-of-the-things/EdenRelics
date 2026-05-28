@@ -57,7 +57,7 @@
         </div>
       }
     }
-    @for (product of productStore.filteredProducts(); track product.id; let idx = $index) {
+    @for (product of productStore.pagedProducts(); track product.id; let idx = $index) {
       <article class="product-card">
         <div class="product-card__image-link">
           @if (product.imageUrl) {
@@ -124,6 +124,45 @@
       <p class="products__empty">No relics found matching your search.</p>
     }
   </div>
+
+  @if (productStore.totalPages() > 1) {
+    <nav class="products__pager" aria-label="Product pages">
+      <button
+        type="button"
+        class="products__pager-btn products__pager-btn--step"
+        (click)="goToPage(productStore.currentPage() - 1)"
+        [disabled]="productStore.currentPage() <= 1"
+        aria-label="Previous page"
+      >
+        ← Prev
+      </button>
+      <ul class="products__pager-list">
+        @for (n of pageNumbers(); track n) {
+          <li>
+            <button
+              type="button"
+              class="products__pager-btn products__pager-btn--num"
+              [class.active]="n === productStore.currentPage()"
+              [attr.aria-current]="n === productStore.currentPage() ? 'page' : null"
+              [attr.aria-label]="'Go to page ' + n"
+              (click)="goToPage(n)"
+            >
+              {{ n }}
+            </button>
+          </li>
+        }
+      </ul>
+      <button
+        type="button"
+        class="products__pager-btn products__pager-btn--step"
+        (click)="goToPage(productStore.currentPage() + 1)"
+        [disabled]="productStore.currentPage() >= productStore.totalPages()"
+        aria-label="Next page"
+      >
+        Next →
+      </button>
+    </nav>
+  }
 
   @if (showSalePrompt()) {
     <div class="products__overlay" (click)="confirmSaleNotification(false)"></div>
