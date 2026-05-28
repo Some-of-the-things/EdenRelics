@@ -120,8 +120,33 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Resolve Playwright version
+        id: pw-version
+        working-directory: frontend
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
       - name: Install Playwright browsers
-        run: npx playwright install chromium firefox webkit --with-deps
+        timeout-minutes: 10
+        run: |
+          for attempt in 1 2 3; do
+            echo "Playwright install attempt $attempt..."
+            if [ "${{ steps.pw-cache.outputs.cache-hit }}" = "true" ]; then
+              npx playwright install-deps chromium firefox webkit && exit 0
+            else
+              npx playwright install chromium firefox webkit --with-deps && exit 0
+            fi
+            echo "Attempt $attempt failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "Playwright install failed after 3 attempts"
+          exit 1
 
       - name: Start backend
         working-directory: backend
