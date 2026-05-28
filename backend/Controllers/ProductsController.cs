@@ -191,7 +191,7 @@ public class ProductsController : ControllerBase
             Description = dto.Description,
             Price = dto.Price,
             CostPrice = dto.CostPrice,
-            StockPurchaseDate = dto.StockPurchaseDate,
+            StockPurchaseDate = NormaliseToUtc(dto.StockPurchaseDate),
             Supplier = dto.Supplier,
             Era = dto.Era,
             Category = dto.Category,
@@ -295,7 +295,7 @@ public class ProductsController : ControllerBase
             product.PriceSetAtUtc = DateTime.UtcNow;
         }
         if (dto.CostPrice.HasValue) { product.CostPrice = dto.CostPrice.Value; }
-        if (dto.StockPurchaseDate.HasValue) { product.StockPurchaseDate = dto.StockPurchaseDate.Value; }
+        if (dto.StockPurchaseDate.HasValue) { product.StockPurchaseDate = NormaliseToUtc(dto.StockPurchaseDate); }
         if (dto.Supplier is not null) { product.Supplier = dto.Supplier; }
         if (dto.Era is not null) { product.Era = dto.Era; }
         if (dto.Category is not null) { product.Category = dto.Category; }
@@ -968,6 +968,27 @@ public class ProductsController : ControllerBase
 
         return new(p.Id, name, p.Slug, description, p.Price, p.SalePrice, showReduction, discountPercent, p.Era,
             p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.CreatedAtUtc);
+    }
+
+    // JSON date-only values ("2026-05-28") deserialise into DateTime with
+    // Kind=Unspecified, which Npgsql refuses to write to 'timestamp with time
+    // zone'. Treat the wall-clock date as UTC midnight so the row goes in.
+    private static DateTime? NormaliseToUtc(DateTime? value)
+    {
+        if (!value.HasValue)
+        {
+            return null;
+        }
+        DateTime v = value.Value;
+        if (v.Kind == DateTimeKind.Utc)
+        {
+            return v;
+        }
+        if (v.Kind == DateTimeKind.Local)
+        {
+            return v.ToUniversalTime();
+        }
+        return DateTime.SpecifyKind(v, DateTimeKind.Utc);
     }
 
     private static ProductAdminDto ToAdminDto(Product p) => new(
