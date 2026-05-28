@@ -1,0 +1,70 @@
+<div class="converter">
+  <div class="converter__header">
+    <h3 class="converter__title">Vintage size converter</h3>
+    <p class="converter__subtitle">
+      Enter the garment measurements from the listing — pit-to-pit, waist, and length.
+    </p>
+  </div>
+
+  <div class="converter__body">
+    <div class="converter__row">
+      <div class="converter__field">
+        <label for="conv-ptp">Pit-to-pit (inches)</label>
+        <input id="conv-ptp" #ptp type="number" inputmode="decimal"
+               placeholder="e.g. 17" min="10" max="30" step="0.5"
+               aria-describedby="conv-ptp-hint" />
+        <p id="conv-ptp-hint" class="converter__hint">Single flat measurement</p>
+      </div>
+
+      <div class="converter__field">
+        <label for="conv-waist">Waist (inches)</label>
+        <input id="conv-waist" #waist type="number" inputmode="decimal"
+               placeholder="e.g. 13" min="8" max="25" step="0.5"
+               aria-describedby="conv-waist-hint" />
+        <p id="conv-waist-hint" class="converter__hint">Single flat measurement</p>
+      </div>
+
+      <div class="converter__field">
+        <label for="conv-length">Length (inches)</label>
+        <input id="conv-length" #length type="number" inputmode="decimal"
+               placeholder="e.g. 42" min="20" max="65" step="0.5"
+               aria-describedby="conv-length-hint" />
+        <p id="conv-length-hint" class="converter__hint">Shoulder to hem</p>
+      </div>
+    </div>
+
+    <button type="button" class="converter__btn"
+            (click)="calculate(ptp.value, waist.value, length.value)">
+      Check the size →
+    </button>
+
+    @if (error(); as err) {
+      <p class="converter__error" role="alert">{{ err }}</p>
+    }
+
+    <div class="converter__result" aria-live="polite">
+      @if (result(); as r) {
+        <p class="converter__result-label">Approximate modern UK size</p>
+        <p class="converter__result-size">{{ r.ukSize }}</p>
+        <div class="converter__metrics">
+          <div class="converter__metric">
+            <span class="converter__metric-val">{{ r.chest.toFixed(1) }}"</span>
+            <span class="converter__metric-lbl">Full chest</span>
+          </div>
+          <div class="converter__metric">
+            <span class="converter__metric-val">{{ r.fullWaist.toFixed(1) }}"</span>
+            <span class="converter__metric-lbl">Full waist</span>
+          </div>
+          <div class="converter__metric">
+            <span class="converter__metric-val">{{ r.length }}"</span>
+            <span class="converter__metric-lbl">Length</span>
+          </div>
+        </div>
+        <p class="converter__note">{{ r.note }}</p>
+        @if (r.warning; as warn) {
+          <p class="converter__warning">{{ warn }}</p>
+        }
+      }
+    </div>
+  </div>
+</div>

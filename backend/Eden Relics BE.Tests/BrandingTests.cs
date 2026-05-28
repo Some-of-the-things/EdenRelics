@@ -19,10 +19,10 @@ public class BrandingTests : IClassFixture<ApiFactory>
         HttpClient client = _factory.CreateClient();
         BrandingResponse? branding = await client.GetFromJsonAsync<BrandingResponse>("/api/branding", JsonOptions);
         Assert.NotNull(branding);
-        Assert.Equal("#FAF9F7", branding.BgPrimary);
-        Assert.Equal("#8F1D31", branding.Accent);
+        Assert.Equal("#F5F0E6", branding.BgPrimary);
+        Assert.Equal("#9B4A1E", branding.Accent);
         Assert.Equal("Playfair Display", branding.FontDisplay);
-        Assert.Equal("Work Sans", branding.FontBody);
+        Assert.Equal("EB Garamond", branding.FontBody);
         Assert.Null(branding.LogoUrl);
     }
 

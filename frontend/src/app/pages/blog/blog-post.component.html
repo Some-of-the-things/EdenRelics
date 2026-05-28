@@ -1,27 +1,53 @@
 @if (post(); as post) {
   <article class="blog-post">
+    <header class="blog-post__masthead">
+      <a routerLink="/blog" class="blog-post__blogname">The Eden Relics Journal</a>
+      <div class="blog-post__masthead-rule" aria-hidden="true">✦</div>
+    </header>
+
+    <div class="blog-post__hero">
+      <h1 class="blog-post__title">{{ post.title }}</h1>
+      @if (post.excerpt) {
+        <p class="blog-post__standfirst">{{ post.excerpt }}</p>
+      }
+      <p class="blog-post__byline">
+        @if (post.author) {
+          <span>By {{ post.author }}</span>
+        }
+        @if (post.author && post.publishedAtUtc) {
+          <span class="blog-post__byline-sep" aria-hidden="true">|</span>
+        }
+        @if (post.publishedAtUtc) {
+          <span>{{ post.publishedAtUtc | date:'MMMM y' }}</span>
+        }
+      </p>
+    </div>
+
     @if (post.featuredImageUrl) {
       <img
         [src]="srcAt(post.featuredImageUrl, 1200)"
         [srcset]="srcset(post.featuredImageUrl)"
         sizes="(max-width: 800px) 100vw, 800px"
         [alt]="post.title"
-        class="blog-post__hero"
+        class="blog-post__hero-image"
         loading="eager"
         fetchpriority="high"
         decoding="async"
       />
     }
-    <h1 class="blog-post__title">{{ post.title }}</h1>
-    <div class="blog-post__meta">
-      @if (post.author) {
-        <span>By {{ post.author }}</span>
-      }
-      @if (post.publishedAtUtc) {
-        <span>{{ post.publishedAtUtc | date:'d MMMM y' }}</span>
-      }
-    </div>
-    <div class="blog-post__content" [innerHTML]="post.content"></div>
+
+    <div class="blog-post__ornament" aria-hidden="true">— ✦ —</div>
+
+    <div class="blog-post__content" [innerHTML]="contentBefore()"></div>
+    @if (hasConverter()) {
+      <app-vintage-size-converter />
+    }
+    @if (contentAfter()) {
+      <div class="blog-post__content blog-post__content--continued" [innerHTML]="contentAfter()"></div>
+    }
+
+    <div class="blog-post__ornament" aria-hidden="true">✦</div>
+
     <app-share-buttons
       [url]="'https://edenrelics.co.uk/blog/' + post.slug"
       [title]="post.title"
@@ -48,15 +74,15 @@
       </nav>
     }
 
-    <a routerLink="/blog" class="blog-post__back">Back to Blog</a>
+    <a routerLink="/blog" class="blog-post__back">Back to the Journal</a>
   </article>
 } @else if (error()) {
   <div class="blog-post blog-post--error">
     <p>Post not found.</p>
-    <a routerLink="/blog" class="blog-post__back">Back to Blog</a>
+    <a routerLink="/blog" class="blog-post__back">Back to the Journal</a>
   </div>
 } @else {
   <div class="blog-post">
-    <p class="blog-post__loading">Loading...</p>
+    <p class="blog-post__loading">Loading…</p>
   </div>
 }

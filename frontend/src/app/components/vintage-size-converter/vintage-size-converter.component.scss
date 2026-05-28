@@ -1,0 +1,195 @@
+/* Vintage size converter — editorial widget. Palette from styles.scss :root.
+   All text/background pairings verified WCAG 2.1 AA; gold used only on the
+   dark header, as borders, and as the button (dark text on gold = 6.1:1). */
+
+.converter {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dark);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 2.5rem 0;
+  font-family: var(--font-body);
+}
+
+.converter__header {
+  background: var(--bg-dark);
+  padding: 1.5rem 2rem;
+}
+
+.converter__title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-inverse);
+  margin: 0 0 0.25rem;
+}
+
+.converter__subtitle {
+  font-size: 0.95rem;
+  color: #C9B79A; /* warm tan — 9.2:1 on the dark header */
+  margin: 0;
+  line-height: 1.5;
+}
+
+.converter__body {
+  padding: 1.75rem 2rem 2rem;
+}
+
+.converter__row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.converter__field label {
+  display: block;
+  font-family: var(--font-decorative);
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.converter__field input {
+  width: 100%;
+  border: 1px solid var(--border-dark);
+  border-radius: 3px;
+  padding: 0.6rem 0.85rem;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+}
+
+.converter__hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0.35rem 0 0;
+}
+
+.converter__btn {
+  width: 100%;
+  background: var(--gold);
+  color: var(--bg-dark); /* dark on gold — 6.1:1 */
+  border: none;
+  border-radius: 3px;
+  padding: 0.85rem;
+  font-family: var(--font-decorative);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--transition);
+
+  &:hover {
+    background: #9C7A2E; /* deeper gold — dark text still 4.8:1 */
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.converter__error {
+  margin: 1rem 0 0;
+  color: var(--accent-sale);
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+.converter__result {
+  &:empty {
+    display: none;
+  }
+}
+
+.converter__result-label {
+  font-family: var(--font-decorative);
+  font-size: 0.66rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 1.5rem 0 0.4rem;
+}
+
+.converter__result-size {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin: 0 0 1rem;
+}
+
+.converter__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.converter__metric {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.converter__metric-val {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.converter__metric-lbl {
+  display: block;
+  font-family: var(--font-decorative);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.converter__note {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.converter__warning {
+  margin: 0.85rem 0 0;
+  padding: 0.7rem 1rem;
+  background: #FBEDE8;
+  border-left: 3px solid var(--accent-sale);
+  border-radius: 0 3px 3px 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: #7A2614; /* deep brick — 7.0:1 on the warning panel */
+}
+
+@media (max-width: 560px) {
+  .converter__row {
+    grid-template-columns: 1fr;
+  }
+
+  .converter__body,
+  .converter__header {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}

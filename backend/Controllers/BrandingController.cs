@@ -72,20 +72,23 @@ public class BrandingController(EdenRelicsDbContext context, IWebHostEnvironment
         return Ok(new { logoUrl, faviconUrl = (string?)null });
     }
 
+    // Defaults below define the canonical Eden Relics brand (warm vintage palette,
+    // WCAG 2.1 AA). They mirror the :root fallbacks in styles.scss. Used whenever
+    // no SiteBranding row exists, so the brand lives in code, not just the DB.
     private static BrandingDto ToDto(SiteBranding? b) => new(
         b?.LogoUrl,
-        b?.BgPrimary ?? "#FAF9F7",
-        b?.BgSecondary ?? "#F3F1EE",
-        b?.BgCard ?? "#FFFFFF",
-        b?.BgDark ?? "#2E2E2E",
-        b?.TextPrimary ?? "#2E2E2E",
-        b?.TextSecondary ?? "#5A5858",
-        b?.TextMuted ?? "#706E6C",
-        b?.TextInverse ?? "#FAF9F7",
-        b?.Accent ?? "#8F1D31",
-        b?.AccentHover ?? "#6E1526",
+        b?.BgPrimary ?? "#F5F0E6",
+        b?.BgSecondary ?? "#EAE0CC",
+        b?.BgCard ?? "#FBF8F1",
+        b?.BgDark ?? "#1C1510",
+        b?.TextPrimary ?? "#2E1A0E",
+        b?.TextSecondary ?? "#5C3D1E",
+        b?.TextMuted ?? "#6E4A22",
+        b?.TextInverse ?? "#F5F0E6",
+        b?.Accent ?? "#9B4A1E",
+        b?.AccentHover ?? "#7A3A16",
         b?.FontDisplay ?? "Playfair Display",
-        b?.FontBody ?? "Work Sans"
+        b?.FontBody ?? "EB Garamond"
     );
 }
 

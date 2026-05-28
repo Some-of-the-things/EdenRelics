@@ -609,10 +609,10 @@ export class AdminPageComponent implements OnInit {
 
   // Branding
   brandingForm: Branding = {
-    logoUrl: null, bgPrimary: '#FAF9F7', bgSecondary: '#F3F1EE', bgCard: '#FFFFFF',
-    bgDark: '#2E2E2E', textPrimary: '#2E2E2E', textSecondary: '#5A5858',
-    textMuted: '#706E6C', textInverse: '#FAF9F7', accent: '#8F1D31',
-    accentHover: '#6E1526', fontDisplay: 'Playfair Display', fontBody: 'Work Sans',
+    logoUrl: null, bgPrimary: '#F5F0E6', bgSecondary: '#EAE0CC', bgCard: '#FBF8F1',
+    bgDark: '#1C1510', textPrimary: '#2E1A0E', textSecondary: '#5C3D1E',
+    textMuted: '#6E4A22', textInverse: '#F5F0E6', accent: '#9B4A1E',
+    accentHover: '#7A3A16', fontDisplay: 'Playfair Display', fontBody: 'EB Garamond',
   };
   readonly brandingSaving = signal(false);
   readonly brandingSuccess = signal('');
@@ -684,10 +684,10 @@ export class AdminPageComponent implements OnInit {
   }
 
   readonly fontOptions = [
-    'Playfair Display', 'Work Sans', 'Inter', 'Lora', 'Merriweather',
-    'Montserrat', 'Open Sans', 'Poppins', 'Raleway', 'Roboto',
+    'Playfair Display', 'EB Garamond', 'Cinzel Decorative', 'Work Sans', 'Inter',
+    'Lora', 'Merriweather', 'Montserrat', 'Open Sans', 'Poppins', 'Raleway', 'Roboto',
     'Source Sans 3', 'Nunito', 'PT Serif', 'Crimson Text', 'Libre Baskerville',
-    'DM Sans', 'Outfit', 'Cormorant Garamond', 'Josefin Sans', 'EB Garamond',
+    'DM Sans', 'Outfit', 'Cormorant Garamond', 'Josefin Sans',
   ];
 
   // Blog

@@ -1,4 +1,4 @@
-import { Component, inject, input, signal, OnInit, RESPONSE_INIT } from '@angular/core';
+import { Component, computed, inject, input, signal, OnInit, RESPONSE_INIT } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -6,6 +6,7 @@ import { SeoService } from '../../services/seo.service';
 import { environment } from '../../../environments/environment';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { ShareButtonsComponent } from '../../components/share-buttons/share-buttons.component';
+import { VintageSizeConverterComponent } from '../../components/vintage-size-converter/vintage-size-converter.component';
 
 interface BlogPost {
   id: string;
@@ -30,11 +31,14 @@ interface BlogPostSummary {
 
 @Component({
   selector: 'app-blog-post',
-  imports: [RouterLink, DatePipe, ShareButtonsComponent],
+  imports: [RouterLink, DatePipe, ShareButtonsComponent, VintageSizeConverterComponent],
   templateUrl: './blog-post.component.html',
   styleUrl: './blog.component.scss',
 })
 export class BlogPostComponent implements OnInit {
+  /** Placeholder authors drop into post HTML to embed the size converter. */
+  private static readonly CONVERTER_TOKEN = '<!--SIZE_CONVERTER-->';
+
   readonly slug = input.required<string>();
   private readonly http = inject(HttpClient);
   private readonly seo = inject(SeoService);
@@ -46,6 +50,21 @@ export class BlogPostComponent implements OnInit {
   readonly newerPost = signal<BlogPostSummary | null>(null);
   readonly srcset = imageSrcset;
   readonly srcAt = imageSrcAt;
+
+  /** Splits post content around the size-converter placeholder, if present. */
+  readonly hasConverter = computed(
+    () => this.post()?.content.includes(BlogPostComponent.CONVERTER_TOKEN) ?? false,
+  );
+  readonly contentBefore = computed(() => {
+    const content = this.post()?.content ?? '';
+    const idx = content.indexOf(BlogPostComponent.CONVERTER_TOKEN);
+    return idx >= 0 ? content.slice(0, idx) : content;
+  });
+  readonly contentAfter = computed(() => {
+    const content = this.post()?.content ?? '';
+    const idx = content.indexOf(BlogPostComponent.CONVERTER_TOKEN);
+    return idx >= 0 ? content.slice(idx + BlogPostComponent.CONVERTER_TOKEN.length) : '';
+  });
 
   ngOnInit(): void {
     this.http.get<BlogPostSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
