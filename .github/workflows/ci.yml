@@ -144,6 +144,11 @@ jobs:
         run: npx playwright test
         env:
           CI: true
+          # The job container runs as root, but the Playwright image's $HOME
+          # (/github/home) is owned by pwuser. Firefox/WebKit refuse to launch
+          # as root unless $HOME is owned by the current user, so point it at
+          # root's own home. (Playwright's launch error recommends exactly this.)
+          HOME: /root
 
       - name: Upload Playwright report
         if: always()
