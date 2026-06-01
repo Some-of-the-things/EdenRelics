@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using Anthropic.SDK;
+using Anthropic.SDK.Common;
 using Anthropic.SDK.Constants;
 using Anthropic.SDK.Messaging;
 using Eden_Relics_BE.Data.Entities;
@@ -856,37 +859,69 @@ public class ProductsController : ControllerBase
                                 - "condition": one of "mint", "excellent", "very good", "good", or "fair"
                                 - "suggestedPrice": a suggested retail price in GBP as a number (no currency symbol)
                                 {styleExamples}
-                                Return ONLY valid JSON, no markdown fences, no explanation.
+                                Call the analyse_product tool with these fields. For "description", use the same HTML formatting as the examples above.
                                 """
                         }
                     ]
                 }
             };
 
+            // Force a tool call so the model returns a well-formed, schema-validated
+            // object. The description carries HTML, which broke the old hand-rolled
+            // JSON parsing (unescaped quotes/angle brackets); a tool input is escaped
+            // by the API, so it parses cleanly every time.
+            InputSchema schema = new()
+            {
+                Type = "object",
+                Properties = new Dictionary<string, Property>
+                {
+                    { "name", new Property { Type = "string", Description = "Short, appealing product name" } },
+                    { "description", new Property { Type = "string", Description = "Rich product description as HTML, matching the example listings' style" } },
+                    { "era", new Property { Type = "string", Description = "Decade, e.g. 1950s, 1960s, 1970s, 1980s, 1990s, 2000s" } },
+                    { "category", new Property { Type = "string", Enum = ["50s", "60s", "70s", "80s", "90s", "y2k"], Description = "Category matching the era" } },
+                    { "size", new Property { Type = "string", Description = "Best-guess UK size as a string, e.g. 10" } },
+                    { "condition", new Property { Type = "string", Enum = ["mint", "excellent", "very good", "good", "fair"], Description = "Condition grade" } },
+                    { "suggestedPrice", new Property { Type = "number", Description = "Suggested retail price in GBP, no currency symbol" } },
+                },
+                Required = ["name", "description", "era", "category", "size", "condition", "suggestedPrice"],
+            };
+
+            JsonSerializerOptions schemaOptions = new()
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                Converters = { new JsonStringEnumConverter() },
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            };
+
+            List<Anthropic.SDK.Common.Tool> tools =
+            [
+                new Function(
+                    "analyse_product",
+                    "Return the catalogue details for the analysed clothing item.",
+                    JsonNode.Parse(JsonSerializer.Serialize(schema, schemaOptions))),
+            ];
+
             MessageParameters parameters = new()
             {
                 Messages = messages,
-                MaxTokens = 512,
+                MaxTokens = 2048,
                 Model = AnthropicModels.Claude45Haiku,
                 Stream = false,
                 Temperature = 0.3m,
+                Tools = tools,
+                ToolChoice = new ToolChoice { Type = ToolChoiceType.Tool, Name = "analyse_product" },
             };
 
             MessageResponse result = await client.Messages.GetClaudeMessageAsync(parameters);
-            string responseText = result.Message.ToString().Trim();
 
-            // Extract JSON object from response regardless of surrounding text
-            int jsonStart = responseText.IndexOf('{');
-            int jsonEnd = responseText.LastIndexOf('}');
-            if (jsonStart < 0 || jsonEnd < 0 || jsonEnd <= jsonStart)
+            ToolUseContent? toolUse = result.Content.OfType<ToolUseContent>().FirstOrDefault();
+            if (toolUse?.Input is null)
             {
-                _logger.LogWarning("Analyse-image response contained no JSON: {Response}", responseText);
-                return BadRequest(new { error = "The image doesn't appear to be a clothing item. Please upload a photo of a garment." });
+                _logger.LogWarning("Analyse-image returned no tool use. StopReason: {StopReason}", result.StopReason);
+                return BadRequest(new { error = "Couldn't read the garment details from the image. Please try again or enter the details manually." });
             }
-            string json = responseText[jsonStart..(jsonEnd + 1)];
 
-            JsonDocument parsed = JsonDocument.Parse(json);
-            return Ok(parsed.RootElement);
+            return Ok(toolUse.Input);
         }
         catch (Exception ex)
         {
