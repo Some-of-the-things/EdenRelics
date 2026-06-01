@@ -209,12 +209,14 @@ public class OrdersController : ControllerBase
                 {
                     Order? order = await _context.Orders
                         .Include(o => o.Items)
+                        .Include(o => o.User)
                         .FirstOrDefaultAsync(o => o.Id == orderId);
                     if (order is not null)
                     {
                         order.Status = "Paid";
 
                         // Mark sold products and flag marketplace listings for removal
+                        List<Product> soldProducts = [];
                         foreach (OrderItem item in order.Items)
                         {
                             Product? product = await _context.Products
@@ -227,6 +229,7 @@ public class OrdersController : ControllerBase
                                 {
                                     listing.Status = listing.Platform == "Website" ? "Sold" : "PendingRemoval";
                                 }
+                                soldProducts.Add(product);
                             }
                         }
 
@@ -234,7 +237,8 @@ public class OrdersController : ControllerBase
                         // so Stripe webhook retries don't create duplicates.
                         string orderRef = order.Id.ToString();
                         bool alreadyLogged = await _context.Transactions.AnyAsync(t => t.Reference == orderRef);
-                        if (!alreadyLogged)
+                        bool isNewSale = !alreadyLogged;
+                        if (isNewSale)
                         {
                             string description = order.Items.Count == 1
                                 ? $"Sale: {order.Items[0].ProductName}"
@@ -248,9 +252,36 @@ public class OrdersController : ControllerBase
                                 Platform = "Website",
                                 Reference = orderRef,
                             });
+
+                            // Record cost of goods sold: each dress contributes an expense
+                            // equal to its cost price, keyed by product so it stays idempotent
+                            // (stock is one-of-one, so a dress sells exactly once).
+                            foreach (Product soldProduct in soldProducts)
+                            {
+                                if (soldProduct.CostPrice <= 0) { continue; }
+                                string cogsRef = $"cogs:{soldProduct.Id}";
+                                if (await _context.Transactions.AnyAsync(t => t.Reference == cogsRef)) { continue; }
+                                _context.Transactions.Add(new Transaction
+                                {
+                                    Date = DateTime.UtcNow,
+                                    Description = $"Cost of goods: {soldProduct.Name}",
+                                    Amount = -soldProduct.CostPrice,
+                                    Category = "Stock",
+                                    Reference = cogsRef,
+                                });
+                            }
                         }
 
                         await _context.SaveChangesAsync();
+
+                        // Notify the owner once, only on the first time we process this
+                        // order's payment. Stripe retries the webhook, and the ledger
+                        // Reference acts as the idempotency marker, so guarding on
+                        // isNewSale ensures exactly one notification per sale.
+                        if (isNewSale)
+                        {
+                            await _emailService.SendOwnerSaleNotificationAsync(order);
+                        }
                     }
                 }
             }

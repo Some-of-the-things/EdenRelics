@@ -56,12 +56,18 @@ export class ProductListComponent {
       replaceUrl: true,
     });
     if (isPlatformBrowser(this.platformId)) {
-      const grid = document.querySelector('.products__grid');
-      if (grid) {
-        grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      // Defer until the new page's items have rendered. Paging is client-side,
+      // so setPage changes the layout on the next tick; scrolling synchronously
+      // would target the old (taller) layout and the browser's scroll anchoring
+      // then leaves the viewport at the bottom once the shorter page paints.
+      setTimeout(() => {
+        const grid = document.querySelector('.products__grid');
+        if (grid) {
+          grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
     }
   }
 

@@ -1874,7 +1874,7 @@ export class AdminPageComponent implements OnInit {
       backfilled: number;
       totalPaid: number;
       totalSoldProducts: number;
-      breakdown: { fromOrders: number; fromProducts: number };
+      breakdown: { fromOrders: number; fromProducts: number; cogs: number };
     }>(
       `${environment.apiUrl}/api/finance/backfill-sales`, {}
     ).subscribe({
@@ -1885,18 +1885,21 @@ export class AdminPageComponent implements OnInit {
           this.financeSuccess.set(
             totalKnownSales === 0
               ? 'No known sales to backfill — nothing in the Orders table and no products marked Sold.'
-              : `All ${totalKnownSales} known sale${totalKnownSales === 1 ? '' : 's'} are already in the ledger.`,
+              : `Everything is already in the ledger — ${totalKnownSales} known sale${totalKnownSales === 1 ? '' : 's'} and their cost-of-goods expenses.`,
           );
         } else {
           const parts: string[] = [];
           if (res.breakdown.fromOrders > 0) {
-            parts.push(`${res.breakdown.fromOrders} from paid order${res.breakdown.fromOrders === 1 ? '' : 's'}`);
+            parts.push(`${res.breakdown.fromOrders} sale${res.breakdown.fromOrders === 1 ? '' : 's'} from paid orders`);
           }
           if (res.breakdown.fromProducts > 0) {
-            parts.push(`${res.breakdown.fromProducts} from products marked Sold`);
+            parts.push(`${res.breakdown.fromProducts} sale${res.breakdown.fromProducts === 1 ? '' : 's'} from products marked Sold`);
+          }
+          if (res.breakdown.cogs > 0) {
+            parts.push(`${res.breakdown.cogs} cost-of-goods expense${res.breakdown.cogs === 1 ? '' : 's'}`);
           }
           this.financeSuccess.set(
-            `Backfilled ${res.backfilled} sale${res.backfilled === 1 ? '' : 's'} (${parts.join(', ')}).`,
+            `Backfilled ${res.backfilled} ledger entr${res.backfilled === 1 ? 'y' : 'ies'} (${parts.join(', ')}).`,
           );
           this.loadFinance();
         }
