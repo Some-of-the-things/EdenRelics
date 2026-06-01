@@ -216,6 +216,7 @@ public class OrdersController : ControllerBase
                         order.Status = "Paid";
 
                         // Mark sold products and flag marketplace listings for removal
+                        List<Product> soldProducts = [];
                         foreach (OrderItem item in order.Items)
                         {
                             Product? product = await _context.Products
@@ -228,6 +229,7 @@ public class OrdersController : ControllerBase
                                 {
                                     listing.Status = listing.Platform == "Website" ? "Sold" : "PendingRemoval";
                                 }
+                                soldProducts.Add(product);
                             }
                         }
 
@@ -250,6 +252,24 @@ public class OrdersController : ControllerBase
                                 Platform = "Website",
                                 Reference = orderRef,
                             });
+
+                            // Record cost of goods sold: each dress contributes an expense
+                            // equal to its cost price, keyed by product so it stays idempotent
+                            // (stock is one-of-one, so a dress sells exactly once).
+                            foreach (Product soldProduct in soldProducts)
+                            {
+                                if (soldProduct.CostPrice <= 0) { continue; }
+                                string cogsRef = $"cogs:{soldProduct.Id}";
+                                if (await _context.Transactions.AnyAsync(t => t.Reference == cogsRef)) { continue; }
+                                _context.Transactions.Add(new Transaction
+                                {
+                                    Date = DateTime.UtcNow,
+                                    Description = $"Cost of goods: {soldProduct.Name}",
+                                    Amount = -soldProduct.CostPrice,
+                                    Category = "Stock",
+                                    Reference = cogsRef,
+                                });
+                            }
                         }
 
                         await _context.SaveChangesAsync();

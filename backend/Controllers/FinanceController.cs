@@ -109,6 +109,7 @@ public class FinanceController(
     {
         int createdFromOrders = 0;
         int createdFromProducts = 0;
+        int createdCogs = 0;
 
         // Path 1: paid orders → ledger
         List<Order> paidOrders = await context.Orders
@@ -172,7 +173,30 @@ public class FinanceController(
             createdFromProducts++;
         }
 
-        int totalCreated = createdFromOrders + createdFromProducts;
+        // Path 3: cost of goods sold → ledger. Every sold dress contributes an
+        // expense equal to its cost price, keyed by product so it's idempotent and
+        // independent of which income path recorded the sale. Dated at the sale
+        // (UpdatedAtUtc) so income and COGS land in the same month for profit calc.
+        foreach (Product product in soldProducts)
+        {
+            if (product.CostPrice <= 0) { continue; }
+
+            string cogsRef = $"cogs:{product.Id}";
+            bool exists = await context.Transactions.AnyAsync(t => t.Reference == cogsRef);
+            if (exists) { continue; }
+
+            context.Transactions.Add(new Transaction
+            {
+                Date = product.UpdatedAtUtc,
+                Description = $"Cost of goods: {product.Name}",
+                Amount = -product.CostPrice,
+                Category = "Stock",
+                Reference = cogsRef,
+            });
+            createdCogs++;
+        }
+
+        int totalCreated = createdFromOrders + createdFromProducts + createdCogs;
         if (totalCreated > 0)
         {
             await context.SaveChangesAsync();
@@ -183,7 +207,7 @@ public class FinanceController(
             backfilled = totalCreated,
             totalPaid = paidOrders.Count,
             totalSoldProducts = soldProducts.Count,
-            breakdown = new { fromOrders = createdFromOrders, fromProducts = createdFromProducts },
+            breakdown = new { fromOrders = createdFromOrders, fromProducts = createdFromProducts, cogs = createdCogs },
         });
     }
 
