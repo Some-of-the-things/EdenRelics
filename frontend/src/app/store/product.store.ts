@@ -19,6 +19,8 @@ interface ProductState {
   selectedCategory: Product['category'] | 'all';
   selectedSize: Product['size'] | 'all';
   searchQuery: string;
+  currentPage: number;
+  pageSize: number;
   isLoading: boolean;
   error: string;
 }
@@ -28,6 +30,8 @@ const initialState: ProductState = {
   selectedCategory: 'all',
   selectedSize: 'all',
   searchQuery: '',
+  currentPage: 1,
+  pageSize: 12,
   isLoading: false,
   error: '',
 };
@@ -96,6 +100,19 @@ export const ProductStore = signalStore(
       return sizes;
     }),
   })),
+  withComputed((store) => ({
+    totalPages: computed(() =>
+      Math.max(1, Math.ceil(store.filteredProducts().length / store.pageSize())),
+    ),
+    pagedProducts: computed(() => {
+      const filtered = store.filteredProducts();
+      const size = store.pageSize();
+      const total = Math.max(1, Math.ceil(filtered.length / size));
+      const page = Math.min(Math.max(1, store.currentPage()), total);
+      const start = (page - 1) * size;
+      return filtered.slice(start, start + size);
+    }),
+  })),
   withMethods((store, productService = inject(ProductService)) => ({
     loadProducts: rxMethod<void>(
       pipe(
@@ -108,13 +125,16 @@ export const ProductStore = signalStore(
       )
     ),
     setCategory(category: Product['category'] | 'all'): void {
-      patchState(store, { selectedCategory: category });
+      patchState(store, { selectedCategory: category, currentPage: 1 });
     },
     setSize(size: Product['size'] | 'all'): void {
-      patchState(store, { selectedSize: size });
+      patchState(store, { selectedSize: size, currentPage: 1 });
     },
     setSearchQuery(query: string): void {
-      patchState(store, { searchQuery: query });
+      patchState(store, { searchQuery: query, currentPage: 1 });
+    },
+    setPage(page: number): void {
+      patchState(store, { currentPage: Math.max(1, Math.floor(page)) });
     },
     addProduct(product: Omit<Product, 'id'>): void {
       patchState(store, { error: '' });

@@ -26,6 +26,18 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         return await _dbSet.ToListAsync();
     }
 
+    public async Task<IEnumerable<T>> GetAllAsync(bool includeDeleted)
+    {
+        // Needed when collision-checking against partial unique indexes that
+        // ignore IsDeleted (e.g. Products.Sku, Products.Slug) — soft-deleted
+        // rows still occupy index slots and would otherwise be missed.
+        if (!includeDeleted)
+        {
+            return await _dbSet.ToListAsync();
+        }
+        return await _dbSet.IgnoreQueryFilters().ToListAsync();
+    }
+
     public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
     {
         return await _dbSet.Where(predicate).ToListAsync();

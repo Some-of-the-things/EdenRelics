@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, PLATFORM_ID, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
 import { Product } from '../../models/product.model';
@@ -24,15 +25,43 @@ export class ProductListComponent {
   private readonly favourites = inject(FavouritesService);
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly platformId = inject(PLATFORM_ID);
 
   readonly showSalePrompt = signal(false);
   readonly cartInterestCounts = signal<Record<string, number>>({});
+  readonly pageNumbers = computed(() => {
+    const total = this.productStore.totalPages();
+    return Array.from({ length: total }, (_, i) => i + 1);
+  });
   private pendingFavouriteId: string | null = null;
   private sessionId = this.getSessionId();
 
   constructor() {
     if (this.auth.isAuthenticated()) {
       this.favourites.load();
+    }
+  }
+
+  goToPage(page: number): void {
+    const target = Math.min(Math.max(1, page), this.productStore.totalPages());
+    if (target === this.productStore.currentPage()) {
+      return;
+    }
+    this.productStore.setPage(target);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: target > 1 ? target : null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    if (isPlatformBrowser(this.platformId)) {
+      const grid = document.querySelector('.products__grid');
+      if (grid) {
+        grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   }
 

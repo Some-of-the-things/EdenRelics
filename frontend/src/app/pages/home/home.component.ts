@@ -73,6 +73,9 @@ export class HomeComponent implements OnInit {
       if (q !== null) {
         this.productStore.setSearchQuery(q);
       }
+      const pageParam = params.get('page');
+      const page = pageParam ? parseInt(pageParam, 10) : 1;
+      this.productStore.setPage(Number.isFinite(page) && page > 0 ? page : 1);
     });
     this.http.get<BlogPostSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
       next: (posts) => {
