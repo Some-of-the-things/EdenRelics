@@ -209,6 +209,7 @@ public class OrdersController : ControllerBase
                 {
                     Order? order = await _context.Orders
                         .Include(o => o.Items)
+                        .Include(o => o.User)
                         .FirstOrDefaultAsync(o => o.Id == orderId);
                     if (order is not null)
                     {
@@ -234,7 +235,8 @@ public class OrdersController : ControllerBase
                         // so Stripe webhook retries don't create duplicates.
                         string orderRef = order.Id.ToString();
                         bool alreadyLogged = await _context.Transactions.AnyAsync(t => t.Reference == orderRef);
-                        if (!alreadyLogged)
+                        bool isNewSale = !alreadyLogged;
+                        if (isNewSale)
                         {
                             string description = order.Items.Count == 1
                                 ? $"Sale: {order.Items[0].ProductName}"
@@ -251,6 +253,15 @@ public class OrdersController : ControllerBase
                         }
 
                         await _context.SaveChangesAsync();
+
+                        // Notify the owner once, only on the first time we process this
+                        // order's payment. Stripe retries the webhook, and the ledger
+                        // Reference acts as the idempotency marker, so guarding on
+                        // isNewSale ensures exactly one notification per sale.
+                        if (isNewSale)
+                        {
+                            await _emailService.SendOwnerSaleNotificationAsync(order);
+                        }
                     }
                 }
             }

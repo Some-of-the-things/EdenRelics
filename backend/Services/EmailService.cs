@@ -1,4 +1,5 @@
 using System.Net;
+using Eden_Relics_BE.Data.Entities;
 using Resend;
 
 namespace Eden_Relics_BE.Services;
@@ -10,6 +11,9 @@ public interface IEmailService
     Task SendContactEmailAsync(string fromName, string fromEmail, string subject, string message);
     Task SendSaleNotificationAsync(string toEmail, string firstName, string productName, decimal originalPrice, decimal salePrice);
     Task SendReviewRequestEmailAsync(string toEmail, string firstName, Guid orderId);
+
+    /// <summary>Notifies the site owner that an order has been paid.</summary>
+    Task SendOwnerSaleNotificationAsync(Order order);
 }
 
 public class EmailService : IEmailService
@@ -18,6 +22,7 @@ public class EmailService : IEmailService
     private readonly string _fromEmail;
     private readonly string _frontendUrl;
     private readonly string _contactRecipient;
+    private readonly string _saleNotificationRecipient;
     private readonly ILogger<EmailService> _logger;
 
     public EmailService(IResend resend, IConfiguration configuration, ILogger<EmailService> logger)
@@ -26,6 +31,8 @@ public class EmailService : IEmailService
         _fromEmail = configuration["Email:From"] ?? "Eden Relics <noreply@edenrelics.com>";
         _frontendUrl = configuration["Email:FrontendUrl"] ?? "http://localhost:4200";
         _contactRecipient = configuration["Email:ContactRecipient"] ?? "edenrelics@dcp-net.com";
+        // Temporary inbox until the edenrelics.co.uk mailboxes are set up.
+        _saleNotificationRecipient = configuration["Email:SaleNotificationRecipient"] ?? "orionsaxis@gmail.com";
         _logger = logger;
     }
 
@@ -204,6 +211,91 @@ public class EmailService : IEmailService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send sale notification to {Email}", toEmail);
+        }
+    }
+
+    public async Task SendOwnerSaleNotificationAsync(Order order)
+    {
+        string buyerEmail = order.User?.Email ?? order.GuestEmail ?? "Unknown";
+        string buyerName = order.User is not null
+            ? $"{order.User.FirstName} {order.User.LastName}".Trim()
+            : "Guest";
+
+        string itemRows = string.Join("", order.Items.Select(i => $"""
+            <tr>
+                <td style="padding: 6px 12px 6px 0; border-bottom: 1px solid #eee;">{WebUtility.HtmlEncode(i.ProductName)}</td>
+                <td style="padding: 6px 0; border-bottom: 1px solid #eee; text-align: right; white-space: nowrap;">{i.Quantity} &times; £{i.UnitPrice:F2}</td>
+            </tr>
+            """));
+
+        decimal itemsSubtotal = order.Items.Sum(i => i.UnitPrice * i.Quantity);
+
+        string[] addressLines =
+        [
+            order.ShipAddressLine1 ?? "",
+            order.ShipAddressLine2 ?? "",
+            order.ShipCity ?? "",
+            order.ShipCounty ?? "",
+            order.ShipPostcode ?? "",
+            order.ShipCountry ?? ""
+        ];
+        string shippingAddress = string.Join("<br/>",
+            addressLines.Where(l => !string.IsNullOrWhiteSpace(l)).Select(WebUtility.HtmlEncode));
+        if (string.IsNullOrWhiteSpace(shippingAddress))
+        {
+            shippingAddress = "<em>No shipping address captured</em>";
+        }
+
+        string adminUrl = $"{_frontendUrl}/admin";
+
+        string html = $"""
+            <div style="font-family: Georgia, serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
+                <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">New sale — order paid</h1>
+                <p style="color: #666; font-size: 0.85rem; margin-top: 0;">Order {order.Id}</p>
+
+                <p><strong>Customer:</strong> {WebUtility.HtmlEncode(buyerName)} ({WebUtility.HtmlEncode(buyerEmail)})</p>
+
+                <table style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
+                    {itemRows}
+                    <tr>
+                        <td style="padding: 6px 12px 6px 0; text-align: right; color: #666;">Items subtotal</td>
+                        <td style="padding: 6px 0; text-align: right; white-space: nowrap;">£{itemsSubtotal:F2}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 12px 6px 0; text-align: right; color: #666;">Shipping ({WebUtility.HtmlEncode(order.ShippingMethod ?? "standard")})</td>
+                        <td style="padding: 6px 0; text-align: right; white-space: nowrap;">£{order.ShippingCost:F2}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 12px 0 0; text-align: right; font-weight: 600;">Total</td>
+                        <td style="padding: 8px 0 0 0; text-align: right; font-weight: 600; white-space: nowrap;">£{order.Total:F2}</td>
+                    </tr>
+                </table>
+
+                <p style="margin-bottom: 0.25rem;"><strong>Ship to:</strong></p>
+                <p style="margin-top: 0;">{shippingAddress}</p>
+
+                <a href="{adminUrl}"
+                   style="display: inline-block; background: #1a1a1a; color: #fff; text-decoration: none; padding: 12px 28px; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; margin: 1.5rem 0;">
+                    View in admin
+                </a>
+            </div>
+            """;
+
+        try
+        {
+            EmailMessage message = new()
+            {
+                From = _fromEmail,
+                To = [_saleNotificationRecipient],
+                Subject = $"New sale — £{order.Total:F2} — Eden Relics",
+                HtmlBody = html
+            };
+            await _resend.EmailSendAsync(message);
+            _logger.LogInformation("Owner sale notification sent for order {OrderId}", order.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send owner sale notification for order {OrderId}", order.Id);
         }
     }
 }
