@@ -1,0 +1,253 @@
+<article class="cal">
+  <header class="cal__head">
+    <p class="cal__eyebrow">Operator</p>
+    <h1 class="cal__title">Calendar</h1>
+    <p class="cal__sub">
+      Statutory obligations — VAT, PAYE, P60/P11D, Corporation Tax, Confirmation Statement,
+      Self Assessment — auto-generated 12 months ahead, plus any events you add yourself.
+      Click any to assign a time you'll do the work; an email reminder fires at that moment.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="cal__notice">Loading…</p>
+  } @else if (error(); as err) {
+    <p class="cal__error" role="alert">{{ err }}</p>
+  }
+
+  @if (message(); as msg) {
+    <p class="cal__msg">{{ msg }}</p>
+  }
+
+  @if (config(); as cfg) {
+    @if (!cfg.ardConfigured) {
+      <p class="cal__warn">
+        <strong>ARD not configured.</strong> Year-end-anchored obligations
+        (Corporation Tax, Statutory Accounts) won't generate until you set
+        <code>Liabilities:AccountingReferenceDate</code> in <code>appsettings.json</code>
+        or as a deployment secret.
+      </p>
+    }
+    @if (cfg.icalEnabled && cfg.icalSubscribeUrl) {
+      <section class="cal__subscribe" aria-labelledby="ical-heading">
+        <h2 id="ical-heading">Subscribe in your phone calendar</h2>
+        <p>Paste this URL into Google Calendar / Outlook / iPhone Settings → Calendar → Add Subscribed Calendar:</p>
+        <div class="cal__subscribe-row">
+          <code class="cal__url">{{ cfg.icalSubscribeUrl }}</code>
+          <button type="button" class="cal__btn" (click)="copySubscribeUrl()">Copy</button>
+        </div>
+      </section>
+    } @else {
+      <p class="cal__notice">
+        Set <code>Liabilities:IcalToken</code> as a deployment secret to enable the
+        Google/Outlook/iPhone subscribe URL.
+      </p>
+    }
+  }
+
+  <section class="cal__board" aria-label="Obligations calendar">
+    <div class="cal__toolbar">
+      <button type="button" class="cal__btn" (click)="prevMonth()" aria-label="Previous month">‹</button>
+      <h2 class="cal__month">{{ monthLabel() }}</h2>
+      <button type="button" class="cal__btn" (click)="nextMonth()" aria-label="Next month">›</button>
+      <button type="button" class="cal__btn cal__btn--ghost" (click)="goToToday()">Today</button>
+      <span style="flex:1"></span>
+      <button type="button" class="cal__btn cal__btn--primary" (click)="openCreate()">+ Add event</button>
+    </div>
+
+    @if (createMode() === 'open') {
+      <form class="cal__form cal__create" [formGroup]="createForm" (ngSubmit)="submitCreate()">
+        <h3 class="cal__create-heading">New event</h3>
+        <label class="cal__field">
+          <span>Title</span>
+          <input type="text" formControlName="title" maxlength="200" placeholder="e.g. Quarterly review with accountant" required />
+        </label>
+        <div class="cal__field-row">
+          <label class="cal__field cal__field--half">
+            <span>Date</span>
+            <input type="date" formControlName="dueDate" required />
+          </label>
+          <label class="cal__field cal__field--half">
+            <span>Scheduled time (optional)</span>
+            <input type="datetime-local" formControlName="scheduledFor" />
+          </label>
+        </div>
+        <label class="cal__field">
+          <span>Notes (optional)</span>
+          <textarea formControlName="notes" rows="3" maxlength="2000"></textarea>
+        </label>
+        <p class="cal__create-hint">
+          Adding a scheduled time creates an email reminder that fires at that moment.
+          Leave it blank for an all-day calendar entry with no reminder.
+        </p>
+        <div class="cal__form-actions">
+          <button type="submit" class="cal__btn cal__btn--primary" [disabled]="working() || createForm.invalid">
+            Add event
+          </button>
+          <button type="button" class="cal__btn cal__btn--ghost" (click)="closeCreate()">Cancel</button>
+        </div>
+      </form>
+    }
+
+    <div class="cal__grid" role="grid">
+      <div class="cal__weekday">Mon</div>
+      <div class="cal__weekday">Tue</div>
+      <div class="cal__weekday">Wed</div>
+      <div class="cal__weekday">Thu</div>
+      <div class="cal__weekday">Fri</div>
+      <div class="cal__weekday">Sat</div>
+      <div class="cal__weekday">Sun</div>
+
+      @for (week of weeks(); track $index) {
+        @for (day of week; track day.isoDate) {
+          <div class="cal__day" [class.cal__day--out]="!day.inMonth" [class.cal__day--today]="day.isToday">
+            <span class="cal__day-num">{{ day.date | date:'d':'UTC' }}</span>
+            <div class="cal__chips">
+              @for (chip of day.chips; track chip.obligation.id) {
+                <button
+                  type="button"
+                  class="cal__chip"
+                  [class]="'cal__chip--' + chip.kindClass"
+                  [title]="chip.obligation.title"
+                  (click)="openObligation(chip.obligation)">
+                  @if (chip.isScheduledRender) { <span aria-hidden="true">⏱</span> }
+                  {{ chip.obligation.title }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </section>
+
+  <section class="cal__upcoming" aria-labelledby="upcoming-heading">
+    <h2 id="upcoming-heading">Open obligations</h2>
+    @if (upcoming().length === 0) {
+      <p class="cal__notice">All obligations complete or waived. Nice work.</p>
+    } @else {
+      <ul class="cal__upcoming-list">
+        @for (row of upcoming(); track row.obligation.id) {
+          <li class="cal__upcoming-row" [class.cal__upcoming-row--overdue]="row.isOverdue">
+            <button type="button" class="cal__upcoming-btn" (click)="openObligation(row.obligation)">
+              <span class="cal__upcoming-status">{{ statusLabel(row.obligation.status) }}</span>
+              <span class="cal__upcoming-title">{{ row.obligation.title }}</span>
+              <span class="cal__upcoming-due">
+                Due {{ row.obligation.dueDate | date:'dd MMM yyyy':'UTC' }}
+                @if (row.obligation.scheduledFor; as s) {
+                  · Scheduled {{ s | date:'dd MMM HH:mm' }}
+                }
+                @if (row.isOverdue) { · OVERDUE }
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  @if (selected(); as o) {
+    <aside class="cal__panel" aria-label="Obligation details">
+      <header class="cal__panel-head">
+        <h2 class="cal__panel-title">{{ o.title }}</h2>
+        <button type="button" class="cal__btn cal__btn--ghost" (click)="closePanel()" aria-label="Close">✕</button>
+      </header>
+
+      <dl class="cal__panel-meta">
+        <div><dt>Status</dt><dd>{{ statusLabel(o.status) }}@if (o.isOverdue) { · OVERDUE }</dd></div>
+        <div><dt>Period</dt><dd>{{ o.periodStart | date:'dd MMM yyyy':'UTC' }} → {{ o.periodEnd | date:'dd MMM yyyy':'UTC' }}</dd></div>
+        <div><dt>Due</dt><dd>{{ o.dueDate | date:'dd MMM yyyy':'UTC' }}</dd></div>
+        @if (o.scheduledFor; as s) {
+          <div><dt>Scheduled</dt><dd>{{ s | date:'dd MMM yyyy HH:mm' }}</dd></div>
+        }
+        @if (o.filedAt; as f) {
+          <div><dt>Filed</dt><dd>{{ f | date:'dd MMM yyyy' }}</dd></div>
+        }
+        @if (o.submissionReference; as r) {
+          <div><dt>Reference</dt><dd>{{ r }}</dd></div>
+        }
+        @if (o.paidAt; as p) {
+          <div><dt>Paid</dt><dd>{{ p | date:'dd MMM yyyy' }} · {{ formatMoney(o.paidAmountMinor, o.currency) }}</dd></div>
+        }
+        @if (o.paymentReference; as r) {
+          <div><dt>Payment ref</dt><dd>{{ r }}</dd></div>
+        }
+        @if (o.notes; as n) {
+          <div><dt>Notes</dt><dd>{{ n }}</dd></div>
+        }
+      </dl>
+
+      @if (mode() === null) {
+        <div class="cal__panel-actions">
+          @if (o.status !== 'complete' && o.status !== 'waived') {
+            <button type="button" class="cal__btn" (click)="beginSchedule()">
+              {{ o.scheduledFor ? 'Reschedule' : 'Schedule a time' }}
+            </button>
+            @if (o.scheduledFor) {
+              <button type="button" class="cal__btn cal__btn--ghost" (click)="unschedule()" [disabled]="working()">Clear schedule</button>
+            }
+            <button type="button" class="cal__btn cal__btn--primary" (click)="beginComplete()">Mark complete</button>
+            <button type="button" class="cal__btn cal__btn--ghost" (click)="waive()" [disabled]="working()">Mark N/A</button>
+          } @else {
+            <button type="button" class="cal__btn" (click)="reopen()" [disabled]="working()">Re-open</button>
+          }
+          @if (o.kind === 'other') {
+            <button type="button" class="cal__btn cal__btn--danger" (click)="deleteSelected()" [disabled]="working()">Delete</button>
+          }
+        </div>
+      }
+
+      @if (mode() === 'schedule') {
+        <form class="cal__form" [formGroup]="scheduleForm" (ngSubmit)="submitSchedule()">
+          <label class="cal__field">
+            <span>When will you do this?</span>
+            <input type="datetime-local" formControlName="scheduledFor" required />
+          </label>
+          <div class="cal__form-actions">
+            <button type="submit" class="cal__btn cal__btn--primary" [disabled]="working() || scheduleForm.invalid">
+              Save
+            </button>
+            <button type="button" class="cal__btn cal__btn--ghost" (click)="mode.set(null)">Cancel</button>
+          </div>
+        </form>
+      }
+
+      @if (mode() === 'complete') {
+        <form class="cal__form" [formGroup]="completeForm" (ngSubmit)="submitComplete()">
+          <label class="cal__field">
+            <span>Submission reference (MTD ID, HMRC ref, CH receipt…)</span>
+            <input type="text" formControlName="submissionReference" maxlength="120" />
+          </label>
+          <label class="cal__field">
+            <span>Filed on</span>
+            <input type="date" formControlName="filedAt" />
+          </label>
+          <div class="cal__field-row">
+            <label class="cal__field cal__field--half">
+              <span>Amount paid (major units)</span>
+              <input type="number" step="0.01" min="0" formControlName="paidAmountMajor" />
+            </label>
+            <label class="cal__field cal__field--half">
+              <span>Paid on</span>
+              <input type="date" formControlName="paidAt" />
+            </label>
+          </div>
+          <label class="cal__field">
+            <span>Payment reference</span>
+            <input type="text" formControlName="paymentReference" maxlength="120" />
+          </label>
+          <label class="cal__field">
+            <span>Notes</span>
+            <textarea formControlName="notes" rows="3" maxlength="2000"></textarea>
+          </label>
+          <div class="cal__form-actions">
+            <button type="submit" class="cal__btn cal__btn--primary" [disabled]="working()">
+              Save evidence
+            </button>
+            <button type="button" class="cal__btn cal__btn--ghost" (click)="mode.set(null)">Cancel</button>
+          </div>
+        </form>
+      }
+    </aside>
+  }
+</article>

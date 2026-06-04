@@ -290,6 +290,64 @@ public class FinanceController(
         });
     }
 
+    /// Rolling 13-month profit-and-loss snapshot for the admin accounting dashboard.
+    /// Built entirely from the Transactions ledger: revenue is positive amounts, expenses are
+    /// the magnitude of negative amounts, split out by category. The rolling-12 totals skip the
+    /// oldest (13th) month so a part-month at the edge doesn't distort the headline figures.
+    [HttpGet("pnl")]
+    public async Task<ActionResult<AccountingSnapshot>> GetPnl()
+    {
+        DateTime now = DateTime.UtcNow;
+        DateTime windowStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-12);
+
+        List<Transaction> rows = await context.Transactions
+            .Where(t => t.Date >= windowStart)
+            .ToListAsync();
+
+        // Seed all 13 months so gaps render as zero rows rather than disappearing.
+        List<MonthlyPnlRow> months = [];
+        Dictionary<(int Year, int Month), List<Transaction>> byMonth = rows
+            .GroupBy(t => (t.Date.Year, t.Date.Month))
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        for (int i = -12; i <= 0; i++)
+        {
+            DateTime m = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(i);
+            List<Transaction> bucket = byMonth.GetValueOrDefault((m.Year, m.Month)) ?? [];
+            decimal revenue = bucket.Where(t => t.Amount > 0).Sum(t => t.Amount);
+            decimal expenses = bucket.Where(t => t.Amount < 0).Sum(t => Math.Abs(t.Amount));
+            months.Add(new MonthlyPnlRow(m.Year, m.Month, revenue, expenses, revenue - expenses));
+        }
+
+        // Rolling 12 = the most recent 12 of the 13 (skip the oldest).
+        List<MonthlyPnlRow> last12 = months.Skip(1).ToList();
+        decimal totalRevenue = last12.Sum(m => m.Revenue);
+        decimal totalExpenses = last12.Sum(m => m.Expenses);
+
+        List<ExpenseCategoryTotal> split = rows
+            .Where(t => t.Amount < 0)
+            .GroupBy(t => string.IsNullOrWhiteSpace(t.Category) ? "Other" : t.Category)
+            .Select(g => new ExpenseCategoryTotal(g.Key, g.Sum(t => Math.Abs(t.Amount))))
+            .OrderByDescending(t => t.Amount)
+            .ToList();
+
+        List<TransactionDto> recent = rows
+            .OrderByDescending(t => t.Date)
+            .Take(25)
+            .Select(ToDto)
+            .ToList();
+
+        return Ok(new AccountingSnapshot(
+            Currency: "GBP",
+            Months: months,
+            TotalRevenue: totalRevenue,
+            TotalExpenses: totalExpenses,
+            TotalNet: totalRevenue - totalExpenses,
+            ExpenseSplit: split,
+            RecentTransactions: recent,
+            GeneratedAt: now));
+    }
+
     [HttpGet("export")]
     public async Task<IActionResult> Export([FromQuery] int? year, [FromQuery] int? month)
     {

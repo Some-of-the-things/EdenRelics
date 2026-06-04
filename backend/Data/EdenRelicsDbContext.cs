@@ -43,6 +43,8 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<AnalyticsDailySource> AnalyticsDailySources => Set<AnalyticsDailySource>();
     public DbSet<AnalyticsDailyLandingPage> AnalyticsDailyLandingPages => Set<AnalyticsDailyLandingPage>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<LiabilityObligation> LiabilityObligations => Set<LiabilityObligation>();
+    public DbSet<OperatorReminder> OperatorReminders => Set<OperatorReminder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -302,6 +304,34 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(t => t.Reference).HasMaxLength(100);
             entity.Property(t => t.ReceiptUrl).HasMaxLength(500);
             entity.Property(t => t.Notes).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<LiabilityObligation>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(o => o.Title).HasMaxLength(200);
+            entity.Property(o => o.Currency).HasMaxLength(3);
+            entity.Property(o => o.SubmissionReference).HasMaxLength(120);
+            entity.Property(o => o.PaymentReference).HasMaxLength(120);
+            entity.Property(o => o.Notes).HasMaxLength(2000);
+            entity.HasIndex(o => o.DueDate);
+            entity.HasIndex(o => o.ScheduledFor);
+            // Idempotency key for auto-generation: at most one statutory row per (Kind, PeriodEnd).
+            // Free-form Other events repeat PeriodEnd freely, so they're excluded from the
+            // uniqueness constraint via a partial filter.
+            entity.HasIndex(o => new { o.Kind, o.PeriodEnd })
+                .IsUnique()
+                .HasFilter("\"Kind\" <> 99");
+        });
+
+        modelBuilder.Entity<OperatorReminder>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(r => r.Title).HasMaxLength(200);
+            entity.Property(r => r.Body).HasMaxLength(2000);
+            entity.Property(r => r.NotifyEmail).HasMaxLength(254);
+            entity.HasIndex(r => new { r.IsActive, r.DueAt });
+            entity.HasIndex(r => r.LinkedObligationId);
         });
 
         modelBuilder.Entity<MonzoToken>(entity =>
