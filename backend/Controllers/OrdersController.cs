@@ -281,6 +281,17 @@ public class OrdersController : ControllerBase
                         if (isNewSale)
                         {
                             await _emailService.SendOwnerSaleNotificationAsync(order);
+
+                            // Email the customer their invoice. Never let a delivery failure
+                            // fail the webhook — Stripe would retry and double-process the sale.
+                            try
+                            {
+                                await _emailService.SendOrderInvoiceEmailAsync(order);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to send customer invoice for order {OrderId}", order.Id);
+                            }
                         }
                     }
                 }
@@ -401,6 +412,57 @@ public class OrdersController : ControllerBase
         }
 
         return Ok(ToAdminDto(order));
+    }
+
+    [HttpPost("admin/{id:guid}/send-invoice")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SendInvoice(Guid id, [FromBody] SendInvoiceRequest? body = null)
+    {
+        Order? order = await _context.Orders
+            .Include(o => o.Items)
+            .Include(o => o.User)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order is null)
+        {
+            return NotFound();
+        }
+
+        string? recipient = order.User?.Email ?? order.GuestEmail;
+        if (string.IsNullOrWhiteSpace(recipient))
+        {
+            return BadRequest(new { error = "This order has no customer email address to send the invoice to." });
+        }
+
+        try
+        {
+            await _emailService.SendOrderInvoiceEmailAsync(order, body?.Platform);
+            return Ok(new { sentTo = recipient });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Manual invoice send failed for order {OrderId}", order.Id);
+            return StatusCode(502, new { error = "The invoice email could not be sent. Please try again." });
+        }
+    }
+
+    /// <summary>Renders the invoice email as HTML for previewing in the browser. Does not send anything.</summary>
+    [HttpGet("admin/{id:guid}/invoice-preview")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> PreviewInvoice(Guid id, [FromQuery] string? platform = null)
+    {
+        Order? order = await _context.Orders
+            .Include(o => o.Items)
+            .Include(o => o.User)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order is null)
+        {
+            return NotFound();
+        }
+
+        string html = _emailService.BuildOrderInvoiceHtml(order, platform);
+        return Content(html, "text/html");
     }
 
     [HttpDelete("admin/{id:guid}")]
