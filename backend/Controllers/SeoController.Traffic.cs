@@ -7,12 +7,26 @@ namespace Eden_Relics_BE.Controllers;
 
 public partial class SeoController
 {
+    /// <summary>A feed counts as stale once its newest day is older than this many days behind today.</summary>
+    private const int TrafficStaleDays = 3;
+
     [HttpGet("traffic/status")]
-    public ActionResult<TrafficStatusDto> GetTrafficStatus(
+    public async Task<ActionResult<TrafficStatusDto>> GetTrafficStatus(
         [FromServices] GoogleSearchConsoleService gsc,
-        [FromServices] GoogleAnalyticsService ga4)
+        [FromServices] GoogleAnalyticsService ga4,
+        CancellationToken ct = default)
     {
-        return Ok(new TrafficStatusDto(gsc.IsConfigured, ga4.IsConfigured));
+        DateOnly? gscLast = await context.SearchConsoleDailyTotals
+            .OrderByDescending(t => t.Date).Select(t => (DateOnly?)t.Date).FirstOrDefaultAsync(ct);
+        DateOnly? ga4Last = await context.AnalyticsDailyTotals
+            .OrderByDescending(t => t.Date).Select(t => (DateOnly?)t.Date).FirstOrDefaultAsync(ct);
+
+        DateOnly staleBefore = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-TrafficStaleDays);
+        bool gscStale = gsc.IsConfigured && (gscLast is null || gscLast < staleBefore);
+        bool ga4Stale = ga4.IsConfigured && (ga4Last is null || ga4Last < staleBefore);
+
+        return Ok(new TrafficStatusDto(
+            gsc.IsConfigured, ga4.IsConfigured, gscLast, ga4Last, gscStale, ga4Stale));
     }
 
     [HttpGet("traffic/overview")]
@@ -242,7 +256,10 @@ public partial class SeoController
     }
 }
 
-public record TrafficStatusDto(bool GscConfigured, bool Ga4Configured);
+public record TrafficStatusDto(
+    bool GscConfigured, bool Ga4Configured,
+    DateOnly? GscLastDate, DateOnly? Ga4LastDate,
+    bool GscStale, bool Ga4Stale);
 
 public record GscDailyDto(DateOnly Date, int Clicks, int Impressions, double Ctr, double Position);
 public record GaDailyDto(
