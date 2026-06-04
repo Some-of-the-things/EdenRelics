@@ -549,7 +549,9 @@
 }
 
 .admin__edit-btn,
-.admin__delete-btn {
+.admin__delete-btn,
+.admin__invoice-btn,
+.admin__preview-btn {
   border: none;
   padding: 0.35rem 0.75rem;
   font-size: 0.75rem;
@@ -558,6 +560,47 @@
   text-transform: uppercase;
   cursor: pointer;
   transition: background var(--transition);
+}
+
+.admin__preview-btn {
+  background: none;
+  color: var(--text-secondary);
+  text-decoration: underline;
+
+  &:hover {
+    background: var(--bg-secondary);
+  }
+}
+
+.admin__invoice-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.admin__invoice-platform {
+  font: inherit;
+  font-size: 0.7rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.admin__invoice-btn {
+  background: none;
+  color: var(--accent);
+
+  &:hover:not(:disabled) {
+    background: rgba(155, 74, 30, 0.08);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
 }
 
 .admin__edit-btn {
