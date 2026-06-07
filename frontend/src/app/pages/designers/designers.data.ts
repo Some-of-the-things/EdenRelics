@@ -65,8 +65,8 @@ export const DESIGNERS: DesignerProfile[] = [
   {
     slug: 'caroline-wells',
     name: 'Caroline Wells',
-    metaTitle: 'Vintage Caroline Wells Collection — 90s Rayon Florals',
-    metaDescription: 'Authentic Caroline Wells Collection vintage dresses from the 1990s. Amber floral rayon maxis and similar pieces — UK-curated and inspected.',
+    metaTitle: 'Caroline Wells Collection — Vintage 90s Dresses',
+    metaDescription: 'Authentic Caroline Wells Collection vintage dresses & clothing from the 1990s. Amber floral rayon maxis and similar rare pieces — UK-curated and inspected.',
     origin: 'USA — active 1990s',
     intro: 'Caroline Wells Collection was a 1990s American label producing the kind of soft-rayon floral maxi dress now intensely sought after on the secondhand market. Surviving pieces are relatively scarce, which makes them an interesting collector entry point.',
     history: [
@@ -124,8 +124,8 @@ export const DESIGNERS: DesignerProfile[] = [
   {
     slug: 'st-michael',
     name: 'St Michael (Marks & Spencer)',
-    metaTitle: 'Vintage St Michael Clothing — M&S 1970s, 80s & 90s Originals',
-    metaDescription: 'Authentic vintage St Michael clothing — Marks & Spencer\'s original house label from the 1970s, 80s and 90s. UK-curated and inspected.',
+    metaTitle: 'Vintage St Michael (M&S) Clothing & Label Guide',
+    metaDescription: 'Vintage St Michael clothing — Marks & Spencer\'s original house label from the 1970s-90s. Dresses, knits & blouses, plus how to identify and date the M&S label.',
     origin: 'United Kingdom — Marks & Spencer house label, 1928-2000',
     intro: 'St Michael was Marks & Spencer\'s house label for the better part of the 20th century — and authentic vintage St Michael pieces are now collected for their construction quality, era-defining prints, and the fact that British wool, viscose, and cotton standards of the time consistently outlast modern equivalents.',
     history: [
