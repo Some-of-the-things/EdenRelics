@@ -2,6 +2,7 @@ import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } fr
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
@@ -340,15 +341,47 @@ export class AdminPageComponent implements OnInit {
   private readonly contentService = inject(ContentService);
   private readonly offsiteSaleService = inject(OffsiteSaleService);
   private readonly reviewsService = inject(ReviewsService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   @ViewChild('descriptionEditor') descriptionEditor!: ElementRef<HTMLElement>;
-  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews'>('products');
+  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews' | 'signature'>('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly imagePreview = signal<string | null>(null);
   readonly uploading = signal(false);
   readonly uploadError = signal('');
+
+  // Email signature — brand HTML signature for copy/paste into a mail client.
+  readonly emailSignatureHtml = `<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-family: Georgia, 'Times New Roman', Times, serif; color:#2e1a0e; line-height:1.4;">
+  <tr>
+    <td valign="top" style="padding-right:16px;">
+      <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+        <tr>
+          <td bgcolor="#9b4a1e" width="60" height="60" align="center" valign="middle" style="background-color:#9b4a1e; width:60px; height:60px; color:#f5f0e8; font-family:Georgia,'Times New Roman',serif; font-size:24px; font-weight:bold; letter-spacing:1px; text-align:center;">ER</td>
+        </tr>
+      </table>
+    </td>
+    <td valign="top" style="border-left:2px solid #c9973a; padding-left:16px;">
+      <div style="font-size:18px; font-weight:bold; color:#2e1a0e; letter-spacing:0.3px;">Teodora Carter</div>
+      <div style="font-size:11px; color:#9b4a1e; text-transform:uppercase; letter-spacing:2px; margin-top:3px;">Founder &amp; Curator</div>
+      <div style="font-size:15px; font-weight:bold; color:#9b4a1e; margin-top:10px; letter-spacing:0.5px;">Eden Relics</div>
+      <div style="font-size:12px; font-style:italic; color:#7a5c3a; margin-top:2px;">Vintage clothing, thoughtfully sourced &amp; carefully assessed.</div>
+      <div style="font-size:12px; color:#5c3d1e; margin-top:10px;">
+        <a href="https://edenrelics.co.uk" style="color:#9b4a1e; text-decoration:none; font-weight:bold;">edenrelics.co.uk</a>
+        &nbsp;|&nbsp;
+        <a href="mailto:teodora@edenrelics.co.uk" style="color:#9b4a1e; text-decoration:none;">teodora@edenrelics.co.uk</a>
+      </div>
+      <div style="font-size:12px; color:#5c3d1e; margin-top:6px;">
+        <a href="https://instagram.com/edenrelics" style="color:#9b4a1e; text-decoration:none;">Instagram</a>
+        &nbsp;&middot;&nbsp;
+        <a href="https://x.com/edenrelics" style="color:#9b4a1e; text-decoration:none;">X</a>
+      </div>
+    </td>
+  </tr>
+</table>`;
+  readonly emailSignaturePreview: SafeHtml = this.sanitizer.bypassSecurityTrustHtml(this.emailSignatureHtml);
+  readonly signatureCopied = signal(false);
 
   // Orders
   readonly orders = signal<AdminOrder[]>([]);
@@ -798,7 +831,14 @@ export class AdminPageComponent implements OnInit {
     this.mobileMenuOpen.update(v => !v);
   }
 
-  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews'): void {
+  copySignature(): void {
+    void navigator.clipboard?.writeText(this.emailSignatureHtml).then(() => {
+      this.signatureCopied.set(true);
+      setTimeout(() => this.signatureCopied.set(false), 2000);
+    });
+  }
+
+  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews' | 'signature'): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
