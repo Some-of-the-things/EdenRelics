@@ -1,0 +1,110 @@
+<article class="acct">
+  <header class="acct__head">
+    <p class="acct__eyebrow">Operator</p>
+    <h1 class="acct__title">Accounting</h1>
+    <p class="acct__sub">
+      Rolling 12-month profit &amp; loss, built from the finance ledger. Revenue is money in
+      (sales, deposits); expenses are money out (stock / cost of goods, shipping, fees,
+      packaging, owner draw, …). Add or edit entries in the <strong>Finance</strong> tab.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="acct__loading">Loading…</p>
+  } @else if (error(); as err) {
+    <p class="acct__error" role="alert">{{ err }}</p>
+  } @else if (snapshot(); as snap) {
+
+    <section class="acct__summary" aria-labelledby="totals-heading">
+      <h2 id="totals-heading" class="acct__summary-title">Rolling 12-month</h2>
+      <dl class="acct__summary-grid">
+        <div><dt>Revenue</dt><dd>{{ formatMoney(snap.totalRevenue) }}</dd></div>
+        <div><dt>Expenses</dt><dd>{{ formatMoney(snap.totalExpenses) }}</dd></div>
+        <div class="acct__summary-net" [class.is-negative]="snap.totalNet < 0">
+          <dt>Net</dt><dd>{{ formatMoney(snap.totalNet) }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="acct__card" aria-labelledby="monthly-heading">
+      <div class="acct__card-head">
+        <h2 id="monthly-heading" class="acct__card-title">Month by month</h2>
+        <button type="button" class="acct__export" (click)="exportCsv()">Download CSV</button>
+      </div>
+      <table class="acct__table">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th class="acct__numeric">Revenue</th>
+            <th class="acct__numeric">Expenses</th>
+            <th class="acct__numeric">Net</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of snap.months; track m.year + '-' + m.month) {
+            <tr>
+              <td>{{ monthLabel(m) }}</td>
+              <td class="acct__numeric">{{ formatMoney(m.revenue) }}</td>
+              <td class="acct__numeric">{{ formatMoney(m.expenses) }}</td>
+              <td class="acct__numeric acct__net" [class.is-negative]="m.net < 0">
+                {{ formatMoney(m.net) }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    @if (snap.expenseSplit.length > 0) {
+      <section class="acct__card" aria-labelledby="split-heading">
+        <h2 id="split-heading" class="acct__card-title">Expenses by category (last 12 months)</h2>
+        <table class="acct__table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="acct__numeric">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of snap.expenseSplit; track c.category) {
+              <tr>
+                <td>{{ c.category }}</td>
+                <td class="acct__numeric">{{ formatMoney(c.amount) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+
+    @if (snap.recentTransactions.length > 0) {
+      <section class="acct__card" aria-labelledby="recent-heading">
+        <h2 id="recent-heading" class="acct__card-title">Recent transactions</h2>
+        <table class="acct__table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th class="acct__numeric">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of snap.recentTransactions; track t.id) {
+              <tr>
+                <td>{{ t.date | date:'dd MMM yyyy' }}</td>
+                <td>{{ t.description }}</td>
+                <td>{{ t.category }}</td>
+                <td class="acct__numeric" [class.acct__net]="t.amount >= 0" [class.is-negative]="t.amount < 0">
+                  {{ txnAmount(t) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+
+    <p class="acct__meta">Generated {{ snap.generatedAt | date:'medium' }}</p>
+  }
+</article>

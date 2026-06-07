@@ -131,6 +131,13 @@ builder.Services.AddHttpClient<MonzoService>();
 builder.Services.AddScoped<MonzoService>();
 builder.Services.AddHostedService<MonzoSyncBackgroundService>();
 
+// Regulatory-obligations calendar + operator reminders
+builder.Services.Configure<LiabilityOptions>(builder.Configuration.GetSection(LiabilityOptions.SectionName));
+builder.Services.AddScoped<ILiabilityScheduleService, LiabilityScheduleService>();
+builder.Services.AddScoped<IObligationReminderSync, ObligationReminderSync>();
+builder.Services.AddHostedService<LiabilityScheduleHostedService>();
+builder.Services.AddHostedService<ReminderDispatcher>();
+
 // HttpClient for external OAuth token verification
 builder.Services.AddHttpClient();
 

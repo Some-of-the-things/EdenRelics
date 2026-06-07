@@ -55,3 +55,7 @@ public record AdminOrderDto(
 public record UpdateOrderStatusDto(
     string Status
 );
+
+public record SendInvoiceRequest(
+    string? Platform
+);

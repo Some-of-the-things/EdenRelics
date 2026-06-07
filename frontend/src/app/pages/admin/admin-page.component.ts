@@ -23,6 +23,8 @@ import {
   CreateOffsiteSale,
 } from '../../services/offsite-sale.service';
 import { AdminReview, ReviewsService } from '../../services/reviews.service';
+import { AdminCalendarComponent } from './admin-calendar.component';
+import { AdminAccountingComponent } from './admin-accounting.component';
 
 interface AdminUser {
   id: string;
@@ -244,6 +246,10 @@ interface SeoHealthSnapshot {
 interface TrafficStatus {
   gscConfigured: boolean;
   ga4Configured: boolean;
+  gscLastDate: string | null;
+  ga4LastDate: string | null;
+  gscStale: boolean;
+  ga4Stale: boolean;
 }
 
 interface TotalsSummary {
@@ -316,7 +322,7 @@ interface LandingPageRollup {
 
 @Component({
   selector: 'app-admin-page',
-  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe, DecimalPipe],
+  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe, DecimalPipe, AdminCalendarComponent, AdminAccountingComponent],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
@@ -336,7 +342,7 @@ export class AdminPageComponent implements OnInit {
   private readonly reviewsService = inject(ReviewsService);
 
   @ViewChild('descriptionEditor') descriptionEditor!: ElementRef<HTMLElement>;
-  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews'>('products');
+  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews'>('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
@@ -348,6 +354,10 @@ export class AdminPageComponent implements OnInit {
   readonly orders = signal<AdminOrder[]>([]);
   readonly ordersLoading = signal(false);
   readonly ordersError = signal('');
+  readonly invoiceSendingId = signal<string | null>(null);
+  // Marketplace shown on a manually-sent invoice, tracked per order id.
+  readonly invoicePlatforms = ['edenrelics.co.uk', 'Etsy', 'Depop', 'Vinted', 'eBay'];
+  readonly invoicePlatform = signal<Record<string, string>>({});
   readonly statusFilter = signal<string>('all');
 
   readonly statuses = ['Pending', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
@@ -788,7 +798,7 @@ export class AdminPageComponent implements OnInit {
     this.mobileMenuOpen.update(v => !v);
   }
 
-  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews'): void {
+  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews'): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
@@ -1557,6 +1567,45 @@ export class AdminPageComponent implements OnInit {
         this.orders.update((orders) => orders.filter((o) => o.id !== id));
       },
       error: () => this.ordersError.set('Failed to delete order.'),
+    });
+  }
+
+  platformFor(id: string): string {
+    return this.invoicePlatform()[id] ?? this.invoicePlatforms[0];
+  }
+
+  setInvoicePlatform(id: string, platform: string): void {
+    this.invoicePlatform.update((map) => ({ ...map, [id]: platform }));
+  }
+
+  previewInvoice(order: AdminOrder): void {
+    this.ordersError.set('');
+    this.orderService.previewInvoice(order.id, this.platformFor(order.id)).subscribe({
+      next: (html) => {
+        const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+        window.open(url, '_blank');
+        // Free the object URL once the new tab has had a chance to load it.
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      },
+      error: () => this.ordersError.set('Failed to load the invoice preview.'),
+    });
+  }
+
+  sendInvoice(order: AdminOrder): void {
+    if (this.invoiceSendingId()) {
+      return;
+    }
+    this.ordersError.set('');
+    this.invoiceSendingId.set(order.id);
+    this.orderService.sendInvoice(order.id, this.platformFor(order.id)).subscribe({
+      next: ({ sentTo }) => {
+        this.invoiceSendingId.set(null);
+        alert(`Invoice emailed to ${sentTo}.`);
+      },
+      error: () => {
+        this.invoiceSendingId.set(null);
+        this.ordersError.set('Failed to send the invoice email.');
+      },
     });
   }
 

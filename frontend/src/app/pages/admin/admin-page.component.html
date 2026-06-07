@@ -68,6 +68,20 @@
     </button>
     <button
       class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'accounting'"
+      (click)="switchTab('accounting')"
+    >
+      Accounting
+    </button>
+    <button
+      class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'calendar'"
+      (click)="switchTab('calendar')"
+    >
+      Calendar
+    </button>
+    <button
+      class="admin__tab"
       [class.admin__tab--active]="activeTab() === 'offsite-sales'"
       (click)="switchTab('offsite-sales')"
     >
@@ -116,6 +130,14 @@
       Reviews
     </button>
   </div>
+
+  @if (activeTab() === 'accounting') {
+    <app-admin-accounting />
+  }
+
+  @if (activeTab() === 'calendar') {
+    <app-admin-calendar />
+  }
 
   @if (activeTab() === 'products') {
     @if (store.error()) {
@@ -625,6 +647,32 @@
                   </select>
                 </td>
                 <td>
+                  <div class="admin__invoice-actions">
+                    <select
+                      class="admin__invoice-platform"
+                      [ngModel]="platformFor(order.id)"
+                      (ngModelChange)="setInvoicePlatform(order.id, $event)"
+                      title="Marketplace shown on the invoice"
+                    >
+                      @for (p of invoicePlatforms; track p) {
+                        <option [value]="p">{{ p }}</option>
+                      }
+                    </select>
+                    <button
+                      class="admin__preview-btn"
+                      type="button"
+                      (click)="previewInvoice(order)"
+                    >
+                      Preview
+                    </button>
+                    <button
+                      class="admin__invoice-btn"
+                      (click)="sendInvoice(order)"
+                      [disabled]="invoiceSendingId() === order.id"
+                    >
+                      {{ invoiceSendingId() === order.id ? 'Sending…' : 'Send invoice' }}
+                    </button>
+                  </div>
                   <button class="admin__delete-btn" (click)="deleteOrder(order.id)">Delete</button>
                 </td>
               </tr>
@@ -1599,6 +1647,13 @@
                 GA4 is not configured — set <code>Google__Analytics__PropertyId</code>.
               }
             </p>
+          }
+          @if (status.gscStale || status.ga4Stale) {
+            <p class="admin__error" role="alert">
+              ⚠ Traffic ingest looks stale — Google data hasn’t updated recently@if (status.gscStale) { · Search Console: {{ status.gscLastDate ?? 'no data' }}}@if (status.ga4Stale) { · GA4: {{ status.ga4LastDate ?? 'no data' }}}. The shared Google OAuth refresh token may have expired — re-mint it and update the <code>Google__OAuth__RefreshToken</code> secret.
+            </p>
+          } @else if (status.gscLastDate || status.ga4LastDate) {
+            <p class="seo__traffic-hint">Data current to — Search Console: {{ status.gscLastDate ?? '—' }} · GA4: {{ status.ga4LastDate ?? '—' }}</p>
           }
         }
         @if (trafficError()) {

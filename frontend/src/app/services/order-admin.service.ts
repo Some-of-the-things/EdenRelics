@@ -32,4 +32,13 @@ export class OrderAdminService {
   updateStatus(id: string, status: string): Observable<AdminOrder> {
     return this.http.put<AdminOrder>(`${this.apiUrl}/admin/${id}/status`, { status });
   }
+
+  sendInvoice(id: string, platform?: string): Observable<{ sentTo: string }> {
+    return this.http.post<{ sentTo: string }>(`${this.apiUrl}/admin/${id}/send-invoice`, { platform });
+  }
+
+  previewInvoice(id: string, platform?: string): Observable<string> {
+    const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
+    return this.http.get(`${this.apiUrl}/admin/${id}/invoice-preview${query}`, { responseType: 'text' });
+  }
 }
