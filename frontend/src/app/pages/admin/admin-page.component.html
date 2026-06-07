@@ -2293,6 +2293,7 @@
                 <td>{{ post.publishedAtUtc ? (post.publishedAtUtc | date:'d MMM y') : '—' }}</td>
                 <td>{{ post.createdAtUtc | date:'d MMM y' }}</td>
                 <td class="admin__cell-actions">
+                  <a class="admin__edit-btn" [href]="'/blog/preview/' + post.slug" target="_blank" rel="noopener">Preview</a>
                   <button class="admin__edit-btn" (click)="editBlogPost(post.id)">Edit</button>
                   <button class="admin__delete-btn" (click)="deleteBlogPost(post.id)">Delete</button>
                 </td>

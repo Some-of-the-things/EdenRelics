@@ -40,6 +40,8 @@ export class BlogPostComponent implements OnInit {
   private static readonly CONVERTER_TOKEN = '<!--SIZE_CONVERTER-->';
 
   readonly slug = input.required<string>();
+  /** Bound from the /blog/preview/:slug route — fetches drafts via the admin-only preview endpoint and marks the page noindex. */
+  readonly preview = input(false);
   private readonly http = inject(HttpClient);
   private readonly seo = inject(SeoService);
   // Present only during server render; null in the browser.
@@ -67,28 +69,36 @@ export class BlogPostComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.http.get<BlogPostSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
-      next: (posts) => {
-        // API returns posts newest-first by publishedAtUtc.
-        const idx = posts.findIndex((p) => p.slug === this.slug());
-        if (idx >= 0) {
-          this.newerPost.set(idx > 0 ? posts[idx - 1] : null);
-          this.olderPost.set(idx < posts.length - 1 ? posts[idx + 1] : null);
-        }
-      },
-      error: () => {},
-    });
-    this.http.get<BlogPost>(`${environment.apiUrl}/api/blog/${this.slug()}`).subscribe({
+    // Older/newer navigation only makes sense for published posts; a draft
+    // preview isn't in the public list, so skip it in preview mode.
+    if (!this.preview()) {
+      this.http.get<BlogPostSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
+        next: (posts) => {
+          // API returns posts newest-first by publishedAtUtc.
+          const idx = posts.findIndex((p) => p.slug === this.slug());
+          if (idx >= 0) {
+            this.newerPost.set(idx > 0 ? posts[idx - 1] : null);
+            this.olderPost.set(idx < posts.length - 1 ? posts[idx + 1] : null);
+          }
+        },
+        error: () => {},
+      });
+    }
+    const postEndpoint = this.preview()
+      ? `${environment.apiUrl}/api/blog/preview/${this.slug()}`
+      : `${environment.apiUrl}/api/blog/${this.slug()}`;
+    this.http.get<BlogPost>(postEndpoint).subscribe({
       next: (post) => {
         this.post.set(post);
         const postUrl = `https://edenrelics.co.uk/blog/${post.slug}`;
         this.seo.updateTags({
-          title: post.title,
+          title: this.preview() ? `[Preview] ${post.title}` : post.title,
           description: post.excerpt ?? undefined,
           url: `/blog/${post.slug}`,
           image: post.featuredImageUrl ?? undefined,
           type: 'article',
-          hreflang: true,
+          hreflang: !this.preview(),
+          noIndex: this.preview(),
         });
 
         const blogPosting: Record<string, unknown> = {

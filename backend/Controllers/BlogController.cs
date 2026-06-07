@@ -42,6 +42,20 @@ public partial class BlogController(EdenRelicsDbContext context, IWebHostEnviron
         return Ok(ToDto(post));
     }
 
+    /// <summary>
+    /// Admin-only preview: returns a post by slug whether or not it's published,
+    /// so drafts can be reviewed in the real blog layout before going live.
+    /// </summary>
+    [HttpGet("preview/{slug}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<BlogPostDto>> PreviewBySlug(string slug)
+    {
+        BlogPost? post = await context.BlogPosts
+            .FirstOrDefaultAsync(p => p.Slug == slug);
+        if (post is null) { return NotFound(); }
+        return Ok(ToDto(post));
+    }
+
     [HttpGet("admin/{id:guid}")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<BlogPostDto>> GetByIdAdmin(Guid id)
