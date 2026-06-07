@@ -233,3 +233,9 @@ export function matchProductsToDesigner(
     return designer.productMatchers.some((m) => name.includes(m.toLowerCase()));
   });
 }
+
+/** The designer (if any) whose matchers appear in a product's name. */
+export function findDesignerForProduct(productName: string): DesignerProfile | undefined {
+  const name = productName.toLowerCase();
+  return DESIGNERS.find((d) => d.productMatchers.some((m) => name.includes(m.toLowerCase())));
+}
