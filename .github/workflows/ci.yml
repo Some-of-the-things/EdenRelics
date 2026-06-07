@@ -336,7 +336,7 @@ jobs:
         run: npm ci
 
       - name: Build for staging
-        run: npx ng build --configuration staging
+        run: npm run build -- --configuration staging
 
       - name: Patch server bundle for Workers runtime
         run: |
