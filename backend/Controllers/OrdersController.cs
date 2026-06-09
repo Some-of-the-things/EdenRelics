@@ -5,6 +5,7 @@ using Eden_Relics_BE.DTOs;
 using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
 using Stripe.Checkout;
@@ -30,6 +31,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("public-write")]
     public async Task<ActionResult> Create(CreateOrderDto dto)
     {
         string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);

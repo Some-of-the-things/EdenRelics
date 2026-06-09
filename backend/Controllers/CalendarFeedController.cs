@@ -4,6 +4,7 @@ using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Eden_Relics_BE.Services;
@@ -28,6 +29,7 @@ public class CalendarFeedController(
 
     /// <summary>Returns the iCal feed if the supplied token matches the configured one. 404 otherwise.</summary>
     [HttpGet("obligations.ics")]
+    [EnableRateLimiting("public-write")]
     public async Task<IActionResult> Feed([FromQuery] string? token, CancellationToken ct)
     {
         string? expected = _options.IcalToken;

@@ -6,6 +6,7 @@ using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Eden_Relics_BE.Controllers;
 
@@ -16,8 +17,11 @@ public class MonzoController(
     EdenRelicsDbContext context,
     MonzoService monzo,
     ImageStorageService storage,
+    IDistributedCache cache,
     IWebHostEnvironment env) : ControllerBase
 {
+    private const string OAuthStateKeyPrefix = "monzo_oauth_state:";
+
     [HttpGet("status")]
     public async Task<ActionResult> GetStatus()
     {
@@ -34,7 +38,7 @@ public class MonzoController(
     }
 
     [HttpGet("connect")]
-    public ActionResult Connect()
+    public async Task<ActionResult> Connect()
     {
         if (!monzo.IsOAuthConfigured)
         {
@@ -42,6 +46,12 @@ public class MonzoController(
         }
 
         string state = Guid.NewGuid().ToString("N");
+        // Remember the state we issued so the callback can confirm it's one we started
+        // (CSRF protection for the OAuth round-trip).
+        await cache.SetStringAsync(
+            OAuthStateKeyPrefix + state,
+            "1",
+            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10) });
         string url = monzo.GetAuthorizeUrl(state);
         return Ok(new { url, state });
     }
@@ -53,6 +63,14 @@ public class MonzoController(
         {
             return BadRequest(new { error = "Monzo OAuth is not configured." });
         }
+
+        // Confirm the state matches one we issued (and consume it) before exchanging the code.
+        string stateKey = OAuthStateKeyPrefix + dto.State;
+        if (string.IsNullOrEmpty(dto.State) || await cache.GetStringAsync(stateKey) is null)
+        {
+            return BadRequest(new { error = "Invalid or expired OAuth state. Please start the connection again." });
+        }
+        await cache.RemoveAsync(stateKey);
 
         (MonzoTokenResponse? tokenResponse, string? exchangeError) = await monzo.ExchangeCodeAsync(dto.Code);
         if (tokenResponse is null)
