@@ -103,8 +103,9 @@
   --gold: #B8903C;       /* rules, borders, on-dark text (6.1:1 on dark) */
   --gold-text: #8A6A24;  /* text-safe gold for large text/UI on light */
 
-  --border-color: #E0D5BF; /* warm parchment border */
-  --border-dark: #C9B79A;  /* deeper warm border */
+  --border-color: #E0D5BF; /* warm parchment border — decorative only, fails 3:1 */
+  --border-dark: #C9B79A;  /* deeper warm border — still ~1.7:1, decorative only */
+  --border-control: #8A6A24; /* form-control boundaries — 4.3:1 on cream / 4.5:1 on card (WCAG 1.4.11) */
 
   --font-display: 'Playfair Display', 'Playfair Display Fallback', Georgia, serif;
   --font-body: 'EB Garamond', Georgia, 'Times New Roman', serif;
@@ -172,6 +173,18 @@ button {
 img {
   max-width: 100%;
   height: auto;
+}
+
+/* Respect users who ask for less motion (WCAG 2.3.3 / vestibular safety). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 ::selection {
