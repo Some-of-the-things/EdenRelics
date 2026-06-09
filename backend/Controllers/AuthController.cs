@@ -47,7 +47,8 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponseDto>> Register(RegisterDto dto)
     {
-        IEnumerable<User> existing = await _userRepository.FindAsync(u => u.Email == dto.Email);
+        string normalizedEmail = dto.Email.ToLowerInvariant();
+        IEnumerable<User> existing = await _userRepository.FindAsync(u => u.Email == normalizedEmail);
         if (existing.Any())
         {
             return Conflict(new { message = "Email already registered." });
@@ -57,7 +58,7 @@ public class AuthController : ControllerBase
 
         User user = new()
         {
-            Email = dto.Email.ToLowerInvariant(),
+            Email = normalizedEmail,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             PasswordHash = string.Empty,
