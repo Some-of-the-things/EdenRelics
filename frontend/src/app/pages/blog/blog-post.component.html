@@ -83,11 +83,11 @@
   </article>
 } @else if (error()) {
   <div class="blog-post blog-post--error">
-    <p>Post not found.</p>
+    <p role="alert">Post not found.</p>
     <a routerLink="/blog" class="blog-post__back">Back to the Journal</a>
   </div>
 } @else {
   <div class="blog-post">
-    <p class="blog-post__loading">Loading…</p>
+    <p class="blog-post__loading" role="status">Loading…</p>
   </div>
 }
