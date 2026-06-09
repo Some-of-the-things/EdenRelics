@@ -181,7 +181,7 @@
     color: var(--text-primary);
     transition: border-color var(--transition);
 
-    &:focus {
+    &:focus:not(:focus-visible) {
       outline: none;
       border-color: var(--accent);
     }
@@ -809,7 +809,7 @@
   color: var(--text-primary);
   transition: border-color var(--transition);
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     outline: none;
     border-color: var(--accent);
   }
@@ -1091,7 +1091,7 @@
   background: var(--bg-primary);
   color: var(--text-primary);
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     outline: none;
     border-color: var(--accent);
   }
@@ -1278,7 +1278,7 @@
   background: var(--bg-primary);
   color: var(--text-primary);
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     outline: none;
     border-color: var(--accent);
   }
@@ -1293,7 +1293,7 @@
   background: var(--bg-primary);
   color: var(--text-primary);
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     outline: none;
     border-color: var(--accent);
   }
@@ -1317,7 +1317,7 @@
   color: var(--text-primary);
   text-align: center;
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     outline: none;
     border-color: var(--accent);
   }
@@ -1434,7 +1434,7 @@
   color: var(--text-primary);
   min-height: 80px;
   line-height: 1.6;
-  &:focus { outline: none; border-color: var(--accent); }
+  &:focus:not(:focus-visible) { outline: none; border-color: var(--accent); }
   p { margin: 0 0 0.5em; }
 }
 
@@ -1482,7 +1482,7 @@
   color: var(--text-primary);
   resize: vertical;
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     outline: none;
     border-color: var(--accent);
   }
@@ -1655,7 +1655,7 @@
     transition: border-color var(--transition);
     resize: vertical;
 
-    &:focus {
+    &:focus:not(:focus-visible) {
       outline: none;
       border-color: var(--accent);
     }
@@ -1750,7 +1750,7 @@
   background: var(--bg-primary);
   color: var(--text-primary);
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     outline: none;
     border-color: var(--accent);
   }
@@ -1987,7 +1987,7 @@
   width: 100%;
   min-width: 80px;
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     border-color: var(--accent, #c9a96e);
     outline: none;
   }
@@ -2007,7 +2007,7 @@
   min-width: 70px;
   cursor: pointer;
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     border-color: var(--accent, #c9a96e);
     outline: none;
   }

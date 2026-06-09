@@ -1492,6 +1492,7 @@
                     <td>
                       <select
                         class="monzo__inline-select"
+                        [attr.aria-label]="'Category for ' + txn.description"
                         [ngModel]="txn.userCategory ?? ''"
                         (ngModelChange)="annotateMonzoTransaction(txn, { userCategory: $event })"
                         [disabled]="monzoAnnotating() === txn.id"
@@ -1506,6 +1507,7 @@
                     <td>
                       <select
                         class="monzo__inline-select"
+                        [attr.aria-label]="'Platform for ' + txn.description"
                         [ngModel]="txn.platform ?? ''"
                         (ngModelChange)="annotateMonzoTransaction(txn, { platform: $event })"
                         [disabled]="monzoAnnotating() === txn.id"
@@ -1523,6 +1525,7 @@
                       <input
                         type="text"
                         class="monzo__inline-input"
+                        [attr.aria-label]="'Note for ' + txn.description"
                         [value]="txn.notes ?? ''"
                         (blur)="annotateMonzoTransaction(txn, { notes: $any($event.target).value })"
                         placeholder="Add note..."
@@ -1663,7 +1666,7 @@
         <div class="seo__health-header">
           <h3>Search Traffic & Rankings</h3>
           <div class="seo__traffic-controls">
-            <select [value]="trafficWindowDays()" (change)="changeTrafficWindow(+$any($event.target).value)" class="seo__traffic-window">
+            <select [value]="trafficWindowDays()" (change)="changeTrafficWindow(+$any($event.target).value)" class="seo__traffic-window" aria-label="Traffic time window">
               <option [value]="7">Last 7 days</option>
               <option [value]="28">Last 28 days</option>
               <option [value]="90">Last 90 days</option>
@@ -2168,7 +2171,7 @@
                   }
                   <td class="admin__cell-actions">
                     @if (item.product.inStock) {
-                      <select class="mkt__sold-select" (change)="markSoldOn(item.product.id, $any($event.target).value); $any($event.target).value = ''">
+                      <select class="mkt__sold-select" [attr.aria-label]="'Mark ' + item.product.name + ' sold on a platform'" (change)="markSoldOn(item.product.id, $any($event.target).value); $any($event.target).value = ''">
                         <option value="" disabled selected>Mark sold on...</option>
                         <option value="Website">Website</option>
                         <option value="Etsy">Etsy</option>
