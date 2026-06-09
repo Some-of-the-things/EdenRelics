@@ -220,6 +220,15 @@ public class PasskeyController : ControllerBase
             return Unauthorized();
         }
 
+        // A passkey assertion is a single factor. If the account has MFA enabled, hand back
+        // the same TOTP challenge the password path uses (AuthController.Login) rather than a
+        // full session token, so the second factor can't be bypassed via the passkey flow.
+        if (user.MfaEnabled)
+        {
+            string mfaToken = GenerateMfaToken(user);
+            return Ok(new { mfaRequired = true, mfaToken });
+        }
+
         string token = GenerateToken(user);
         return Ok(new AuthResponseDto(token, new UserDto(user.Id, user.Email, user.FirstName, user.LastName, user.Role, user.EmailVerified)));
     }
@@ -329,6 +338,31 @@ public class PasskeyController : ControllerBase
             audience: _configuration["Jwt:Audience"],
             claims: claims,
             expires: DateTime.UtcNow.AddDays(7),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    // Mirrors AuthController.GenerateMfaToken so the short-lived challenge issued here is
+    // accepted verbatim by the shared /api/auth/mfa-verify endpoint.
+    private string GenerateMfaToken(User user)
+    {
+        string key = _configuration["Jwt:Key"]!;
+        SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(key));
+        SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha256);
+
+        Claim[] claims =
+        [
+            new("mfa_user_id", user.Id.ToString()),
+            new("purpose", "mfa")
+        ];
+
+        JwtSecurityToken token = new(
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(5),
             signingCredentials: credentials
         );
 
