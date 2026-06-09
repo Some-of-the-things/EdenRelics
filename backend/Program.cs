@@ -78,6 +78,22 @@ builder.Services.AddRateLimiter(options =>
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                 }));
+    // Generous cap for abuse-prone but legitimately repeatable public endpoints
+    // (checkout retries, calendar clients polling the iCal feed).
+    options.AddPolicy("public-write", httpContext =>
+        isTesting
+            ? RateLimitPartition.GetNoLimiter("none")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.Request.Headers["Fly-Client-IP"].FirstOrDefault()
+                    ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim()
+                    ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 20,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
 });
 builder.Services.AddResponseCompression(options =>
 {
