@@ -302,8 +302,45 @@ public class AuthController : ControllerBase
     {
         try
         {
+            string? appId = _configuration["OAuth:Facebook:AppId"];
+            string? appSecret = _configuration["OAuth:Facebook:AppSecret"];
+            if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(appSecret))
+            {
+                _logger.LogError("Facebook login attempted but OAuth:Facebook:AppId/AppSecret is not configured; rejecting.");
+                return null;
+            }
+
             HttpClient client = _httpClientFactory.CreateClient();
-            string url = $"https://graph.facebook.com/me?fields=id,email,first_name,last_name&access_token={Uri.EscapeDataString(accessToken)}";
+
+            // Verify the token was actually issued for THIS app and is still valid. Without the
+            // app-id/audience check, a token minted for any other (e.g. attacker-controlled)
+            // Facebook app would be accepted here, enabling account takeover.
+            string appAccessToken = $"{appId}|{appSecret}";
+            string debugUrl = $"https://graph.facebook.com/debug_token?input_token={Uri.EscapeDataString(accessToken)}&access_token={Uri.EscapeDataString(appAccessToken)}";
+            HttpResponseMessage debugResponse = await client.GetAsync(debugUrl);
+            if (!debugResponse.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            using JsonDocument debugDoc = JsonDocument.Parse(await debugResponse.Content.ReadAsStringAsync());
+            if (!debugDoc.RootElement.TryGetProperty("data", out JsonElement data))
+            {
+                return null;
+            }
+
+            bool isValid = data.TryGetProperty("is_valid", out JsonElement validEl) && validEl.GetBoolean();
+            string? tokenAppId = data.TryGetProperty("app_id", out JsonElement appIdEl) ? appIdEl.GetString() : null;
+            if (!isValid || tokenAppId != appId)
+            {
+                _logger.LogWarning("Rejected Facebook token (is_valid={IsValid}, app_id matches={Matches}).", isValid, tokenAppId == appId);
+                return null;
+            }
+
+            // Sign the profile call with appsecret_proof so an intercepted access token can't be
+            // replayed against the Graph API without also knowing the app secret.
+            string proof = ComputeAppSecretProof(accessToken, appSecret);
+            string url = $"https://graph.facebook.com/me?fields=id,email,first_name,last_name&access_token={Uri.EscapeDataString(accessToken)}&appsecret_proof={proof}";
             HttpResponseMessage response = await client.GetAsync(url);
             if (!response.IsSuccessStatusCode)
             {
@@ -329,6 +366,13 @@ public class AuthController : ControllerBase
         {
             return null;
         }
+    }
+
+    private static string ComputeAppSecretProof(string accessToken, string appSecret)
+    {
+        using HMACSHA256 hmac = new(Encoding.UTF8.GetBytes(appSecret));
+        byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(accessToken));
+        return Convert.ToHexStringLower(hash);
     }
 
     private async Task<ExternalUserInfo?> VerifyAppleToken(string idToken)
