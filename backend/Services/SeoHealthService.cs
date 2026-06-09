@@ -23,6 +23,7 @@ public partial class SeoHealthService(
     {
         using IServiceScope scope = scopeFactory.CreateScope();
         EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+        SitemapRoutesService sitemapRoutes = scope.ServiceProvider.GetRequiredService<SitemapRoutesService>();
 
         List<Product> products = await db.Products.ToListAsync(ct);
         List<BlogPost> blogPosts = await db.BlogPosts.ToListAsync(ct);
@@ -57,14 +58,15 @@ public partial class SeoHealthService(
             ? (int)Math.Round(blogPosts.Average(b => (double)CountWords(b.Content)))
             : 0;
 
-        // Sitemap (matches SitemapController's live-product filter)
-        List<Product> liveSitemapProducts = products.Where(p => p.Status != ProductStatus.Stock).ToList();
+        // Sitemap — mirror SitemapController exactly: live (non-deleted) products only
+        // (NOT sold/stock), published posts, and the static routes the frontend serves.
+        List<Product> liveSitemapProducts = products.Where(p => p.Status == ProductStatus.Live).ToList();
         int productSitemapImages = liveSitemapProducts.Sum(p =>
             (string.IsNullOrWhiteSpace(p.ImageUrl) ? 0 : 1) + p.AdditionalImageUrls.Count);
         int blogSitemapImages = blogPosts.Where(b => b.Published)
             .Count(b => !string.IsNullOrWhiteSpace(b.FeaturedImageUrl));
-        // Static page count mirrors SitemapController.staticPages (length 12 today).
-        const int staticPageCount = 12;
+        // Static page count comes from the same source the sitemap uses, so it never drifts.
+        int staticPageCount = (await sitemapRoutes.GetAsync()).Count;
         snapshot.SitemapUrlCount = staticPageCount + liveSitemapProducts.Count + blogPosts.Count(b => b.Published);
         snapshot.SitemapImageEntryCount = productSitemapImages + blogSitemapImages;
 

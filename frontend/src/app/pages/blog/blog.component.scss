@@ -478,3 +478,18 @@
     }
   }
 }
+
+.blog-post__preview-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #ede4d0;
+  border: 1px solid #c9973a;
+  border-left: 4px solid #9b4a1e;
+  color: #5c3d1e;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+}

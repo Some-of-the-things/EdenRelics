@@ -184,6 +184,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'blog/preview/:slug',
+    data: { preview: true },
+    loadComponent: () =>
+      import('./pages/blog/blog-post.component').then(
+        (m) => m.BlogPostComponent
+      ),
+  },
+  {
     path: 'blog/:slug',
     loadComponent: () =>
       import('./pages/blog/blog-post.component').then(

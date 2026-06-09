@@ -141,6 +141,83 @@ export const DESIGNERS: DesignerProfile[] = [
     ],
     productMatchers: ['st michael'],
   },
+  {
+    slug: 'viyella',
+    name: 'Viyella',
+    metaTitle: 'Vintage Viyella — British Wool & Cotton Heritage',
+    metaDescription: 'Authentic vintage Viyella — the British wool-cotton cloth first branded in 1890s Nottingham. Soft tartan shirts, blouses and tailored pieces, hand-picked.',
+    origin: 'Nottingham, England — fabric brand registered in the 1890s',
+    intro: 'Viyella is one of the oldest names in British cloth: a soft twill of merino wool and cotton, first branded by William Hollins & Co. of Nottingham in the 1890s and often cited as one of the world\'s earliest registered fabric trademarks. Vintage Viyella — tartan shirts, tailored blouses, and checked separates — is prized for a warmth and softness that modern blends rarely match.',
+    history: [
+      'Viyella was developed by William Hollins & Co. at their mills near Nottingham, and the name was registered as a fabric trademark in the 1890s — frequently described as the first branded fabric of its kind. The signature cloth is a twill blend of merino wool and cotton.',
+      'Through the 20th century Viyella became a byword for quality British tailoring and easy warmth — used for shirts, blouses, dresses and childrenswear, and sold both as cloth by the yard and as finished garments under the Viyella name.',
+      'Genuine vintage Viyella is collected today for its soft handle, its tartans and checks, and a build quality that has kept pieces wearable for decades. As with most heritage British labels, the woven label and the fabric itself are the surest signs of authenticity.',
+    ],
+    identification: [
+      'Look for the woven "Viyella" label, often paired with "Made in England" or "Made in Great Britain" on older pieces.',
+      'The cloth is a soft, lightly brushed wool-cotton twill — check the composition label for a wool/cotton blend rather than pure cotton or synthetic.',
+      'Tartans, tattersall checks, and fine prints are characteristic.',
+      'Quality construction: neat seams, substantial buttons, and a soft but substantial drape.',
+    ],
+    productMatchers: ['viyella'],
+  },
+  {
+    slug: 'robbie-bee',
+    name: 'Robbie Bee',
+    metaTitle: 'Vintage Robbie Bee Dresses — 1980s & 90s American',
+    metaDescription: 'Authentic vintage Robbie Bee dresses — the 1980s-90s American label of floral rayon and silky shift styles. Hand-picked, inspected, UK shipping.',
+    origin: 'USA — active 1980s-1990s',
+    intro: 'Robbie Bee was a popular American dress label of the 1980s and 90s, producing the floral rayons, silky shifts, and easy department-store silhouettes now sought after on the vintage market — part of the same cohort as Carole Little, Caroline Wells, and R&K Originals.',
+    history: [
+      'Robbie Bee was one of the mid-priced American dress labels that filled US department stores through the 1980s and 90s, alongside names like Carole Little, R&K Originals, and Caroline Wells.',
+      'Its pieces favour the era\'s wearable silhouettes — florals, shifts, and midi dresses in rayon and silky fabrics — the kind of relaxed, printed dressing that has come back strongly in 2020s vintage.',
+      'As with most of this cohort, genuine pieces are now firmly vintage and increasingly collected for their prints and drape rather than for a single signature design.',
+    ],
+    identification: [
+      'Look for the woven "Robbie Bee" label.',
+      'Fabrics are typically rayon or silky synthetics with a fluid drape.',
+      'All-over florals and simple shift or midi silhouettes are characteristic of the era.',
+    ],
+    productMatchers: ['robbie bee'],
+  },
+  {
+    slug: 'rk-originals',
+    name: 'R&K Originals',
+    metaTitle: 'Vintage R&K Originals Dresses — Mid-Century to 90s',
+    metaDescription: 'Authentic vintage R&K Originals dresses — the long-running American label of printed day dresses and florals. Hand-picked and inspected, UK shipping.',
+    origin: 'USA — mid-20th century onward',
+    intro: 'R&K Originals was a long-running American dress label, known from the mid-twentieth century onward for printed day dresses and florals at accessible prices. Surviving pieces are collected for their period prints and easy, wearable silhouettes.',
+    history: [
+      'R&K Originals was a familiar name in American department stores across several decades, producing printed day dresses, shirtwaists, and florals for the mass market.',
+      'The label sits in the same accessible, printed-dress tradition as Carole Little and Caroline Wells — relaxed, wearable, and strongly of its era.',
+      'Genuine vintage R&K Originals is valued for its prints and construction; as with the cohort, the woven label and the fabric are the surest authenticity guides.',
+    ],
+    identification: [
+      'Look for the woven "R&K Originals" label.',
+      'Expect period printed fabrics — florals and small-scale prints — often in rayon or rayon-feel blends.',
+      'Classic day-dress and maxi silhouettes typical of the label\'s long run.',
+    ],
+    productMatchers: ['r&k originals'],
+  },
+  {
+    slug: 'mondi',
+    name: 'Mondi',
+    metaTitle: 'Vintage Mondi — 1980s German Print Fashion',
+    metaDescription: 'Authentic vintage Mondi — the German label known for bold 1980s prints, wrap dresses and colourful separates. Hand-picked and inspected, UK shipping.',
+    origin: 'Germany — founded in the 1960s',
+    intro: 'Mondi was a German fashion label that became known through the 1970s and 80s for bold prints, wrap dresses, and richly coloured separates — the kind of confident, print-led European dressing that stands out on the vintage market today.',
+    history: [
+      'Mondi emerged from the German fashion industry in the 1960s and grew into a recognisable European ready-to-wear label, at its most distinctive through the 1980s.',
+      'Its signature was print and colour — botanical and abstract patterns, wrap and blouson silhouettes, and a polished continental finish.',
+      'Vintage Mondi is collected for exactly those prints and that quality of make; genuine pieces carry the woven Mondi label.',
+    ],
+    identification: [
+      'Look for the woven "Mondi" label, often with "Made in West Germany" (pre-1990) or "Made in Germany" on later pieces.',
+      'Bold prints — botanical, abstract, and paisley — are characteristic.',
+      'Quality European construction and a fluid drape.',
+    ],
+    productMatchers: ['mondi'],
+  },
 ];
 
 export function findDesignerBySlug(slug: string): DesignerProfile | undefined {
@@ -155,4 +232,10 @@ export function matchProductsToDesigner(
     const name = p.name.toLowerCase();
     return designer.productMatchers.some((m) => name.includes(m.toLowerCase()));
   });
+}
+
+/** The designer (if any) whose matchers appear in a product's name. */
+export function findDesignerForProduct(productName: string): DesignerProfile | undefined {
+  const name = productName.toLowerCase();
+  return DESIGNERS.find((d) => d.productMatchers.some((m) => name.includes(m.toLowerCase())));
 }

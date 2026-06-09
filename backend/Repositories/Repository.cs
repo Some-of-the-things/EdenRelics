@@ -43,6 +43,18 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         return await _dbSet.Where(predicate).ToListAsync();
     }
 
+    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate, bool includeDeleted)
+    {
+        // includeDeleted bypasses the IsDeleted query filter so callers can find
+        // soft-deleted rows that still occupy a unique index (e.g. to resurrect
+        // a previously-removed favourite instead of inserting a duplicate).
+        if (!includeDeleted)
+        {
+            return await _dbSet.Where(predicate).ToListAsync();
+        }
+        return await _dbSet.IgnoreQueryFilters().Where(predicate).ToListAsync();
+    }
+
     public async Task<T> AddAsync(T entity)
     {
         await _dbSet.AddAsync(entity);

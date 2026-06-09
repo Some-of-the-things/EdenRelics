@@ -1,5 +1,10 @@
 @if (post(); as post) {
   <article class="blog-post">
+    @if (preview()) {
+      <div class="blog-post__preview-banner" role="status">
+        Preview — this post is not published yet and is visible to admins only.
+      </div>
+    }
     <header class="blog-post__masthead">
       <a routerLink="/blog" class="blog-post__blogname">The Eden Relics Journal</a>
       <div class="blog-post__masthead-rule" aria-hidden="true">✦</div>

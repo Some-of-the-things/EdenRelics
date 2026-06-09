@@ -12,6 +12,8 @@ import { FavouritesService } from '../../services/favourites.service';
 import { LocalPricePipe } from '../../pipes/local-price.pipe';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { ShareButtonsComponent } from '../share-buttons/share-buttons.component';
+import { resolveProductStatus } from '../../utils/product-status';
+import { findDesignerForProduct } from '../../pages/designers/designers.data';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -82,6 +84,18 @@ export class ProductDetailComponent {
     const p = this.product();
     if (!p) return [];
     return [p.imageUrl, ...(p.additionalImageUrls ?? [])];
+  });
+
+  /** A sold one-of-one piece can't be bought again — surface a "Sold" state instead of Add to Cart. */
+  readonly isSold = computed(() => {
+    const p = this.product();
+    return p ? resolveProductStatus(p) === 'sold' : false;
+  });
+
+  /** The designer collection to point a sold-item visitor toward, if the piece matches one. */
+  readonly soldDesigner = computed(() => {
+    const p = this.product();
+    return p ? findDesignerForProduct(p.name) : undefined;
   });
 
   readonly currentImage = computed(() =>

@@ -108,5 +108,30 @@ public class FavouritesTests : IClassFixture<ApiFactory>
         Assert.Contains(favourites, f => f.ProductId == SeededProductId2);
     }
 
+    [Fact]
+    public async Task AddFavourite_AfterRemoval_Resurrects_Returns200_AndReappears()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAndLogin(client, "fav-readd@test.com");
+
+        // Like
+        HttpResponseMessage first = await client.PostAsync($"/api/favourites/{SeededProductId1}", null);
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+
+        // Unlike (soft-delete)
+        HttpResponseMessage del = await client.DeleteAsync($"/api/favourites/{SeededProductId1}");
+        Assert.Equal(HttpStatusCode.NoContent, del.StatusCode);
+
+        // Like again — previously failed on the (UserId, ProductId) unique index
+        // because the soft-deleted row still occupied the slot.
+        HttpResponseMessage second = await client.PostAsync($"/api/favourites/{SeededProductId1}", null);
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+
+        // The favourite reappears for the user.
+        List<FavouriteDto>? favourites = await client.GetFromJsonAsync<List<FavouriteDto>>("/api/favourites", JsonOptions);
+        Assert.NotNull(favourites);
+        Assert.Contains(favourites, f => f.ProductId == SeededProductId1);
+    }
+
     private record FavouriteDto(Guid ProductId, bool NotifyOnSale);
 }

@@ -40,14 +40,24 @@ public class FavouritesController : ControllerBase
             return Unauthorized();
         }
 
+        // Include soft-deleted rows: DeleteAsync soft-deletes, but the
+        // (UserId, ProductId) unique index ignores IsDeleted — so a previously
+        // removed favourite still occupies the slot. Resurrect it rather than
+        // inserting a duplicate (which would hit the unique constraint).
         IEnumerable<Favourite> existing = await _repository.FindAsync(
-            f => f.UserId == userId.Value && f.ProductId == productId);
-        if (existing.Any())
+            f => f.UserId == userId.Value && f.ProductId == productId, includeDeleted: true);
+        Favourite? existingFav = existing.FirstOrDefault();
+        if (existingFav is not null)
         {
-            Favourite existingFav = existing.First();
-            if (dto is not null && existingFav.NotifyOnSale != dto.NotifyOnSale)
+            bool wasDeleted = existingFav.IsDeleted;
+            bool notifyChanged = dto is not null && existingFav.NotifyOnSale != dto.NotifyOnSale;
+            if (wasDeleted || notifyChanged)
             {
-                existingFav.NotifyOnSale = dto.NotifyOnSale;
+                existingFav.IsDeleted = false;
+                if (dto is not null)
+                {
+                    existingFav.NotifyOnSale = dto.NotifyOnSale;
+                }
                 await _repository.UpdateAsync(existingFav);
             }
             return Ok();
