@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
 using Eden_Relics_BE.Repositories;
+using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,10 +18,12 @@ public class AccountController : ControllerBase
 {
     private readonly IRepository<User> _userRepository;
     private readonly PasswordHasher<User> _passwordHasher = new();
+    private readonly JwtTokenService _tokenService;
 
-    public AccountController(IRepository<User> userRepository)
+    public AccountController(IRepository<User> userRepository, JwtTokenService tokenService)
     {
         _userRepository = userRepository;
+        _tokenService = tokenService;
     }
 
     [HttpGet("profile")]
@@ -127,9 +130,13 @@ public class AccountController : ControllerBase
         }
 
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
+        user.TokenVersion++; // invalidate every previously-issued token...
         await _userRepository.UpdateAsync(user);
 
-        return Ok(new { message = "Password changed successfully." });
+        // ...then hand this session a fresh token so the user stays signed in here
+        // while any other/stolen sessions are logged out.
+        string token = _tokenService.GenerateToken(user);
+        return Ok(new { message = "Password changed successfully.", token });
     }
 
     [HttpPost("mfa/setup")]

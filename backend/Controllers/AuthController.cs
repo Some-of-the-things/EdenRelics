@@ -28,11 +28,12 @@ public class AuthController : ControllerBase
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IEmailService _emailService;
     private readonly PasswordHasher<User> _passwordHasher = new();
+    private readonly JwtTokenService _tokenService;
 
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IRepository<User> userRepository, IConfiguration configuration, IHttpClientFactory httpClientFactory, IEmailService emailService, IWebHostEnvironment environment, ILogger<AuthController> logger)
+    public AuthController(IRepository<User> userRepository, IConfiguration configuration, IHttpClientFactory httpClientFactory, IEmailService emailService, IWebHostEnvironment environment, ILogger<AuthController> logger, JwtTokenService tokenService)
     {
         _userRepository = userRepository;
         _configuration = configuration;
@@ -40,6 +41,7 @@ public class AuthController : ControllerBase
         _emailService = emailService;
         _environment = environment;
         _logger = logger;
+        _tokenService = tokenService;
     }
 
     [HttpPost("register")]
@@ -163,6 +165,7 @@ public class AuthController : ControllerBase
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiresUtc = null;
+        user.TokenVersion++; // invalidate any sessions issued before the reset
         await _userRepository.UpdateAsync(user);
 
         return Ok(new { message = "Password has been reset successfully." });
@@ -417,53 +420,9 @@ public class AuthController : ControllerBase
 
     private record ExternalUserInfo(string ProviderId, string Email, string? FirstName, string? LastName);
 
-    private string GenerateToken(User user)
-    {
-        string key = _configuration["Jwt:Key"]!;
-        SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(key));
-        SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha256);
+    private string GenerateToken(User user) => _tokenService.GenerateToken(user);
 
-        Claim[] claims =
-        [
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role),
-            new(ClaimTypes.GivenName, user.FirstName)
-        ];
-
-        JwtSecurityToken token = new(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddDays(7),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    private string GenerateMfaToken(User user)
-    {
-        string key = _configuration["Jwt:Key"]!;
-        SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(key));
-        SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha256);
-
-        Claim[] claims =
-        [
-            new("mfa_user_id", user.Id.ToString()),
-            new("purpose", "mfa")
-        ];
-
-        JwtSecurityToken token = new(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(5),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
+    private string GenerateMfaToken(User user) => _tokenService.GenerateMfaToken(user);
 
     private Guid? ValidateMfaToken(string mfaToken)
     {
@@ -541,6 +500,13 @@ public class AuthController : ControllerBase
 
             User? user = await _userRepository.GetByIdAsync(userId);
             if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            // Don't let a token that predates a credential change be refreshed back to life.
+            string? versionClaim = principal.FindFirstValue("token_version");
+            if (versionClaim is null || !int.TryParse(versionClaim, out int tokenVersion) || tokenVersion != user.TokenVersion)
             {
                 return Unauthorized();
             }

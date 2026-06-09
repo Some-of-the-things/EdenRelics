@@ -164,8 +164,15 @@ export class AuthService {
     return this.http.put<AccountProfileDto>(`${this.accountUrl}/payment`, payment, this.authHeaders());
   }
 
-  changePassword(currentPassword: string, newPassword: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.accountUrl}/change-password`, { currentPassword, newPassword }, this.authHeaders());
+  changePassword(currentPassword: string, newPassword: string): Observable<{ message: string; token?: string }> {
+    return this.http.post<{ message: string; token?: string }>(`${this.accountUrl}/change-password`, { currentPassword, newPassword }, this.authHeaders())
+      .pipe(tap(res => {
+        // The server rotates the token version on password change (logging out other
+        // sessions); store the fresh token it returns so this session stays signed in.
+        if (res.token && isPlatformBrowser(this.platformId)) {
+          localStorage.setItem('eden_token', res.token);
+        }
+      }));
   }
 
   setupMfa(): Observable<MfaSetupResponse> {
