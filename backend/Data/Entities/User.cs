@@ -16,6 +16,13 @@ public class User : BaseEntity
     public bool EmailVerified { get; set; }
     public string? EmailVerificationToken { get; set; }
 
+    /// <summary>
+    /// Incremented whenever credentials change (password change/reset). Embedded as a
+    /// claim in issued JWTs and checked on every request, so changing the password
+    /// invalidates all previously-issued tokens.
+    /// </summary>
+    public int TokenVersion { get; set; }
+
     // Delivery address
     public string? DeliveryAddressLine1 { get; set; }
     public string? DeliveryAddressLine2 { get; set; }

@@ -12,9 +12,9 @@
         <div class="cart-item">
           <img [src]="item.product.imageUrl" [alt]="item.product.name" class="cart-item__image" />
           <div class="cart-item__info">
-            <h3 class="cart-item__name">
+            <h2 class="cart-item__name">
               <a [routerLink]="['/product', item.product.slug || item.product.id]">{{ item.product.name }}</a>
-            </h3>
+            </h2>
             <p class="cart-item__era">{{ item.product.era }} &middot; Size {{ item.product.size }}</p>
           </div>
           <span class="cart-item__price">{{ (item.product.salePrice ?? item.product.price) | currency:'GBP' }}</span>

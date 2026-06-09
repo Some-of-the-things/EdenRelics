@@ -32,12 +32,12 @@
     </div>
   </div>
 
-  <button class="admin__menu-toggle" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+  <button class="admin__menu-toggle" (click)="toggleMobileMenu()" aria-label="Toggle navigation" [attr.aria-expanded]="mobileMenuOpen()" aria-controls="admin-tabs">
     <span class="admin__menu-bar"></span>
     <span class="admin__menu-bar"></span>
     <span class="admin__menu-bar"></span>
   </button>
-  <div class="admin__tabs" [class.admin__tabs--open]="mobileMenuOpen()">
+  <div class="admin__tabs" id="admin-tabs" [class.admin__tabs--open]="mobileMenuOpen()">
     <button
       class="admin__tab"
       [class.admin__tab--active]="activeTab() === 'products'"
@@ -162,6 +162,7 @@
         #sigCode
         readonly
         rows="22"
+        aria-label="Email signature HTML source"
         (focus)="sigCode.select()"
         style="width:100%; box-sizing:border-box; font-family:monospace; font-size:12px; line-height:1.5; padding:12px; border:1px solid #ddd5c5;"
       >{{ emailSignatureHtml }}</textarea>
@@ -326,6 +327,13 @@
                     <span class="admin__gallery-badge">Primary</span>
                   }
                   <button type="button" class="admin__gallery-remove" (click)="removeProductImage(img)" aria-label="Remove image">&times;</button>
+                  <div class="admin__gallery-controls">
+                    <button type="button" class="admin__gallery-ctrl" (click)="moveImage(i, -1)" [disabled]="i === 0" aria-label="Move photo earlier">&larr;</button>
+                    <button type="button" class="admin__gallery-ctrl" (click)="moveImage(i, 1)" [disabled]="i === allProductImages().length - 1" aria-label="Move photo later">&rarr;</button>
+                    @if (img !== form.imageUrl) {
+                      <button type="button" class="admin__gallery-ctrl" (click)="setPrimaryImage(img)" aria-label="Set as primary photo">&#9733;</button>
+                    }
+                  </div>
                 </div>
               }
               <label class="admin__gallery-add">
@@ -671,6 +679,7 @@
                 <td>
                   <select
                     class="admin__status-select"
+                    aria-label="Order status"
                     [attr.data-status]="order.status"
                     [ngModel]="order.status"
                     (ngModelChange)="updateOrderStatus(order, $event)"

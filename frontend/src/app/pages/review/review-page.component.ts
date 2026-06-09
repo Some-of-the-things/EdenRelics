@@ -60,6 +60,23 @@ export class ReviewPageComponent implements OnInit {
     else this.productRating.set(value);
   }
 
+  // Arrow-key navigation for the star radiogroups (WAI-ARIA radio pattern): move
+  // selection and focus relative to the focused star.
+  onStarKey(field: 'transaction' | 'delivery' | 'product', current: number, event: KeyboardEvent): void {
+    let next: number;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowUp') next = Math.min(5, current + 1);
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') next = Math.max(1, current - 1);
+    else if (event.key === 'Home') next = 1;
+    else if (event.key === 'End') next = 5;
+    else return;
+
+    event.preventDefault();
+    this.setRating(field, next);
+    const group = (event.currentTarget as HTMLElement).parentElement;
+    const target = group?.querySelectorAll('button')[next - 1] as HTMLElement | undefined;
+    target?.focus();
+  }
+
   submit(): void {
     this.error.set(null);
     if (!this.transactionRating() || !this.deliveryRating() || !this.productRating()) {

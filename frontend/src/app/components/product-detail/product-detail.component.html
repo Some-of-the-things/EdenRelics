@@ -5,13 +5,15 @@
       <div class="detail__image-wrap" [class.detail__image-wrap--has-thumbs]="allImages().length > 1">
         @if (allImages().length > 1) {
           <div class="detail__thumbs">
-            @for (img of allImages(); track img) {
+            @for (img of allImages(); track img; let i = $index) {
               <button
                 class="detail__thumb"
                 [class.detail__thumb--active]="currentImage() === img"
+                [attr.aria-pressed]="currentImage() === img"
+                [attr.aria-label]="'View image ' + (i + 1)"
                 (click)="selectImage(img)"
               >
-                <img [src]="srcAt(img, 400)" [alt]="product.name" loading="lazy" decoding="async" />
+                <img [src]="srcAt(img, 400)" alt="" loading="lazy" decoding="async" />
               </button>
             }
           </div>
@@ -99,7 +101,7 @@
 
     @if (showSalePrompt()) {
       <div class="detail__overlay" (click)="confirmSaleNotification(false)"></div>
-      <div class="detail__prompt" role="dialog" aria-modal="true" aria-label="Sale notification preference">
+      <div class="detail__prompt" role="dialog" aria-modal="true" aria-label="Sale notification preference" appFocusTrap (keydown.escape)="confirmSaleNotification(false)">
         <p class="detail__prompt-text">Would you like to be emailed if this item goes on sale?</p>
         <div class="detail__prompt-actions">
           <button class="detail__prompt-btn detail__prompt-btn--yes" (click)="confirmSaleNotification(true)">Yes, notify me</button>

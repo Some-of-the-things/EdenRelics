@@ -712,6 +712,42 @@
   }
 }
 
+/* Keyboard-accessible reorder / set-primary controls (alternative to drag-and-drop). */
+.admin__gallery-controls {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition);
+
+  .admin__gallery-item:hover &,
+  .admin__gallery-item:focus-within & {
+    opacity: 1;
+  }
+}
+
+.admin__gallery-ctrl {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 3px;
+  background: rgba(28, 21, 16, 0.85);
+  color: var(--text-inverse);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+}
+
 .admin__gallery-add {
   width: 80px;
   height: 100px;
@@ -1107,7 +1143,7 @@
   border-bottom: 1px solid var(--border-color);
 
   &--issues { color: #c53030; }
-  &--warnings { color: #d69e2e; }
+  &--warnings { color: #8a6508; } /* was #d69e2e (~2.25:1); darkened for 4.5:1 text (WCAG 1.4.3) */
   &--passed { color: #2d7a3a; }
 }
 
@@ -1312,7 +1348,7 @@
 
   &--good { color: #2d7a3a; }
   &--ok { color: #8a6508; }
-  &--poor { color: #c96226; }
+  &--poor { color: #a8431a; } /* was #c96226 (~3.5:1); darkened for 4.5:1 text */
   &--none { color: var(--text-muted); font-weight: 400; font-style: italic; }
 }
 
@@ -1496,7 +1532,7 @@
 
   &[data-status='Active'] { color: #2d7a3a; }
   &[data-status='Sold'] { color: var(--text-muted); }
-  &[data-status='PendingRemoval'] { color: #d69e2e; }
+  &[data-status='PendingRemoval'] { color: #8a6508; } /* was #d69e2e (~2.25:1) */
   &[data-status='Removed'] { color: var(--text-muted); }
 }
 
@@ -1978,19 +2014,19 @@
 }
 
 .monzo__declined {
-  color: #e74c3c;
+  color: var(--accent-sale); /* was #e74c3c (~3.7:1); darkened for 4.5:1 on light (WCAG 1.4.3) */
   font-size: 0.8rem;
   font-weight: 600;
 }
 
 .monzo__pending {
-  color: #f39c12;
+  color: #8a6600; /* was #f39c12 (~2.0:1) */
   font-size: 0.8rem;
   font-weight: 600;
 }
 
 .monzo__settled {
-  color: #2ecc71;
+  color: #146c34; /* was #2ecc71 (~1.9:1) */
   font-size: 0.8rem;
 }
 

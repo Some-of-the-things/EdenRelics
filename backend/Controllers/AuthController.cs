@@ -28,11 +28,12 @@ public class AuthController : ControllerBase
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IEmailService _emailService;
     private readonly PasswordHasher<User> _passwordHasher = new();
+    private readonly JwtTokenService _tokenService;
 
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IRepository<User> userRepository, IConfiguration configuration, IHttpClientFactory httpClientFactory, IEmailService emailService, IWebHostEnvironment environment, ILogger<AuthController> logger)
+    public AuthController(IRepository<User> userRepository, IConfiguration configuration, IHttpClientFactory httpClientFactory, IEmailService emailService, IWebHostEnvironment environment, ILogger<AuthController> logger, JwtTokenService tokenService)
     {
         _userRepository = userRepository;
         _configuration = configuration;
@@ -40,12 +41,14 @@ public class AuthController : ControllerBase
         _emailService = emailService;
         _environment = environment;
         _logger = logger;
+        _tokenService = tokenService;
     }
 
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponseDto>> Register(RegisterDto dto)
     {
-        IEnumerable<User> existing = await _userRepository.FindAsync(u => u.Email == dto.Email);
+        string normalizedEmail = dto.Email.ToLowerInvariant();
+        IEnumerable<User> existing = await _userRepository.FindAsync(u => u.Email == normalizedEmail);
         if (existing.Any())
         {
             return Conflict(new { message = "Email already registered." });
@@ -55,7 +58,7 @@ public class AuthController : ControllerBase
 
         User user = new()
         {
-            Email = dto.Email.ToLowerInvariant(),
+            Email = normalizedEmail,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             PasswordHash = string.Empty,
@@ -163,6 +166,7 @@ public class AuthController : ControllerBase
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiresUtc = null;
+        user.TokenVersion++; // invalidate any sessions issued before the reset
         await _userRepository.UpdateAsync(user);
 
         return Ok(new { message = "Password has been reset successfully." });
@@ -302,8 +306,45 @@ public class AuthController : ControllerBase
     {
         try
         {
+            string? appId = _configuration["OAuth:Facebook:AppId"];
+            string? appSecret = _configuration["OAuth:Facebook:AppSecret"];
+            if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(appSecret))
+            {
+                _logger.LogError("Facebook login attempted but OAuth:Facebook:AppId/AppSecret is not configured; rejecting.");
+                return null;
+            }
+
             HttpClient client = _httpClientFactory.CreateClient();
-            string url = $"https://graph.facebook.com/me?fields=id,email,first_name,last_name&access_token={Uri.EscapeDataString(accessToken)}";
+
+            // Verify the token was actually issued for THIS app and is still valid. Without the
+            // app-id/audience check, a token minted for any other (e.g. attacker-controlled)
+            // Facebook app would be accepted here, enabling account takeover.
+            string appAccessToken = $"{appId}|{appSecret}";
+            string debugUrl = $"https://graph.facebook.com/debug_token?input_token={Uri.EscapeDataString(accessToken)}&access_token={Uri.EscapeDataString(appAccessToken)}";
+            HttpResponseMessage debugResponse = await client.GetAsync(debugUrl);
+            if (!debugResponse.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            using JsonDocument debugDoc = JsonDocument.Parse(await debugResponse.Content.ReadAsStringAsync());
+            if (!debugDoc.RootElement.TryGetProperty("data", out JsonElement data))
+            {
+                return null;
+            }
+
+            bool isValid = data.TryGetProperty("is_valid", out JsonElement validEl) && validEl.GetBoolean();
+            string? tokenAppId = data.TryGetProperty("app_id", out JsonElement appIdEl) ? appIdEl.GetString() : null;
+            if (!isValid || tokenAppId != appId)
+            {
+                _logger.LogWarning("Rejected Facebook token (is_valid={IsValid}, app_id matches={Matches}).", isValid, tokenAppId == appId);
+                return null;
+            }
+
+            // Sign the profile call with appsecret_proof so an intercepted access token can't be
+            // replayed against the Graph API without also knowing the app secret.
+            string proof = ComputeAppSecretProof(accessToken, appSecret);
+            string url = $"https://graph.facebook.com/me?fields=id,email,first_name,last_name&access_token={Uri.EscapeDataString(accessToken)}&appsecret_proof={proof}";
             HttpResponseMessage response = await client.GetAsync(url);
             if (!response.IsSuccessStatusCode)
             {
@@ -329,6 +370,13 @@ public class AuthController : ControllerBase
         {
             return null;
         }
+    }
+
+    private static string ComputeAppSecretProof(string accessToken, string appSecret)
+    {
+        using HMACSHA256 hmac = new(Encoding.UTF8.GetBytes(appSecret));
+        byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(accessToken));
+        return Convert.ToHexStringLower(hash);
     }
 
     private async Task<ExternalUserInfo?> VerifyAppleToken(string idToken)
@@ -373,53 +421,9 @@ public class AuthController : ControllerBase
 
     private record ExternalUserInfo(string ProviderId, string Email, string? FirstName, string? LastName);
 
-    private string GenerateToken(User user)
-    {
-        string key = _configuration["Jwt:Key"]!;
-        SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(key));
-        SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha256);
+    private string GenerateToken(User user) => _tokenService.GenerateToken(user);
 
-        Claim[] claims =
-        [
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role),
-            new(ClaimTypes.GivenName, user.FirstName)
-        ];
-
-        JwtSecurityToken token = new(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddDays(7),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    private string GenerateMfaToken(User user)
-    {
-        string key = _configuration["Jwt:Key"]!;
-        SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(key));
-        SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha256);
-
-        Claim[] claims =
-        [
-            new("mfa_user_id", user.Id.ToString()),
-            new("purpose", "mfa")
-        ];
-
-        JwtSecurityToken token = new(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(5),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
+    private string GenerateMfaToken(User user) => _tokenService.GenerateMfaToken(user);
 
     private Guid? ValidateMfaToken(string mfaToken)
     {
@@ -497,6 +501,13 @@ public class AuthController : ControllerBase
 
             User? user = await _userRepository.GetByIdAsync(userId);
             if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            // Don't let a token that predates a credential change be refreshed back to life.
+            string? versionClaim = principal.FindFirstValue("token_version");
+            if (versionClaim is null || !int.TryParse(versionClaim, out int tokenVersion) || tokenVersion != user.TokenVersion)
             {
                 return Unauthorized();
             }

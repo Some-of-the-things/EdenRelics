@@ -42,7 +42,7 @@
   }
 
   input {
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-control);
     padding: 0.6rem 0.65rem;
     font-family: var(--font-body);
     font-size: 0.9rem;
@@ -50,10 +50,8 @@
     color: var(--text-primary);
     transition: border-color var(--transition);
 
-    &:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
+    &:focus { border-color: var(--accent); }
+    &:focus:not(:focus-visible) { outline: none; }
   }
 }
 
@@ -106,12 +104,21 @@
   font-size: 0.85rem;
   color: var(--text-muted);
 
-  a {
+  a,
+  .login__linkbtn {
     color: var(--accent);
     text-decoration: none;
 
     &:hover {
       text-decoration: underline;
     }
+  }
+
+  .login__linkbtn {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
   }
 }

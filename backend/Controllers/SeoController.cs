@@ -11,7 +11,7 @@ namespace Eden_Relics_BE.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
-public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRelicsDbContext context, RankCheckerService rankChecker, SeoHealthService seoHealth) : ControllerBase
+public partial class SeoController(EdenRelicsDbContext context, RankCheckerService rankChecker, SeoHealthService seoHealth) : ControllerBase
 {
     [HttpGet("health/snapshots")]
     public async Task<ActionResult<List<SeoHealthSnapshot>>> GetHealthSnapshots([FromQuery] int take = 30)
@@ -48,13 +48,31 @@ public partial class SeoController(IHttpClientFactory httpClientFactory, EdenRel
             return BadRequest(new { message = "URL is required." });
         }
 
-        HttpClient client = httpClientFactory.CreateClient();
+        // SSRF guard: only fetch public http/https URLs (no internal/loopback/metadata hosts).
+        if (!await UrlSafety.IsSafePublicUrlAsync(request.Url))
+        {
+            return BadRequest(new { message = "URL must be a public http(s) address." });
+        }
+
+        // No auto-redirect (a public URL could otherwise 30x to an internal address); cap the
+        // response size and time so a hostile target can't exhaust resources.
+        using SocketsHttpHandler handler = new() { AllowAutoRedirect = false };
+        using HttpClient client = new(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(15),
+            MaxResponseContentBufferSize = 5 * 1024 * 1024,
+        };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("EdenRelics-SEO-Analyser/1.0");
 
         string html;
         try
         {
-            html = await client.GetStringAsync(request.Url);
+            HttpResponseMessage response = await client.GetAsync(request.Url);
+            if (!response.IsSuccessStatusCode)
+            {
+                return BadRequest(new { message = "Could not fetch the URL." });
+            }
+            html = await response.Content.ReadAsStringAsync();
         }
         catch
         {

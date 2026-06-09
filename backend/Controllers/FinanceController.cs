@@ -371,12 +371,12 @@ public class FinanceController(
         {
             csv.AppendLine(
                 $"{t.Date:yyyy-MM-dd}," +
-                $"\"{t.Description.Replace("\"", "\"\"")}\"," +
+                $"\"{Escape(t.Description)}\"," +
                 $"{t.Amount}," +
-                $"\"{t.Category}\"," +
-                $"\"{t.Platform ?? ""}\"," +
-                $"\"{t.Reference ?? ""}\"," +
-                $"\"{(t.Notes ?? "").Replace("\"", "\"\"")}\"");
+                $"\"{Escape(t.Category)}\"," +
+                $"\"{Escape(t.Platform ?? "")}\"," +
+                $"\"{Escape(t.Reference ?? "")}\"," +
+                $"\"{Escape(t.Notes ?? "")}\"");
         }
 
         string fileName = year.HasValue && month.HasValue
@@ -386,6 +386,17 @@ public class FinanceController(
                 : "transactions-all.csv";
 
         return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv", fileName);
+    }
+
+    private static string Escape(string value)
+    {
+        string escaped = value.Replace("\"", "\"\"");
+        // Neutralise spreadsheet formula injection (cells starting with = + - @).
+        if (escaped.Length > 0 && escaped[0] is '=' or '+' or '-' or '@')
+        {
+            escaped = "'" + escaped;
+        }
+        return escaped;
     }
 
     private static TransactionDto ToDto(Transaction t) => new(

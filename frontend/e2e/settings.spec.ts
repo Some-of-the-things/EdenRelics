@@ -14,8 +14,8 @@ test.describe('Settings', () => {
 
     await page.goto('/settings');
     // Should show section headers
-    await expect(page.locator('.settings__section-header h2', { hasText: 'Name' })).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('.settings__section-header h2', { hasText: 'Change Password' })).toBeVisible();
+    await expect(page.locator('.settings__section-heading', { hasText: 'Name' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.settings__section-heading', { hasText: 'Change Password' })).toBeVisible();
   });
 
   test('can update name', async ({ page }) => {
@@ -24,7 +24,7 @@ test.describe('Settings', () => {
     await setAuthInBrowser(page, token, email);
 
     await page.goto('/settings');
-    await expect(page.locator('.settings__section-header h2', { hasText: 'Name' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.settings__section-heading', { hasText: 'Name' })).toBeVisible({ timeout: 10_000 });
     // Click on the Name section header to expand it
     await page.locator('.settings__section-header', { hasText: 'Name' }).first().click();
 
@@ -43,7 +43,7 @@ test.describe('Settings', () => {
     await setAuthInBrowser(page, token, email);
 
     await page.goto('/settings');
-    await expect(page.locator('.settings__section-header h2', { hasText: 'Delivery Address' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.settings__section-heading', { hasText: 'Delivery Address' })).toBeVisible({ timeout: 10_000 });
     // Click Delivery Address section
     await page.locator('.settings__section-header', { hasText: 'Delivery Address' }).click();
 
@@ -61,7 +61,7 @@ test.describe('Settings', () => {
     await setAuthInBrowser(page, token, email);
 
     await page.goto('/settings');
-    await expect(page.locator('.settings__section-header h2', { hasText: 'Change Password' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.settings__section-heading', { hasText: 'Change Password' })).toBeVisible({ timeout: 10_000 });
     // Click Change Password section
     await page.locator('.settings__section-header', { hasText: 'Change Password' }).click();
 
@@ -81,7 +81,7 @@ test.describe('Settings', () => {
     await setAuthInBrowser(page, token, email);
 
     await page.goto('/settings');
-    await expect(page.locator('.settings__section-header h2', { hasText: 'Two-Factor Authentication' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.settings__section-heading', { hasText: 'Two-Factor Authentication' })).toBeVisible({ timeout: 10_000 });
   });
 
   test('passkeys section is visible if supported', async ({ page }) => {
@@ -92,6 +92,6 @@ test.describe('Settings', () => {
     await page.goto('/settings');
     // Passkeys section may or may not show depending on browser WebAuthn support
     // Just verify the page loads with sections
-    await expect(page.locator('.settings__section-header h2', { hasText: 'Name' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.settings__section-heading', { hasText: 'Name' })).toBeVisible({ timeout: 10_000 });
   });
 });

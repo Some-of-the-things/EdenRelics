@@ -10,6 +10,9 @@ public class GeoIpService
     private readonly ILogger<GeoIpService> _logger;
     private static readonly ConcurrentDictionary<string, string?> Cache = new();
 
+    // Bound the cache so an attacker spraying distinct (spoofed) IPs can't grow it without limit.
+    private const int MaxCacheEntries = 10_000;
+
     public GeoIpService(HttpClient http, ILogger<GeoIpService> logger)
     {
         _http = http;
@@ -18,18 +21,17 @@ public class GeoIpService
 
     public async Task<string?> GetCountryAsync(string? ipAddress)
     {
-        if (string.IsNullOrWhiteSpace(ipAddress))
+        // Require a syntactically valid IP: this both validates input and stops arbitrary
+        // attacker-supplied strings being forwarded to ip-api.com or used as cache keys.
+        if (string.IsNullOrWhiteSpace(ipAddress) || !IPAddress.TryParse(ipAddress, out IPAddress? parsed))
         {
             return null;
         }
 
-        if (IPAddress.TryParse(ipAddress, out IPAddress? parsed))
+        if (IPAddress.IsLoopback(parsed) || ipAddress.StartsWith("10.") ||
+            ipAddress.StartsWith("192.168.") || ipAddress.StartsWith("172."))
         {
-            if (IPAddress.IsLoopback(parsed) || ipAddress.StartsWith("10.") ||
-                ipAddress.StartsWith("192.168.") || ipAddress.StartsWith("172."))
-            {
-                return null;
-            }
+            return null;
         }
 
         if (Cache.TryGetValue(ipAddress, out string? cached))
@@ -48,7 +50,7 @@ public class GeoIpService
                     doc.RootElement.TryGetProperty("country", out JsonElement country))
                 {
                     string? countryName = country.GetString();
-                    Cache.TryAdd(ipAddress, countryName);
+                    CacheResult(ipAddress, countryName);
                     return countryName;
                 }
             }
@@ -58,7 +60,16 @@ public class GeoIpService
             _logger.LogWarning(ex, "Failed to resolve country for IP {IpAddress}", ipAddress);
         }
 
-        Cache.TryAdd(ipAddress, null);
+        CacheResult(ipAddress, null);
         return null;
+    }
+
+    private static void CacheResult(string ipAddress, string? country)
+    {
+        if (Cache.Count >= MaxCacheEntries)
+        {
+            Cache.Clear();
+        }
+        Cache.TryAdd(ipAddress, country);
     }
 }

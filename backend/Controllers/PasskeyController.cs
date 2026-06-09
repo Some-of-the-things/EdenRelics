@@ -5,11 +5,13 @@ using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
 using Eden_Relics_BE.Repositories;
+using Eden_Relics_BE.Services;
 using Fido2NetLib;
 using Fido2NetLib.Objects;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.IdentityModel.Tokens;
@@ -18,6 +20,7 @@ namespace Eden_Relics_BE.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("auth")]
 public class PasskeyController : ControllerBase
 {
     private readonly IFido2 _fido2;
@@ -25,19 +28,22 @@ public class PasskeyController : ControllerBase
     private readonly IRepository<User> _userRepository;
     private readonly IConfiguration _configuration;
     private readonly IDistributedCache _cache;
+    private readonly JwtTokenService _tokenService;
 
     public PasskeyController(
         IFido2 fido2,
         EdenRelicsDbContext db,
         IRepository<User> userRepository,
         IConfiguration configuration,
-        IDistributedCache cache)
+        IDistributedCache cache,
+        JwtTokenService tokenService)
     {
         _fido2 = fido2;
         _db = db;
         _userRepository = userRepository;
         _configuration = configuration;
         _cache = cache;
+        _tokenService = tokenService;
     }
 
     // --- Registration (requires auth) ---
@@ -220,6 +226,15 @@ public class PasskeyController : ControllerBase
             return Unauthorized();
         }
 
+        // A passkey assertion is a single factor. If the account has MFA enabled, hand back
+        // the same TOTP challenge the password path uses (AuthController.Login) rather than a
+        // full session token, so the second factor can't be bypassed via the passkey flow.
+        if (user.MfaEnabled)
+        {
+            string mfaToken = GenerateMfaToken(user);
+            return Ok(new { mfaRequired = true, mfaToken });
+        }
+
         string token = GenerateToken(user);
         return Ok(new AuthResponseDto(token, new UserDto(user.Id, user.Email, user.FirstName, user.LastName, user.Role, user.EmailVerified)));
     }
@@ -310,30 +325,9 @@ public class PasskeyController : ControllerBase
         return await _userRepository.GetByIdAsync(userId);
     }
 
-    private string GenerateToken(User user)
-    {
-        string key = _configuration["Jwt:Key"]!;
-        SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(key));
-        SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha256);
+    private string GenerateToken(User user) => _tokenService.GenerateToken(user);
 
-        Claim[] claims =
-        [
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role),
-            new(ClaimTypes.GivenName, user.FirstName)
-        ];
-
-        JwtSecurityToken token = new(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddDays(7),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
+    private string GenerateMfaToken(User user) => _tokenService.GenerateMfaToken(user);
 }
 
 public record PasskeyLoginOptionsDto(string? Email);

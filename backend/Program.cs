@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Eden_Relics_BE.Data;
+using Eden_Relics_BE.Data.Entities;
 using Npgsql;
 using Eden_Relics_BE.Repositories;
 using Eden_Relics_BE.Services;
@@ -164,6 +166,7 @@ builder.Services.AddDistributedMemoryCache();
 
 // JWT Authentication
 string jwtKey = builder.Configuration["Jwt:Key"]!;
+builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -176,6 +179,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+        // Revoke tokens whose version no longer matches the user's (e.g. after a
+        // password change), and reject legacy tokens minted before token_version existed.
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async ctx =>
+            {
+                string? versionClaim = ctx.Principal?.FindFirst("token_version")?.Value;
+                string? userIdStr = ctx.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (versionClaim is null || !int.TryParse(versionClaim, out int tokenVersion)
+                    || userIdStr is null || !Guid.TryParse(userIdStr, out Guid userId))
+                {
+                    ctx.Fail("Invalid token.");
+                    return;
+                }
+
+                EdenRelicsDbContext db = ctx.HttpContext.RequestServices.GetRequiredService<EdenRelicsDbContext>();
+                User? user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+                if (user is null || user.TokenVersion != tokenVersion)
+                {
+                    ctx.Fail("Token has been revoked.");
+                }
+            }
         };
     });
 

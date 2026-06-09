@@ -66,7 +66,14 @@ export class AdminLoginComponent implements OnInit {
   loginWithPasskey(): void {
     this.error.set('');
     this.passkey.loginWithPasskey(this.email || undefined).subscribe({
-      next: () => this.navigateAfterLogin(),
+      next: (res) => {
+        if ('mfaRequired' in res) {
+          this.mfaToken.set(res.mfaToken);
+          this.error.set('');
+        } else {
+          this.navigateAfterLogin();
+        }
+      },
       error: () => this.error.set('Passkey login failed. Please try again.'),
     });
   }

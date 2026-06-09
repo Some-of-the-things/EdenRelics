@@ -391,7 +391,16 @@ public class MonzoController(
         return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv", fileName);
     }
 
-    private static string Escape(string value) => value.Replace("\"", "\"\"");
+    private static string Escape(string value)
+    {
+        string escaped = value.Replace("\"", "\"\"");
+        // Neutralise spreadsheet formula injection (cells starting with = + - @).
+        if (escaped.Length > 0 && escaped[0] is '=' or '+' or '-' or '@')
+        {
+            escaped = "'" + escaped;
+        }
+        return escaped;
+    }
 
     private static MonzoTransactionDto ToDto(MonzoTransaction t) => new(
         t.Id, t.MonzoId, t.Date, t.Description, t.Amount, t.Currency,

@@ -21,40 +21,52 @@
     </p>
 
     <div class="review-page__group">
-      <label class="review-page__label">Transaction</label>
-      <div class="review-page__stars" role="radiogroup">
+      <label class="review-page__label" id="rating-label-transaction">Transaction</label>
+      <div class="review-page__stars" role="radiogroup" aria-labelledby="rating-label-transaction">
         @for (s of stars; track s) {
           <button type="button"
+                  role="radio"
                   class="review-page__star"
                   [class.review-page__star--filled]="s <= transactionRating()"
+                  [attr.aria-checked]="s === transactionRating()"
+                  [attr.tabindex]="s === (transactionRating() || 1) ? 0 : -1"
                   (click)="setRating('transaction', s)"
-                  [attr.aria-label]="s + ' stars'">★</button>
+                  (keydown)="onStarKey('transaction', s, $event)"
+                  [attr.aria-label]="s + (s === 1 ? ' star' : ' stars')">★</button>
         }
       </div>
     </div>
 
     <div class="review-page__group">
-      <label class="review-page__label">Delivery</label>
-      <div class="review-page__stars" role="radiogroup">
+      <label class="review-page__label" id="rating-label-delivery">Delivery</label>
+      <div class="review-page__stars" role="radiogroup" aria-labelledby="rating-label-delivery">
         @for (s of stars; track s) {
           <button type="button"
+                  role="radio"
                   class="review-page__star"
                   [class.review-page__star--filled]="s <= deliveryRating()"
+                  [attr.aria-checked]="s === deliveryRating()"
+                  [attr.tabindex]="s === (deliveryRating() || 1) ? 0 : -1"
                   (click)="setRating('delivery', s)"
-                  [attr.aria-label]="s + ' stars'">★</button>
+                  (keydown)="onStarKey('delivery', s, $event)"
+                  [attr.aria-label]="s + (s === 1 ? ' star' : ' stars')">★</button>
         }
       </div>
     </div>
 
     <div class="review-page__group">
-      <label class="review-page__label">Product</label>
-      <div class="review-page__stars" role="radiogroup">
+      <label class="review-page__label" id="rating-label-product">Product</label>
+      <div class="review-page__stars" role="radiogroup" aria-labelledby="rating-label-product">
         @for (s of stars; track s) {
           <button type="button"
+                  role="radio"
                   class="review-page__star"
                   [class.review-page__star--filled]="s <= productRating()"
+                  [attr.aria-checked]="s === productRating()"
+                  [attr.tabindex]="s === (productRating() || 1) ? 0 : -1"
                   (click)="setRating('product', s)"
-                  [attr.aria-label]="s + ' stars'">★</button>
+                  (keydown)="onStarKey('product', s, $event)"
+                  [attr.aria-label]="s + (s === 1 ? ' star' : ' stars')">★</button>
         }
       </div>
     </div>

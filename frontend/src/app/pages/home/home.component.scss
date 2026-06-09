@@ -206,17 +206,15 @@
 
 .home__mailing-input {
   flex: 1;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-control);
   padding: 0.7rem 0.85rem;
   font-family: var(--font-body);
   font-size: 0.9rem;
   background: var(--bg-card);
   color: var(--text-primary);
 
-  &:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
+  &:focus { border-color: var(--accent); }
+  &:focus:not(:focus-visible) { outline: none; }
 }
 
 .home__mailing-btn {

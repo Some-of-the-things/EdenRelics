@@ -1832,6 +1832,18 @@ export class AdminPageComponent implements OnInit {
     this.dragStartIndex = null;
   }
 
+  // Keyboard-accessible alternative to drag-and-drop reordering.
+  moveImage(index: number, delta: number): void {
+    const imgs = this.allProductImages();
+    const target = index + delta;
+    if (target < 0 || target >= imgs.length) {
+      return;
+    }
+    [imgs[index], imgs[target]] = [imgs[target], imgs[index]];
+    this.form.imageUrl = imgs[0] ?? '';
+    this.form.additionalImageUrls = imgs.slice(1);
+  }
+
   allProductImages(): string[] {
     const imgs: string[] = [];
     if (this.form.imageUrl) {

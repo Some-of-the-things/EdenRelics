@@ -40,9 +40,23 @@ public class OrdersController : ControllerBase
             return BadRequest(new { message = "Guest email is required for anonymous checkout." });
         }
 
+        if (dto.Items is null || dto.Items.Count == 0)
+        {
+            return BadRequest(new { message = "Order must contain at least one item." });
+        }
+
         List<Product> products = [];
         foreach (CreateOrderItemDto item in dto.Items)
         {
+            // Every product is one-of-one, so quantity is always 1 and an item can't repeat.
+            if (item.Quantity != 1)
+            {
+                return BadRequest(new { message = "Each item is one-of-a-kind; quantity must be 1." });
+            }
+            if (products.Any(p => p.Id == item.ProductId))
+            {
+                return BadRequest(new { message = "An item appears more than once in the order." });
+            }
             Product? product = await _context.Products.FindAsync(item.ProductId);
             if (product is null)
             {

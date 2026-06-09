@@ -26,21 +26,30 @@
   margin-bottom: 1rem;
 }
 
+.settings__section-heading {
+  margin: 0;
+}
+
 .settings__section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
   padding: 1rem 1.25rem;
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
   cursor: pointer;
   user-select: none;
   transition: background var(--transition);
   &:hover { background: var(--bg-primary); }
 
-  h2 {
+  span:first-child {
     font-family: var(--font-display);
     font-size: 1rem;
     font-weight: 600;
-    margin: 0;
   }
 }
 
@@ -68,14 +77,15 @@
   }
 
   input, select {
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-control);
     padding: 0.6rem 0.65rem;
     font-family: var(--font-body);
     font-size: 0.9rem;
     background: var(--bg-primary);
     color: var(--text-primary);
     transition: border-color var(--transition);
-    &:focus { outline: none; border-color: var(--accent); }
+    &:focus { border-color: var(--accent); }
+    &:focus:not(:focus-visible) { outline: none; }
   }
 }
 

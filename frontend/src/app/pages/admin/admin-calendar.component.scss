@@ -215,12 +215,12 @@
   text-overflow: ellipsis;
   color: white;
 
-  &--pending     { background: #c89200; }
+  &--pending     { background: #8a6600; } /* darkened so 11px white text reaches >=4.5:1 (WCAG 1.4.3) */
   &--scheduled   { background: #2563eb; }
   &--overdue     { background: #b91c1c; }
   &--complete    { background: #15803d; }
   &--submitted   { background: #6b21a8; }
-  &--waived      { background: #525252; opacity: 0.7; }
+  &--waived      { background: #525252; } /* solid grey (was opacity:0.7, which blended toward the cell bg and dropped contrast) */
 
   &:hover { filter: brightness(1.1); }
 }

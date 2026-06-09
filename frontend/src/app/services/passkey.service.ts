@@ -2,7 +2,7 @@ import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, from, switchMap, tap } from 'rxjs';
-import { AuthService, AuthResponse } from './auth.service';
+import { AuthService, AuthResponse, LoginResponse } from './auth.service';
 import { environment } from '../../environments/environment';
 
 export interface PasskeyInfo {
@@ -35,16 +35,20 @@ export class PasskeyService {
     );
   }
 
-  loginWithPasskey(email?: string): Observable<AuthResponse> {
+  loginWithPasskey(email?: string): Observable<LoginResponse> {
     return this.http.post<{ sessionId: string; options: any }>(`${this.apiUrl}/login-options`, { email: email || null }).pipe(
       switchMap(resp => from(this.getAssertion(resp.options)).pipe(
-        switchMap(assertion => this.http.post<AuthResponse>(`${this.apiUrl}/login`, {
+        switchMap(assertion => this.http.post<LoginResponse>(`${this.apiUrl}/login`, {
           sessionId: resp.sessionId,
           response: assertion
         }))
       )),
       tap(res => {
-        this.auth['setSession'](res);
+        // MFA-enabled accounts get a challenge instead of a session; the caller drives
+        // the TOTP step (auth.mfaVerify) exactly as the password login does.
+        if (!('mfaRequired' in res)) {
+          this.auth['setSession'](res);
+        }
       })
     );
   }
