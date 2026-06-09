@@ -14,6 +14,7 @@ import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { ShareButtonsComponent } from '../share-buttons/share-buttons.component';
 import { resolveProductStatus } from '../../utils/product-status';
 import { findDesignerForProduct } from '../../pages/designers/designers.data';
+import { FocusTrapDirective } from '../../directives/focus-trap.directive';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -48,7 +49,7 @@ function schemaCondition(condition: string): string {
 
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, CurrencyPipe, TitleCasePipe, LocalPricePipe, ShareButtonsComponent],
+  imports: [RouterLink, CurrencyPipe, TitleCasePipe, LocalPricePipe, ShareButtonsComponent, FocusTrapDirective],
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })

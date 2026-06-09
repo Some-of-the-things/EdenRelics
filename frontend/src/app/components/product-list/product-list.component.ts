@@ -10,10 +10,11 @@ import { AuthService } from '../../services/auth.service';
 import { FavouritesService } from '../../services/favourites.service';
 import { ProductService } from '../../services/product.service';
 import { LocalPricePipe } from '../../pipes/local-price.pipe';
+import { FocusTrapDirective } from '../../directives/focus-trap.directive';
 
 @Component({
   selector: 'app-product-list',
-  imports: [RouterLink, CurrencyPipe, TitleCasePipe, FormsModule, NgOptimizedImage, LocalPricePipe],
+  imports: [RouterLink, CurrencyPipe, TitleCasePipe, FormsModule, NgOptimizedImage, LocalPricePipe, FocusTrapDirective],
   templateUrl: './product-list.component.html',
   styleUrl: './product-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

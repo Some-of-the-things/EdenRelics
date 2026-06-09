@@ -26,6 +26,7 @@
                     [class.home-reviews__star--filled]="n <= overall(r)">★</span>
             }
           </div>
+          <span class="sr-only">Rated {{ overall(r) | number:'1.0-1' }} out of 5</span>
           <p class="home-reviews__comment">{{ r.comment }}</p>
           <div class="home-reviews__meta">
             <span class="home-reviews__author">{{ r.authorDisplayName }}</span>

@@ -32,12 +32,12 @@
     </div>
   </div>
 
-  <button class="admin__menu-toggle" (click)="toggleMobileMenu()" aria-label="Toggle navigation">
+  <button class="admin__menu-toggle" (click)="toggleMobileMenu()" aria-label="Toggle navigation" [attr.aria-expanded]="mobileMenuOpen()" aria-controls="admin-tabs">
     <span class="admin__menu-bar"></span>
     <span class="admin__menu-bar"></span>
     <span class="admin__menu-bar"></span>
   </button>
-  <div class="admin__tabs" [class.admin__tabs--open]="mobileMenuOpen()">
+  <div class="admin__tabs" id="admin-tabs" [class.admin__tabs--open]="mobileMenuOpen()">
     <button
       class="admin__tab"
       [class.admin__tab--active]="activeTab() === 'products'"
@@ -679,6 +679,7 @@
                 <td>
                   <select
                     class="admin__status-select"
+                    aria-label="Order status"
                     [attr.data-status]="order.status"
                     [ngModel]="order.status"
                     (ngModelChange)="updateOrderStatus(order, $event)"
