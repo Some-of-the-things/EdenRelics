@@ -62,7 +62,7 @@
       }
       <button type="submit" class="login__btn">Verify</button>
       <p class="login__link">
-        <a (click)="mfaToken.set('')" style="cursor:pointer">Back to Sign In</a>
+        <button type="button" class="login__linkbtn" (click)="mfaToken.set('')">Back to Sign In</button>
       </p>
     }
   </form>
