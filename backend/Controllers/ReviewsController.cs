@@ -3,6 +3,7 @@ using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Eden_Relics_BE.Controllers;
@@ -103,6 +104,7 @@ public class ReviewsController(EdenRelicsDbContext context) : ControllerBase
 
     [HttpPost]
     [Authorize]
+    [EnableRateLimiting("contact")]
     public async Task<ActionResult<MyReviewDto>> Submit(SubmitReviewDto dto)
     {
         Guid userId = GetUserId();

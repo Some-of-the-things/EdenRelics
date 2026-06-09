@@ -5,6 +5,7 @@ using Eden_Relics_BE.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using OtpNet;
 
 namespace Eden_Relics_BE.Controllers;
@@ -110,6 +111,7 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost("change-password")]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult> ChangePassword(ChangePasswordDto dto)
     {
         User? user = await GetCurrentUser();
@@ -156,6 +158,7 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost("mfa/verify")]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult> VerifyMfa(VerifyMfaDto dto)
     {
         User? user = await GetCurrentUser();
@@ -184,6 +187,7 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost("mfa/disable")]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult> DisableMfa(VerifyMfaDto dto)
     {
         User? user = await GetCurrentUser();

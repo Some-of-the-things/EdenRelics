@@ -2,6 +2,7 @@ using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Eden_Relics_BE.Controllers;
@@ -11,6 +12,7 @@ namespace Eden_Relics_BE.Controllers;
 public class MailingListController(EdenRelicsDbContext context) : ControllerBase
 {
     [HttpPost("subscribe")]
+    [EnableRateLimiting("contact")]
     public async Task<ActionResult> Subscribe([FromBody] MailingListSubscribeDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Email) || !dto.Email.Contains('@') || dto.Email.Length < 5)
@@ -46,6 +48,7 @@ public class MailingListController(EdenRelicsDbContext context) : ControllerBase
     }
 
     [HttpPost("unsubscribe")]
+    [EnableRateLimiting("contact")]
     public async Task<ActionResult> Unsubscribe([FromBody] MailingListUnsubscribeDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Email))

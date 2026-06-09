@@ -10,6 +10,7 @@ using Fido2NetLib.Objects;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.IdentityModel.Tokens;
@@ -18,6 +19,7 @@ namespace Eden_Relics_BE.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("auth")]
 public class PasskeyController : ControllerBase
 {
     private readonly IFido2 _fido2;
