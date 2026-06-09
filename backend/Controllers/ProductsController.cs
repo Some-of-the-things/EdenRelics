@@ -818,14 +818,30 @@ public class ProductsController : ControllerBase
             byte[] imageBytes;
             if (request.ImageUrl.Contains("/uploads/"))
             {
-                // Local file — read directly from disk
+                // Local file — read from disk, but keep the resolved path inside the web root
+                // so a "../" in the URL can't read arbitrary files (path traversal).
+                string webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
                 string relativePath = request.ImageUrl[(request.ImageUrl.IndexOf("/uploads/") + 1)..];
-                string filePath = Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), relativePath);
+                string? filePath = UrlSafety.ResolveContainedPath(webRoot, relativePath);
+                if (filePath is null || !System.IO.File.Exists(filePath))
+                {
+                    return BadRequest(new { error = "Invalid image path." });
+                }
                 imageBytes = await System.IO.File.ReadAllBytesAsync(filePath);
             }
             else
             {
-                using HttpClient http = new();
+                // Remote URL — SSRF guard: public http(s) only, no redirect to internal hosts.
+                if (!await UrlSafety.IsSafePublicUrlAsync(request.ImageUrl))
+                {
+                    return BadRequest(new { error = "Image URL must be a public http(s) address." });
+                }
+                using SocketsHttpHandler handler = new() { AllowAutoRedirect = false };
+                using HttpClient http = new(handler)
+                {
+                    Timeout = TimeSpan.FromSeconds(15),
+                    MaxResponseContentBufferSize = 15 * 1024 * 1024,
+                };
                 imageBytes = await http.GetByteArrayAsync(request.ImageUrl);
             }
             string base64 = Convert.ToBase64String(imageBytes);
