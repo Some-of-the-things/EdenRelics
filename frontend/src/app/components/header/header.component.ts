@@ -17,5 +17,5 @@ export class HeaderComponent {
   readonly auth = inject(AuthService);
   readonly cms = inject(ContentService);
   private readonly brandingService = inject(BrandingService);
-  readonly logoUrl = computed(() => this.brandingService.branding()?.logoUrl ?? 'logo.webp');
+  readonly logoUrl = computed(() => this.brandingService.branding()?.logoUrl ?? 'logo.png');
 }
