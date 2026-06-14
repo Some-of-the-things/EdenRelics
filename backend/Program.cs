@@ -134,6 +134,7 @@ builder.Services.AddScoped<IAccountsService, AccountsService>();
 builder.Services.AddScoped<IFinanceService, FinanceService>();
 builder.Services.AddScoped<ISeoService, SeoService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IPasskeyService, PasskeyService>();
 
 // Image optimization & storage
 builder.Services.AddSingleton<ImageOptimizationService>();
