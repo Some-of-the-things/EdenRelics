@@ -1,10 +1,7 @@
-using Eden_Relics_BE.Data;
-using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
 using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace Eden_Relics_BE.Controllers;
@@ -18,10 +15,7 @@ namespace Eden_Relics_BE.Controllers;
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
 public class CalendarController(
-    EdenRelicsDbContext context,
-    ILiabilityScheduleService schedule,
-    IObligationReminderSync reminders,
-    IConfiguration config,
+    ICalendarService calendar,
     IOptions<LiabilityOptions> options) : ControllerBase
 {
     private readonly LiabilityOptions _options = options.Value;
@@ -50,122 +44,47 @@ public class CalendarController(
         [FromQuery] bool openOnly = false,
         CancellationToken ct = default)
     {
-        // Ensure the upcoming 12 months are populated before serving any list.
-        await schedule.EnsureUpcomingAsync(DateTime.UtcNow, ct);
-
-        DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
-        IQueryable<LiabilityObligation> query = context.LiabilityObligations;
-
-        if (openOnly)
-        {
-            query = query.Where(o => o.Status != LiabilityStatus.Complete && o.Status != LiabilityStatus.Waived)
-                .OrderBy(o => o.DueDate);
-        }
-        else
-        {
-            DateOnly fromDate = from ?? today.AddMonths(-1);
-            DateOnly toDate = to ?? today.AddMonths(2);
-            // Include anything whose due date OR scheduled time falls in the window.
-            // timestamptz columns require UTC-kind parameters under Npgsql.
-            DateTime fromTs = DateTime.SpecifyKind(fromDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
-            DateTime toTs = DateTime.SpecifyKind(toDate.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
-            query = query.Where(o =>
-                    (o.DueDate >= fromDate && o.DueDate <= toDate)
-                    || (o.ScheduledFor != null && o.ScheduledFor >= fromTs && o.ScheduledFor < toTs)
-                    || (o.FiledAt != null && o.FiledAt >= fromTs && o.FiledAt < toTs))
-                .OrderBy(o => o.DueDate);
-        }
-
-        List<LiabilityObligation> rows = await query.ToListAsync(ct);
-        return Ok(rows.Select(o => ToDto(o, today)).ToList());
+        return Ok(await calendar.GetAllAsync(from, to, openOnly, ct));
     }
 
     /// <summary>Assign a work-session time to an obligation. Creates / updates the linked auto-reminder.</summary>
     [HttpPost("{id:guid}/schedule")]
-    public async Task<ActionResult<LiabilityObligationDto>> Schedule(
-        Guid id, ScheduleObligationRequest body, CancellationToken ct)
+    public async Task<ActionResult<LiabilityObligationDto>> Schedule(Guid id, ScheduleObligationRequest body, CancellationToken ct)
     {
-        LiabilityObligation? row = await context.LiabilityObligations.FindAsync([id], ct);
-        if (row is null) { return NotFound(); }
-
-        row.ScheduledFor = body.ScheduledFor.ToUniversalTime();
-        await reminders.SyncAsync(row, ResolveNotifyEmail(), ct);
-        await context.SaveChangesAsync(ct);
-        return Ok(ToDto(row, DateOnly.FromDateTime(DateTime.UtcNow)));
+        LiabilityObligationDto? row = await calendar.ScheduleAsync(id, body, ct);
+        return row is null ? NotFound() : Ok(row);
     }
 
     /// <summary>Clear the assigned work-session time. Removes the linked auto-reminder.</summary>
     [HttpPost("{id:guid}/unschedule")]
     public async Task<ActionResult<LiabilityObligationDto>> Unschedule(Guid id, CancellationToken ct)
     {
-        LiabilityObligation? row = await context.LiabilityObligations.FindAsync([id], ct);
-        if (row is null) { return NotFound(); }
-
-        row.ScheduledFor = null;
-        await reminders.SyncAsync(row, ResolveNotifyEmail(), ct);
-        await context.SaveChangesAsync(ct);
-        return Ok(ToDto(row, DateOnly.FromDateTime(DateTime.UtcNow)));
+        LiabilityObligationDto? row = await calendar.UnscheduleAsync(id, ct);
+        return row is null ? NotFound() : Ok(row);
     }
 
     /// <summary>Mark an obligation done with evidence: submission reference, payment amount + reference, dates.</summary>
     [HttpPost("{id:guid}/complete")]
-    public async Task<ActionResult<LiabilityObligationDto>> Complete(
-        Guid id, CompleteObligationRequest body, CancellationToken ct)
+    public async Task<ActionResult<LiabilityObligationDto>> Complete(Guid id, CompleteObligationRequest body, CancellationToken ct)
     {
-        LiabilityObligation? row = await context.LiabilityObligations.FindAsync([id], ct);
-        if (row is null) { return NotFound(); }
-
-        DateTime now = DateTime.UtcNow;
-        row.Status = LiabilityStatus.Complete;
-        row.FiledAt = body.FiledAt?.ToUniversalTime() ?? row.FiledAt ?? now;
-        if (!string.IsNullOrWhiteSpace(body.SubmissionReference))
-        {
-            row.SubmissionReference = body.SubmissionReference.Trim();
-        }
-        if (body.PaidAmountMinor is { } amount)
-        {
-            row.PaidAmountMinor = amount;
-            row.PaidAt = body.PaidAt?.ToUniversalTime() ?? row.PaidAt ?? now;
-            if (!string.IsNullOrWhiteSpace(body.PaymentReference))
-            {
-                row.PaymentReference = body.PaymentReference.Trim();
-            }
-        }
-        if (!string.IsNullOrWhiteSpace(body.Notes))
-        {
-            row.Notes = body.Notes.Trim();
-        }
-        await reminders.SyncAsync(row, ResolveNotifyEmail(), ct);
-        await context.SaveChangesAsync(ct);
-        return Ok(ToDto(row, DateOnly.FromDateTime(now)));
+        LiabilityObligationDto? row = await calendar.CompleteAsync(id, body, ct);
+        return row is null ? NotFound() : Ok(row);
     }
 
     /// <summary>Mark an obligation as N/A (waived).</summary>
     [HttpPost("{id:guid}/waive")]
     public async Task<ActionResult<LiabilityObligationDto>> Waive(Guid id, CancellationToken ct)
     {
-        LiabilityObligation? row = await context.LiabilityObligations.FindAsync([id], ct);
-        if (row is null) { return NotFound(); }
-
-        row.Status = LiabilityStatus.Waived;
-        await reminders.SyncAsync(row, ResolveNotifyEmail(), ct);
-        await context.SaveChangesAsync(ct);
-        return Ok(ToDto(row, DateOnly.FromDateTime(DateTime.UtcNow)));
+        LiabilityObligationDto? row = await calendar.WaiveAsync(id, ct);
+        return row is null ? NotFound() : Ok(row);
     }
 
     /// <summary>Undo a Complete / Waived. Drops back to Pending and re-creates the reminder if scheduled.</summary>
     [HttpPost("{id:guid}/reopen")]
     public async Task<ActionResult<LiabilityObligationDto>> Reopen(Guid id, CancellationToken ct)
     {
-        LiabilityObligation? row = await context.LiabilityObligations.FindAsync([id], ct);
-        if (row is null) { return NotFound(); }
-
-        row.Status = LiabilityStatus.Pending;
-        row.FiledAt = null;
-        row.PaidAt = null;
-        await reminders.SyncAsync(row, ResolveNotifyEmail(), ct);
-        await context.SaveChangesAsync(ct);
-        return Ok(ToDto(row, DateOnly.FromDateTime(DateTime.UtcNow)));
+        LiabilityObligationDto? row = await calendar.ReopenAsync(id, ct);
+        return row is null ? NotFound() : Ok(row);
     }
 
     /// <summary>Create a free-form calendar event (Kind = Other). The schedule generator never produces these.</summary>
@@ -176,65 +95,19 @@ public class CalendarController(
         {
             return BadRequest(new { error = "Title is required." });
         }
-
-        LiabilityObligation row = new()
-        {
-            Kind = LiabilityKind.Other,
-            Title = body.Title.Trim(),
-            PeriodStart = body.DueDate,
-            PeriodEnd = body.DueDate,
-            DueDate = body.DueDate,
-            ScheduledFor = body.ScheduledFor?.ToUniversalTime(),
-            Status = LiabilityStatus.Pending,
-            Currency = "gbp",
-            Notes = string.IsNullOrWhiteSpace(body.Notes) ? null : body.Notes.Trim(),
-        };
-        context.LiabilityObligations.Add(row);
-        // First save populates Id so the reminder can FK back to it.
-        await context.SaveChangesAsync(ct);
-        if (row.ScheduledFor.HasValue)
-        {
-            await reminders.SyncAsync(row, ResolveNotifyEmail(), ct);
-            await context.SaveChangesAsync(ct);
-        }
-        return Ok(ToDto(row, DateOnly.FromDateTime(DateTime.UtcNow)));
+        return Ok(await calendar.CreateAsync(body, ct));
     }
 
     /// <summary>Delete a free-form event entirely. Statutory rows must be waived (the unique index would re-create them).</summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        LiabilityObligation? row = await context.LiabilityObligations.FindAsync([id], ct);
-        if (row is null) { return NotFound(); }
-        if (row.Kind != LiabilityKind.Other)
+        DeleteObligationResult result = await calendar.DeleteAsync(id, ct);
+        return result switch
         {
-            return BadRequest(new { error = "Only custom events can be deleted. Use Mark N/A on statutory obligations instead." });
-        }
-
-        // Clear the schedule first so the auto-reminder gets cleaned up, then soft-delete.
-        row.ScheduledFor = null;
-        row.Status = LiabilityStatus.Waived;
-        await reminders.SyncAsync(row, ResolveNotifyEmail(), ct);
-        row.IsDeleted = true;
-        await context.SaveChangesAsync(ct);
-        return NoContent();
-    }
-
-    private string ResolveNotifyEmail()
-    {
-        if (!string.IsNullOrWhiteSpace(_options.NotifyEmail))
-        {
-            return _options.NotifyEmail!;
-        }
-        return config["Email:SaleNotificationRecipient"] ?? "orionsaxis@gmail.com";
-    }
-
-    private static LiabilityObligationDto ToDto(LiabilityObligation o, DateOnly today)
-    {
-        bool overdue = o.Status == LiabilityStatus.Pending && o.DueDate < today;
-        return new LiabilityObligationDto(
-            o.Id, o.Kind, o.Title, o.PeriodStart, o.PeriodEnd, o.DueDate, o.Status, overdue,
-            o.ScheduledFor, o.FiledAt, o.SubmissionReference, o.OwedAmountMinor, o.Currency,
-            o.PaidAt, o.PaidAmountMinor, o.PaymentReference, o.Notes);
+            DeleteObligationResult.NotFound => NotFound(),
+            DeleteObligationResult.NotCustom => BadRequest(new { error = "Only custom events can be deleted. Use Mark N/A on statutory obligations instead." }),
+            _ => NoContent(),
+        };
     }
 }
