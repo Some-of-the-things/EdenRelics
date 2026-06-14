@@ -33,4 +33,11 @@ public interface IRepository<T> where T : BaseEntity
     Task AddRangeAsync(IEnumerable<T> entities);
     Task UpdateAsync(T entity);
     Task DeleteAsync(Guid id);
+
+    /// <summary>
+    /// Removes a set of entities. Soft-deletable entities are still soft-deleted by the
+    /// SoftDeleteInterceptor; only entities marked IHardDeletable (e.g. rotated OAuth tokens)
+    /// are physically removed. Use for bulk replace/rotation operations.
+    /// </summary>
+    Task RemoveRangeAsync(IEnumerable<T> entities);
 }

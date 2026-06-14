@@ -126,6 +126,9 @@ builder.Services.AddScoped<IBrandingService, BrandingService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddScoped<ICalendarFeedService, CalendarFeedService>();
+builder.Services.AddScoped<ISitemapService, SitemapService>();
+builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
 
 // Image optimization & storage
 builder.Services.AddSingleton<ImageOptimizationService>();
