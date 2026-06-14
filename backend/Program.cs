@@ -132,6 +132,7 @@ builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
 builder.Services.AddScoped<IFinanceService, FinanceService>();
+builder.Services.AddScoped<ISeoService, SeoService>();
 
 // Image optimization & storage
 builder.Services.AddSingleton<ImageOptimizationService>();
