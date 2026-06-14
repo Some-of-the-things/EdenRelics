@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Eden_Relics_BE.Data;
 using Eden_Relics_BE.Data.Entities;
+using Eden_Relics_BE.Data.Interceptors;
 using Npgsql;
 using Eden_Relics_BE.Repositories;
 using Eden_Relics_BE.Services;
@@ -111,10 +112,20 @@ NpgsqlDataSource dataSource = dataSourceBuilder.Build();
 
 builder.Services.AddDbContext<EdenRelicsDbContext>(options =>
     options.UseNpgsql(dataSource)
+        .AddInterceptors(new SoftDeleteInterceptor())
         .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 // Repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+// Domain services (controllers stay thin; persistence goes through repositories)
+builder.Services.AddScoped<IBlogService, BlogService>();
+builder.Services.AddScoped<IOffsiteSaleService, OffsiteSaleService>();
+builder.Services.AddScoped<IMailingListService, MailingListService>();
+builder.Services.AddScoped<IBrandingService, BrandingService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+builder.Services.AddScoped<IContentService, ContentService>();
 
 // Image optimization & storage
 builder.Services.AddSingleton<ImageOptimizationService>();

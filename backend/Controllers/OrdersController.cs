@@ -494,8 +494,7 @@ public class OrdersController : ControllerBase
             return NotFound();
         }
 
-        _context.OrderItems.RemoveRange(order.Items);
-        _context.Orders.Remove(order);
+        order.IsDeleted = true;
         await _context.SaveChangesAsync();
 
         return NoContent();

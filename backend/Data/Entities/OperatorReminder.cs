@@ -30,7 +30,8 @@ public enum ReminderSource
 /// <c>ReminderDispatcher</c> hosted service, which polls every few minutes and updates
 /// <c>DueAt</c>/<c>LastNotifiedAt</c> after firing.
 /// </summary>
-public class OperatorReminder : BaseEntity
+// Auto-generated from obligations and rebuilt rather than preserved, so hard-deleted.
+public class OperatorReminder : BaseEntity, IHardDeletable
 {
     public string Title { get; set; } = string.Empty;
     public string? Body { get; set; }

@@ -1,6 +1,7 @@
 namespace Eden_Relics_BE.Data.Entities;
 
-public class EtsyToken : BaseEntity
+// Rotated on reconnect (old tokens replaced wholesale), so genuinely hard-deleted.
+public class EtsyToken : BaseEntity, IHardDeletable
 {
     public string AccessToken { get; set; } = "";
     public string RefreshToken { get; set; } = "";

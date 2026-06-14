@@ -489,7 +489,7 @@ public partial class SeoController(EdenRelicsDbContext context, RankCheckerServi
         {
             return NotFound();
         }
-        context.TrackedKeywords.Remove(keyword);
+        keyword.IsDeleted = true;
         await context.SaveChangesAsync();
         return NoContent();
     }
