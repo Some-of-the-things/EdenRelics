@@ -53,7 +53,7 @@ public class OrderService(
         }
 
         // Determine shipping cost based on zone
-        decimal shippingCost = Controllers.ShippingZones.GetShippingCost(
+        decimal shippingCost = ShippingZones.GetShippingCost(
             dto.ShippingMethod, dto.ShippingAddress?.Country);
 
         Order order = new()
