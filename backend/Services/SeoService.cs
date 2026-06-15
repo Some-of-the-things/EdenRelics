@@ -19,6 +19,7 @@ public partial class SeoService(
     IRepository<AnalyticsDailyTotal> gaTotals,
     IRepository<AnalyticsDailySource> gaSources,
     IRepository<AnalyticsDailyLandingPage> gaLandingPages,
+    IRepository<PageViewDaily> pageViews,
     RankCheckerService rankChecker,
     SeoHealthService seoHealth,
     GoogleSearchConsoleService gsc,

@@ -4,6 +4,56 @@ const angularApp = new AngularAppEngine();
 
 const SSR_CACHE_TTL = 300; // 5 minutes
 
+interface WorkerEnv {
+  ASSETS: { fetch: typeof fetch };
+  /** Shared secret for the first-party analytics beacon. When unset, beaconing is off. */
+  ANALYTICS_INGEST_SECRET?: string;
+  /** Backend API base; defaults to production. */
+  API_BASE?: string;
+}
+
+const DEFAULT_API_BASE = 'https://api.edenrelics.co.uk';
+
+/**
+ * First-party, cookieless page-view beacon. Fired server-to-server (Worker → backend)
+ * once per successful SSR navigation render — no client JS, no cookies, 100% of renders.
+ * Cloudflare's request.cf gives us country + network org for free (used for geo + bot
+ * heuristics on the backend). Best-effort and non-blocking via ctx.waitUntil; failures
+ * never affect the response. No-op until ANALYTICS_INGEST_SECRET is configured.
+ */
+function sendPageViewBeacon(
+  request: Request,
+  env: WorkerEnv,
+  ctx: ExecutionContext,
+  pathname: string,
+): void {
+  const secret = env.ANALYTICS_INGEST_SECRET;
+  if (!secret || request.method !== 'GET') {
+    return;
+  }
+
+  const cf = (request as { cf?: { country?: string; asOrganization?: string } }).cf;
+  const apiBase = env.API_BASE ?? DEFAULT_API_BASE;
+
+  ctx.waitUntil(
+    fetch(`${apiBase}/api/analytics/pageview`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Analytics-Secret': secret,
+      },
+      body: JSON.stringify({
+        path: pathname,
+        country: cf?.country ?? null,
+        userAgent: request.headers.get('User-Agent'),
+        asOrganization: cf?.asOrganization ?? null,
+      }),
+    }).catch(() => {
+      // Analytics is best-effort; swallow errors so a beacon never breaks a page render.
+    }),
+  );
+}
+
 const SECURITY_HEADERS: Record<string, string> = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'X-Frame-Options': 'DENY',
@@ -31,7 +81,7 @@ function withSecurityHeaders(response: Response): Response {
 }
 
 export default {
-  async fetch(request: Request, env: { ASSETS: { fetch: typeof fetch } }, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     // Dynamic sitemap — proxy to API for live product/blog data
@@ -68,6 +118,8 @@ export default {
         const propagated = new Response(response.body, response);
         if (response.status >= 200 && response.status < 300) {
           propagated.headers.set('Cache-Control', 'public, max-age=60, must-revalidate');
+          // Count this render in our first-party analytics (cookieless, non-blocking).
+          sendPageViewBeacon(request, env, ctx, url.pathname);
         } else {
           propagated.headers.set('Cache-Control', 'no-store');
         }

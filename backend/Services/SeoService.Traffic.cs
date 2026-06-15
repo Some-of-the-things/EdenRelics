@@ -193,6 +193,51 @@ public partial class SeoService
             .ToList();
     }
 
+    public async Task<PageViewStatsDto> GetPageViewStatsAsync(int days, int limit)
+    {
+        int window = Math.Clamp(days, 1, 365);
+        int topLimit = Math.Clamp(limit, 1, 1000);
+        DateOnly since = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-window);
+
+        List<PageViewDaily> rows = await pageViews.Query()
+            .Where(p => p.Date >= since)
+            .ToListAsync();
+
+        long humanViews = rows.Where(r => !r.IsBot).Sum(r => (long)r.Count);
+        long botViews = rows.Where(r => r.IsBot).Sum(r => (long)r.Count);
+        DateOnly? lastDataDate = rows.Count > 0 ? rows.Max(r => r.Date) : null;
+
+        List<PageViewDailyDto> daily = rows
+            .GroupBy(r => r.Date)
+            .Select(g => new PageViewDailyDto(
+                g.Key,
+                g.Where(r => !r.IsBot).Sum(r => (long)r.Count),
+                g.Where(r => r.IsBot).Sum(r => (long)r.Count)))
+            .OrderBy(d => d.Date)
+            .ToList();
+
+        List<PageViewPathDto> topPages = rows
+            .GroupBy(r => r.Path)
+            .Select(g => new PageViewPathDto(
+                g.Key,
+                g.Where(r => !r.IsBot).Sum(r => (long)r.Count),
+                g.Where(r => r.IsBot).Sum(r => (long)r.Count)))
+            .OrderByDescending(p => p.Humans)
+            .ThenByDescending(p => p.Bots)
+            .Take(topLimit)
+            .ToList();
+
+        List<PageViewCountryDto> topCountries = rows
+            .Where(r => !r.IsBot)
+            .GroupBy(r => r.Country)
+            .Select(g => new PageViewCountryDto(g.Key, g.Sum(r => (long)r.Count)))
+            .OrderByDescending(c => c.Humans)
+            .Take(topLimit)
+            .ToList();
+
+        return new PageViewStatsDto(window, humanViews, botViews, lastDataDate, daily, topPages, topCountries);
+    }
+
     public async Task<TrafficRunResultDto> RunTrafficIngestAsync(int? days)
     {
         if (days.HasValue && days.Value > 0)

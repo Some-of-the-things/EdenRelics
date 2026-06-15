@@ -321,6 +321,33 @@ interface LandingPageRollup {
   averageSessionDuration: number;
 }
 
+interface PageViewDailyPoint {
+  date: string;
+  humans: number;
+  bots: number;
+}
+
+interface PageViewTopPage {
+  path: string;
+  humans: number;
+  bots: number;
+}
+
+interface PageViewTopCountry {
+  country: string;
+  humans: number;
+}
+
+interface PageViewStats {
+  days: number;
+  humanViews: number;
+  botViews: number;
+  lastDataDate: string | null;
+  daily: PageViewDailyPoint[];
+  topPages: PageViewTopPage[];
+  topCountries: PageViewTopCountry[];
+}
+
 @Component({
   selector: 'app-admin-page',
   imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe, DecimalPipe, AdminCalendarComponent, AdminAccountingComponent],
@@ -505,6 +532,7 @@ export class AdminPageComponent implements OnInit {
   readonly trafficOpportunities = signal<QueryRollup[]>([]);
   readonly trafficSources = signal<SourceRollup[]>([]);
   readonly trafficLandingPages = signal<LandingPageRollup[]>([]);
+  readonly pageViews = signal<PageViewStats | null>(null);
   readonly trafficLoading = signal(false);
   readonly trafficRunning = signal(false);
   readonly trafficError = signal('');
@@ -1454,6 +1482,8 @@ export class AdminPageComponent implements OnInit {
         `${environment.apiUrl}/api/seo/traffic/sources?days=${window}&limit=20`),
       landingPages: this.http.get<LandingPageRollup[]>(
         `${environment.apiUrl}/api/seo/traffic/landing-pages?days=${window}&limit=50`),
+      pageViews: this.http.get<PageViewStats>(
+        `${environment.apiUrl}/api/seo/traffic/page-views?days=${window}&limit=50`),
     }).subscribe({
       next: (r) => {
         this.trafficOverview.set(r.overview);
@@ -1462,6 +1492,7 @@ export class AdminPageComponent implements OnInit {
         this.trafficOpportunities.set(r.opportunities);
         this.trafficSources.set(r.sources);
         this.trafficLandingPages.set(r.landingPages);
+        this.pageViews.set(r.pageViews);
         this.trafficLoading.set(false);
       },
       error: () => {
@@ -1488,6 +1519,11 @@ export class AdminPageComponent implements OnInit {
 
   changeTrafficWindow(days: number): void {
     this.loadTraffic(days);
+  }
+
+  botShare(pv: PageViewStats): number {
+    const total = pv.humanViews + pv.botViews;
+    return total > 0 ? (pv.botViews / total) * 100 : 0;
   }
 
   trackKeyword(keyword?: string): void {

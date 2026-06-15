@@ -1743,6 +1743,105 @@
           <p class="admin__empty">No traffic data yet. Configure the Google service account and click <strong>Pull now</strong> to backfill 90 days.</p>
         }
 
+        @if (pageViews(); as pv) {
+          <div class="seo__health-header">
+            <h3>First-party page views</h3>
+          </div>
+          <p class="seo__traffic-hint">Our own cookieless counter — one beacon per SSR render, no cookies, no consent prompt. Sees 100% of renders (vs GA4's consented cohort), with bots filtered out by a UA/network heuristic. Cross-check humans against Cloudflare Web Analytics.</p>
+          <div class="seo__health-grid">
+            <div class="seo__health-card">
+              <span class="seo__health-label">Humans</span>
+              <span class="seo__health-value">{{ pv.humanViews }}</span>
+              <span class="seo__health-sub">last {{ pv.days }} days</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Bots / crawlers</span>
+              <span class="seo__health-value">{{ pv.botViews }}</span>
+              <span class="seo__health-sub">filtered out of human totals</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Bot share</span>
+              <span class="seo__health-value">{{ botShare(pv) | number:'1.0-0' }}%</span>
+              <span class="seo__health-sub">of all renders</span>
+            </div>
+            <div class="seo__health-card">
+              <span class="seo__health-label">Data to</span>
+              <span class="seo__health-value">{{ pv.lastDataDate ?? '—' }}</span>
+              <span class="seo__health-sub">most recent render</span>
+            </div>
+          </div>
+
+          @if (pv.topPages.length > 0) {
+            <details class="seo__health-history" open>
+              <summary>Most-viewed pages — humans ({{ pv.topPages.length }})</summary>
+              <table class="admin__table">
+                <thead>
+                  <tr>
+                    <th>Path</th>
+                    <th>Humans</th>
+                    <th>Bots</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of pv.topPages; track p.path) {
+                    <tr>
+                      <td>{{ p.path }}</td>
+                      <td>{{ p.humans }}</td>
+                      <td>{{ p.bots }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </details>
+          }
+
+          @if (pv.topCountries.length > 0) {
+            <details class="seo__health-history">
+              <summary>Top countries — humans ({{ pv.topCountries.length }})</summary>
+              <table class="admin__table">
+                <thead>
+                  <tr>
+                    <th>Country</th>
+                    <th>Humans</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (c of pv.topCountries; track c.country) {
+                    <tr>
+                      <td>{{ c.country }}</td>
+                      <td>{{ c.humans }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </details>
+          }
+
+          @if (pv.daily.length > 0) {
+            <details class="seo__health-history">
+              <summary>Daily breakdown ({{ pv.daily.length }})</summary>
+              <table class="admin__table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Humans</th>
+                    <th>Bots</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (d of pv.daily; track d.date) {
+                    <tr>
+                      <td>{{ d.date }}</td>
+                      <td>{{ d.humans }}</td>
+                      <td>{{ d.bots }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </details>
+          }
+        }
+
         @if (trafficOpportunities().length > 0) {
           <details class="seo__health-history" open>
             <summary><strong>Opportunities</strong> — queries on page 2–3 ({{ trafficOpportunities().length }})</summary>

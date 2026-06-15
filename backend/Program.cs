@@ -164,6 +164,9 @@ builder.Services.AddSingleton<GoogleSearchConsoleService>();
 builder.Services.AddSingleton<GoogleAnalyticsService>();
 builder.Services.AddHostedService<TrafficIngestBackgroundService>();
 
+// First-party cookieless page-view analytics (beacon ingest from the CF Worker)
+builder.Services.AddScoped<IAnalyticsIngestService, AnalyticsIngestService>();
+
 // Monzo bank integration
 builder.Services.AddHttpClient<MonzoApiClient>();
 builder.Services.AddScoped<IMonzoService, MonzoService>();

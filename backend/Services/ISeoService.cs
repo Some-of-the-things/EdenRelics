@@ -28,6 +28,9 @@ public interface ISeoService
     Task<List<LandingPageRollupDto>> GetTopLandingPagesAsync(int days, int limit);
     Task<List<QueryRollupDto>> GetOpportunitiesAsync(int days, int minImpressions, double minPosition, double maxPosition);
     Task<TrafficRunResultDto> RunTrafficIngestAsync(int? days);
+
+    // First-party cookieless page views (bot-filtered)
+    Task<PageViewStatsDto> GetPageViewStatsAsync(int days, int limit);
 }
 
 public record SeoAnalyseRequest(string Url);
@@ -80,3 +83,17 @@ public record SourceRollupDto(string Source, string Medium, int Sessions, int Us
 public record LandingPageRollupDto(
     string LandingPage, int Sessions, int EngagedSessions, int Conversions, double AverageSessionDuration);
 public record TrafficRunResultDto(int GscDayCount, int Ga4DayCount);
+
+// First-party page-view analytics (our own cookieless counter, bot-filtered).
+public record PageViewStatsDto(
+    int Days,
+    long HumanViews,
+    long BotViews,
+    DateOnly? LastDataDate,
+    List<PageViewDailyDto> Daily,
+    List<PageViewPathDto> TopPages,
+    List<PageViewCountryDto> TopCountries);
+
+public record PageViewDailyDto(DateOnly Date, long Humans, long Bots);
+public record PageViewPathDto(string Path, long Humans, long Bots);
+public record PageViewCountryDto(string Country, long Humans);

@@ -71,4 +71,16 @@ public partial class SeoController
     {
         return Ok(await seo.RunTrafficIngestAsync(days));
     }
+
+    /// <summary>
+    /// Our own first-party, cookieless page-view counter (bot-filtered). Sees 100% of SSR
+    /// renders, unlike GA4's consented cohort — a GDPR-clean source of truth for real humans.
+    /// </summary>
+    [HttpGet("traffic/page-views")]
+    public async Task<ActionResult<PageViewStatsDto>> GetPageViews(
+        [FromQuery] int days = 30,
+        [FromQuery] int limit = 50)
+    {
+        return Ok(await seo.GetPageViewStatsAsync(days, limit));
+    }
 }
