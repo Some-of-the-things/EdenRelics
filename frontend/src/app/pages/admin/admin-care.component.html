@@ -151,6 +151,9 @@
           <button type="button" class="admin__add-btn" (click)="saveFabric()" [disabled]="saving()">
             {{ saving() ? 'Saving…' : 'Save draft' }}
           </button>
+          @if (aiAvailable() && fabric.id) {
+            <button type="button" class="care__btn-ai" (click)="generateDraft()" [disabled]="saving()">✨ Generate draft with AI</button>
+          }
           @if (fabric.isPublished) {
             <button type="button" class="care__btn-unpublish" (click)="setPublished(false)" [disabled]="saving()">Unpublish</button>
           } @else {
@@ -200,6 +203,9 @@
           <button type="button" class="admin__add-btn" (click)="saveIssue()" [disabled]="saving()">
             {{ saving() ? 'Saving…' : 'Save draft' }}
           </button>
+          @if (aiAvailable() && issue.id) {
+            <button type="button" class="care__btn-ai" (click)="generateDraft()" [disabled]="saving()">✨ Generate draft with AI</button>
+          }
           @if (issue.isPublished) {
             <button type="button" class="care__btn-unpublish" (click)="setPublished(false)" [disabled]="saving()">Unpublish</button>
           } @else {

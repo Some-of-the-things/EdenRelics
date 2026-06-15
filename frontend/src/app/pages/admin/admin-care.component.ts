@@ -75,6 +75,7 @@ export class AdminCareComponent implements OnInit {
   readonly worklist = signal<WorklistItem[]>([]);
   readonly loading = signal(false);
   readonly saving = signal(false);
+  readonly aiAvailable = signal(false);
   readonly message = signal('');
   readonly error = signal('');
 
@@ -92,6 +93,51 @@ export class AdminCareComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadWorklist();
+    this.http.get<{ available: boolean }>(`${this.api}/api/care/admin/ai-available`).subscribe({
+      next: (r) => this.aiAvailable.set(r.available),
+      error: () => {},
+    });
+  }
+
+  get editingId(): string | null {
+    return (this.editingType() === 'fabric' ? this.fabric?.id : this.issue?.id) ?? null;
+  }
+
+  generateDraft(): void {
+    const type = this.editingType();
+    const id = this.editingId;
+    if (!type || !id) {
+      this.error.set('Save the entry before generating a draft.');
+      return;
+    }
+    if (
+      !confirm(
+        'Generate an AI draft? This replaces the current content fields (target terms and review notes are kept). A human review is still required before it can be published.',
+      )
+    ) {
+      return;
+    }
+    this.saving.set(true);
+    this.error.set('');
+    this.message.set('');
+    this.http.post<FabricDto | IssueDto>(`${this.api}/api/care/admin/${type}/${id}/generate`, {}).subscribe({
+      next: (updated) => {
+        if (type === 'fabric') {
+          this.fabric = updated as FabricDto;
+          this.dosText = (this.fabric.dos ?? []).join('\n');
+          this.dontsText = (this.fabric.donts ?? []).join('\n');
+        } else {
+          this.issue = updated as IssueDto;
+        }
+        this.saving.set(false);
+        this.message.set('AI draft generated — please review before publishing.');
+        this.loadWorklist();
+      },
+      error: () => {
+        this.saving.set(false);
+        this.error.set('Draft generation failed.');
+      },
+    });
   }
 
   loadWorklist(): void {

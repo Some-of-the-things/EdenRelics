@@ -1,0 +1,53 @@
+@if (issue(); as i) {
+  <article class="carepage">
+    <nav class="carepage__crumbs" aria-label="Breadcrumb">
+      <a routerLink="/">Home</a> <span>›</span>
+      <a routerLink="/care">Vintage Care</a> <span>›</span>
+      <span>{{ i.name }}</span>
+    </nav>
+
+    <h1 class="carepage__title">{{ i.name }}</h1>
+
+    @if (i.causes) {
+      <section class="carepage__section">
+        <h2>Why it happens</h2>
+        <p>{{ i.causes }}</p>
+      </section>
+    }
+
+    @if (i.generalMethod) {
+      <section class="carepage__section">
+        <h2>How to treat it</h2>
+        <p>{{ i.generalMethod }}</p>
+      </section>
+    }
+
+    @if (i.whatNotToDo) {
+      <section class="carepage__section carepage__section--caution">
+        <h2>What not to do</h2>
+        <p>{{ i.whatNotToDo }}</p>
+      </section>
+    }
+
+    @if (i.whenToSeeAPro) {
+      <section class="carepage__section">
+        <h2>When to see a professional</h2>
+        <p>{{ i.whenToSeeAPro }}</p>
+      </section>
+    }
+
+    <p class="carepage__disclaimer">
+      Vintage fabrics are delicate and one-of-a-kind. Always spot-test on a hidden seam first,
+      and when a piece is fragile or valuable, choose a specialist cleaner over any home method.
+    </p>
+
+    @if (i.reviewedBy) {
+      <p class="carepage__byline">Reviewed by {{ i.reviewedBy }}, Eden Relics</p>
+    }
+  </article>
+} @else if (error()) {
+  <div class="carepage carepage--missing">
+    <h1>Care guide not found</h1>
+    <p>We couldn't find that care guide. <a routerLink="/care">Browse all vintage care guides</a>.</p>
+  </div>
+}

@@ -206,6 +206,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'care/problem/:slug',
+    loadComponent: () =>
+      import('./pages/care/care-issue.component').then(
+        (m) => m.CareIssueComponent
+      ),
+  },
+  {
     path: 'contact',
     loadComponent: () =>
       import('./pages/contact/contact-page.component').then(

@@ -2,6 +2,9 @@ namespace Eden_Relics_BE.Services;
 
 public interface ICareService
 {
+    /// <summary>Whether AI draft generation is configured (Anthropic key present).</summary>
+    bool AiDraftingAvailable { get; }
+
     // --- Admin worklist ---
     Task<List<CareWorklistItemDto>> GetWorklistAsync();
 
@@ -10,12 +13,14 @@ public interface ICareService
     Task<CareFabricDto> CreateFabricAsync(SaveCareFabricDto dto);
     Task<CareFabricDto?> UpdateFabricAsync(Guid id, SaveCareFabricDto dto);
     Task<CareFabricDto?> SetFabricPublishedAsync(Guid id, bool published, string reviewedBy);
+    Task<CareFabricDto?> GenerateFabricDraftAsync(Guid id);
 
     // --- Issue (admin) ---
     Task<CareIssueDto?> GetIssueAsync(Guid id);
     Task<CareIssueDto> CreateIssueAsync(SaveCareIssueDto dto);
     Task<CareIssueDto?> UpdateIssueAsync(Guid id, SaveCareIssueDto dto);
     Task<CareIssueDto?> SetIssuePublishedAsync(Guid id, bool published, string reviewedBy);
+    Task<CareIssueDto?> GenerateIssueDraftAsync(Guid id);
 
     // --- Public (published only) ---
     Task<CareFabricDto?> GetPublishedFabricAsync(string slug);

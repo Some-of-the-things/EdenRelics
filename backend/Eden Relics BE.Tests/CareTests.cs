@@ -101,6 +101,56 @@ public class CareTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
 
+    [Fact]
+    public async Task PublicIssue_Unpublished_Returns404()
+    {
+        HttpClient client = _factory.CreateClient();
+        // Seeded as a draft stub — must not be served publicly.
+        HttpResponseMessage resp = await client.GetAsync("/api/care/problem/yellow-age-stains");
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateThenPublishIssue_MakesItPubliclyVisible()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "care-issue@test.com");
+
+        var create = new
+        {
+            name = "Test Stain " + Guid.NewGuid().ToString("N")[..8],
+            generalMethod = "Blot, don't rub.",
+        };
+        IssueDto? created = await (await client.PostAsJsonAsync("/api/care/admin/issue", create))
+            .Content.ReadFromJsonAsync<IssueDto>(JsonOptions);
+        Assert.NotNull(created);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/care/problem/{created!.Slug}")).StatusCode);
+
+        HttpResponseMessage pub = await client.PostAsJsonAsync(
+            $"/api/care/admin/issue/{created.Id}/publish", new { published = true });
+        Assert.Equal(HttpStatusCode.OK, pub.StatusCode);
+
+        HttpResponseMessage publicResp = await client.GetAsync($"/api/care/problem/{created.Slug}");
+        Assert.Equal(HttpStatusCode.OK, publicResp.StatusCode);
+    }
+
+    [Fact]
+    public async Task GenerateDraft_WhenAiNotConfigured_Returns400()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "care-ai@test.com");
+
+        // Find the seeded Viyella to target a real id.
+        List<WorklistItem>? items = await client.GetFromJsonAsync<List<WorklistItem>>(
+            "/api/care/admin/worklist", JsonOptions);
+        WorklistItem viyella = items!.First(i => i.Slug == "viyella");
+
+        // The test host has no Anthropic key configured.
+        HttpResponseMessage resp = await client.PostAsync(
+            $"/api/care/admin/fabric/{viyella.Id}/generate", null);
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
     private record WorklistItem(
         Guid Id, string Type, string Name, string Slug, string Status,
         bool IsPublished, bool NeedsAction, List<string> TargetKeywords,
@@ -109,4 +159,7 @@ public class CareTests : IClassFixture<ApiFactory>
     private record FabricDto(
         Guid Id, string Slug, string Name, List<string> TargetKeywords,
         string Washing, string Status, bool IsPublished, DateTime? LastReviewedUtc);
+
+    private record IssueDto(
+        Guid Id, string Slug, string Name, string GeneralMethod, string Status, bool IsPublished);
 }

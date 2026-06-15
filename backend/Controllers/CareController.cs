@@ -67,6 +67,18 @@ public class CareController(ICareService care) : ControllerBase
         return updated is null ? NotFound() : Ok(updated);
     }
 
+    [HttpPost("admin/fabric/{id:guid}/generate")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<CareFabricDto>> GenerateFabricDraft(Guid id)
+    {
+        if (!care.AiDraftingAvailable)
+        {
+            return BadRequest(new { error = "AI drafting is not configured (set Anthropic:ApiKey)." });
+        }
+        CareFabricDto? updated = await care.GenerateFabricDraftAsync(id);
+        return updated is null ? NotFound() : Ok(updated);
+    }
+
     // --- Admin: issue ---
 
     [HttpGet("admin/issue/{id:guid}")]
@@ -98,6 +110,25 @@ public class CareController(ICareService care) : ControllerBase
     {
         CareIssueDto? updated = await care.SetIssuePublishedAsync(id, dto.Published, ReviewerName());
         return updated is null ? NotFound() : Ok(updated);
+    }
+
+    [HttpPost("admin/issue/{id:guid}/generate")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<CareIssueDto>> GenerateIssueDraft(Guid id)
+    {
+        if (!care.AiDraftingAvailable)
+        {
+            return BadRequest(new { error = "AI drafting is not configured (set Anthropic:ApiKey)." });
+        }
+        CareIssueDto? updated = await care.GenerateIssueDraftAsync(id);
+        return updated is null ? NotFound() : Ok(updated);
+    }
+
+    [HttpGet("admin/ai-available")]
+    [Authorize(Roles = "Admin")]
+    public ActionResult<object> AiAvailable()
+    {
+        return Ok(new { available = care.AiDraftingAvailable });
     }
 
     private string ReviewerName()

@@ -168,6 +168,7 @@ builder.Services.AddHostedService<TrafficIngestBackgroundService>();
 builder.Services.AddScoped<IAnalyticsIngestService, AnalyticsIngestService>();
 
 // First-party vintage-care content (fabric + problem guides; expert-reviewed before publish)
+builder.Services.AddScoped<ICareDraftService, CareDraftService>();
 builder.Services.AddScoped<ICareService, CareService>();
 
 // Monzo bank integration

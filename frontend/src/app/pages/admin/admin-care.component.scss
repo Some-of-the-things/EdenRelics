@@ -240,3 +240,15 @@
   padding: 0.5rem 1rem;
   cursor: pointer;
 }
+
+.care__btn-ai {
+  background: #4c1d95;
+  color: #fff;
+  border: none;
+  border-radius: 0.3rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.care__btn-ai:disabled { opacity: 0.5; cursor: not-allowed; }

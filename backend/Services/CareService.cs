@@ -11,8 +11,11 @@ namespace Eden_Relics_BE.Services;
 /// </summary>
 public class CareService(
     IRepository<CareFabric> fabrics,
-    IRepository<CareIssue> issues) : ICareService
+    IRepository<CareIssue> issues,
+    ICareDraftService draftService) : ICareService
 {
+    public bool AiDraftingAvailable => draftService.IsConfigured;
+
     // --- Worklist ---
 
     public async Task<List<CareWorklistItemDto>> GetWorklistAsync()
@@ -93,6 +96,37 @@ public class CareService(
         return ToDto(f);
     }
 
+    public async Task<CareFabricDto?> GenerateFabricDraftAsync(Guid id)
+    {
+        CareFabric? f = await fabrics.GetByIdAsync(id);
+        if (f is null)
+        {
+            return null;
+        }
+
+        CareFabricDraft? draft = await draftService.DraftFabricAsync(f.Name, f.TargetKeywords);
+        if (draft is null)
+        {
+            return ToDto(f);   // AI unavailable/failed — leave the entry untouched.
+        }
+
+        f.Intro = draft.Intro;
+        f.FiberContent = draft.FiberContent;
+        f.HowToIdentify = draft.HowToIdentify;
+        f.Washing = draft.Washing;
+        f.Drying = draft.Drying;
+        f.Ironing = draft.Ironing;
+        f.Storing = draft.Storing;
+        f.VintageCautions = draft.VintageCautions;
+        f.Dos = draft.Dos;
+        f.Donts = draft.Donts;
+        f.MetaTitle = draft.MetaTitle;
+        f.MetaDescription = draft.MetaDescription;
+        f.Status = CareReviewStatus.AiDrafted;   // drafted, never auto-published
+        await fabrics.UpdateAsync(f);
+        return ToDto(f);
+    }
+
     public async Task<CareFabricDto?> GetPublishedFabricAsync(string slug)
     {
         CareFabric? f = await fabrics.Query()
@@ -154,6 +188,31 @@ public class CareService(
             i.IsPublished = false;
         }
 
+        await issues.UpdateAsync(i);
+        return ToDto(i);
+    }
+
+    public async Task<CareIssueDto?> GenerateIssueDraftAsync(Guid id)
+    {
+        CareIssue? i = await issues.GetByIdAsync(id);
+        if (i is null)
+        {
+            return null;
+        }
+
+        CareIssueDraft? draft = await draftService.DraftIssueAsync(i.Name, i.TargetKeywords);
+        if (draft is null)
+        {
+            return ToDto(i);
+        }
+
+        i.Causes = draft.Causes;
+        i.GeneralMethod = draft.GeneralMethod;
+        i.WhatNotToDo = draft.WhatNotToDo;
+        i.WhenToSeeAPro = draft.WhenToSeeAPro;
+        i.MetaTitle = draft.MetaTitle;
+        i.MetaDescription = draft.MetaDescription;
+        i.Status = CareReviewStatus.AiDrafted;
         await issues.UpdateAsync(i);
         return ToDto(i);
     }

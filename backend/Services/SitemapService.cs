@@ -9,6 +9,7 @@ public class SitemapService(
     IRepository<Product> products,
     IRepository<BlogPost> posts,
     IRepository<CareFabric> careFabrics,
+    IRepository<CareIssue> careIssues,
     SitemapRoutesService staticRoutes) : ISitemapService
 {
     private const string BaseUrl = "https://edenrelics.co.uk";
@@ -26,6 +27,11 @@ public class SitemapService(
             .ToListAsync();
 
         List<CareFabric> publishedFabrics = await careFabrics.Query()
+            .Where(c => c.IsPublished)
+            .OrderByDescending(c => c.UpdatedAtUtc)
+            .ToListAsync();
+
+        List<CareIssue> publishedIssues = await careIssues.Query()
             .Where(c => c.IsPublished)
             .OrderByDescending(c => c.UpdatedAtUtc)
             .ToListAsync();
@@ -84,6 +90,17 @@ public class SitemapService(
             xml.AppendLine("  <url>");
             xml.AppendLine($"    <loc>{BaseUrl}/care/fabric/{Escape(fabric.Slug)}</loc>");
             xml.AppendLine($"    <lastmod>{fabric.UpdatedAtUtc:yyyy-MM-dd}</lastmod>");
+            xml.AppendLine("    <changefreq>monthly</changefreq>");
+            xml.AppendLine("    <priority>0.6</priority>");
+            xml.AppendLine("  </url>");
+        }
+
+        // Vintage care guides (published problem pages only)
+        foreach (CareIssue issue in publishedIssues)
+        {
+            xml.AppendLine("  <url>");
+            xml.AppendLine($"    <loc>{BaseUrl}/care/problem/{Escape(issue.Slug)}</loc>");
+            xml.AppendLine($"    <lastmod>{issue.UpdatedAtUtc:yyyy-MM-dd}</lastmod>");
             xml.AppendLine("    <changefreq>monthly</changefreq>");
             xml.AppendLine("    <priority>0.6</priority>");
             xml.AppendLine("  </url>");
