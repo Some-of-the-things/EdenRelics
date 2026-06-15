@@ -1,7 +1,3 @@
-using Eden_Relics_BE.Data;
-using Eden_Relics_BE.Data.Entities;
-using Microsoft.EntityFrameworkCore;
-
 namespace Eden_Relics_BE.Services;
 
 public class MonzoSyncBackgroundService(
@@ -17,17 +13,8 @@ public class MonzoSyncBackgroundService(
             try
             {
                 using IServiceScope scope = scopeFactory.CreateScope();
-                MonzoService monzo = scope.ServiceProvider.GetRequiredService<MonzoService>();
-                EdenRelicsDbContext context = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
-
-                string? accessToken = await monzo.EnsureValidTokenAsync(context);
-                MonzoToken? token = await context.MonzoTokens.FirstOrDefaultAsync(stoppingToken);
-
-                if (accessToken is not null && token is not null)
-                {
-                    await SyncTransactionsAsync(monzo, context, accessToken, token.AccountId);
-                    logger.LogInformation("Monzo sync completed");
-                }
+                IMonzoService monzo = scope.ServiceProvider.GetRequiredService<IMonzoService>();
+                await monzo.RunScheduledSyncAsync();
             }
             catch (Exception ex)
             {
@@ -36,106 +23,5 @@ public class MonzoSyncBackgroundService(
 
             await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
         }
-    }
-
-    public static async Task<(int Fetched, int Added, string AccountId, DateTime? Since)> SyncTransactionsAsync(
-        MonzoService monzo, EdenRelicsDbContext context, string accessToken, string accountId)
-    {
-        DateTime? latestDate = await context.MonzoTransactions
-            .OrderByDescending(t => t.Date)
-            .Select(t => (DateTime?)t.Date)
-            .FirstOrDefaultAsync();
-
-        // Only pass 'since' for incremental syncs — Monzo returns empty for far-back dates
-        DateTime? since = latestDate?.AddMinutes(-5);
-
-        List<MonzoTransactionResponse> transactions = await monzo.GetTransactionsAsync(
-            accessToken, accountId, since: since);
-
-        // Build pot ID → name lookup for friendly descriptions
-        List<MonzoPotResponse> pots = await monzo.GetPotsAsync(accessToken, accountId);
-        Dictionary<string, string> potNames = pots.ToDictionary(p => p.Id, p => p.Name);
-
-        int added = 0;
-        foreach (MonzoTransactionResponse txn in transactions)
-        {
-            bool exists = await context.MonzoTransactions
-                .AnyAsync(t => t.MonzoId == txn.Id);
-
-            if (exists) { continue; }
-
-            context.MonzoTransactions.Add(new MonzoTransaction
-            {
-                MonzoId = txn.Id,
-                Date = txn.Created.ToUniversalTime(),
-                Description = Truncate(txn.Merchant?.Name ?? FormatDescription(txn.Description, potNames), 500),
-                Amount = txn.Amount / 100m,
-                Currency = txn.Currency,
-                Category = FormatCategory(txn.Category),
-                MerchantName = Truncate(txn.Merchant?.Name, 200),
-                MerchantLogo = Truncate(txn.Merchant?.Logo, 2000),
-                Notes = Truncate(txn.Notes, 1000),
-                Tags = Truncate(txn.Metadata?.GetValueOrDefault("tags"), 500),
-                IsLoad = txn.IsLoad,
-                DeclineReason = Truncate(txn.DeclineReason, 100),
-                SettledAt = DateTime.TryParse(txn.Settled, out DateTime settled) ? settled.ToUniversalTime() : null,
-            });
-            added++;
-        }
-
-        // Fix existing transactions that still have raw pot IDs in their description
-        if (potNames.Count > 0)
-        {
-            List<MonzoTransaction> potTransactions = await context.MonzoTransactions
-                .Where(t => t.Description.StartsWith("Pot ") && t.Description.Length > 10)
-                .ToListAsync();
-
-            foreach (MonzoTransaction existing in potTransactions)
-            {
-                string potId = "pot_" + existing.Description[4..].ToLower();
-                if (potNames.TryGetValue(potId, out string? name))
-                {
-                    existing.Description = name;
-                }
-            }
-        }
-
-        await context.SaveChangesAsync();
-        return (transactions.Count, added, accountId, since);
-    }
-
-    private static string FormatDescription(string description, Dictionary<string, string> potNames)
-    {
-        if (string.IsNullOrWhiteSpace(description)) { return description; }
-
-        // Monzo pot transfers have descriptions like "pot_0000b2bflcp416rntjda7d"
-        if (description.StartsWith("pot_", StringComparison.OrdinalIgnoreCase) && potNames.TryGetValue(description.ToLower(), out string? potName))
-        {
-            return potName;
-        }
-
-        return string.Join(' ', description
-            .Replace("_", " ")
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Select(w => w.Length > 1
-                ? char.ToUpper(w[0]) + w[1..].ToLower()
-                : w.ToUpper()));
-    }
-
-    private static string FormatCategory(string category)
-    {
-        if (string.IsNullOrWhiteSpace(category)) { return "General"; }
-        return string.Join(' ', category
-            .Replace("_", " ")
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Select(w => w.Length > 1
-                ? char.ToUpper(w[0]) + w[1..].ToLower()
-                : w.ToUpper()));
-    }
-
-    private static string? Truncate(string? value, int maxLength)
-    {
-        if (value is null) { return null; }
-        return value.Length <= maxLength ? value : value[..maxLength];
     }
 }

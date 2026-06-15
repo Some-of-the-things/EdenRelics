@@ -165,8 +165,8 @@ builder.Services.AddSingleton<GoogleAnalyticsService>();
 builder.Services.AddHostedService<TrafficIngestBackgroundService>();
 
 // Monzo bank integration
-builder.Services.AddHttpClient<MonzoService>();
-builder.Services.AddScoped<MonzoService>();
+builder.Services.AddHttpClient<MonzoApiClient>();
+builder.Services.AddScoped<IMonzoService, MonzoService>();
 builder.Services.AddHostedService<MonzoSyncBackgroundService>();
 
 // Regulatory-obligations calendar + operator reminders
