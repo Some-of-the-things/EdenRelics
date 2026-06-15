@@ -1,6 +1,7 @@
 namespace Eden_Relics_BE.Data.Entities;
 
-public class MonzoToken : BaseEntity
+// Rotated on reconnect (old tokens replaced wholesale), so genuinely hard-deleted.
+public class MonzoToken : BaseEntity, IHardDeletable
 {
     public string AccessToken { get; set; } = "";
     public string RefreshToken { get; set; } = "";

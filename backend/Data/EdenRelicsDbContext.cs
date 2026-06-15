@@ -42,6 +42,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<AnalyticsDailyTotal> AnalyticsDailyTotals => Set<AnalyticsDailyTotal>();
     public DbSet<AnalyticsDailySource> AnalyticsDailySources => Set<AnalyticsDailySource>();
     public DbSet<AnalyticsDailyLandingPage> AnalyticsDailyLandingPages => Set<AnalyticsDailyLandingPage>();
+    public DbSet<PageViewDaily> PageViewDailies => Set<PageViewDaily>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<LiabilityObligation> LiabilityObligations => Set<LiabilityObligation>();
     public DbSet<OperatorReminder> OperatorReminders => Set<OperatorReminder>();
@@ -232,6 +233,15 @@ public class EdenRelicsDbContext : DbContext
             entity.HasQueryFilter(e => !e.IsDeleted);
             entity.Property(a => a.LandingPage).HasMaxLength(1000);
             entity.HasIndex(a => new { a.Date, a.LandingPage }).IsUnique();
+        });
+
+        modelBuilder.Entity<PageViewDaily>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(p => p.Path).HasMaxLength(1000);
+            entity.Property(p => p.Country).HasMaxLength(8);
+            entity.HasIndex(p => new { p.Date, p.Path, p.IsBot, p.Country }).IsUnique();
+            entity.HasIndex(p => p.Date);
         });
 
         modelBuilder.Entity<Review>(entity =>

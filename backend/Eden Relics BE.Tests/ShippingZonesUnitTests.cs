@@ -1,4 +1,4 @@
-using Eden_Relics_BE.Controllers;
+using Eden_Relics_BE.Services;
 
 namespace Eden_Relics_BE.Tests;
 

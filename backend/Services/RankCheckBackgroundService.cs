@@ -1,5 +1,3 @@
-using Eden_Relics_BE.Data;
-
 namespace Eden_Relics_BE.Services;
 
 public class RankCheckBackgroundService(IServiceScopeFactory scopeFactory, ILogger<RankCheckBackgroundService> logger) : BackgroundService
@@ -19,8 +17,7 @@ public class RankCheckBackgroundService(IServiceScopeFactory scopeFactory, ILogg
             {
                 using IServiceScope scope = scopeFactory.CreateScope();
                 RankCheckerService checker = scope.ServiceProvider.GetRequiredService<RankCheckerService>();
-                EdenRelicsDbContext context = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
-                await checker.CheckAllKeywordsAsync(context);
+                await checker.CheckAllKeywordsAsync();
             }
             catch (Exception ex)
             {

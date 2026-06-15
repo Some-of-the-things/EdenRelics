@@ -56,8 +56,11 @@ public class RankCheckerService(IServiceScopeFactory scopeFactory, ILogger<RankC
         return rounded;
     }
 
-    public async Task CheckAllKeywordsAsync(EdenRelicsDbContext context)
+    public async Task CheckAllKeywordsAsync()
     {
+        using IServiceScope scope = scopeFactory.CreateScope();
+        EdenRelicsDbContext context = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+
         List<TrackedKeyword> keywords = await context.TrackedKeywords
             .Where(k => !k.IsDeleted)
             .ToListAsync();
