@@ -26,10 +26,19 @@ public interface ICareService
     Task<CareFabricDto?> GetPublishedFabricAsync(string slug);
     Task<CareIssueDto?> GetPublishedIssueAsync(string slug);
     Task<CareIndexDto> GetPublishedIndexAsync();
+
+    // --- Inventory cross-linking ---
+    /// <summary>Finds the published care guide for a product's material (null if none).</summary>
+    Task<CareFabricRefDto?> ResolveFabricForMaterialAsync(string material);
+    /// <summary>Live products whose material matches a published fabric guide.</summary>
+    Task<List<CareProductDto>> GetFabricProductsAsync(string slug);
 }
 
 public record CareIndexDto(List<CareIndexItemDto> Fabrics, List<CareIndexItemDto> Issues);
 public record CareIndexItemDto(string Name, string Slug, string Summary);
+
+public record CareFabricRefDto(string Slug, string Name);
+public record CareProductDto(Guid Id, string Name, string Slug, decimal Price, decimal? SalePrice, string ImageUrl);
 
 /// <summary>One row in the reviewer's worklist — enough to triage outstanding actions at a glance.</summary>
 public record CareWorklistItemDto(

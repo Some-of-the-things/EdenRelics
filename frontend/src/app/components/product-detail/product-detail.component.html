@@ -64,6 +64,17 @@
             <span class="detail__label">Condition</span>
             <span>{{ product.condition | titlecase }}</span>
           </div>
+          @if (product.material) {
+            <div class="detail__meta-item">
+              <span class="detail__label">Fabric</span>
+              <span>
+                {{ product.material }}
+                @if (careGuide(); as g) {
+                  · <a class="detail__care-link" [routerLink]="['/care/fabric', g.slug]">care guide &rarr;</a>
+                }
+              </span>
+            </div>
+          }
         </div>
         @if (isSold()) {
           <div class="detail__sold">

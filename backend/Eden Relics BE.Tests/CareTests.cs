@@ -1,5 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
+using Eden_Relics_BE.Data;
+using Eden_Relics_BE.Data.Entities;
+using Microsoft.Extensions.DependencyInjection;
 using static Eden_Relics_BE.Tests.Helpers;
 
 namespace Eden_Relics_BE.Tests;
@@ -160,6 +163,61 @@ public class CareTests : IClassFixture<ApiFactory>
             $"/api/care/admin/fabric/{viyella.Id}/generate", null);
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
+
+    [Fact]
+    public async Task ResolveMaterial_Unknown_Returns404()
+    {
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage resp = await client.GetAsync("/api/care/resolve?material=unobtanium");
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task FabricProducts_And_Resolve_MatchByMaterial()
+    {
+        HttpClient client = _factory.CreateClient();
+
+        string fabricSlug = "xtest-" + Guid.NewGuid().ToString("N")[..8];
+        string fabricName = "XTest Fabric " + Guid.NewGuid().ToString("N")[..6];
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+            db.CareFabrics.Add(new CareFabric
+            {
+                Slug = fabricSlug,
+                Name = fabricName,
+                IsPublished = true,
+                Status = CareReviewStatus.ExpertApproved,
+            });
+            db.Products.Add(new Product
+            {
+                Name = "XTest Jacket",
+                Slug = "xtest-jacket-" + Guid.NewGuid().ToString("N")[..8],
+                Description = "A test piece.",
+                Era = "1980s",
+                Category = "Jacket",
+                Size = "M",
+                Condition = "Good",
+                ImageUrl = "/img/test.jpg",
+                Material = fabricName,
+                Status = ProductStatus.Live,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        List<CareProduct>? prods = await client.GetFromJsonAsync<List<CareProduct>>(
+            $"/api/care/fabric/{fabricSlug}/products", JsonOptions);
+        Assert.NotNull(prods);
+        Assert.Contains(prods!, p => p.Name == "XTest Jacket");
+
+        CareFabricRef? resolved = await client.GetFromJsonAsync<CareFabricRef>(
+            $"/api/care/resolve?material={Uri.EscapeDataString(fabricName)}", JsonOptions);
+        Assert.NotNull(resolved);
+        Assert.Equal(fabricSlug, resolved!.Slug);
+    }
+
+    private record CareProduct(Guid Id, string Name, string Slug, decimal Price, decimal? SalePrice, string ImageUrl);
+    private record CareFabricRef(string Slug, string Name);
 
     private record WorklistItem(
         Guid Id, string Type, string Name, string Slug, string Status,

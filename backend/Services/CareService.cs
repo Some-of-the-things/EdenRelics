@@ -12,6 +12,7 @@ namespace Eden_Relics_BE.Services;
 public class CareService(
     IRepository<CareFabric> fabrics,
     IRepository<CareIssue> issues,
+    IRepository<Product> products,
     ICareDraftService draftService) : ICareService
 {
     public bool AiDraftingAvailable => draftService.IsConfigured;
@@ -240,6 +241,61 @@ public class CareService(
     {
         string s = (string.IsNullOrWhiteSpace(preferred) ? fallback : preferred).Trim();
         return s.Length > 160 ? s[..157].TrimEnd() + "…" : s;
+    }
+
+    // --- Inventory cross-linking ---
+
+    public async Task<CareFabricRefDto?> ResolveFabricForMaterialAsync(string material)
+    {
+        if (string.IsNullOrWhiteSpace(material))
+        {
+            return null;
+        }
+
+        List<CareFabric> published = await fabrics.Query().Where(f => f.IsPublished).ToListAsync();
+        CareFabric? match = published.FirstOrDefault(f => MaterialMatchesFabric(material, f));
+        return match is null ? null : new CareFabricRefDto(match.Slug, match.Name);
+    }
+
+    public async Task<List<CareProductDto>> GetFabricProductsAsync(string slug)
+    {
+        CareFabric? fabric = await fabrics.Query().FirstOrDefaultAsync(f => f.Slug == slug && f.IsPublished);
+        if (fabric is null)
+        {
+            return [];
+        }
+
+        List<Product> live = await products.Query()
+            .Where(p => p.Status == ProductStatus.Live && p.Material != null && p.Material != "")
+            .OrderByDescending(p => p.UpdatedAtUtc)
+            .ToListAsync();
+
+        return live
+            .Where(p => MaterialMatchesFabric(p.Material!, fabric))
+            .Take(12)
+            .Select(p => new CareProductDto(
+                p.Id,
+                p.Name,
+                string.IsNullOrEmpty(p.Slug) ? p.Id.ToString() : p.Slug,
+                p.Price,
+                p.SalePrice,
+                p.ImageUrl))
+            .ToList();
+    }
+
+    /// <summary>A product's free-text material maps to a fabric guide by name, alias, or slug.</summary>
+    private static bool MaterialMatchesFabric(string material, CareFabric fabric)
+    {
+        string m = material.Trim();
+        if (string.Equals(m, fabric.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        if (fabric.AlsoKnownAs.Any(a => string.Equals(a, m, StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+        return SlugHelper.Generate(m) == fabric.Slug;
     }
 
     // --- Mapping ---

@@ -300,6 +300,10 @@
               </select>
             </label>
             <label class="admin__field">
+              <span>Fabric / material</span>
+              <input type="text" [(ngModel)]="form.material" name="material" placeholder="e.g. Viyella, Rayon, Silk" />
+            </label>
+            <label class="admin__field">
               <span>Status</span>
               <select [(ngModel)]="form.status" name="status">
                 <option value="stock">Stock (admin only)</option>

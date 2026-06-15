@@ -31,6 +31,21 @@ public class CareController(ICareService care) : ControllerBase
         return issue is null ? NotFound() : Ok(issue);
     }
 
+    /// <summary>Resolves a product's material to its care guide (for the "how to care" link on product pages).</summary>
+    [HttpGet("resolve")]
+    public async Task<ActionResult<CareFabricRefDto>> ResolveMaterial([FromQuery] string material)
+    {
+        CareFabricRefDto? fabric = await care.ResolveFabricForMaterialAsync(material);
+        return fabric is null ? NotFound() : Ok(fabric);
+    }
+
+    /// <summary>Live products in a given fabric (for the "shop this fabric" block on care pages).</summary>
+    [HttpGet("fabric/{slug}/products")]
+    public async Task<ActionResult<List<CareProductDto>>> GetFabricProducts(string slug)
+    {
+        return Ok(await care.GetFabricProductsAsync(slug));
+    }
+
     // --- Admin: worklist ---
 
     [HttpGet("admin/worklist")]

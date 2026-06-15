@@ -87,6 +87,61 @@
   color: #b91c1c;
 }
 
+.carepage__shop {
+  margin-top: 2.5rem;
+
+  h2 {
+    font-size: 1.25rem;
+    margin: 0 0 1rem;
+    color: #3a2f1a;
+  }
+}
+
+.carepage__shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.carepage__shop-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+
+  img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 0.4rem;
+    background: #f1ece3;
+  }
+}
+
+.carepage__shop-name {
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  color: #4a4030;
+  line-height: 1.3;
+}
+
+.carepage__shop-price {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b4f2a;
+}
+
+.carepage__shop-sale {
+  color: #b91c1c;
+  margin-right: 0.35rem;
+}
+
+.carepage__shop-was {
+  text-decoration: line-through;
+  color: #9a8f7a;
+  font-weight: 400;
+}
+
 .carepage__disclaimer {
   margin-top: 2.5rem;
   font-size: 0.85rem;

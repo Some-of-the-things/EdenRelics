@@ -414,6 +414,7 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(p => p.Category).HasMaxLength(20);
             entity.Property(p => p.Size).HasMaxLength(20);
             entity.Property(p => p.Condition).HasMaxLength(20);
+            entity.Property(p => p.Material).HasMaxLength(100);
             entity.Property(p => p.ImageUrl).HasMaxLength(500);
             ConfigureJsonListProperty(entity.Property(p => p.AdditionalImageUrls));
             ConfigureJsonListProperty(entity.Property(p => p.VideoUrls));

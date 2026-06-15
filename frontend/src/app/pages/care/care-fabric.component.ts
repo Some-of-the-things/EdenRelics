@@ -4,6 +4,15 @@ import { HttpClient } from '@angular/common/http';
 import { SeoService } from '../../services/seo.service';
 import { environment } from '../../../environments/environment';
 
+interface CareProduct {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  salePrice: number | null;
+  imageUrl: string;
+}
+
 interface CareFabric {
   slug: string;
   name: string;
@@ -36,9 +45,14 @@ export class CareFabricComponent implements OnInit {
   private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
 
   readonly fabric = signal<CareFabric | null>(null);
+  readonly products = signal<CareProduct[]>([]);
   readonly error = signal(false);
 
   ngOnInit(): void {
+    this.http.get<CareProduct[]>(`${environment.apiUrl}/api/care/fabric/${this.slug()}/products`).subscribe({
+      next: (products) => this.products.set(products),
+      error: () => {},
+    });
     this.http.get<CareFabric>(`${environment.apiUrl}/api/care/fabric/${this.slug()}`).subscribe({
       next: (fabric) => {
         this.fabric.set(fabric);

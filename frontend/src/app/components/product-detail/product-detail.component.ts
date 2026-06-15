@@ -1,6 +1,8 @@
 import { Component, computed, effect, inject, input, signal, PLATFORM_ID, RESPONSE_INIT } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CurrencyPipe, isPlatformBrowser, TitleCasePipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { ProductStore } from '../../store/product.store';
 import { CartStore } from '../../store/cart.store';
 import { Product } from '../../models/product.model';
@@ -69,8 +71,13 @@ export class ProductDetailComponent {
   // legacy numeric IDs) instead of a soft-404 (200 + "Product not found").
   private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
 
+  private readonly http = inject(HttpClient);
+
   readonly selectedImage = signal<string | null>(null);
   readonly showSalePrompt = signal(false);
+  /** The published care guide for this product's fabric, if one exists. */
+  readonly careGuide = signal<{ slug: string; name: string } | null>(null);
+  private lastResolvedMaterial: string | null = null;
   private pendingFavouriteId: string | null = null;
 
   private readonly fetchedProduct = signal<Product | null>(null);
@@ -184,6 +191,26 @@ export class ProductDetailComponent {
           },
         });
       }
+    });
+    // Resolve the fabric's care guide (if published) so we can cross-link to it.
+    effect(() => {
+      const material = this.product()?.material?.trim();
+      if (!material) {
+        this.careGuide.set(null);
+        return;
+      }
+      if (material === this.lastResolvedMaterial) {
+        return;
+      }
+      this.lastResolvedMaterial = material;
+      this.http
+        .get<{ slug: string; name: string }>(
+          `${environment.apiUrl}/api/care/resolve?material=${encodeURIComponent(material)}`,
+        )
+        .subscribe({
+          next: (g) => this.careGuide.set(g),
+          error: () => this.careGuide.set(null),
+        });
     });
     // If we landed on a UUID URL but the product has a slug, swap the URL in-place
     effect(() => {

@@ -79,6 +79,28 @@
       </div>
     }
 
+    @if (products().length > 0) {
+      <section class="carepage__shop">
+        <h2>Shop vintage {{ f.name }}</h2>
+        <div class="carepage__shop-grid">
+          @for (p of products(); track p.id) {
+            <a class="carepage__shop-card" [routerLink]="['/product', p.slug]">
+              <img [src]="p.imageUrl" [alt]="p.name" loading="lazy" />
+              <span class="carepage__shop-name">{{ p.name }}</span>
+              <span class="carepage__shop-price">
+                @if (p.salePrice && p.salePrice < p.price) {
+                  <span class="carepage__shop-sale">£{{ p.salePrice }}</span>
+                  <span class="carepage__shop-was">£{{ p.price }}</span>
+                } @else {
+                  £{{ p.price }}
+                }
+              </span>
+            </a>
+          }
+        </div>
+      </section>
+    }
+
     <p class="carepage__disclaimer">
       Vintage fabrics are delicate and one-of-a-kind. Always spot-test on a hidden seam first,
       and when a piece is fragile or valuable, choose a specialist cleaner over any home method.
