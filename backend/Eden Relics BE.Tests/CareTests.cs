@@ -102,6 +102,16 @@ public class CareTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task PublicIndex_ExcludesUnpublished()
+    {
+        HttpClient client = _factory.CreateClient();
+        CareIndex? index = await client.GetFromJsonAsync<CareIndex>("/api/care", JsonOptions);
+        Assert.NotNull(index);
+        // Viyella is seeded but unpublished — must not surface on the public hub.
+        Assert.DoesNotContain(index!.Fabrics, f => f.Slug == "viyella");
+    }
+
+    [Fact]
     public async Task PublicIssue_Unpublished_Returns404()
     {
         HttpClient client = _factory.CreateClient();
@@ -162,4 +172,7 @@ public class CareTests : IClassFixture<ApiFactory>
 
     private record IssueDto(
         Guid Id, string Slug, string Name, string GeneralMethod, string Status, bool IsPublished);
+
+    private record CareIndex(List<CareIndexItem> Fabrics, List<CareIndexItem> Issues);
+    private record CareIndexItem(string Name, string Slug, string Summary);
 }

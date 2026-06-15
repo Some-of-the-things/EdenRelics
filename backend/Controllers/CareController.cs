@@ -11,6 +11,12 @@ public class CareController(ICareService care) : ControllerBase
 {
     // --- Public (published only) ---
 
+    [HttpGet]
+    public async Task<ActionResult<CareIndexDto>> GetIndex()
+    {
+        return Ok(await care.GetPublishedIndexAsync());
+    }
+
     [HttpGet("fabric/{slug}")]
     public async Task<ActionResult<CareFabricDto>> GetFabric(string slug)
     {

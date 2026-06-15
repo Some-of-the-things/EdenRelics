@@ -224,6 +224,24 @@ public class CareService(
         return i is null ? null : ToDto(i);
     }
 
+    public async Task<CareIndexDto> GetPublishedIndexAsync()
+    {
+        List<CareFabric> f = await fabrics.Query()
+            .Where(x => x.IsPublished).OrderBy(x => x.Name).ToListAsync();
+        List<CareIssue> i = await issues.Query()
+            .Where(x => x.IsPublished).OrderBy(x => x.Name).ToListAsync();
+
+        return new CareIndexDto(
+            f.Select(x => new CareIndexItemDto(x.Name, x.Slug, Summarise(x.MetaDescription, x.Intro))).ToList(),
+            i.Select(x => new CareIndexItemDto(x.Name, x.Slug, Summarise(x.MetaDescription, x.Causes))).ToList());
+    }
+
+    private static string Summarise(string preferred, string fallback)
+    {
+        string s = (string.IsNullOrWhiteSpace(preferred) ? fallback : preferred).Trim();
+        return s.Length > 160 ? s[..157].TrimEnd() + "…" : s;
+    }
+
     // --- Mapping ---
 
     private static void Apply(CareFabric f, SaveCareFabricDto dto)

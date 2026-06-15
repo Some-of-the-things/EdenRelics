@@ -25,7 +25,11 @@ public interface ICareService
     // --- Public (published only) ---
     Task<CareFabricDto?> GetPublishedFabricAsync(string slug);
     Task<CareIssueDto?> GetPublishedIssueAsync(string slug);
+    Task<CareIndexDto> GetPublishedIndexAsync();
 }
+
+public record CareIndexDto(List<CareIndexItemDto> Fabrics, List<CareIndexItemDto> Issues);
+public record CareIndexItemDto(string Name, string Slug, string Summary);
 
 /// <summary>One row in the reviewer's worklist — enough to triage outstanding actions at a glance.</summary>
 public record CareWorklistItemDto(
