@@ -27,6 +27,17 @@ interface FinderResult {
   isGeneral: boolean;
 }
 
+interface IdentifyGuess {
+  name: string;
+  confidence: number;
+  fabricSlug: string | null;
+}
+
+interface IdentifyResult {
+  guesses: IdentifyGuess[];
+  note: string;
+}
+
 @Component({
   selector: 'app-care-hub',
   imports: [RouterLink, FormsModule],
@@ -64,6 +75,59 @@ export class CareHubComponent implements OnInit {
         this.finderLoading.set(false);
       },
     });
+  }
+
+  // Image-based fabric identification (assistive)
+  readonly identifyLoading = signal(false);
+  readonly identifyError = signal('');
+  readonly identifyResult = signal<IdentifyResult | null>(null);
+
+  onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+    if (file.size > 6 * 1024 * 1024) {
+      this.identifyError.set('That image is too large (max ~5MB).');
+      return;
+    }
+    this.identifyError.set('');
+    this.identifyResult.set(null);
+    this.identifyLoading.set(true);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+      const mediaType = file.type || 'image/jpeg';
+      this.http
+        .post<IdentifyResult>(`${environment.apiUrl}/api/care/identify`, { imageBase64: base64, mediaType })
+        .subscribe({
+          next: (r) => {
+            this.identifyResult.set(r);
+            this.identifyLoading.set(false);
+          },
+          error: (e) => {
+            this.identifyError.set(
+              e.status === 429
+                ? 'Too many tries just now — please wait a minute and try again.'
+                : 'Sorry, we couldn’t identify that image.',
+            );
+            this.identifyLoading.set(false);
+          },
+        });
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  useGuess(slug: string): void {
+    this.finderFabric = slug;
+  }
+
+  confidencePct(confidence: number): number {
+    return Math.round(confidence * 100);
   }
 
   safetyLabel(safety: string): string {

@@ -10,6 +10,9 @@ public interface ICareDraftService
     bool IsConfigured { get; }
     Task<CareFabricDraft?> DraftFabricAsync(string name, IReadOnlyList<string> targetKeywords);
     Task<CareIssueDraft?> DraftIssueAsync(string name, IReadOnlyList<string> targetKeywords);
+
+    /// <summary>Best-guess fabric identification from a photo. Assistive only — never authoritative.</summary>
+    Task<FabricIdentifyResult?> IdentifyFabricAsync(string base64Image, string mediaType, IReadOnlyList<string> knownFabrics);
 }
 
 public record CareFabricDraft(
@@ -33,3 +36,6 @@ public record CareIssueDraft(
     string WhenToSeeAPro,
     string MetaTitle,
     string MetaDescription);
+
+public record FabricIdentifyResult(List<FabricGuess> Guesses, string Note);
+public record FabricGuess(string Name, double Confidence);

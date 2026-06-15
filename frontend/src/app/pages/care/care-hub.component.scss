@@ -132,6 +132,64 @@
   color: #b91c1c;
 }
 
+/* ---- Identify by photo ---- */
+.carehub__identify {
+  margin-bottom: 1rem;
+}
+
+.carehub__identify-btn {
+  display: inline-block;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #6b4f2a;
+  border: 1px dashed #c9a86a;
+  border-radius: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  background: #fffdf6;
+
+  &:hover { background: #fbf3e3; }
+}
+
+.carehub__identify-status {
+  margin-left: 0.6rem;
+  color: #6a6050;
+  font-size: 0.9rem;
+}
+
+.carehub__identify-result {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+
+  ul { margin: 0.3rem 0; padding-left: 1.2rem; line-height: 1.7; }
+}
+
+.carehub__identify-note {
+  margin: 0;
+  color: #6a6050;
+}
+
+.carehub__identify-conf {
+  color: #8a7a5e;
+  font-size: 0.82rem;
+}
+
+.carehub__identify-use {
+  margin: 0 0.4rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid #6b4f2a;
+  border-radius: 0.25rem;
+  background: #fff;
+  color: #6b4f2a;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.carehub__identify-caveat {
+  margin: 0.3rem 0 0;
+  font-style: italic;
+  color: #8a7a5e;
+}
+
 .carehub__finder-result {
   margin-top: 1.25rem;
   padding-top: 1.25rem;

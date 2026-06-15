@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Eden_Relics_BE.Controllers;
 
@@ -52,6 +53,36 @@ public class CareController(ICareService care) : ControllerBase
     {
         CareFinderResultDto? result = await care.GetFinderResultAsync(fabric, issue);
         return result is null ? NotFound() : Ok(result);
+    }
+
+    /// <summary>
+    /// Assistive fabric identification from an uploaded photo. Cost-bearing (vision model),
+    /// so it's rate-limited and only works when AI is configured. Best-guess, never authoritative.
+    /// </summary>
+    [HttpPost("identify")]
+    [EnableRateLimiting("contact")]
+    public async Task<ActionResult<CareIdentifyResultDto>> Identify([FromBody] CareIdentifyRequest req)
+    {
+        if (!care.AiDraftingAvailable)
+        {
+            return BadRequest(new { error = "Image identification is not configured." });
+        }
+        if (string.IsNullOrWhiteSpace(req.ImageBase64))
+        {
+            return BadRequest(new { error = "No image provided." });
+        }
+        string mediaType = req.MediaType?.ToLowerInvariant() ?? "";
+        if (mediaType is not ("image/jpeg" or "image/png" or "image/webp"))
+        {
+            return BadRequest(new { error = "Please use a JPEG, PNG or WebP image." });
+        }
+        // Base64 is ~1.33x the raw bytes; ~8M chars ≈ 6MB image.
+        if (req.ImageBase64.Length > 8_000_000)
+        {
+            return BadRequest(new { error = "Image is too large (max ~5MB)." });
+        }
+
+        return Ok(await care.IdentifyFabricAsync(req.ImageBase64, mediaType));
     }
 
     // --- Admin: finder guidance overrides ---
@@ -194,3 +225,4 @@ public class CareController(ICareService care) : ControllerBase
 }
 
 public record CarePublishDto(bool Published);
+public record CareIdentifyRequest(string ImageBase64, string MediaType);

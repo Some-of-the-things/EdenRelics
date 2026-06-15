@@ -279,6 +279,16 @@ public class CareTests : IClassFixture<ApiFactory>
         Assert.Equal("Test it first.", overridden.ShortAnswer);
     }
 
+    [Fact]
+    public async Task Identify_WhenAiNotConfigured_Returns400()
+    {
+        HttpClient client = _factory.CreateClient();
+        // The test host has no Anthropic key, so identification is unavailable.
+        HttpResponseMessage resp = await client.PostAsJsonAsync("/api/care/identify",
+            new { imageBase64 = "Zm9v", mediaType = "image/png" });
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
     private record FinderResult(
         string FabricName, string FabricSlug, string IssueName, string IssueSlug,
         string Safety, string ShortAnswer, string Method, bool IsGeneral);

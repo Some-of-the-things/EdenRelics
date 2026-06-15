@@ -63,6 +63,67 @@ public class CareDraftService(IConfiguration config, ILogger<CareDraftService> l
         return await CallAsync<CareIssueDraft>(instruction);
     }
 
+    public async Task<FabricIdentifyResult?> IdentifyFabricAsync(
+        string base64Image, string mediaType, IReadOnlyList<string> knownFabrics)
+    {
+        string? apiKey = config["Anthropic:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            return null;
+        }
+
+        string knownLine = knownFabrics.Count > 0
+            ? $"We have care guides for these fabrics — prefer one of them when it clearly matches: {string.Join("; ", knownFabrics)}."
+            : "";
+
+        string instruction = $$"""
+            You are a vintage-textiles expert. Look at this clothing photo and identify the most likely
+            fabric/material. {{knownLine}} You may also name a fabric that isn't on the list.
+            Be honest about uncertainty — identifying fabric from a photo is genuinely hard, so set
+            confidence accordingly (0 = guess, 1 = certain).
+
+            Return ONLY a JSON object (no markdown, no commentary):
+            {
+              "guesses": [ { "name": "", "confidence": 0.0 } ],
+              "note": ""
+            }
+            Give up to 3 guesses, ordered by confidence. "note" is a one-line caveat for the shopper.
+            """;
+
+        try
+        {
+            AnthropicClient client = new(apiKey);
+            MessageParameters parameters = new()
+            {
+                Messages =
+                [
+                    new Message
+                    {
+                        Role = RoleType.User,
+                        Content =
+                        [
+                            new ImageContent { Source = new ImageSource { MediaType = mediaType, Data = base64Image } },
+                            new TextContent { Text = instruction },
+                        ],
+                    },
+                ],
+                MaxTokens = 1024,
+                Model = AnthropicModels.Claude45Haiku,
+                Stream = false,
+                Temperature = 0.2m,
+            };
+
+            MessageResponse result = await client.Messages.GetClaudeMessageAsync(parameters);
+            string json = ExtractJson(result.Message.ToString().Trim());
+            return JsonSerializer.Deserialize<FabricIdentifyResult>(json, JsonOpts);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Fabric image identification failed");
+            return null;
+        }
+    }
+
     private async Task<T?> CallAsync<T>(string instruction) where T : class
     {
         string? apiKey = config["Anthropic:ApiKey"];

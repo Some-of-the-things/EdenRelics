@@ -38,6 +38,9 @@ public interface ICareService
     Task<CareFinderResultDto?> GetFinderResultAsync(string fabricSlug, string issueSlug);
     Task<CareGuidanceDto?> GetGuidanceAsync(Guid fabricId, Guid issueId);
     Task<CareGuidanceDto?> SaveGuidanceAsync(SaveCareGuidanceDto dto);
+
+    // --- Image-based fabric identification (assistive) ---
+    Task<CareIdentifyResultDto> IdentifyFabricAsync(string base64Image, string mediaType);
 }
 
 public record CareIndexDto(List<CareIndexItemDto> Fabrics, List<CareIndexItemDto> Issues);
@@ -61,6 +64,10 @@ public record CareGuidanceDto(
 
 public record SaveCareGuidanceDto(
     Guid FabricId, Guid IssueId, string Safety, string? ShortAnswer, string? SpecificMethod, bool Approved);
+
+public record CareIdentifyResultDto(List<CareIdentifyGuessDto> Guesses, string Note);
+/// <summary>FabricSlug is set when the guess matches one of our published guides (so the UI can deep-link).</summary>
+public record CareIdentifyGuessDto(string Name, double Confidence, string? FabricSlug);
 
 /// <summary>One row in the reviewer's worklist — enough to triage outstanding actions at a glance.</summary>
 public record CareWorklistItemDto(

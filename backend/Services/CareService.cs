@@ -379,6 +379,32 @@ public class CareService(
     private static CareGuidanceDto ToDto(CareGuidance g) => new(
         g.Id, g.FabricId, g.IssueId, g.Safety.ToString(), g.ShortAnswer, g.SpecificMethod, g.Status.ToString());
 
+    // --- Image-based fabric identification ---
+
+    public async Task<CareIdentifyResultDto> IdentifyFabricAsync(string base64Image, string mediaType)
+    {
+        List<CareFabric> published = await fabrics.Query().Where(f => f.IsPublished).ToListAsync();
+        FabricIdentifyResult? raw = await draftService.IdentifyFabricAsync(
+            base64Image, mediaType, published.Select(f => f.Name).ToList());
+
+        if (raw is null)
+        {
+            return new CareIdentifyResultDto(
+                [], "Sorry — we couldn't analyse that image. Try a clearer, well-lit close-up of the fabric.");
+        }
+
+        List<CareIdentifyGuessDto> guesses = (raw.Guesses ?? [])
+            .Where(g => !string.IsNullOrWhiteSpace(g.Name))
+            .Select(g =>
+            {
+                CareFabric? match = published.FirstOrDefault(f => MaterialMatchesFabric(g.Name, f));
+                return new CareIdentifyGuessDto(g.Name.Trim(), Math.Clamp(g.Confidence, 0, 1), match?.Slug);
+            })
+            .ToList();
+
+        return new CareIdentifyResultDto(guesses, raw.Note ?? "");
+    }
+
     /// <summary>A product's free-text material maps to a fabric guide by name, alias, or slug.</summary>
     private static bool MaterialMatchesFabric(string material, CareFabric fabric)
     {

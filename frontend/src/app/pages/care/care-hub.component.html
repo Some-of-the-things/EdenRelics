@@ -15,6 +15,39 @@
     <section class="carehub__finder">
       <h2>Care finder</h2>
       <p class="carehub__finder-intro">Pick a fabric and a problem for tailored guidance.</p>
+
+      <div class="carehub__identify">
+        <label class="carehub__identify-btn">
+          📷 Not sure of the fabric? Identify from a photo
+          <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhotoSelected($event)" hidden />
+        </label>
+        @if (identifyLoading()) {
+          <span class="carehub__identify-status">Analysing…</span>
+        }
+        @if (identifyError()) {
+          <span class="carehub__finder-error">{{ identifyError() }}</span>
+        }
+        @if (identifyResult(); as r) {
+          <div class="carehub__identify-result">
+            <p class="carehub__identify-note">Best guesses (a photo can only get us so far — please double-check):</p>
+            <ul>
+              @for (g of r.guesses; track g.name) {
+                <li>
+                  <strong>{{ g.name }}</strong> <span class="carehub__identify-conf">~{{ confidencePct(g.confidence) }}% sure</span>
+                  @if (g.fabricSlug) {
+                    <button type="button" class="carehub__identify-use" (click)="useGuess(g.fabricSlug!)">use in finder</button>
+                    <a [routerLink]="['/care/fabric', g.fabricSlug]">guide →</a>
+                  }
+                </li>
+              } @empty {
+                <li>No confident match — try a clearer, well-lit close-up of the fabric.</li>
+              }
+            </ul>
+            @if (r.note) { <p class="carehub__identify-caveat">{{ r.note }}</p> }
+          </div>
+        }
+      </div>
+
       <div class="carehub__finder-controls">
         <select [(ngModel)]="finderFabric" aria-label="Fabric">
           <option value="" disabled selected>Fabric…</option>
