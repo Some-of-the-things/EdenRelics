@@ -216,6 +216,72 @@ public class CareTests : IClassFixture<ApiFactory>
         Assert.Equal(fabricSlug, resolved!.Slug);
     }
 
+    [Fact]
+    public async Task Finder_UnpublishedPair_Returns404()
+    {
+        HttpClient client = _factory.CreateClient();
+        // Seeded viyella + yellow-age-stains are both unpublished drafts.
+        HttpResponseMessage resp = await client.GetAsync("/api/care/finder?fabric=viyella&issue=yellow-age-stains");
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Guidance_Save_RequiresAdmin()
+    {
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage resp = await client.PostAsJsonAsync("/api/care/admin/guidance",
+            new { fabricId = Guid.NewGuid(), issueId = Guid.NewGuid(), safety = "Safe", approved = false });
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Finder_ComposesFallback_ThenUsesApprovedOverride()
+    {
+        HttpClient client = _factory.CreateClient();
+        string fSlug = "xf-" + Guid.NewGuid().ToString("N")[..8];
+        string iSlug = "xi-" + Guid.NewGuid().ToString("N")[..8];
+        Guid fId, iId;
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+            CareFabric f = new() { Slug = fSlug, Name = "XF", IsPublished = true, Status = CareReviewStatus.ExpertApproved, VintageCautions = "Be gentle." };
+            CareIssue i = new() { Slug = iSlug, Name = "XI", IsPublished = true, Status = CareReviewStatus.ExpertApproved, GeneralMethod = "Blot gently." };
+            db.CareFabrics.Add(f);
+            db.CareIssues.Add(i);
+            await db.SaveChangesAsync();
+            fId = f.Id;
+            iId = i.Id;
+        }
+
+        FinderResult? general = await client.GetFromJsonAsync<FinderResult>(
+            $"/api/care/finder?fabric={fSlug}&issue={iSlug}", JsonOptions);
+        Assert.NotNull(general);
+        Assert.True(general!.IsGeneral);
+        Assert.Contains("Blot gently", general.Method);
+
+        await RegisterAdmin(client, _factory, "care-finder@test.com");
+        HttpResponseMessage save = await client.PostAsJsonAsync("/api/care/admin/guidance", new
+        {
+            fabricId = fId,
+            issueId = iId,
+            safety = "WithCaution",
+            shortAnswer = "Test it first.",
+            specificMethod = "Dab, don't rub.",
+            approved = true,
+        });
+        Assert.Equal(HttpStatusCode.OK, save.StatusCode);
+
+        FinderResult? overridden = await client.GetFromJsonAsync<FinderResult>(
+            $"/api/care/finder?fabric={fSlug}&issue={iSlug}", JsonOptions);
+        Assert.NotNull(overridden);
+        Assert.False(overridden!.IsGeneral);
+        Assert.Equal("WithCaution", overridden.Safety);
+        Assert.Equal("Test it first.", overridden.ShortAnswer);
+    }
+
+    private record FinderResult(
+        string FabricName, string FabricSlug, string IssueName, string IssueSlug,
+        string Safety, string ShortAnswer, string Method, bool IsGeneral);
     private record CareProduct(Guid Id, string Name, string Slug, decimal Price, decimal? SalePrice, string ImageUrl);
     private record CareFabricRef(string Slug, string Name);
 

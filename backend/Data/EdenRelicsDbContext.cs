@@ -45,6 +45,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<PageViewDaily> PageViewDailies => Set<PageViewDaily>();
     public DbSet<CareFabric> CareFabrics => Set<CareFabric>();
     public DbSet<CareIssue> CareIssues => Set<CareIssue>();
+    public DbSet<CareGuidance> CareGuidances => Set<CareGuidance>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<LiabilityObligation> LiabilityObligations => Set<LiabilityObligation>();
     public DbSet<OperatorReminder> OperatorReminders => Set<OperatorReminder>();
@@ -270,6 +271,12 @@ public class EdenRelicsDbContext : DbContext
             entity.HasIndex(c => c.Slug).IsUnique();
             ConfigureJsonListProperty(entity.Property(c => c.AlsoKnownAs));
             ConfigureJsonListProperty(entity.Property(c => c.TargetKeywords));
+        });
+
+        modelBuilder.Entity<CareGuidance>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.HasIndex(c => new { c.FabricId, c.IssueId }).IsUnique();
         });
 
         modelBuilder.Entity<Review>(entity =>

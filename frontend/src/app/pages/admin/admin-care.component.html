@@ -69,6 +69,54 @@
         }
       }
     </div>
+
+    <section class="care__guidance">
+      <h3>Finder guidance (fabric × problem)</h3>
+      <p class="care__sub">
+        Optional expert overrides for the care finder. Without one, the finder composes a general
+        answer from the two guides. Only published entries can be paired here usefully.
+      </p>
+      <div class="care__guidance-pick">
+        <select [(ngModel)]="guidanceFabricId" aria-label="Fabric">
+          <option value="" disabled selected>Fabric…</option>
+          @for (f of fabricOptions; track f.id) {
+            <option [value]="f.id">{{ f.name }}</option>
+          }
+        </select>
+        <select [(ngModel)]="guidanceIssueId" aria-label="Problem">
+          <option value="" disabled selected>Problem…</option>
+          @for (i of issueOptions; track i.id) {
+            <option [value]="i.id">{{ i.name }}</option>
+          }
+        </select>
+        <button type="button" class="admin__add-btn" (click)="loadGuidance()" [disabled]="!guidanceFabricId || !guidanceIssueId">Load</button>
+      </div>
+
+      @if (guidanceLoaded()) {
+        <div class="care__editor">
+          <label class="care__field-label">Safety verdict</label>
+          <select class="care__input" [(ngModel)]="guidanceForm.safety">
+            <option value="Unknown">— not set —</option>
+            <option value="Safe">Safe to try at home</option>
+            <option value="WithCaution">Proceed with caution</option>
+            <option value="DoNotAttempt">Don't attempt at home</option>
+            <option value="SeeProfessional">See a professional</option>
+          </select>
+
+          <label class="care__field-label">Short answer (one line)</label>
+          <input class="care__input" [(ngModel)]="guidanceForm.shortAnswer" />
+
+          <label class="care__field-label">Specific method</label>
+          <textarea class="care__input" rows="4" [(ngModel)]="guidanceForm.specificMethod"></textarea>
+
+          <div class="care__editor-actions">
+            <button type="button" class="admin__add-btn" (click)="saveGuidance(false)">Save draft</button>
+            <button type="button" class="care__btn-publish" (click)="saveGuidance(true)">Save &amp; publish to finder</button>
+            @if (guidanceMsg()) { <span class="care__saved">{{ guidanceMsg() }}</span> }
+          </div>
+        </div>
+      }
+    </section>
   } @else {
     <!-- ===== Editor ===== -->
     <div class="care__header">

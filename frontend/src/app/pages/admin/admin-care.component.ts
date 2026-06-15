@@ -43,6 +43,16 @@ interface FabricDto {
   isPublished: boolean;
 }
 
+interface GuidanceDto {
+  id: string;
+  fabricId: string;
+  issueId: string;
+  safety: string;
+  shortAnswer: string;
+  specificMethod: string;
+  status: string;
+}
+
 interface IssueDto {
   id: string;
   slug: string;
@@ -157,6 +167,72 @@ export class AdminCareComponent implements OnInit {
 
   get outstandingCount(): number {
     return this.worklist().filter((i) => i.needsAction).length;
+  }
+
+  // --- Finder guidance overrides ---
+  get fabricOptions(): WorklistItem[] {
+    return this.worklist().filter((i) => i.type === 'fabric');
+  }
+  get issueOptions(): WorklistItem[] {
+    return this.worklist().filter((i) => i.type === 'issue');
+  }
+  guidanceFabricId = '';
+  guidanceIssueId = '';
+  guidanceForm: { safety: string; shortAnswer: string; specificMethod: string } = {
+    safety: 'Unknown',
+    shortAnswer: '',
+    specificMethod: '',
+  };
+  readonly guidanceLoaded = signal(false);
+  readonly guidanceStatus = signal('');
+  readonly guidanceMsg = signal('');
+
+  loadGuidance(): void {
+    if (!this.guidanceFabricId || !this.guidanceIssueId) {
+      return;
+    }
+    this.guidanceMsg.set('');
+    this.http
+      .get<GuidanceDto>(
+        `${this.api}/api/care/admin/guidance?fabricId=${this.guidanceFabricId}&issueId=${this.guidanceIssueId}`,
+      )
+      .subscribe({
+        next: (g) => {
+          if (g) {
+            this.guidanceForm = { safety: g.safety, shortAnswer: g.shortAnswer, specificMethod: g.specificMethod };
+            this.guidanceStatus.set(g.status);
+          } else {
+            this.guidanceForm = { safety: 'Unknown', shortAnswer: '', specificMethod: '' };
+            this.guidanceStatus.set('none');
+          }
+          this.guidanceLoaded.set(true);
+        },
+        error: () => {
+          this.guidanceForm = { safety: 'Unknown', shortAnswer: '', specificMethod: '' };
+          this.guidanceStatus.set('none');
+          this.guidanceLoaded.set(true);
+        },
+      });
+  }
+
+  saveGuidance(approved: boolean): void {
+    this.guidanceMsg.set('');
+    this.http
+      .post<GuidanceDto>(`${this.api}/api/care/admin/guidance`, {
+        fabricId: this.guidanceFabricId,
+        issueId: this.guidanceIssueId,
+        safety: this.guidanceForm.safety,
+        shortAnswer: this.guidanceForm.shortAnswer,
+        specificMethod: this.guidanceForm.specificMethod,
+        approved,
+      })
+      .subscribe({
+        next: (g) => {
+          this.guidanceStatus.set(g.status);
+          this.guidanceMsg.set(approved ? 'Saved & live in the finder.' : 'Saved as draft.');
+        },
+        error: () => this.guidanceMsg.set('Save failed.'),
+      });
   }
 
   /** Review notes live on whichever record is being edited; proxy so the shared brief panel can bind. */

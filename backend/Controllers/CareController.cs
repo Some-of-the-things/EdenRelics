@@ -46,6 +46,32 @@ public class CareController(ICareService care) : ControllerBase
         return Ok(await care.GetFabricProductsAsync(slug));
     }
 
+    /// <summary>Interactive care finder: tailored advice for a fabric × problem pair.</summary>
+    [HttpGet("finder")]
+    public async Task<ActionResult<CareFinderResultDto>> Finder([FromQuery] string fabric, [FromQuery] string issue)
+    {
+        CareFinderResultDto? result = await care.GetFinderResultAsync(fabric, issue);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    // --- Admin: finder guidance overrides ---
+
+    [HttpGet("admin/guidance")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<CareGuidanceDto>> GetGuidance([FromQuery] Guid fabricId, [FromQuery] Guid issueId)
+    {
+        CareGuidanceDto? g = await care.GetGuidanceAsync(fabricId, issueId);
+        return g is null ? NoContent() : Ok(g);
+    }
+
+    [HttpPost("admin/guidance")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<CareGuidanceDto>> SaveGuidance([FromBody] SaveCareGuidanceDto dto)
+    {
+        CareGuidanceDto? saved = await care.SaveGuidanceAsync(dto);
+        return saved is null ? BadRequest(new { error = "Unknown fabric or problem." }) : Ok(saved);
+    }
+
     // --- Admin: worklist ---
 
     [HttpGet("admin/worklist")]

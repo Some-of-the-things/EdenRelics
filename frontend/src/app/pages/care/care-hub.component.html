@@ -11,6 +11,52 @@
     problems vintage garments most often arrive with — written and checked by the team at Eden Relics.
   </p>
 
+  @if (index().fabrics.length > 0 && index().issues.length > 0) {
+    <section class="carehub__finder">
+      <h2>Care finder</h2>
+      <p class="carehub__finder-intro">Pick a fabric and a problem for tailored guidance.</p>
+      <div class="carehub__finder-controls">
+        <select [(ngModel)]="finderFabric" aria-label="Fabric">
+          <option value="" disabled selected>Fabric…</option>
+          @for (f of index().fabrics; track f.slug) {
+            <option [value]="f.slug">{{ f.name }}</option>
+          }
+        </select>
+        <select [(ngModel)]="finderIssue" aria-label="Problem">
+          <option value="" disabled selected>Problem…</option>
+          @for (i of index().issues; track i.slug) {
+            <option [value]="i.slug">{{ i.name }}</option>
+          }
+        </select>
+        <button type="button" (click)="runFinder()" [disabled]="!finderFabric || !finderIssue || finderLoading()">
+          {{ finderLoading() ? 'Finding…' : 'Get guidance' }}
+        </button>
+      </div>
+
+      @if (finderError()) {
+        <p class="carehub__finder-error">{{ finderError() }}</p>
+      }
+
+      @if (finderResult(); as r) {
+        <div class="carehub__finder-result">
+          <h3>{{ r.issueName }} — {{ r.fabricName }}</h3>
+          @if (!r.isGeneral && safetyLabel(r.safety)) {
+            <span class="carehub__safety carehub__safety--{{ r.safety }}">{{ safetyLabel(r.safety) }}</span>
+          }
+          @if (r.shortAnswer) {
+            <p class="carehub__finder-short">{{ r.shortAnswer }}</p>
+          }
+          <p class="carehub__finder-method">{{ r.method }}</p>
+          <p class="carehub__finder-links">
+            Full guides:
+            <a [routerLink]="['/care/fabric', r.fabricSlug]">{{ r.fabricName }}</a> ·
+            <a [routerLink]="['/care/problem', r.issueSlug]">{{ r.issueName }}</a>
+          </p>
+        </div>
+      }
+    </section>
+  }
+
   @if (index().fabrics.length > 0) {
     <section class="carehub__section">
       <h2>By fabric</h2>

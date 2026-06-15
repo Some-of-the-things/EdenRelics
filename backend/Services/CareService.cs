@@ -12,6 +12,7 @@ namespace Eden_Relics_BE.Services;
 public class CareService(
     IRepository<CareFabric> fabrics,
     IRepository<CareIssue> issues,
+    IRepository<CareGuidance> guidances,
     IRepository<Product> products,
     ICareDraftService draftService) : ICareService
 {
@@ -282,6 +283,101 @@ public class CareService(
                 p.ImageUrl))
             .ToList();
     }
+
+    // --- Interactive finder ---
+
+    public async Task<CareFinderResultDto?> GetFinderResultAsync(string fabricSlug, string issueSlug)
+    {
+        CareFabric? fabric = await fabrics.Query().FirstOrDefaultAsync(f => f.Slug == fabricSlug && f.IsPublished);
+        CareIssue? issue = await issues.Query().FirstOrDefaultAsync(i => i.Slug == issueSlug && i.IsPublished);
+        if (fabric is null || issue is null)
+        {
+            return null;
+        }
+
+        CareGuidance? guidance = await guidances.Query()
+            .FirstOrDefaultAsync(g => g.FabricId == fabric.Id && g.IssueId == issue.Id
+                && g.Status == CareReviewStatus.ExpertApproved);
+
+        if (guidance is not null)
+        {
+            return new CareFinderResultDto(
+                fabric.Name, fabric.Slug, issue.Name, issue.Slug,
+                guidance.Safety.ToString(), guidance.ShortAnswer, guidance.SpecificMethod, IsGeneral: false);
+        }
+
+        // No expert override yet — compose a general answer from the two approved guides.
+        string method = ComposeFallback(fabric, issue);
+        return new CareFinderResultDto(
+            fabric.Name, fabric.Slug, issue.Name, issue.Slug,
+            CareSafety.Unknown.ToString(), "", method, IsGeneral: true);
+    }
+
+    private static string ComposeFallback(CareFabric fabric, CareIssue issue)
+    {
+        List<string> parts = [];
+        if (!string.IsNullOrWhiteSpace(issue.GeneralMethod))
+        {
+            parts.Add(issue.GeneralMethod.Trim());
+        }
+        string fabricNote = !string.IsNullOrWhiteSpace(fabric.VintageCautions)
+            ? fabric.VintageCautions.Trim()
+            : fabric.Washing.Trim();
+        if (!string.IsNullOrWhiteSpace(fabricNote))
+        {
+            parts.Add($"For vintage {fabric.Name} specifically: {fabricNote}");
+        }
+        parts.Add("This is general guidance — always spot-test on a hidden seam first, and when a piece is fragile or valuable, choose a specialist cleaner over any home method.");
+        return string.Join("\n\n", parts);
+    }
+
+    public async Task<CareGuidanceDto?> GetGuidanceAsync(Guid fabricId, Guid issueId)
+    {
+        CareGuidance? g = await guidances.Query()
+            .FirstOrDefaultAsync(x => x.FabricId == fabricId && x.IssueId == issueId);
+        return g is null ? null : ToDto(g);
+    }
+
+    public async Task<CareGuidanceDto?> SaveGuidanceAsync(SaveCareGuidanceDto dto)
+    {
+        bool fabricExists = await fabrics.Query().AnyAsync(f => f.Id == dto.FabricId);
+        bool issueExists = await issues.Query().AnyAsync(i => i.Id == dto.IssueId);
+        if (!fabricExists || !issueExists)
+        {
+            return null;
+        }
+
+        CareSafety safety = Enum.TryParse(dto.Safety, ignoreCase: true, out CareSafety s) ? s : CareSafety.Unknown;
+        CareReviewStatus status = dto.Approved ? CareReviewStatus.ExpertApproved : CareReviewStatus.Draft;
+
+        CareGuidance? existing = await guidances.Query()
+            .FirstOrDefaultAsync(x => x.FabricId == dto.FabricId && x.IssueId == dto.IssueId);
+
+        if (existing is null)
+        {
+            CareGuidance created = new()
+            {
+                FabricId = dto.FabricId,
+                IssueId = dto.IssueId,
+                Safety = safety,
+                ShortAnswer = dto.ShortAnswer ?? "",
+                SpecificMethod = dto.SpecificMethod ?? "",
+                Status = status,
+            };
+            await guidances.AddAsync(created);
+            return ToDto(created);
+        }
+
+        existing.Safety = safety;
+        existing.ShortAnswer = dto.ShortAnswer ?? "";
+        existing.SpecificMethod = dto.SpecificMethod ?? "";
+        existing.Status = status;
+        await guidances.UpdateAsync(existing);
+        return ToDto(existing);
+    }
+
+    private static CareGuidanceDto ToDto(CareGuidance g) => new(
+        g.Id, g.FabricId, g.IssueId, g.Safety.ToString(), g.ShortAnswer, g.SpecificMethod, g.Status.ToString());
 
     /// <summary>A product's free-text material maps to a fabric guide by name, alias, or slug.</summary>
     private static bool MaterialMatchesFabric(string material, CareFabric fabric)

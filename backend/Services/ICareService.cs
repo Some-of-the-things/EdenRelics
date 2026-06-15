@@ -32,6 +32,12 @@ public interface ICareService
     Task<CareFabricRefDto?> ResolveFabricForMaterialAsync(string material);
     /// <summary>Live products whose material matches a published fabric guide.</summary>
     Task<List<CareProductDto>> GetFabricProductsAsync(string slug);
+
+    // --- Interactive finder (tool layer — results are not indexed) ---
+    /// <summary>Tailored advice for a fabric×problem pair; composes a general fallback if no expert override exists. Null if either guide is unpublished.</summary>
+    Task<CareFinderResultDto?> GetFinderResultAsync(string fabricSlug, string issueSlug);
+    Task<CareGuidanceDto?> GetGuidanceAsync(Guid fabricId, Guid issueId);
+    Task<CareGuidanceDto?> SaveGuidanceAsync(SaveCareGuidanceDto dto);
 }
 
 public record CareIndexDto(List<CareIndexItemDto> Fabrics, List<CareIndexItemDto> Issues);
@@ -39,6 +45,22 @@ public record CareIndexItemDto(string Name, string Slug, string Summary);
 
 public record CareFabricRefDto(string Slug, string Name);
 public record CareProductDto(Guid Id, string Name, string Slug, decimal Price, decimal? SalePrice, string ImageUrl);
+
+public record CareFinderResultDto(
+    string FabricName,
+    string FabricSlug,
+    string IssueName,
+    string IssueSlug,
+    string Safety,        // Unknown | Safe | WithCaution | DoNotAttempt | SeeProfessional
+    string ShortAnswer,
+    string Method,
+    bool IsGeneral);      // true = composed fallback (no expert-written override yet)
+
+public record CareGuidanceDto(
+    Guid Id, Guid FabricId, Guid IssueId, string Safety, string ShortAnswer, string SpecificMethod, string Status);
+
+public record SaveCareGuidanceDto(
+    Guid FabricId, Guid IssueId, string Safety, string? ShortAnswer, string? SpecificMethod, bool Approved);
 
 /// <summary>One row in the reviewer's worklist — enough to triage outstanding actions at a glance.</summary>
 public record CareWorklistItemDto(

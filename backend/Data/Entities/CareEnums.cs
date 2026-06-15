@@ -14,3 +14,13 @@ public enum CareReviewStatus
     /// <summary>Reviewed and signed off by a human expert; eligible to publish.</summary>
     ExpertApproved = 2,
 }
+
+/// <summary>Safety verdict for treating a specific problem on a specific fabric.</summary>
+public enum CareSafety
+{
+    Unknown = 0,
+    Safe = 1,
+    WithCaution = 2,
+    DoNotAttempt = 3,
+    SeeProfessional = 4,
+}
