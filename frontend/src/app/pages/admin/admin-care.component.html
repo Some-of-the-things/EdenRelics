@@ -1,0 +1,212 @@
+<section class="care">
+  @if (editingType() === null) {
+    <!-- ===== Worklist ===== -->
+    <div class="care__header">
+      <div>
+        <h2>Vintage Care Content</h2>
+        <p class="care__sub">
+          AI drafts the baseline; you review and approve. <strong>Nothing goes live until you approve it.</strong>
+          @if (outstandingCount > 0) {
+            <span class="care__outstanding">{{ outstandingCount }} awaiting you</span>
+          }
+        </p>
+      </div>
+      <div class="care__header-actions">
+        <button type="button" class="admin__add-btn" (click)="newFabric()">+ Fabric</button>
+        <button type="button" class="admin__add-btn" (click)="newIssue()">+ Problem</button>
+      </div>
+    </div>
+
+    @if (error()) {
+      <p class="admin__error" role="alert">{{ error() }}</p>
+    }
+    @if (loading()) {
+      <p class="admin__empty">Loading…</p>
+    }
+
+    <div class="care__list">
+      @for (item of worklist(); track item.id) {
+        <div class="care__card" [class.care__card--action]="item.needsAction">
+          <div class="care__card-main">
+            <div class="care__card-top">
+              <span class="care__badge care__badge--{{ item.type }}">{{ item.type }}</span>
+              <span class="care__status care__status--{{ item.status }}">{{ statusLabel(item.status) }}</span>
+              @if (item.isPublished) {
+                <span class="care__status care__status--live">Live</span>
+              }
+            </div>
+            <h3 class="care__card-name">{{ item.name }}</h3>
+
+            @if (item.targetKeywords.length > 0) {
+              <div class="care__terms">
+                <span class="care__terms-label">Targets:</span>
+                @for (kw of item.targetKeywords; track kw) {
+                  <span class="care__chip">{{ kw }}</span>
+                }
+              </div>
+            }
+
+            @if (item.reviewNotes) {
+              <p class="care__notes">📝 {{ item.reviewNotes }}</p>
+            }
+
+            <p class="care__meta">
+              /{{ item.slug }}
+              @if (item.lastReviewedUtc) {
+                · reviewed {{ item.lastReviewedUtc | date: 'd MMM y' }}
+              }
+            </p>
+          </div>
+          <div class="care__card-actions">
+            <button type="button" class="admin__add-btn" (click)="open(item)">
+              {{ item.needsAction ? 'Review' : 'Edit' }}
+            </button>
+          </div>
+        </div>
+      } @empty {
+        @if (!loading()) {
+          <p class="admin__empty">No care entries yet.</p>
+        }
+      }
+    </div>
+  } @else {
+    <!-- ===== Editor ===== -->
+    <div class="care__header">
+      <button type="button" class="care__back" (click)="closeEditor()">← Back to worklist</button>
+      <div class="care__header-actions">
+        @if (message()) { <span class="care__saved">{{ message() }}</span> }
+        @if (error()) { <span class="admin__error">{{ error() }}</span> }
+      </div>
+    </div>
+
+    <!-- The info she needs to take action: target terms + review notes, pinned at the top -->
+    <div class="care__brief">
+      <div class="care__brief-block">
+        <label class="care__field-label">Target search terms — write the page to answer these (one per line)</label>
+        <textarea class="care__input care__input--terms" rows="4" [(ngModel)]="targetKeywordsText"
+          placeholder="how to wash viyella&#10;is viyella washable"></textarea>
+      </div>
+      <div class="care__brief-block">
+        <label class="care__field-label">Review notes / outstanding actions</label>
+        <textarea class="care__input" rows="4" [(ngModel)]="reviewNotesModel"
+          placeholder="What still needs checking before this can go live…"></textarea>
+      </div>
+    </div>
+
+    @if (fabric) {
+      <div class="care__editor">
+        <div class="care__editor-status">
+          <span class="care__status care__status--{{ fabric.status }}">{{ statusLabel(fabric.status) }}</span>
+          @if (fabric.isPublished) {
+            <a class="care__status care__status--live" [href]="publicUrl()" target="_blank" rel="noopener">Live ↗</a>
+          }
+          @if (fabric.reviewedBy && fabric.lastReviewedUtc) {
+            <span class="care__byline">Reviewed by {{ fabric.reviewedBy }}, {{ fabric.lastReviewedUtc | date: 'd MMM y' }}</span>
+          }
+        </div>
+
+        <label class="care__field-label">Name</label>
+        <input class="care__input" [(ngModel)]="fabric.name" />
+
+        <label class="care__field-label">Also known as (one per line)</label>
+        <textarea class="care__input" rows="2" [(ngModel)]="alsoKnownAsText"></textarea>
+
+        <label class="care__field-label">Intro</label>
+        <textarea class="care__input" rows="3" [(ngModel)]="fabric.intro"></textarea>
+
+        <label class="care__field-label">Fibre content</label>
+        <input class="care__input" [(ngModel)]="fabric.fiberContent" />
+
+        <label class="care__field-label">How to identify</label>
+        <textarea class="care__input" rows="3" [(ngModel)]="fabric.howToIdentify"></textarea>
+
+        <label class="care__field-label">Washing</label>
+        <textarea class="care__input" rows="3" [(ngModel)]="fabric.washing"></textarea>
+
+        <label class="care__field-label">Drying</label>
+        <textarea class="care__input" rows="2" [(ngModel)]="fabric.drying"></textarea>
+
+        <label class="care__field-label">Ironing</label>
+        <textarea class="care__input" rows="2" [(ngModel)]="fabric.ironing"></textarea>
+
+        <label class="care__field-label">Storing</label>
+        <textarea class="care__input" rows="2" [(ngModel)]="fabric.storing"></textarea>
+
+        <label class="care__field-label">Vintage cautions</label>
+        <textarea class="care__input" rows="3" [(ngModel)]="fabric.vintageCautions"></textarea>
+
+        <label class="care__field-label">Do's (one per line)</label>
+        <textarea class="care__input" rows="3" [(ngModel)]="dosText"></textarea>
+
+        <label class="care__field-label">Don'ts (one per line)</label>
+        <textarea class="care__input" rows="3" [(ngModel)]="dontsText"></textarea>
+
+        <label class="care__field-label">Meta title (SEO)</label>
+        <input class="care__input" [(ngModel)]="fabric.metaTitle" maxlength="200" />
+
+        <label class="care__field-label">Meta description (SEO)</label>
+        <textarea class="care__input" rows="2" [(ngModel)]="fabric.metaDescription" maxlength="400"></textarea>
+
+        <div class="care__editor-actions">
+          <button type="button" class="admin__add-btn" (click)="saveFabric()" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : 'Save draft' }}
+          </button>
+          @if (fabric.isPublished) {
+            <button type="button" class="care__btn-unpublish" (click)="setPublished(false)" [disabled]="saving()">Unpublish</button>
+          } @else {
+            <button type="button" class="care__btn-publish" (click)="setPublished(true)" [disabled]="saving() || !fabric.id">Approve &amp; publish</button>
+          }
+        </div>
+      </div>
+    }
+
+    @if (issue) {
+      <div class="care__editor">
+        <div class="care__editor-status">
+          <span class="care__status care__status--{{ issue.status }}">{{ statusLabel(issue.status) }}</span>
+          @if (issue.isPublished) {
+            <a class="care__status care__status--live" [href]="publicUrl()" target="_blank" rel="noopener">Live ↗</a>
+          }
+          @if (issue.reviewedBy && issue.lastReviewedUtc) {
+            <span class="care__byline">Reviewed by {{ issue.reviewedBy }}, {{ issue.lastReviewedUtc | date: 'd MMM y' }}</span>
+          }
+        </div>
+
+        <label class="care__field-label">Name</label>
+        <input class="care__input" [(ngModel)]="issue.name" />
+
+        <label class="care__field-label">Also known as (one per line)</label>
+        <textarea class="care__input" rows="2" [(ngModel)]="alsoKnownAsText"></textarea>
+
+        <label class="care__field-label">Causes (vintage context)</label>
+        <textarea class="care__input" rows="3" [(ngModel)]="issue.causes"></textarea>
+
+        <label class="care__field-label">General method</label>
+        <textarea class="care__input" rows="4" [(ngModel)]="issue.generalMethod"></textarea>
+
+        <label class="care__field-label">What not to do</label>
+        <textarea class="care__input" rows="3" [(ngModel)]="issue.whatNotToDo"></textarea>
+
+        <label class="care__field-label">When to see a professional</label>
+        <textarea class="care__input" rows="2" [(ngModel)]="issue.whenToSeeAPro"></textarea>
+
+        <label class="care__field-label">Meta title (SEO)</label>
+        <input class="care__input" [(ngModel)]="issue.metaTitle" maxlength="200" />
+
+        <label class="care__field-label">Meta description (SEO)</label>
+        <textarea class="care__input" rows="2" [(ngModel)]="issue.metaDescription" maxlength="400"></textarea>
+
+        <div class="care__editor-actions">
+          <button type="button" class="admin__add-btn" (click)="saveIssue()" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : 'Save draft' }}
+          </button>
+          @if (issue.isPublished) {
+            <button type="button" class="care__btn-unpublish" (click)="setPublished(false)" [disabled]="saving()">Unpublish</button>
+          } @else {
+            <button type="button" class="care__btn-publish" (click)="setPublished(true)" [disabled]="saving() || !issue.id">Approve &amp; publish</button>
+          }
+        </div>
+      </div>
+    }
+  }
+</section>

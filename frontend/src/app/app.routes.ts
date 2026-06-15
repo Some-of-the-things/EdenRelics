@@ -199,6 +199,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'care/fabric/:slug',
+    loadComponent: () =>
+      import('./pages/care/care-fabric.component').then(
+        (m) => m.CareFabricComponent
+      ),
+  },
+  {
     path: 'contact',
     loadComponent: () =>
       import('./pages/contact/contact-page.component').then(

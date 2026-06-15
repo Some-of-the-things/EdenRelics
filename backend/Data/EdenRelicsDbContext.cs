@@ -43,6 +43,8 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<AnalyticsDailySource> AnalyticsDailySources => Set<AnalyticsDailySource>();
     public DbSet<AnalyticsDailyLandingPage> AnalyticsDailyLandingPages => Set<AnalyticsDailyLandingPage>();
     public DbSet<PageViewDaily> PageViewDailies => Set<PageViewDaily>();
+    public DbSet<CareFabric> CareFabrics => Set<CareFabric>();
+    public DbSet<CareIssue> CareIssues => Set<CareIssue>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<LiabilityObligation> LiabilityObligations => Set<LiabilityObligation>();
     public DbSet<OperatorReminder> OperatorReminders => Set<OperatorReminder>();
@@ -242,6 +244,32 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(p => p.Country).HasMaxLength(8);
             entity.HasIndex(p => new { p.Date, p.Path, p.IsBot, p.Country }).IsUnique();
             entity.HasIndex(p => p.Date);
+        });
+
+        modelBuilder.Entity<CareFabric>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(c => c.Slug).HasMaxLength(160);
+            entity.Property(c => c.Name).HasMaxLength(160);
+            entity.Property(c => c.MetaTitle).HasMaxLength(200);
+            entity.Property(c => c.MetaDescription).HasMaxLength(400);
+            entity.HasIndex(c => c.Slug).IsUnique();
+            ConfigureJsonListProperty(entity.Property(c => c.AlsoKnownAs));
+            ConfigureJsonListProperty(entity.Property(c => c.TargetKeywords));
+            ConfigureJsonListProperty(entity.Property(c => c.Dos));
+            ConfigureJsonListProperty(entity.Property(c => c.Donts));
+        });
+
+        modelBuilder.Entity<CareIssue>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(c => c.Slug).HasMaxLength(160);
+            entity.Property(c => c.Name).HasMaxLength(160);
+            entity.Property(c => c.MetaTitle).HasMaxLength(200);
+            entity.Property(c => c.MetaDescription).HasMaxLength(400);
+            entity.HasIndex(c => c.Slug).IsUnique();
+            ConfigureJsonListProperty(entity.Property(c => c.AlsoKnownAs));
+            ConfigureJsonListProperty(entity.Property(c => c.TargetKeywords));
         });
 
         modelBuilder.Entity<Review>(entity =>
