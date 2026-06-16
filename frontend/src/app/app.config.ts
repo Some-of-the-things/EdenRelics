@@ -1,5 +1,5 @@
 import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { IMAGE_CONFIG, IMAGE_LOADER } from '@angular/common';
 
@@ -12,7 +12,15 @@ import { BrandingService } from './services/branding.service';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes, withComponentInputBinding()),
+    // Reset scroll to the top on every navigation (default is 'disabled', which
+    // left new pages opening wherever the previous page was scrolled — e.g. at
+    // the bottom after following a footer link). 'anchorScrolling' enables
+    // fragment links like /#newsletter to scroll to the matching element id.
+    provideRouter(
+      routes,
+      withComponentInputBinding(),
+      withInMemoryScrolling({ scrollPositionRestoration: 'top', anchorScrolling: 'enabled' }),
+    ),
     provideClientHydration(withEventReplay()),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     { provide: IMAGE_LOADER, useValue: variantImageLoader },
