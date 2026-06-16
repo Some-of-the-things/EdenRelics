@@ -182,6 +182,8 @@
   border: 1px solid var(--border-color);
   text-align: center;
   background: var(--bg-secondary);
+  // Keep the section clear of the 72px sticky header when deep-linked via /#newsletter.
+  scroll-margin-top: 88px;
 }
 
 .home__mailing-title {

@@ -19,7 +19,8 @@ public record ProductDto(
     List<string> AdditionalImageUrls,
     List<string> VideoUrls,
     bool InStock,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    string? Material = null
 );
 
 public record ProductAdminDto(
@@ -43,7 +44,8 @@ public record ProductAdminDto(
     bool InStock,
     ProductStatus Status,
     int ViewCount,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    string? Material = null
 );
 
 public record CreateProductDto(
@@ -64,7 +66,8 @@ public record CreateProductDto(
     bool InStock,
     ProductStatus? Status = null,
     string? Sku = null,
-    int? BackdatePriceDays = null
+    int? BackdatePriceDays = null,
+    string? Material = null
 );
 
 public record UpdateProductDto(
@@ -85,5 +88,6 @@ public record UpdateProductDto(
     List<string>? AdditionalImageUrls,
     List<string>? VideoUrls,
     bool? InStock,
-    ProductStatus? Status
+    ProductStatus? Status,
+    string? Material = null
 );

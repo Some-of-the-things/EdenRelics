@@ -26,6 +26,7 @@ import {
 import { AdminReview, ReviewsService } from '../../services/reviews.service';
 import { AdminCalendarComponent } from './admin-calendar.component';
 import { AdminAccountingComponent } from './admin-accounting.component';
+import { AdminCareComponent } from './admin-care.component';
 
 interface AdminUser {
   id: string;
@@ -350,7 +351,7 @@ interface PageViewStats {
 
 @Component({
   selector: 'app-admin-page',
-  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe, DecimalPipe, AdminCalendarComponent, AdminAccountingComponent],
+  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe, DecimalPipe, AdminCalendarComponent, AdminAccountingComponent, AdminCareComponent],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
@@ -371,7 +372,7 @@ export class AdminPageComponent implements OnInit {
   private readonly sanitizer = inject(DomSanitizer);
 
   @ViewChild('descriptionEditor') descriptionEditor!: ElementRef<HTMLElement>;
-  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews' | 'signature'>('products');
+  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews' | 'signature' | 'care'>('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
@@ -866,7 +867,7 @@ export class AdminPageComponent implements OnInit {
     });
   }
 
-  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews' | 'signature'): void {
+  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews' | 'signature' | 'care'): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
@@ -1715,6 +1716,7 @@ export class AdminPageComponent implements OnInit {
       category: product.category,
       size: product.size,
       condition: product.condition,
+      material: product.material ?? null,
       imageUrl: product.imageUrl,
       additionalImageUrls: [...(product.additionalImageUrls ?? [])],
       videoUrls: [...(product.videoUrls ?? [])],
@@ -1826,6 +1828,7 @@ export class AdminPageComponent implements OnInit {
       category: '70s',
       size: '10',
       condition: 'good',
+      material: null,
       imageUrl: '',
       additionalImageUrls: [] as string[],
       videoUrls: [] as string[],

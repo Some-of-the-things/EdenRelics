@@ -103,6 +103,13 @@
     </button>
     <button
       class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'care'"
+      (click)="switchTab('care')"
+    >
+      Care
+    </button>
+    <button
+      class="admin__tab"
       [class.admin__tab--active]="activeTab() === 'marketplace'"
       (click)="switchTab('marketplace')"
     >
@@ -144,6 +151,10 @@
 
   @if (activeTab() === 'calendar') {
     <app-admin-calendar />
+  }
+
+  @if (activeTab() === 'care') {
+    <app-admin-care />
   }
 
   @if (activeTab() === 'signature') {
@@ -287,6 +298,10 @@
                 <option value="good">Good</option>
                 <option value="fair">Fair</option>
               </select>
+            </label>
+            <label class="admin__field">
+              <span>Fabric / material</span>
+              <input type="text" [(ngModel)]="form.material" name="material" placeholder="e.g. Viyella, Rayon, Silk" />
             </label>
             <label class="admin__field">
               <span>Status</span>

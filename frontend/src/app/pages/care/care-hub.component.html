@@ -1,0 +1,124 @@
+<div class="carehub">
+  <nav class="carehub__crumbs" aria-label="Breadcrumb">
+    <a routerLink="/">Home</a> <span>›</span>
+    <span>Vintage Care</span>
+  </nav>
+
+  <h1 class="carehub__title">Vintage Clothing Care Guides</h1>
+  <p class="carehub__intro">
+    Vintage pieces are one-of-a-kind and often decades old, so they ask for a gentler hand than
+    modern clothes. These guides cover how to care for specific fabrics and how to tackle the
+    problems vintage garments most often arrive with — written and checked by the team at Eden Relics.
+  </p>
+
+  @if (index().fabrics.length > 0 && index().issues.length > 0) {
+    <section class="carehub__finder">
+      <h2>Care finder</h2>
+      <p class="carehub__finder-intro">Pick a fabric and a problem for tailored guidance.</p>
+
+      <div class="carehub__identify">
+        <label class="carehub__identify-btn">
+          📷 Not sure of the fabric? Identify from a photo
+          <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhotoSelected($event)" hidden />
+        </label>
+        @if (identifyLoading()) {
+          <span class="carehub__identify-status">Analysing…</span>
+        }
+        @if (identifyError()) {
+          <span class="carehub__finder-error">{{ identifyError() }}</span>
+        }
+        @if (identifyResult(); as r) {
+          <div class="carehub__identify-result">
+            <p class="carehub__identify-note">Best guesses (a photo can only get us so far — please double-check):</p>
+            <ul>
+              @for (g of r.guesses; track g.name) {
+                <li>
+                  <strong>{{ g.name }}</strong> <span class="carehub__identify-conf">~{{ confidencePct(g.confidence) }}% sure</span>
+                  @if (g.fabricSlug) {
+                    <button type="button" class="carehub__identify-use" (click)="useGuess(g.fabricSlug!)">use in finder</button>
+                    <a [routerLink]="['/care/fabric', g.fabricSlug]">guide →</a>
+                  }
+                </li>
+              } @empty {
+                <li>No confident match — try a clearer, well-lit close-up of the fabric.</li>
+              }
+            </ul>
+            @if (r.note) { <p class="carehub__identify-caveat">{{ r.note }}</p> }
+          </div>
+        }
+      </div>
+
+      <div class="carehub__finder-controls">
+        <select [(ngModel)]="finderFabric" aria-label="Fabric">
+          <option value="" disabled selected>Fabric…</option>
+          @for (f of index().fabrics; track f.slug) {
+            <option [value]="f.slug">{{ f.name }}</option>
+          }
+        </select>
+        <select [(ngModel)]="finderIssue" aria-label="Problem">
+          <option value="" disabled selected>Problem…</option>
+          @for (i of index().issues; track i.slug) {
+            <option [value]="i.slug">{{ i.name }}</option>
+          }
+        </select>
+        <button type="button" (click)="runFinder()" [disabled]="!finderFabric || !finderIssue || finderLoading()">
+          {{ finderLoading() ? 'Finding…' : 'Get guidance' }}
+        </button>
+      </div>
+
+      @if (finderError()) {
+        <p class="carehub__finder-error">{{ finderError() }}</p>
+      }
+
+      @if (finderResult(); as r) {
+        <div class="carehub__finder-result">
+          <h3>{{ r.issueName }} — {{ r.fabricName }}</h3>
+          @if (!r.isGeneral && safetyLabel(r.safety)) {
+            <span class="carehub__safety carehub__safety--{{ r.safety }}">{{ safetyLabel(r.safety) }}</span>
+          }
+          @if (r.shortAnswer) {
+            <p class="carehub__finder-short">{{ r.shortAnswer }}</p>
+          }
+          <p class="carehub__finder-method">{{ r.method }}</p>
+          <p class="carehub__finder-links">
+            Full guides:
+            <a [routerLink]="['/care/fabric', r.fabricSlug]">{{ r.fabricName }}</a> ·
+            <a [routerLink]="['/care/problem', r.issueSlug]">{{ r.issueName }}</a>
+          </p>
+        </div>
+      }
+    </section>
+  }
+
+  @if (index().fabrics.length > 0) {
+    <section class="carehub__section">
+      <h2>By fabric</h2>
+      <div class="carehub__grid">
+        @for (f of index().fabrics; track f.slug) {
+          <a class="carehub__card" [routerLink]="['/care/fabric', f.slug]">
+            <h3>Caring for vintage {{ f.name }}</h3>
+            @if (f.summary) { <p>{{ f.summary }}</p> }
+          </a>
+        }
+      </div>
+    </section>
+  }
+
+  @if (index().issues.length > 0) {
+    <section class="carehub__section">
+      <h2>Common problems</h2>
+      <div class="carehub__grid">
+        @for (i of index().issues; track i.slug) {
+          <a class="carehub__card" [routerLink]="['/care/problem', i.slug]">
+            <h3>{{ i.name }}</h3>
+            @if (i.summary) { <p>{{ i.summary }}</p> }
+          </a>
+        }
+      </div>
+    </section>
+  }
+
+  @if (index().fabrics.length === 0 && index().issues.length === 0) {
+    <p class="carehub__empty">Our vintage care guides are on their way — check back soon.</p>
+  }
+</div>

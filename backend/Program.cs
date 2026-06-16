@@ -167,6 +167,10 @@ builder.Services.AddHostedService<TrafficIngestBackgroundService>();
 // First-party cookieless page-view analytics (beacon ingest from the CF Worker)
 builder.Services.AddScoped<IAnalyticsIngestService, AnalyticsIngestService>();
 
+// First-party vintage-care content (fabric + problem guides; expert-reviewed before publish)
+builder.Services.AddScoped<ICareDraftService, CareDraftService>();
+builder.Services.AddScoped<ICareService, CareService>();
+
 // Monzo bank integration
 builder.Services.AddHttpClient<MonzoApiClient>();
 builder.Services.AddScoped<IMonzoService, MonzoService>();
@@ -304,6 +308,9 @@ using (IServiceScope scope = app.Services.CreateScope())
         }
         db.SaveChanges();
     }
+
+    // Seed the launch vintage-care entries (idempotent — skips any slug that already exists)
+    Eden_Relics_BE.Data.CareSeed.EnsureSeedDataAsync(db).GetAwaiter().GetResult();
 }
 
 app.UseResponseCompression();

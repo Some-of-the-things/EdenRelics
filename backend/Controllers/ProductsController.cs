@@ -200,6 +200,7 @@ public class ProductsController : ControllerBase
             Category = dto.Category,
             Size = dto.Size,
             Condition = dto.Condition,
+            Material = string.IsNullOrWhiteSpace(dto.Material) ? null : dto.Material.Trim(),
             ImageUrl = dto.ImageUrl,
             AdditionalImageUrls = dto.AdditionalImageUrls ?? [],
             VideoUrls = dto.VideoUrls ?? [],
@@ -300,6 +301,7 @@ public class ProductsController : ControllerBase
         if (dto.CostPrice.HasValue) { product.CostPrice = dto.CostPrice.Value; }
         if (dto.StockPurchaseDate.HasValue) { product.StockPurchaseDate = NormaliseToUtc(dto.StockPurchaseDate); }
         if (dto.Supplier is not null) { product.Supplier = dto.Supplier; }
+        if (dto.Material is not null) { product.Material = string.IsNullOrWhiteSpace(dto.Material) ? null : dto.Material.Trim(); }
         if (dto.Era is not null) { product.Era = dto.Era; }
         if (dto.Category is not null) { product.Category = dto.Category; }
         if (dto.Size is not null) { product.Size = dto.Size; }
@@ -1018,7 +1020,7 @@ public class ProductsController : ControllerBase
         }
 
         return new(p.Id, name, p.Slug, description, p.Price, p.SalePrice, showReduction, discountPercent, p.Era,
-            p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.CreatedAtUtc);
+            p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.CreatedAtUtc, p.Material);
     }
 
     // JSON date-only values ("2026-05-28") deserialise into DateTime with
@@ -1045,7 +1047,7 @@ public class ProductsController : ControllerBase
     private static ProductAdminDto ToAdminDto(Product p) => new(
         p.Id, p.Name, p.Slug, p.Sku, p.Description, p.Price, p.SalePrice, p.CostPrice, p.StockPurchaseDate, p.Supplier, p.Era,
         p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.Status, p.ViewCount,
-        p.CreatedAtUtc
+        p.CreatedAtUtc, p.Material
     );
 
     private async Task NotifySaleFavouritesAsync(Product product)

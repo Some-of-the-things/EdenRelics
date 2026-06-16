@@ -1,0 +1,118 @@
+@if (fabric(); as f) {
+  <article class="carepage">
+    <nav class="carepage__crumbs" aria-label="Breadcrumb">
+      <a routerLink="/">Home</a> <span>›</span>
+      <a routerLink="/care">Vintage Care</a> <span>›</span>
+      <span>{{ f.name }}</span>
+    </nav>
+
+    <h1 class="carepage__title">Caring for Vintage {{ f.name }}</h1>
+
+    @if (f.intro) {
+      <p class="carepage__intro">{{ f.intro }}</p>
+    }
+
+    @if (f.fiberContent) {
+      <p class="carepage__fiber"><strong>What it is:</strong> {{ f.fiberContent }}</p>
+    }
+
+    @if (f.howToIdentify) {
+      <section class="carepage__section">
+        <h2>How to identify it</h2>
+        <p>{{ f.howToIdentify }}</p>
+      </section>
+    }
+
+    @if (f.washing) {
+      <section class="carepage__section">
+        <h2>Washing</h2>
+        <p>{{ f.washing }}</p>
+      </section>
+    }
+
+    @if (f.drying) {
+      <section class="carepage__section">
+        <h2>Drying</h2>
+        <p>{{ f.drying }}</p>
+      </section>
+    }
+
+    @if (f.ironing) {
+      <section class="carepage__section">
+        <h2>Ironing</h2>
+        <p>{{ f.ironing }}</p>
+      </section>
+    }
+
+    @if (f.storing) {
+      <section class="carepage__section">
+        <h2>Storing</h2>
+        <p>{{ f.storing }}</p>
+      </section>
+    }
+
+    @if (f.vintageCautions) {
+      <section class="carepage__section carepage__section--caution">
+        <h2>Vintage cautions</h2>
+        <p>{{ f.vintageCautions }}</p>
+      </section>
+    }
+
+    @if (f.dos.length > 0 || f.donts.length > 0) {
+      <div class="carepage__dosdonts">
+        @if (f.dos.length > 0) {
+          <div class="carepage__do">
+            <h3>Do</h3>
+            <ul>
+              @for (d of f.dos; track d) { <li>{{ d }}</li> }
+            </ul>
+          </div>
+        }
+        @if (f.donts.length > 0) {
+          <div class="carepage__dont">
+            <h3>Don't</h3>
+            <ul>
+              @for (d of f.donts; track d) { <li>{{ d }}</li> }
+            </ul>
+          </div>
+        }
+      </div>
+    }
+
+    @if (products().length > 0) {
+      <section class="carepage__shop">
+        <h2>Shop vintage {{ f.name }}</h2>
+        <div class="carepage__shop-grid">
+          @for (p of products(); track p.id) {
+            <a class="carepage__shop-card" [routerLink]="['/product', p.slug]">
+              <img [src]="p.imageUrl" [alt]="p.name" loading="lazy" />
+              <span class="carepage__shop-name">{{ p.name }}</span>
+              <span class="carepage__shop-price">
+                @if (p.salePrice && p.salePrice < p.price) {
+                  <span class="carepage__shop-sale">£{{ p.salePrice }}</span>
+                  <span class="carepage__shop-was">£{{ p.price }}</span>
+                } @else {
+                  £{{ p.price }}
+                }
+              </span>
+            </a>
+          }
+        </div>
+      </section>
+    }
+
+    <p class="carepage__disclaimer">
+      Vintage fabrics are delicate and one-of-a-kind. Always spot-test on a hidden seam first,
+      and when a piece is fragile or valuable, choose a specialist cleaner over any home method.
+    </p>
+
+    @if (f.reviewedBy) {
+      <p class="carepage__byline">Reviewed by {{ f.reviewedBy }}, Eden Relics</p>
+    }
+  </article>
+} @else if (error()) {
+  <div class="carepage carepage--missing">
+    <h1>Care guide not found</h1>
+    <p>We couldn't find that care guide. <a routerLink="/care">Browse all vintage care guides</a>.</p>
+  </div>
+}

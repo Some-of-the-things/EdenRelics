@@ -1,0 +1,161 @@
+.carepage {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.carepage__crumbs {
+  font-size: 0.85rem;
+  color: #8a7a5e;
+  margin-bottom: 1rem;
+
+  a {
+    color: #6b4f2a;
+    text-decoration: none;
+  }
+
+  span {
+    margin: 0 0.35rem;
+  }
+}
+
+.carepage__title {
+  font-size: 2rem;
+  margin: 0 0 1rem;
+  color: #3a2f1a;
+}
+
+.carepage__intro {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #4a4030;
+}
+
+.carepage__fiber {
+  color: #5a5040;
+}
+
+.carepage__section {
+  margin-top: 1.75rem;
+
+  h2 {
+    font-size: 1.25rem;
+    margin: 0 0 0.4rem;
+    color: #3a2f1a;
+  }
+
+  p {
+    line-height: 1.65;
+    margin: 0;
+    color: #4a4030;
+  }
+}
+
+.carepage__section--caution {
+  background: #fdf6e3;
+  border-left: 4px solid #b45309;
+  padding: 0.75rem 1rem;
+  border-radius: 0.3rem;
+}
+
+.carepage__dosdonts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 2rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+
+  h3 {
+    margin: 0 0 0.4rem;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    line-height: 1.6;
+  }
+}
+
+.carepage__do h3 {
+  color: #166534;
+}
+
+.carepage__dont h3 {
+  color: #b91c1c;
+}
+
+.carepage__shop {
+  margin-top: 2.5rem;
+
+  h2 {
+    font-size: 1.25rem;
+    margin: 0 0 1rem;
+    color: #3a2f1a;
+  }
+}
+
+.carepage__shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.carepage__shop-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+
+  img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 0.4rem;
+    background: #f1ece3;
+  }
+}
+
+.carepage__shop-name {
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  color: #4a4030;
+  line-height: 1.3;
+}
+
+.carepage__shop-price {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b4f2a;
+}
+
+.carepage__shop-sale {
+  color: #b91c1c;
+  margin-right: 0.35rem;
+}
+
+.carepage__shop-was {
+  text-decoration: line-through;
+  color: #9a8f7a;
+  font-weight: 400;
+}
+
+.carepage__disclaimer {
+  margin-top: 2.5rem;
+  font-size: 0.85rem;
+  color: #7a6f5a;
+  font-style: italic;
+  border-top: 1px solid #e7e0d2;
+  padding-top: 1rem;
+}
+
+.carepage__byline {
+  font-size: 0.85rem;
+  color: #8a7a5e;
+}
+
+.carepage--missing {
+  text-align: center;
+}

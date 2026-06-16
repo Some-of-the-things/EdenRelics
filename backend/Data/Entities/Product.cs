@@ -23,6 +23,11 @@ public class Product : BaseEntity
     public required string Category { get; set; }
     public required string Size { get; set; }
     public required string Condition { get; set; }
+
+    /// <summary>Primary fabric/material (e.g. "Viyella", "Rayon"). Optional; links to the
+    /// matching vintage-care guide and powers "shop this fabric" cross-links.</summary>
+    public string? Material { get; set; }
+
     public required string ImageUrl { get; set; }
     public List<string> AdditionalImageUrls { get; set; } = [];
     public List<string> VideoUrls { get; set; } = [];

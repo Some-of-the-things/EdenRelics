@@ -199,6 +199,27 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'care',
+    loadComponent: () =>
+      import('./pages/care/care-hub.component').then(
+        (m) => m.CareHubComponent
+      ),
+  },
+  {
+    path: 'care/fabric/:slug',
+    loadComponent: () =>
+      import('./pages/care/care-fabric.component').then(
+        (m) => m.CareFabricComponent
+      ),
+  },
+  {
+    path: 'care/problem/:slug',
+    loadComponent: () =>
+      import('./pages/care/care-issue.component').then(
+        (m) => m.CareIssueComponent
+      ),
+  },
+  {
     path: 'contact',
     loadComponent: () =>
       import('./pages/contact/contact-page.component').then(
