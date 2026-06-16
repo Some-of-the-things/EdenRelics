@@ -1,5 +1,6 @@
 import { Component, inject, afterNextRender } from '@angular/core';
 import { NavigationEnd, NavigationError, Router, RouterOutlet } from '@angular/router';
+import { ViewportScroller, DOCUMENT } from '@angular/common';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { CookieBannerComponent } from './components/cookie-banner/cookie-banner.component';
@@ -28,6 +29,8 @@ export class App {
   private readonly content = inject(ContentService);
   private readonly analytics = inject(AnalyticsService);
   private readonly router = inject(Router);
+  private readonly scroller = inject(ViewportScroller);
+  private readonly document = inject(DOCUMENT);
 
   constructor() {
     // Branding is resolved during app initialisation (see appConfig) — no call here.
@@ -35,6 +38,16 @@ export class App {
 
     afterNextRender(() => {
       this.analytics.init();
+
+      // Anchor links (e.g. /#newsletter) are scrolled by Angular's ViewportScroller,
+      // which parks the target at y=0 and only subtracts this offset — it ignores CSS
+      // scroll-margin-top. Offset by the sticky header's live height (responsive) plus
+      // a small gap so the target isn't tucked underneath it.
+      this.scroller.setOffset(() => {
+        const header = this.document.querySelector('.header');
+        const height = header instanceof HTMLElement ? header.getBoundingClientRect().height : 0;
+        return [0, height + 16];
+      });
 
       // Auto-recover from stale lazy-chunk errors after a deploy. The router
       // emits NavigationError when a lazy loadComponent() fails; we also wire
