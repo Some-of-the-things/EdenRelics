@@ -92,7 +92,7 @@ export const DESIGNERS: DesignerProfile[] = [
     slug: 'caroline-wells',
     name: 'Caroline Wells',
     metaTitle: 'Caroline Wells Collection — Vintage 90s Dresses',
-    metaDescription: 'Authentic Caroline Wells Collection vintage dresses & clothing from the 1990s. Amber floral rayon maxis and similar rare pieces — UK-curated and inspected.',
+    metaDescription: 'Shop rare vintage Caroline Wells Collection dresses — 1990s rayon florals and maxis, each a genuine one-of-a-kind piece. Hand-inspected, UK shipping.',
     origin: 'USA — active 1990s',
     intro: 'Caroline Wells Collection was a 1990s American label producing the kind of soft-rayon floral maxi dress now intensely sought after on the secondhand market. Surviving pieces are relatively scarce, which makes them an interesting collector entry point.',
     history: [
