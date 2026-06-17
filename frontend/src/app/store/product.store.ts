@@ -14,6 +14,13 @@ import { Product } from '../models/product.model';
 import { ProductService } from '../services/product.service';
 import { resolveProductStatus } from '../utils/product-status';
 
+/** Sort by date added, newest first. Products without a timestamp sort last. */
+function byNewestFirst(a: Product, b: Product): number {
+  const ta = a.createdAtUtc ? Date.parse(a.createdAtUtc) || 0 : 0;
+  const tb = b.createdAtUtc ? Date.parse(b.createdAtUtc) || 0 : 0;
+  return tb - ta;
+}
+
 interface ProductState {
   products: Product[];
   selectedCategory: Product['category'] | 'all';
@@ -49,7 +56,9 @@ export const ProductStore = signalStore(
      * (admin panel, product detail page for direct/favourite access).
      */
     liveProducts: computed(() =>
-      store.products().filter((p) => resolveProductStatus(p) === 'live'),
+      store.products()
+        .filter((p) => resolveProductStatus(p) === 'live')
+        .sort(byNewestFirst),
     ),
     filteredProducts: computed(() => {
       let products = store.products().filter((p) => resolveProductStatus(p) === 'live');
@@ -71,7 +80,9 @@ export const ProductStore = signalStore(
             p.description.toLowerCase().includes(query)
         );
       }
-      return products;
+      // Display newest first by date added. `products` is always a fresh array
+      // (from .filter above), so sorting in place is safe.
+      return products.sort(byNewestFirst);
     }),
     categories: computed(() => {
       const cats: Product['category'][] = [
