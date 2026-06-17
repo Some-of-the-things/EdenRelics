@@ -184,6 +184,27 @@
     }
   }
 
+  &__reading {
+    font-family: var(--font-body);
+    line-height: 1.65;
+    max-width: 760px;
+    padding-left: 1.2rem;
+
+    li {
+      margin-bottom: 0.6rem;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
   &__products {
     margin-top: 1rem;
   }
@@ -249,19 +270,12 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      transition: transform 600ms ease;
     }
   }
 
-  &__image-hover {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 300ms ease;
-    pointer-events: none;
-  }
-
-  &:hover &__image-hover {
-    opacity: 1;
+  &:hover &__image-wrap img {
+    transform: scale(1.05);
   }
 
   &__body {

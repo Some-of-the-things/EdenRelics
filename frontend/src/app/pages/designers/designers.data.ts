@@ -1,5 +1,13 @@
 import { Product } from '../../models/product.model';
 
+/** A Journal post relevant to a designer — used for two-way internal linking. */
+export interface RelatedPost {
+  /** Blog post slug (the DB-driven post served at /blog/:slug). */
+  slug: string;
+  /** Exact published title, shown as the link text. */
+  title: string;
+}
+
 export interface DesignerProfile {
   slug: string;
   name: string;
@@ -19,7 +27,23 @@ export interface DesignerProfile {
    * each, ordered specific-first.
    */
   productMatchers: string[];
+  /**
+   * Journal posts to cross-link from this designer hub (and which link back to
+   * it). Builds a topic cluster so the hub and the post reinforce each other in
+   * search rather than competing. Keep titles in sync with the published post.
+   */
+  relatedPosts?: RelatedPost[];
 }
+
+// Shared post references so the slug/title stay consistent across designers.
+const ST_MICHAEL_POST: RelatedPost = {
+  slug: 'st-michael-by-ms-how-to-identify-and-date-vintage-marks-spencer-clothing',
+  title: 'St Michael by M&S: How to Identify and Date Vintage Marks & Spencer Clothing',
+};
+const RAYON_POST: RelatedPost = {
+  slug: 'the-rise-and-fall-of-rayon',
+  title: 'The Rise and Fall of Rayon',
+};
 
 export const DESIGNERS: DesignerProfile[] = [
   {
@@ -41,6 +65,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Patchwork-print midi dresses with crimson, teal, and floral panels are a particularly collected silhouette.',
     ],
     productMatchers: ['leslie fay'],
+    relatedPosts: [RAYON_POST],
   },
   {
     slug: 'carole-little',
@@ -61,12 +86,13 @@ export const DESIGNERS: DesignerProfile[] = [
       'Prints are typically all-over florals, abstract brushstrokes, or hand-painted-look botanicals — not geometric or ditsy.',
     ],
     productMatchers: ['carole little'],
+    relatedPosts: [RAYON_POST],
   },
   {
     slug: 'caroline-wells',
     name: 'Caroline Wells',
     metaTitle: 'Caroline Wells Collection — Vintage 90s Dresses',
-    metaDescription: 'Authentic Caroline Wells Collection vintage dresses & clothing from the 1990s. Amber floral rayon maxis and similar rare pieces — UK-curated and inspected.',
+    metaDescription: 'Shop rare vintage Caroline Wells Collection dresses — 1990s rayon florals and maxis, each a genuine one-of-a-kind piece. Hand-inspected, UK shipping.',
     origin: 'USA — active 1990s',
     intro: 'Caroline Wells Collection was a 1990s American label producing the kind of soft-rayon floral maxi dress now intensely sought after on the secondhand market. Surviving pieces are relatively scarce, which makes them an interesting collector entry point.',
     history: [
@@ -80,6 +106,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Look for button-front bodices, square or scoop necklines, and side pockets — common construction details for the era.',
     ],
     productMatchers: ['caroline wells'],
+    relatedPosts: [RAYON_POST],
   },
   {
     slug: 'laura-ashley',
@@ -126,20 +153,22 @@ export const DESIGNERS: DesignerProfile[] = [
     name: 'St Michael (Marks & Spencer)',
     metaTitle: 'Vintage St Michael (M&S) Clothing & Label Guide',
     metaDescription: 'Vintage St Michael clothing — Marks & Spencer\'s original house label from the 1970s-90s. Dresses, knits & blouses, plus how to identify and date the M&S label.',
-    origin: 'United Kingdom — Marks & Spencer house label, 1928-2000',
-    intro: 'St Michael was Marks & Spencer\'s house label for the better part of the 20th century — and authentic vintage St Michael pieces are now collected for their construction quality, era-defining prints, and the fact that British wool, viscose, and cotton standards of the time consistently outlast modern equivalents.',
+    origin: 'United Kingdom — Marks & Spencer house label, 1928–2000',
+    intro: 'St Michael was Marks & Spencer\'s house label for the better part of the 20th century — and authentic vintage St Michael pieces are prized by collectors for their construction quality, era-defining prints, and a period when M&S was closely associated with British manufacturing and long-lasting everyday clothing.',
     history: [
-      'Marks & Spencer introduced St Michael as its own-brand label in 1928, named after company chairman Michael Marks. By the 1970s, almost everything M&S sold carried the St Michael name.',
+      'The St Michael name was introduced by Simon Marks in 1928, in honour of his father and M&S co-founder, Michael Marks. (The name first appeared in 1927 and was registered as a trademark in 1928.) By 1950, virtually all of Marks & Spencer\'s general merchandise carried the St Michael label.',
       'For vintage collectors, the strongest eras are the 1970s through early-1990s: tartan wool skirts, knitted floral cotton tops, smart blouses, and the printed dresses that filled British wardrobes during those decades.',
-      'The St Michael label was retired in 2000 in favour of M&S sub-brands. Every authentic St Michael garment is therefore at least a quarter-century old — and many are considerably older.',
+      'The St Michael label was retired in 2000 in favour of M&S sub-brands, and briefly returned as a limited heritage emblem on clothing in 2021. Original pieces from the historic brand run therefore date from before 2000, and are now vintage by most collectors\' standards.',
     ],
     identification: [
-      'Look for the woven "St Michael" label, often with a quality-grade indicator and country of manufacture ("Made in England", "Made in Great Britain", or for later pieces "Made in Portugal").',
-      'A second smaller label inside often gives the M&S size and care instructions, sometimes with a date code.',
-      'British wool and viscose dominate the era — check the composition label for the fabric story.',
-      'Construction details typical of UK manufacturing: bound seams, interior waist tape on skirts, and substantial buttons (often shell, wood, or solid plastic, rarely thin modern plastic).',
+      'Look for the woven "St Michael" label, often with a country of manufacture. Earlier examples are typically marked "Made in England" or "Made in Great Britain"; later pieces may have been made in Portugal, Morocco, Malta, Sri Lanka, or other overseas production centres M&S used.',
+      'A second, smaller label inside often gives the M&S size and care instructions, sometimes with a quality or style number — useful for cross-referencing.',
+      'Label design changed significantly over the decades. Script logos, typography, sizing formats, and fibre-content and care labels can often narrow a garment\'s production date to a particular decade.',
+      'British wool, viscose, and cotton feature heavily across the era — check the composition label for the fabric story.',
+      'Higher-quality pieces often show details such as bound seams, waist stays, reinforced stitching, and heavier buttons (shell, wood, or solid plastic) than are common on modern fast-fashion garments.',
     ],
     productMatchers: ['st michael'],
+    relatedPosts: [ST_MICHAEL_POST],
   },
   {
     slug: 'viyella',
@@ -179,6 +208,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'All-over florals and simple shift or midi silhouettes are characteristic of the era.',
     ],
     productMatchers: ['robbie bee'],
+    relatedPosts: [RAYON_POST],
   },
   {
     slug: 'rk-originals',
@@ -198,6 +228,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Classic day-dress and maxi silhouettes typical of the label\'s long run.',
     ],
     productMatchers: ['r&k originals'],
+    relatedPosts: [RAYON_POST],
   },
   {
     slug: 'mondi',
@@ -238,4 +269,9 @@ export function matchProductsToDesigner(
 export function findDesignerForProduct(productName: string): DesignerProfile | undefined {
   const name = productName.toLowerCase();
   return DESIGNERS.find((d) => d.productMatchers.some((m) => name.includes(m.toLowerCase())));
+}
+
+/** Designers that cross-link to a given Journal post — the reverse of relatedPosts. */
+export function findDesignersForPost(postSlug: string): DesignerProfile[] {
+  return DESIGNERS.filter((d) => d.relatedPosts?.some((p) => p.slug === postSlug));
 }

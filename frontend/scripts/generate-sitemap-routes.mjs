@@ -13,9 +13,12 @@ const here = dirname(fileURLToPath(import.meta.url));
 const designersPath = resolve(here, '../src/app/pages/designers/designers.data.ts');
 const outPath = resolve(here, '../public/sitemap-routes.json');
 
-// Pull every designer slug, in file order, from the DESIGNERS data.
+// Pull every designer slug, in file order, from the DESIGNERS data. Match only
+// a `slug:` immediately followed by `name:` — that pairing is unique to a
+// DesignerProfile, so unrelated `slug:` keys (e.g. RelatedPost link targets)
+// don't leak in as bogus /designers/* sitemap routes.
 const designersSrc = readFileSync(designersPath, 'utf8');
-const slugs = [...designersSrc.matchAll(/slug:\s*'([^']+)'/g)].map((m) => m[1]);
+const slugs = [...designersSrc.matchAll(/slug:\s*'([^']+)',\s*name:/g)].map((m) => m[1]);
 if (slugs.length === 0) {
   throw new Error('generate-sitemap-routes: no designer slugs found in designers.data.ts');
 }
