@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { ShareButtonsComponent } from '../../components/share-buttons/share-buttons.component';
 import { VintageSizeConverterComponent } from '../../components/vintage-size-converter/vintage-size-converter.component';
+import { DesignerProfile, findDesignersForPost } from '../designers/designers.data';
 
 interface BlogPost {
   id: string;
@@ -66,6 +67,12 @@ export class BlogPostComponent implements OnInit {
     const content = this.post()?.content ?? '';
     const idx = content.indexOf(BlogPostComponent.CONVERTER_TOKEN);
     return idx >= 0 ? content.slice(idx + BlogPostComponent.CONVERTER_TOKEN.length) : '';
+  });
+
+  /** Designer hubs that reference this post — rendered as a "shop the label" CTA. */
+  readonly relatedDesigners = computed<DesignerProfile[]>(() => {
+    const p = this.post();
+    return p ? findDesignersForPost(p.slug) : [];
   });
 
   ngOnInit(): void {

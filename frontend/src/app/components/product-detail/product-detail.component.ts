@@ -100,8 +100,8 @@ export class ProductDetailComponent {
     return p ? resolveProductStatus(p) === 'sold' : false;
   });
 
-  /** The designer collection to point a sold-item visitor toward, if the piece matches one. */
-  readonly soldDesigner = computed(() => {
+  /** The designer hub this piece belongs to, if its name matches one — cross-linked for every product, not just sold ones. */
+  readonly designer = computed(() => {
     const p = this.product();
     return p ? findDesignerForProduct(p.name) : undefined;
   });

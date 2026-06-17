@@ -1,5 +1,13 @@
 import { Product } from '../../models/product.model';
 
+/** A Journal post relevant to a designer — used for two-way internal linking. */
+export interface RelatedPost {
+  /** Blog post slug (the DB-driven post served at /blog/:slug). */
+  slug: string;
+  /** Exact published title, shown as the link text. */
+  title: string;
+}
+
 export interface DesignerProfile {
   slug: string;
   name: string;
@@ -19,7 +27,23 @@ export interface DesignerProfile {
    * each, ordered specific-first.
    */
   productMatchers: string[];
+  /**
+   * Journal posts to cross-link from this designer hub (and which link back to
+   * it). Builds a topic cluster so the hub and the post reinforce each other in
+   * search rather than competing. Keep titles in sync with the published post.
+   */
+  relatedPosts?: RelatedPost[];
 }
+
+// Shared post references so the slug/title stay consistent across designers.
+const ST_MICHAEL_POST: RelatedPost = {
+  slug: 'st-michael-by-ms-how-to-identify-and-date-vintage-marks-spencer-clothing',
+  title: 'St Michael by M&S: How to Identify and Date Vintage Marks & Spencer Clothing',
+};
+const RAYON_POST: RelatedPost = {
+  slug: 'the-rise-and-fall-of-rayon',
+  title: 'The Rise and Fall of Rayon',
+};
 
 export const DESIGNERS: DesignerProfile[] = [
   {
@@ -41,6 +65,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Patchwork-print midi dresses with crimson, teal, and floral panels are a particularly collected silhouette.',
     ],
     productMatchers: ['leslie fay'],
+    relatedPosts: [RAYON_POST],
   },
   {
     slug: 'carole-little',
@@ -61,6 +86,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Prints are typically all-over florals, abstract brushstrokes, or hand-painted-look botanicals — not geometric or ditsy.',
     ],
     productMatchers: ['carole little'],
+    relatedPosts: [RAYON_POST],
   },
   {
     slug: 'caroline-wells',
@@ -80,6 +106,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Look for button-front bodices, square or scoop necklines, and side pockets — common construction details for the era.',
     ],
     productMatchers: ['caroline wells'],
+    relatedPosts: [RAYON_POST],
   },
   {
     slug: 'laura-ashley',
@@ -140,6 +167,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Construction details typical of UK manufacturing: bound seams, interior waist tape on skirts, and substantial buttons (often shell, wood, or solid plastic, rarely thin modern plastic).',
     ],
     productMatchers: ['st michael'],
+    relatedPosts: [ST_MICHAEL_POST],
   },
   {
     slug: 'viyella',
@@ -179,6 +207,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'All-over florals and simple shift or midi silhouettes are characteristic of the era.',
     ],
     productMatchers: ['robbie bee'],
+    relatedPosts: [RAYON_POST],
   },
   {
     slug: 'rk-originals',
@@ -198,6 +227,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Classic day-dress and maxi silhouettes typical of the label\'s long run.',
     ],
     productMatchers: ['r&k originals'],
+    relatedPosts: [RAYON_POST],
   },
   {
     slug: 'mondi',
@@ -238,4 +268,9 @@ export function matchProductsToDesigner(
 export function findDesignerForProduct(productName: string): DesignerProfile | undefined {
   const name = productName.toLowerCase();
   return DESIGNERS.find((d) => d.productMatchers.some((m) => name.includes(m.toLowerCase())));
+}
+
+/** Designers that cross-link to a given Journal post — the reverse of relatedPosts. */
+export function findDesignersForPost(postSlug: string): DesignerProfile[] {
+  return DESIGNERS.filter((d) => d.relatedPosts?.some((p) => p.slug === postSlug));
 }

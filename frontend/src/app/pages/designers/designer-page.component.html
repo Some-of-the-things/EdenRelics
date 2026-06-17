@@ -32,6 +32,19 @@
       </ul>
     </section>
 
+    @if (d.relatedPosts && d.relatedPosts.length > 0) {
+      <section class="designer-page__section">
+        <h2 class="designer-page__section-title">Further reading</h2>
+        <ul class="designer-page__reading">
+          @for (post of d.relatedPosts; track post.slug) {
+            <li>
+              <a [routerLink]="['/blog', post.slug]">{{ post.title }}</a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
     <section class="designer-page__section">
       <h2 class="designer-page__section-title">
         {{ d.name }} at Eden Relics

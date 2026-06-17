@@ -53,6 +53,19 @@
 
     <div class="blog-post__ornament" aria-hidden="true">✦</div>
 
+    @if (relatedDesigners().length > 0) {
+      <aside class="blog-post__shop" aria-label="Shop related labels">
+        <h2 class="blog-post__shop-title">Shop the label</h2>
+        <ul class="blog-post__shop-list">
+          @for (d of relatedDesigners(); track d.slug) {
+            <li>
+              <a [routerLink]="['/designers', d.slug]">Browse vintage {{ d.name }} &rarr;</a>
+            </li>
+          }
+        </ul>
+      </aside>
+    }
+
     <app-share-buttons
       [url]="'https://edenrelics.co.uk/blog/' + post.slug"
       [title]="post.title"

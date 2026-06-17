@@ -80,7 +80,7 @@
           <div class="detail__sold">
             <span class="detail__sold-badge">Sold</span>
             <p class="detail__sold-text">This piece is one of a kind and has found a new home.</p>
-            @if (soldDesigner(); as d) {
+            @if (designer(); as d) {
               <a class="detail__sold-link" [routerLink]="['/designers', d.slug]">See more vintage {{ d.name }} &rarr;</a>
             } @else {
               <a class="detail__sold-link" routerLink="/">Browse more vintage pieces &rarr;</a>
@@ -100,6 +100,9 @@
             </svg>
             {{ isFavourite(product.id) ? 'Favourited' : 'Add to Favourites' }}
           </button>
+          @if (designer(); as d) {
+            <a class="detail__designer-link" [routerLink]="['/designers', d.slug]">More vintage {{ d.name }} &rarr;</a>
+          }
         }
         <app-share-buttons
           [url]="productShareUrl()"
