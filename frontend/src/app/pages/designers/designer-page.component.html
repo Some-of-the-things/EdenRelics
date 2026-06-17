@@ -61,9 +61,6 @@
                 <div class="designer-product__image-wrap">
                   @if (product.imageUrl) {
                     <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
-                    @if (product.additionalImageUrls && product.additionalImageUrls[0]; as hoverImage) {
-                      <img [src]="hoverImage" alt="" class="designer-product__image-hover" loading="lazy" aria-hidden="true" />
-                    }
                   }
                 </div>
                 <div class="designer-product__body">
