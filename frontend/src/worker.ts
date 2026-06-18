@@ -14,12 +14,53 @@ interface WorkerEnv {
 
 const DEFAULT_API_BASE = 'https://api.edenrelics.co.uk';
 
+/** Durable owner opt-out cookie. Set via /?mute-analytics; read here to skip beaconing. */
+const MUTE_COOKIE = 'er_mute';
+
+/**
+ * Referrers we never want counted as prospective customers: the owner's own
+ * sites / preview hosts and the staging Access gate (that's us reviewing the
+ * site), plus directory / lead-gen crawlers that show up as referral spam.
+ * Only the entry navigation carries an external Referer — the durable mute
+ * cookie covers an owner's subsequent same-site clicks and direct visits.
+ */
+const EXCLUDED_REFERRER_HOSTS = ['petercarter.co.uk', 'bizify.com'];
+const EXCLUDED_REFERRER_SUFFIXES = ['.cloudflareaccess.com', '.netlify.app'];
+
+/** True when the request carries the owner opt-out cookie. */
+function hasMuteCookie(request: Request): boolean {
+  const cookie = request.headers.get('Cookie');
+  return cookie != null && /(?:^|;\s*)er_mute=1(?:;|$)/.test(cookie);
+}
+
+/** True when the Referer host is one we deliberately keep out of the human counts. */
+function isExcludedReferrer(request: Request): boolean {
+  const referer = request.headers.get('Referer');
+  if (!referer) {
+    return false;
+  }
+  let host: string;
+  try {
+    host = new URL(referer).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return (
+    EXCLUDED_REFERRER_HOSTS.includes(host) ||
+    EXCLUDED_REFERRER_SUFFIXES.some((suffix) => host.endsWith(suffix))
+  );
+}
+
 /**
  * First-party, cookieless page-view beacon. Fired server-to-server (Worker → backend)
  * once per successful SSR navigation render — no client JS, no cookies, 100% of renders.
  * Cloudflare's request.cf gives us country + network org for free (used for geo + bot
  * heuristics on the backend). Best-effort and non-blocking via ctx.waitUntil; failures
  * never affect the response. No-op until ANALYTICS_INGEST_SECRET is configured.
+ *
+ * Owner / internal traffic is excluded so the human counts approximate real
+ * prospective customers: the durable mute cookie drops the owner's own browsing,
+ * and a small referrer list drops self-referrals and directory-crawler spam.
  */
 function sendPageViewBeacon(
   request: Request,
@@ -29,6 +70,9 @@ function sendPageViewBeacon(
 ): void {
   const secret = env.ANALYTICS_INGEST_SECRET;
   if (!secret || request.method !== 'GET') {
+    return;
+  }
+  if (hasMuteCookie(request) || isExcludedReferrer(request)) {
     return;
   }
 
@@ -83,6 +127,23 @@ function withSecurityHeaders(response: Response): Response {
 export default {
   async fetch(request: Request, env: WorkerEnv, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    // Owner analytics opt-out toggle. Visiting /?mute-analytics sets a durable
+    // cookie so the owner's own browsing stops inflating the first-party human
+    // counts; /?mute-analytics=off clears it. Redirect to a clean URL and never
+    // cache this response (the Set-Cookie must not be shared between visitors).
+    if (url.searchParams.has('mute-analytics')) {
+      const turnOff = url.searchParams.get('mute-analytics') === 'off';
+      const cookie = turnOff
+        ? `${MUTE_COOKIE}=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Lax`
+        : `${MUTE_COOKIE}=1; Max-Age=157680000; Path=/; Secure; HttpOnly; SameSite=Lax`;
+      return withSecurityHeaders(
+        new Response(null, {
+          status: 302,
+          headers: { Location: '/', 'Set-Cookie': cookie, 'Cache-Control': 'no-store' },
+        }),
+      );
+    }
 
     // Dynamic sitemap — proxy to API for live product/blog data
     if (url.pathname === '/sitemap.xml') {
