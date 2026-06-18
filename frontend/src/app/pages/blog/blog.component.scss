@@ -106,7 +106,10 @@
 
 /* ── BLOG POST ── */
 .blog-post {
-  max-width: 720px;
+  /* Wider column so the post doesn't sit in a narrow strip with large empty
+     side bands on desktop; capped short of the 1040px list width to keep the
+     prose line length readable for the 1.2rem body serif. */
+  max-width: 860px;
   margin: 0 auto;
   padding: 0 1.5rem 4rem;
 }
