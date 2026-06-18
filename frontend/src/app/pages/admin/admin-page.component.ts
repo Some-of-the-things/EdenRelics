@@ -1710,7 +1710,10 @@ export class AdminPageComponent implements OnInit {
       price: product.price,
       salePrice: product.salePrice ?? null,
       costPrice: product.costPrice ?? 0,
-      stockPurchaseDate: product.stockPurchaseDate ?? null,
+      // <input type="date"> only accepts yyyy-MM-dd; the API returns a full ISO
+      // datetime (e.g. 2026-05-21T00:00:00Z), which the input can't display and
+      // silently blanks. Slice to the date part so the saved value shows on edit.
+      stockPurchaseDate: product.stockPurchaseDate ? product.stockPurchaseDate.slice(0, 10) : null,
       supplier: product.supplier ?? '',
       era: product.era,
       category: product.category,
