@@ -18,6 +18,7 @@ interface BlogPost {
   featuredImageUrl: string | null;
   author: string | null;
   publishedAtUtc: string | null;
+  updatedAtUtc: string;
 }
 
 interface BlogPostSummary {
@@ -134,6 +135,9 @@ export class BlogPostComponent implements OnInit {
         if (post.publishedAtUtc) {
           blogPosting['datePublished'] = post.publishedAtUtc;
         }
+        // dateModified is a freshness signal Google reads for Article results;
+        // UpdatedAtUtc is auto-stamped on every save server-side.
+        blogPosting['dateModified'] = post.updatedAtUtc;
         if (post.excerpt) {
           blogPosting['description'] = post.excerpt;
         }

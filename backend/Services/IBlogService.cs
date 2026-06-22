@@ -13,6 +13,6 @@ public interface IBlogService
 }
 
 public record BlogPostSummaryDto(Guid Id, string Title, string Slug, string? Excerpt, string? FeaturedImageUrl, string? Author, bool Published, DateTime? PublishedAtUtc, DateTime CreatedAtUtc);
-public record BlogPostDto(Guid Id, string Title, string Slug, string Content, string? Excerpt, string? FeaturedImageUrl, string? Author, bool Published, DateTime? PublishedAtUtc, DateTime CreatedAtUtc);
+public record BlogPostDto(Guid Id, string Title, string Slug, string Content, string? Excerpt, string? FeaturedImageUrl, string? Author, bool Published, DateTime? PublishedAtUtc, DateTime CreatedAtUtc, DateTime UpdatedAtUtc);
 public record CreateBlogPostDto(string Title, string Content, string? Excerpt, string? FeaturedImageUrl, string? Author, bool Published);
 public record UpdateBlogPostDto(string? Title, string? Content, string? Excerpt, string? FeaturedImageUrl, string? Author, bool? Published);

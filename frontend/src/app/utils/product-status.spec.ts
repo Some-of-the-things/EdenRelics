@@ -74,6 +74,16 @@ describe('filterAdminProducts', () => {
     expect(filterAdminProducts(products, '1970', 'all').map((p) => p.id)).toEqual(['1', '4']);
   });
 
+  it('filters by supplier (case-insensitive, partial)', () => {
+    const withSuppliers = [
+      makeProduct({ id: 's1', name: 'A', supplier: 'Norwich Vintage Co' }),
+      makeProduct({ id: 's2', name: 'B', supplier: 'Camden Market Stall' }),
+      makeProduct({ id: 's3', name: 'C' }),
+    ];
+    expect(filterAdminProducts(withSuppliers, 'norwich', 'all').map((p) => p.id)).toEqual(['s1']);
+    expect(filterAdminProducts(withSuppliers, 'MARKET', 'all').map((p) => p.id)).toEqual(['s2']);
+  });
+
   it('combines status and search', () => {
     expect(filterAdminProducts(products, 'dress', 'live').map((p) => p.id)).toEqual(['1']);
     expect(filterAdminProducts(products, 'dress', 'stock').map((p) => p.id)).toEqual(['2']);

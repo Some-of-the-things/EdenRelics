@@ -151,6 +151,6 @@ public partial class BlogService(IRepository<BlogPost> repository) : IBlogServic
 
     private static BlogPostDto ToDto(BlogPost p) => new(
         p.Id, p.Title, p.Slug, p.Content, p.Excerpt, p.FeaturedImageUrl,
-        p.Author, p.Published, p.PublishedAtUtc, p.CreatedAtUtc
+        p.Author, p.Published, p.PublishedAtUtc, p.CreatedAtUtc, p.UpdatedAtUtc
     );
 }

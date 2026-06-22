@@ -26,7 +26,7 @@ export function filterAdminProducts(
     if (!term) {
       return true;
     }
-    const haystacks = [p.name, p.sku, p.era, p.size]
+    const haystacks = [p.name, p.sku, p.era, p.size, p.supplier]
       .filter((v): v is string => !!v)
       .map((v) => v.toLowerCase());
     return haystacks.some((h) => h.includes(term));
