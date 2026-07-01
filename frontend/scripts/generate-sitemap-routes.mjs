@@ -11,6 +11,7 @@ import { dirname, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const designersPath = resolve(here, '../src/app/pages/designers/designers.data.ts');
+const collectionsPath = resolve(here, '../src/app/pages/collections/collections.data.ts');
 const outPath = resolve(here, '../public/sitemap-routes.json');
 
 // Pull every designer slug, in file order, from the DESIGNERS data. Match only
@@ -21,6 +22,13 @@ const designersSrc = readFileSync(designersPath, 'utf8');
 const slugs = [...designersSrc.matchAll(/slug:\s*'([^']+)',\s*name:/g)].map((m) => m[1]);
 if (slugs.length === 0) {
   throw new Error('generate-sitemap-routes: no designer slugs found in designers.data.ts');
+}
+
+// Collection slugs, same `slug:` → `name:` pairing (unique to a CollectionProfile).
+const collectionsSrc = readFileSync(collectionsPath, 'utf8');
+const collectionSlugs = [...collectionsSrc.matchAll(/slug:\s*'([^']+)',\s*name:/g)].map((m) => m[1]);
+if (collectionSlugs.length === 0) {
+  throw new Error('generate-sitemap-routes: no collection slugs found in collections.data.ts');
 }
 
 const before = [
@@ -36,6 +44,11 @@ const designerRoutes = slugs.map((slug) => ({
   changefreq: 'weekly',
   priority: '0.7',
 }));
+const collectionRoutes = collectionSlugs.map((slug) => ({
+  path: `/collections/${slug}`,
+  changefreq: 'weekly',
+  priority: '0.7',
+}));
 const after = [
   { path: '/privacy-policy', changefreq: 'yearly', priority: '0.3' },
   { path: '/modern-slavery-policy', changefreq: 'yearly', priority: '0.3' },
@@ -48,7 +61,7 @@ const after = [
   { path: '/compliance-report', changefreq: 'yearly', priority: '0.3' },
 ];
 
-const routes = [...before, ...designerRoutes, ...after];
+const routes = [...before, ...designerRoutes, ...collectionRoutes, ...after];
 
 // Match the existing one-object-per-line formatting so diffs stay readable.
 const body = routes
@@ -56,4 +69,4 @@ const body = routes
   .join(',\n');
 writeFileSync(outPath, `[\n${body}\n]\n`, 'utf8');
 
-console.log(`generate-sitemap-routes: wrote ${routes.length} routes (${slugs.length} designers) to public/sitemap-routes.json`);
+console.log(`generate-sitemap-routes: wrote ${routes.length} routes (${slugs.length} designers, ${collectionSlugs.length} collections) to public/sitemap-routes.json`);

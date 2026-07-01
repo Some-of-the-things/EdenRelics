@@ -15,6 +15,37 @@
       <p class="hero__subtitle">Hand-curated vintage women's clothing from the UK. Each piece is photographed, measured, and authenticated before it lands.</p>
     </div>
   </section>
+
+  @if (featured().length > 0) {
+    <section class="home__featured" aria-labelledby="wildflower-edit-title">
+      <header class="home__featured-header">
+        <p class="home__featured-eyebrow">Eden Relics Collection</p>
+        <h2 id="wildflower-edit-title" class="home__featured-title">The Wildflower Edit</h2>
+        <p class="home__featured-lede">Vintage dresses united by romantic florals, graceful silhouettes and exceptional craftsmanship.</p>
+      </header>
+      <ul class="home__featured-grid">
+        @for (product of featured(); track product.id) {
+          <li class="home__featured-card">
+            <a [routerLink]="['/product', product.slug || product.id]" class="home__featured-link">
+              <div class="home__featured-image">
+                @if (product.imageUrl) {
+                  <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+                }
+              </div>
+              <div class="home__featured-body">
+                <h3 class="home__featured-name">{{ product.name }}</h3>
+                <span class="home__featured-price">{{ (product.salePrice ?? product.price) | currency:'GBP' }}</span>
+              </div>
+            </a>
+          </li>
+        }
+      </ul>
+      <div class="home__featured-cta">
+        <a routerLink="/collections/wildflower-edit" class="home__featured-btn">Browse entire collection</a>
+      </div>
+    </section>
+  }
+
   <app-product-list />
 
   @if (latestBlogPost(); as post) {

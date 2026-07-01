@@ -1,0 +1,48 @@
+@if (collection(); as c) {
+  <article class="collection-page">
+    <nav class="collection-page__breadcrumb" aria-label="Breadcrumb">
+      <a routerLink="/">Home</a>
+      <span aria-hidden="true">›</span>
+      <span aria-current="page">{{ c.name }}</span>
+    </nav>
+
+    <header class="collection-page__header">
+      <p class="collection-page__eyebrow">Eden Relics Collection</p>
+      <h1 class="collection-page__title">{{ c.name }}</h1>
+      <p class="collection-page__intro">{{ c.intro }}</p>
+    </header>
+
+    @if (products().length > 0) {
+      <ul class="collection-products">
+        @for (product of products(); track product.id) {
+          <li class="collection-product">
+            <a [routerLink]="['/product', product.slug || product.id]" class="collection-product__link">
+              <div class="collection-product__image-wrap">
+                @if (product.imageUrl) {
+                  <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+                }
+              </div>
+              <div class="collection-product__body">
+                <h2 class="collection-product__name">{{ product.name }}</h2>
+                <span class="collection-product__price">
+                  {{ (product.salePrice ?? product.price) | currency:'GBP' }}
+                  @if (!product.inStock) {
+                    <span class="collection-product__sold">Sold</span>
+                  }
+                </span>
+              </div>
+            </a>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="collection-page__empty">
+        These pieces are arriving in the shop shortly. <a routerLink="/">Browse the current collection</a> in the meantime.
+      </p>
+    }
+
+    <p class="collection-page__back">
+      <a routerLink="/">← Back to shop</a>
+    </p>
+  </article>
+}

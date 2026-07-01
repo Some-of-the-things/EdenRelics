@@ -184,6 +184,22 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'collections/preview/:slug',
+    data: { preview: true },
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./pages/collections/collection-preview.component').then(
+        (m) => m.CollectionPreviewComponent
+      ),
+  },
+  {
+    path: 'collections/:slug',
+    loadComponent: () =>
+      import('./pages/collections/collection-page.component').then(
+        (m) => m.CollectionPageComponent
+      ),
+  },
+  {
     path: 'blog/preview/:slug',
     data: { preview: true },
     loadComponent: () =>

@@ -80,6 +80,133 @@
   border: 0;
 }
 
+.home__featured {
+  margin-top: 3rem;
+  padding-top: 3rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.home__featured-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.home__featured-eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 0.6rem;
+}
+
+.home__featured-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  margin: 0 0 0.75rem;
+  color: var(--text-primary);
+}
+
+.home__featured-lede {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.home__featured-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.home__featured-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 26, 14, 0.1);
+  }
+}
+
+.home__featured-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.home__featured-image {
+  aspect-ratio: 4 / 5;
+  background: var(--bg-secondary);
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 600ms ease;
+  }
+}
+
+.home__featured-card:hover .home__featured-image img {
+  transform: scale(1.05);
+}
+
+.home__featured-body {
+  padding: 0.85rem 1rem 1rem;
+}
+
+.home__featured-name {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  margin: 0 0 0.4rem;
+  color: var(--text-primary);
+}
+
+.home__featured-price {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.home__featured-cta {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.home__featured-btn {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--text-inverse);
+  border: none;
+  padding: 0.8rem 2rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--transition);
+
+  &:hover { background: var(--accent-hover); }
+}
+
 .home__journal {
   margin-top: 4rem;
 }

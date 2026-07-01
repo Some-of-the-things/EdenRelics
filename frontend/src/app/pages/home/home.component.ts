@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, effect, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -9,6 +10,7 @@ import { ContentService } from '../../services/content.service';
 import { ReviewsService } from '../../services/reviews.service';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
+import { collectionFeaturedSlugs, findCollectionBySlug, orderedCollectionProducts } from '../collections/collections.data';
 import { environment } from '../../../environments/environment';
 
 interface BlogPostSummary {
@@ -23,7 +25,7 @@ interface BlogPostSummary {
 
 @Component({
   selector: 'app-home',
-  imports: [ProductListComponent, HomeReviewsComponent, FormsModule, RouterLink],
+  imports: [ProductListComponent, HomeReviewsComponent, FormsModule, RouterLink, CurrencyPipe],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,6 +43,15 @@ export class HomeComponent implements OnInit {
   mailingEmail = '';
   readonly mailingSubscribed = signal(false);
   readonly latestBlogPost = signal<BlogPostSummary | null>(null);
+
+  /** The 5 featured pieces from The Wildflower Edit, in curated order. */
+  readonly featured = computed<Product[]>(() => {
+    const c = findCollectionBySlug('wildflower-edit');
+    if (!c) {
+      return [];
+    }
+    return orderedCollectionProducts(this.productStore.liveProducts(), collectionFeaturedSlugs(c));
+  });
 
   constructor() {
     effect(() => {

@@ -1,0 +1,71 @@
+<article class="collection-page collection-preview">
+  @if (loading()) {
+    <p class="collection-preview__status">Loading preview…</p>
+  } @else if (error()) {
+    <p class="collection-preview__status collection-preview__status--error">{{ error() }}</p>
+  } @else if (collection(); as c) {
+    <div class="collection-preview__bar" [class.collection-preview__bar--done]="allLive()">
+      @if (allLive()) {
+        <div class="collection-preview__bar-text">
+          <strong>Published.</strong> These pieces are now live for customers.
+        </div>
+        <a [routerLink]="['/collections', c.slug]" class="collection-preview__view-btn">View the live page →</a>
+      } @else {
+        <div class="collection-preview__bar-text">
+          <strong>Private preview.</strong> Customers can’t see this yet. Happy with it? Approve to make all
+          {{ c.items.length }} pieces live.
+        </div>
+        <button
+          type="button"
+          class="collection-preview__approve-btn"
+          [disabled]="publishing()"
+          (click)="approve()"
+        >
+          {{ publishing() ? 'Publishing…' : 'Approve & publish' }}
+        </button>
+      }
+    </div>
+
+    @if (published(); as result) {
+      <p class="collection-preview__success">
+        {{ result.published }} piece{{ result.published === 1 ? '' : 's' }} published.
+        The Wildflower Edit now appears on the homepage and at
+        <a [routerLink]="['/collections', c.slug]">/collections/{{ c.slug }}</a>.
+      </p>
+    }
+
+    <header class="collection-page__header">
+      <p class="collection-page__eyebrow">Eden Relics Collection — Preview</p>
+      <h1 class="collection-page__title">{{ c.name }}</h1>
+      <p class="collection-page__intro">{{ c.intro }}</p>
+    </header>
+
+    @if (products().length > 0) {
+      <ul class="collection-products">
+        @for (product of products(); track product.sku) {
+          <li class="collection-product">
+            <a [routerLink]="['/product', product.slug]" class="collection-product__link">
+              <div class="collection-product__image-wrap">
+                @if (product.imageUrl) {
+                  <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+                }
+                <span
+                  class="collection-preview__badge"
+                  [class.collection-preview__badge--live]="product.isLive"
+                >{{ product.isLive ? 'Live' : 'Draft' }}</span>
+              </div>
+              <div class="collection-product__body">
+                <h2 class="collection-product__name">{{ product.name }}</h2>
+                <span class="collection-product__price">
+                  {{ (product.salePrice ?? product.price) | currency:'GBP' }}
+                </span>
+              </div>
+            </a>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="collection-preview__status">No pieces found for this collection.</p>
+    }
+  }
+</article>
