@@ -30,6 +30,21 @@
   }
 }
 
+.about__founders {
+  margin-top: 3rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.1));
+}
+
+.about__founders-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin: 0 0 1.5rem;
+  line-height: 1.2;
+}
+
 .about__signature {
   font-family: var(--font-display);
   font-style: italic;

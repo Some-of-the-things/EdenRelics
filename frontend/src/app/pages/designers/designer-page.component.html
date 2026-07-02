@@ -24,7 +24,7 @@
     </section>
 
     <section class="designer-page__section">
-      <h2 class="designer-page__section-title">How to identify authentic {{ d.name }}</h2>
+      <h2 class="designer-page__section-title">{{ d.identificationHeading || 'How to identify authentic ' + d.name }}</h2>
       <ul class="designer-page__id-list">
         @for (tip of d.identification; track $index) {
           <li>{{ tip }}</li>

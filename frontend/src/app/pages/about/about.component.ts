@@ -10,6 +10,9 @@ const DEFAULT_CONTENT = `<p>Eden Relics is a curated vintage shop based in Norwi
 <p>Every piece is personally sourced and chosen for its quality, character, and the way it moves. Wherever possible the dresses are modelled — by one of us or a friend — so you can see how they actually fall on a real body. For pieces that don't suit a modelled shot, we photograph them carefully on a mannequin so nothing is left to guesswork.</p>
 <p>We started Eden Relics because we believe in buying less and buying better. Fast fashion has a cost the price tag doesn't show — in waste, in craft, in the stories we throw away. Vintage is the alternative: beautiful things that already exist, waiting to be worn again.</p>
 <p>Every purchase here is an act of intention. We hope you find something that feels like it was always meant to be yours.</p>`;
+const DEFAULT_FOUNDERS_TITLE = 'Meet the founders';
+const DEFAULT_FOUNDERS_CONTENT = `<p>Eden Relics is run by Teodora Carter and Peter Carter, a couple based in Norwich. We started it together because we believe in buying less and buying better — giving a well-made vintage piece a second life instead of letting it disappear.</p>
+<p>Teodora leads the sourcing, styling, and photography — the eye behind which pieces make the cut. Peter builds and runs the website and looks after the behind-the-scenes side of the shop. Every dress on the site has been chosen, checked, and photographed by the two of us, here in Norwich.</p>`;
 
 @Component({
   selector: 'app-about',
@@ -21,6 +24,8 @@ export class AboutComponent {
   readonly content = inject(ContentService);
 
   readonly defaultContent = DEFAULT_CONTENT;
+  readonly defaultFoundersTitle = DEFAULT_FOUNDERS_TITLE;
+  readonly defaultFoundersContent = DEFAULT_FOUNDERS_CONTENT;
 
   constructor() {
     // Re-apply SEO tags whenever ContentService updates so admin edits to the
@@ -40,20 +45,46 @@ export class AboutComponent {
       });
       this.seo.setJsonLd({
         '@context': 'https://schema.org',
-        '@type': 'AboutPage',
-        name: 'About Eden Relics',
-        url: 'https://edenrelics.co.uk/about',
-        description: metaDescription,
-        mainEntity: {
-          '@type': 'Organization',
-          name: 'Eden Relics',
-          url: 'https://edenrelics.co.uk',
-          founder: [
-            { '@type': 'Person', name: 'Teodora Carter' },
-            { '@type': 'Person', name: 'Peter Carter' },
-          ],
-          description: aboutDescription,
-        },
+        '@graph': [
+          {
+            '@type': 'AboutPage',
+            name: 'About Eden Relics',
+            url: 'https://edenrelics.co.uk/about',
+            description: metaDescription,
+            mainEntity: { '@id': 'https://edenrelics.co.uk/#organization' },
+          },
+          {
+            // Adds the founder relationship to the canonical Organization node
+            // defined on the home page (merged by @id); reference the people by
+            // @id so each resolves to a full Person entity below.
+            '@type': 'Organization',
+            '@id': 'https://edenrelics.co.uk/#organization',
+            name: 'Eden Relics',
+            url: 'https://edenrelics.co.uk',
+            description: aboutDescription,
+            founder: [
+              { '@id': 'https://edenrelics.co.uk/#teodora-carter' },
+              { '@id': 'https://edenrelics.co.uk/#peter-carter' },
+            ],
+          },
+          {
+            '@type': 'Person',
+            '@id': 'https://edenrelics.co.uk/#teodora-carter',
+            name: 'Teodora Carter',
+            jobTitle: 'Co-founder',
+            worksFor: { '@id': 'https://edenrelics.co.uk/#organization' },
+            workLocation: { '@type': 'Place', name: 'Norwich, UK' },
+          },
+          {
+            '@type': 'Person',
+            '@id': 'https://edenrelics.co.uk/#peter-carter',
+            name: 'Peter Carter',
+            jobTitle: 'Co-founder',
+            worksFor: { '@id': 'https://edenrelics.co.uk/#organization' },
+            workLocation: { '@type': 'Place', name: 'Norwich, UK' },
+            sameAs: ['https://www.linkedin.com/in/peterdcarter/'],
+          },
+        ],
       });
     });
   }
