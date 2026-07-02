@@ -1,9 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ProductListComponent } from '../../components/product-list/product-list.component';
+import { RouterLink } from '@angular/router';
 import { HomeReviewsComponent } from '../../components/home-reviews/home-reviews.component';
 import { SeoService } from '../../services/seo.service';
 import { ContentService } from '../../services/content.service';
@@ -25,7 +24,7 @@ interface BlogPostSummary {
 
 @Component({
   selector: 'app-home',
-  imports: [ProductListComponent, HomeReviewsComponent, FormsModule, RouterLink, CurrencyPipe],
+  imports: [HomeReviewsComponent, FormsModule, RouterLink, CurrencyPipe],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,7 +33,6 @@ export class HomeComponent implements OnInit {
   private readonly seo = inject(SeoService);
   private readonly http = inject(HttpClient);
   private readonly productStore = inject(ProductStore);
-  private readonly route = inject(ActivatedRoute);
   private readonly reviewsService = inject(ReviewsService);
   readonly cms = inject(ContentService);
 
@@ -53,15 +51,6 @@ export class HomeComponent implements OnInit {
     return orderedCollectionProducts(this.productStore.liveProducts(), collectionFeaturedSlugs(c));
   });
 
-  constructor() {
-    effect(() => {
-      // JSON-LD for the home page should reflect what customers actually see,
-      // not what admin sees — so use the live-only filter.
-      const products = this.productStore.liveProducts();
-      this.emitJsonLd(products);
-    });
-  }
-
   subscribeToMailingList(): void {
     if (!this.mailingEmail.trim()) {
       return;
@@ -79,15 +68,7 @@ export class HomeComponent implements OnInit {
       url: '/',
       hreflang: true,
     });
-    this.route.queryParamMap.subscribe((params) => {
-      const q = params.get('q');
-      if (q !== null) {
-        this.productStore.setSearchQuery(q);
-      }
-      const pageParam = params.get('page');
-      const page = pageParam ? parseInt(pageParam, 10) : 1;
-      this.productStore.setPage(Number.isFinite(page) && page > 0 ? page : 1);
-    });
+    this.emitJsonLd();
     this.http.get<BlogPostSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
       next: (posts) => {
         if (posts.length > 0) {
@@ -100,14 +81,14 @@ export class HomeComponent implements OnInit {
       next: (s) => {
         if (s.count > 0) {
           this.reviewSummary = { count: s.count, overall: s.overall };
-          this.emitJsonLd(this.productStore.liveProducts());
+          this.emitJsonLd();
         }
       },
       error: () => {},
     });
   }
 
-  private emitJsonLd(products: readonly Product[]): void {
+  private emitJsonLd(): void {
     const graph: object[] = [
       {
         '@type': 'Organization',
@@ -148,7 +129,7 @@ export class HomeComponent implements OnInit {
           '@type': 'SearchAction',
           target: {
             '@type': 'EntryPoint',
-            urlTemplate: 'https://edenrelics.co.uk/?q={search_term_string}',
+            urlTemplate: 'https://edenrelics.co.uk/shop?q={search_term_string}',
           },
           'query-input': 'required name=search_term_string',
         },
@@ -172,22 +153,6 @@ export class HomeComponent implements OnInit {
         },
       },
     ];
-
-    if (products.length > 0) {
-      graph.push({
-        '@type': 'ItemList',
-        '@id': 'https://edenrelics.co.uk/#products',
-        name: 'Vintage Clothing',
-        numberOfItems: products.length,
-        itemListElement: products.slice(0, 30).map((p, idx) => ({
-          '@type': 'ListItem',
-          position: idx + 1,
-          url: `https://edenrelics.co.uk/product/${p.slug || p.id}`,
-          name: p.name,
-          image: p.imageUrl,
-        })),
-      });
-    }
 
     this.seo.setJsonLd({
       '@context': 'https://schema.org',

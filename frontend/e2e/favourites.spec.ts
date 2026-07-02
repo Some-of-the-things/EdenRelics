@@ -3,13 +3,13 @@ import { registerUser, setAuthInBrowser, uniqueEmail } from './helpers';
 
 test.describe('Favourites', () => {
   test('favourite button visible on product cards', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/shop');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.product-card__fav').first()).toBeVisible();
   });
 
   test('clicking favourite when logged out redirects to login', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/shop');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
     await page.locator('.product-card__fav').first().click();
     await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
@@ -20,7 +20,7 @@ test.describe('Favourites', () => {
     const token = await registerUser(page, email);
     await setAuthInBrowser(page, token, email);
 
-    await page.goto('/');
+    await page.goto('/shop');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
 
     const favBtn = page.locator('.product-card__fav').first();
@@ -42,7 +42,7 @@ test.describe('Favourites', () => {
     const token = await registerUser(page, email);
     await setAuthInBrowser(page, token, email);
 
-    await page.goto('/');
+    await page.goto('/shop');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
 
     // Click favourite and opt in to sale notifications
@@ -59,7 +59,7 @@ test.describe('Favourites', () => {
     const token = await registerUser(page, email);
     await setAuthInBrowser(page, token, email);
 
-    await page.goto('/');
+    await page.goto('/shop');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
 
     // Navigate to product detail
@@ -82,7 +82,7 @@ test.describe('Favourites', () => {
     const token = await registerUser(page, email);
     await setAuthInBrowser(page, token, email);
 
-    await page.goto('/');
+    await page.goto('/shop');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
 
     // Favourite the first product — handle prompt and wait for API
@@ -97,7 +97,7 @@ test.describe('Favourites', () => {
     // Navigate away and back
     await page.locator('a[href="/cart"]').first().click();
     await expect(page).toHaveURL(/\/cart/);
-    await page.locator('a[href="/"]').first().click();
+    await page.goto('/shop');
 
     // Favourite should still be active
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });

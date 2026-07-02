@@ -1,5 +1,11 @@
 [
   { "path": "/", "changefreq": "daily", "priority": "1.0" },
+  { "path": "/shop", "changefreq": "daily", "priority": "0.9" },
+  { "path": "/shop/1950s", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/shop/1960s", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/shop/1970s", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/shop/1980s", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/shop/1990s", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/about", "changefreq": "monthly", "priority": "0.7" },
   { "path": "/contact", "changefreq": "monthly", "priority": "0.6" },
   { "path": "/blog", "changefreq": "weekly", "priority": "0.7" },

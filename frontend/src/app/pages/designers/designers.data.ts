@@ -22,6 +22,13 @@ export interface DesignerProfile {
   /** Bulleted authenticity / identification tips. */
   identification: string[];
   /**
+   * Optional override for the identification section heading. Defaults to
+   * "How to identify authentic {name}". Category C brands (well-surviving but
+   * thinly documented, with no real counterfeit market) use a "How to recognise
+   * vintage {name}" framing instead — recognition, not authentication.
+   */
+  identificationHeading?: string;
+  /**
    * Patterns to match against a product Name (lowercased) — if ANY match, the
    * product belongs to this designer. Use the most distinctive substring for
    * each, ordered specific-first.
@@ -134,27 +141,27 @@ export const DESIGNERS: DesignerProfile[] = [
     metaTitle: 'Vintage Rockmount Ranch Wear — Authentic Western Shirts',
     metaDescription: 'Authentic vintage Rockmount Ranch Wear western shirts. The Denver-original sawtooth-pocket label — hand-picked, UK shipping.',
     origin: 'Denver, Colorado — founded 1946',
-    intro: 'Rockmount Ranch Wear invented the snap-button western shirt in 1946 and has been making the same iconic sawtooth-pocket, snap-front shirts ever since. Authentic vintage Rockmount is increasingly sought after as the western/cowboycore trend continues to grow.',
+    intro: 'Rockmount Ranch Wear is widely credited with popularising the snap-front western shirt and helping establish many of the design features associated with modern westernwear. Founded in Denver in 1946, the brand keeps many of its signature sawtooth-pocket, snap-front features in production today, and its classic shirts align closely with contemporary western-inspired fashion.',
     history: [
-      '"Papa" Jack A. Weil founded Rockmount Ranch Wear in Denver, Colorado in 1946. Weil is credited with putting snap fasteners on western shirts and pioneering the sawtooth chest pocket — both now genre-defining details.',
+      '"Papa" Jack A. Weil founded Rockmount Ranch Wear in Denver, Colorado in 1946. He is widely credited with popularising the snap-front western shirt and helping establish many of the design features — including the sawtooth chest pocket — now associated with modern westernwear.',
       'The brand is still family-owned and operated from the same downtown Denver building. Genuine vintage pieces — particularly from the 1980s and 90s — are recognised by their distinctive label evolution and increasingly vivid embroidery work.',
-      'Rockmount\'s electric-coloured solid shirts, "Diamond Pioneer" snap details, and overstated yokes are now central to the cowboycore aesthetic that has driven huge growth in vintage western demand since the early 2020s.',
+      'Rockmount\'s electric-coloured solid shirts, "Diamond Pioneer" snap details, and overstated yokes align closely with the contemporary western-inspired fashion trends that have brought renewed visibility to vintage westernwear in recent years.',
     ],
     identification: [
-      'Look for the "Rockmount Ranch Wear / Tradition Since 1946 / Denver, Colorado" woven label — design varies by decade and is itself useful for dating.',
+      'Look for Rockmount Ranch Wear labels referencing Denver, Colorado and the company\'s westernwear heritage — wording varies by decade and is itself useful for dating.',
       'Authentic pieces feature pearl-snap (or pearl-imitation snap) closures, sawtooth chest pockets, and either embroidery or a contrast yoke.',
-      'Fabric is typically cotton, cotton-blend, or — on dressier pieces — rayon. Polyester-blend Rockmounts exist but are usually 1990s onwards.',
-      '"Made in USA" labelling is consistent on pre-2000s production.',
+      'Fabric is typically cotton, cotton-blend, or — on dressier pieces — rayon. Polyester-blend Rockmounts also exist.',
+      'Many vintage examples carry "Made in USA" labels.',
     ],
     productMatchers: ['rockmount'],
   },
   {
     slug: 'st-michael',
     name: 'St Michael (Marks & Spencer)',
-    metaTitle: 'Vintage St Michael (M&S) Clothing & Label Guide',
+    metaTitle: 'Vintage St Michael Clothing — M&S Dresses & Knitwear',
     metaDescription: 'Vintage St Michael clothing — Marks & Spencer\'s original house label from the 1970s-90s. Dresses, knits & blouses, plus how to identify and date the M&S label.',
     origin: 'United Kingdom — Marks & Spencer house label, 1928–2000',
-    intro: 'St Michael was Marks & Spencer\'s house label for the better part of the 20th century — and authentic vintage St Michael pieces are prized by collectors for their construction quality, era-defining prints, and a period when M&S was closely associated with British manufacturing and long-lasting everyday clothing.',
+    intro: 'St Michael was Marks & Spencer\'s house label for the better part of the 20th century, and authentic vintage St Michael clothing is prized by collectors for its construction quality and era-defining prints. The dresses, knitwear, blouses and tailored skirts that filled British wardrobes from the 1970s to the 90s came from a period when M&S was closely tied to British manufacturing and clothes built to last.',
     history: [
       'The St Michael name was introduced by Simon Marks in 1928, in honour of his father and M&S co-founder, Michael Marks. (The name first appeared in 1927 and was registered as a trademark in 1928.) By 1950, virtually all of Marks & Spencer\'s general merchandise carried the St Michael label.',
       'For vintage collectors, the strongest eras are the 1970s through early-1990s: tartan wool skirts, knitted floral cotton tops, smart blouses, and the printed dresses that filled British wardrobes during those decades.',
@@ -213,19 +220,22 @@ export const DESIGNERS: DesignerProfile[] = [
   {
     slug: 'rk-originals',
     name: 'R&K Originals',
-    metaTitle: 'Vintage R&K Originals Dresses — Mid-Century to 90s',
-    metaDescription: 'Authentic vintage R&K Originals dresses — the long-running American label of printed day dresses and florals. Hand-picked and inspected, UK shipping.',
-    origin: 'USA — mid-20th century onward',
-    intro: 'R&K Originals was a long-running American dress label, known from the mid-twentieth century onward for printed day dresses and florals at accessible prices. Surviving pieces are collected for their period prints and easy, wearable silhouettes.',
+    metaTitle: 'Vintage R&K Originals Dresses — Printed Florals & Day Dresses',
+    metaDescription: 'Authentic vintage R&K Originals dresses — the American label of printed day dresses and florals, found across several decades of 20th-century fashion. Hand-picked and inspected, UK shipping.',
+    origin: 'USA — 20th-century American dress label',
+    intro: 'R&K Originals was an American dress label whose printed day dresses and florals turn up across several decades of 20th-century fashion, sold at accessible prices. Surviving pieces are collected for their period prints and easy, wearable silhouettes.',
     history: [
-      'R&K Originals was a familiar name in American department stores across several decades, producing printed day dresses, shirtwaists, and florals for the mass market.',
-      'The label sits in the same accessible, printed-dress tradition as Carole Little and Caroline Wells — relaxed, wearable, and strongly of its era.',
-      'Genuine vintage R&K Originals is valued for its prints and construction; as with the cohort, the woven label and the fabric are the surest authenticity guides.',
+      'Much of what we can say about R&K Originals comes from the garments themselves rather than detailed company records. The number and range of surviving pieces point to an American label that produced printed dresses in some volume across several decades.',
+      'In look and price point it falls into the same accessible, printed-dress category as Carole Little and Caroline Wells — though that grouping is a useful way to place the label for readers rather than a documented connection between the companies.',
+      'Genuine vintage R&K Originals is collected for its period prints and easy silhouettes. As with similar labels, the best way to place a piece is to read the woven label alongside the fabric and construction — there is no real counterfeit market, so this is about recognition rather than authentication.',
     ],
+    identificationHeading: 'How to recognise vintage R&K Originals',
     identification: [
-      'Look for the woven "R&K Originals" label.',
-      'Expect period printed fabrics — florals and small-scale prints — often in rayon or rayon-feel blends.',
-      'Classic day-dress and maxi silhouettes typical of the label\'s long run.',
+      'Look for the original "R&K Originals" label on the garment.',
+      'Printed fabrics are common, including florals and other repeating patterns.',
+      'Dresses appear frequently among surviving examples, including day dresses and longer-length styles.',
+      'Fabrics vary by era and garment type, but rayon, rayon blends, polyester blends, and other lightweight dress fabrics are commonly encountered.',
+      'Consider the label, fibre content, garment construction, and overall styling together when identifying a piece.',
     ],
     productMatchers: ['r&k originals'],
     relatedPosts: [RAYON_POST],
@@ -233,19 +243,22 @@ export const DESIGNERS: DesignerProfile[] = [
   {
     slug: 'mondi',
     name: 'Mondi',
-    metaTitle: 'Vintage Mondi — 1980s German Print Fashion',
-    metaDescription: 'Authentic vintage Mondi — the German label known for bold 1980s prints, wrap dresses and colourful separates. Hand-picked and inspected, UK shipping.',
-    origin: 'Germany — founded in the 1960s',
-    intro: 'Mondi was a German fashion label that became known through the 1970s and 80s for bold prints, wrap dresses, and richly coloured separates — the kind of confident, print-led European dressing that stands out on the vintage market today.',
+    metaTitle: 'Vintage Mondi — German Print & Colour Womenswear',
+    metaDescription: 'Authentic vintage Mondi — the German womenswear label whose surviving pieces often feature bold colour and pattern across dresses, separates and jackets. Hand-picked and inspected, UK shipping.',
+    origin: 'Munich, Germany — founded 1967',
+    intro: 'Mondi is a recognised German womenswear label of the later twentieth century. Its surviving pieces — dresses, separates, jackets, and coordinated outfits — are often recognisable for their strong use of colour and pattern, though styles varied considerably across the brand\'s lifespan.',
     history: [
-      'Mondi emerged from the German fashion industry in the 1960s and grew into a recognisable European ready-to-wear label, at its most distinctive through the 1980s.',
-      'Its signature was print and colour — botanical and abstract patterns, wrap and blouson silhouettes, and a polished continental finish.',
-      'Vintage Mondi is collected for exactly those prints and that quality of make; genuine pieces carry the woven Mondi label.',
+      'Mondi was founded in Munich in 1967 by Herwig Zahm and Otto Brüstle, beginning as a knitwear business before expanding into womenswear.',
+      'Mondi was part of the late twentieth-century European ready-to-wear tradition, producing dresses, separates, jackets, and coordinated outfits that became widely distributed across parts of Europe.',
+      'Most surviving Mondi garments date from the 1970s, 1980s, and 1990s. Bold colour and pattern are common across them, but the brand\'s output varied widely, so styling alone is a weaker guide than the label and country-of-origin markings.',
     ],
+    identificationHeading: 'How to recognise vintage Mondi',
     identification: [
-      'Look for the woven "Mondi" label, often with "Made in West Germany" (pre-1990) or "Made in Germany" on later pieces.',
-      'Bold prints — botanical, abstract, and paisley — are characteristic.',
-      'Quality European construction and a fluid drape.',
+      'Look for original Mondi labels on the garment.',
+      'Labels marked "Made in West Germany" indicate production before German reunification in 1990; later pieces are marked "Made in Germany".',
+      'Many surviving examples feature bold colours, florals, abstract prints, or paisley patterns.',
+      'Dresses, skirts, blouses, jackets, and coordinated separates are commonly encountered.',
+      'Consider the label, country-of-origin information, fabric composition, and garment styling together when identifying pieces.',
     ],
     productMatchers: ['mondi'],
   },

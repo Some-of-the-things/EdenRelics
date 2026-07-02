@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Cart', () => {
   test('can add product to cart and view cart', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/shop');
     // Wait for product cards
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
 
@@ -20,7 +20,7 @@ test.describe('Cart', () => {
   });
 
   test('can remove item from cart', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/shop');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
     await page.locator('.product-card__add-btn').first().click();
 
@@ -36,7 +36,7 @@ test.describe('Cart', () => {
   });
 
   test('guest checkout shows checkout form after clicking proceed', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/shop');
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
     await page.locator('.product-card__add-btn').first().click();
 

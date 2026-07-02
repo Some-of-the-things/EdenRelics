@@ -33,4 +33,17 @@ test.describe('Navigation and pages', () => {
     const cartLink = page.getByRole('link', { name: /cart|bag/i });
     await expect(cartLink).toBeVisible();
   });
+
+  test('shop dropdown navigates to a decade page', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.header__shop-toggle').click();
+    await page.getByRole('link', { name: '1980s' }).click();
+    await expect(page).toHaveURL(/\/shop\/1980s/);
+    await expect(page.locator('.shop__title')).toContainText('1980s');
+  });
+
+  test('shop decade page loads directly', async ({ page }) => {
+    await page.goto('/shop/1970s');
+    await expect(page.locator('.shop__title')).toContainText('1970s');
+  });
 });

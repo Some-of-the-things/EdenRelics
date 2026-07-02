@@ -83,29 +83,57 @@ export class DesignerPageComponent {
     });
 
     const products = matchProductsToDesigner(this.productStore.liveProducts(), d);
+    const pageUrl = `https://edenrelics.co.uk/designers/${d.slug}`;
     this.seo.setJsonLd({
       '@context': 'https://schema.org',
-      '@type': 'CollectionPage',
-      name: `Vintage ${d.name}`,
-      description: d.intro,
-      url: `https://edenrelics.co.uk/designers/${d.slug}`,
-      isPartOf: {
-        '@type': 'WebSite',
-        '@id': 'https://edenrelics.co.uk/#website',
-        name: 'Eden Relics',
-        url: 'https://edenrelics.co.uk',
-      },
-      mainEntity: {
-        '@type': 'ItemList',
-        numberOfItems: products.length,
-        itemListElement: products.map((p, idx) => ({
-          '@type': 'ListItem',
-          position: idx + 1,
-          url: `https://edenrelics.co.uk/product/${p.slug || p.id}`,
-          name: p.name,
-          image: p.imageUrl,
-        })),
-      },
+      '@graph': [
+        {
+          '@type': 'CollectionPage',
+          name: `Vintage ${d.name}`,
+          description: d.intro,
+          url: pageUrl,
+          isPartOf: {
+            '@type': 'WebSite',
+            '@id': 'https://edenrelics.co.uk/#website',
+            name: 'Eden Relics',
+            url: 'https://edenrelics.co.uk',
+          },
+          mainEntity: {
+            '@type': 'ItemList',
+            numberOfItems: products.length,
+            itemListElement: products.map((p, idx) => ({
+              '@type': 'ListItem',
+              position: idx + 1,
+              url: `https://edenrelics.co.uk/product/${p.slug || p.id}`,
+              name: p.name,
+              image: p.imageUrl,
+            })),
+          },
+        },
+        {
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: 'Home',
+              item: 'https://edenrelics.co.uk',
+            },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: 'Designers',
+              item: 'https://edenrelics.co.uk/designers',
+            },
+            {
+              '@type': 'ListItem',
+              position: 3,
+              name: d.name,
+              item: pageUrl,
+            },
+          ],
+        },
+      ],
     });
   }
 }
