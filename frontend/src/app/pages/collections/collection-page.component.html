@@ -21,14 +21,14 @@
                 @if (product.imageUrl) {
                   <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
                 }
+                @if (!product.inStock) {
+                  <span class="collection-product__sold">Sold</span>
+                }
               </div>
               <div class="collection-product__body">
                 <h2 class="collection-product__name">{{ product.name }}</h2>
                 <span class="collection-product__price">
                   {{ (product.salePrice ?? product.price) | currency:'GBP' }}
-                  @if (!product.inStock) {
-                    <span class="collection-product__sold">Sold</span>
-                  }
                 </span>
               </div>
             </a>

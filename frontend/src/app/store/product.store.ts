@@ -60,6 +60,22 @@ export const ProductStore = signalStore(
         .filter((p) => resolveProductStatus(p) === 'live')
         .sort(byNewestFirst),
     ),
+    /**
+     * Live products plus sold pieces — used only by collection views (the
+     * collection page and the homepage strip), which keep sold members visible
+     * marked "Sold". Normal browsing uses `liveProducts` and never shows sold.
+     * For the public the API returns sold pieces only when they're in a curated
+     * collection, so this can't surface an unrelated sold product; collection
+     * views additionally narrow to their own slug list, which scopes it for admins.
+     */
+    liveOrSoldProducts: computed(() =>
+      store.products()
+        .filter((p) => {
+          const status = resolveProductStatus(p);
+          return status === 'live' || status === 'sold';
+        })
+        .sort(byNewestFirst),
+    ),
     filteredProducts: computed(() => {
       let products = store.products().filter((p) => resolveProductStatus(p) === 'live');
       const category = store.selectedCategory();

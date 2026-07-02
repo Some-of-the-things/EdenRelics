@@ -241,7 +241,9 @@ export class ProductDetailComponent {
             utmMedium: params.get('utm_medium') || undefined,
             utmCampaign: params.get('utm_campaign') || undefined,
             screenResolution: `${window.screen.width}x${window.screen.height}`,
-          }).subscribe();
+            // Sold pieces (visible via a collection) don't record views — the API
+            // returns 404 for them; swallow it rather than surfacing an error.
+          }).subscribe({ error: () => {} });
         }
         const activePrice = product.showReduction && product.salePrice ? product.salePrice : product.price;
         const productUrl = `https://edenrelics.co.uk${canonicalPath}`;

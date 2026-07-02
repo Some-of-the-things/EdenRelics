@@ -33,12 +33,33 @@
   }
 }
 
+.detail__image-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
 .detail__image {
   width: 100%;
   height: auto;
   border-radius: 0;
   min-width: 0;
   display: block;
+}
+
+.detail__image-sold {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: var(--text-muted);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem;
+  z-index: 1;
 }
 
 .detail__thumbs {

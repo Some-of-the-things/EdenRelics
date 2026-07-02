@@ -177,6 +177,7 @@
 }
 
 .home__featured-image {
+  position: relative;
   aspect-ratio: 4 / 5;
   background: var(--bg-secondary);
   overflow: hidden;
@@ -192,6 +193,20 @@
 
 .home__featured-card:hover .home__featured-image img {
   transform: scale(1.05);
+}
+
+.home__featured-sold {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  background: var(--text-muted);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  z-index: 1;
 }
 
 .home__featured-body {

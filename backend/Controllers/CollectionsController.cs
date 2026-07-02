@@ -85,25 +85,36 @@ public class CollectionsController(
                 continue;
             }
 
-            if (product.Status == ProductStatus.Live)
+            bool changed = false;
+
+            // Mark collection membership so the piece stays publicly visible once it
+            // sells (backfills already-live members too). Idempotent.
+            if (!product.InCollection)
+            {
+                product.InCollection = true;
+                changed = true;
+            }
+
+            if (product.Status == ProductStatus.Stock)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Slug))
+                {
+                    product.Slug = item.Slug!;
+                }
+                product.Status = ProductStatus.Live;
+                published++;
+                changed = true;
+            }
+            else if (product.Status == ProductStatus.Live)
             {
                 alreadyLive++;
-                continue;
             }
+            // Sold members are left Sold (never resurrected) but still get the flag above.
 
-            // Never resurrect a Sold piece via this flow — only Stock -> Live.
-            if (product.Status != ProductStatus.Stock)
+            if (changed)
             {
-                continue;
+                await products.UpdateAsync(product);
             }
-
-            if (!string.IsNullOrWhiteSpace(item.Slug))
-            {
-                product.Slug = item.Slug!;
-            }
-            product.Status = ProductStatus.Live;
-            await products.UpdateAsync(product);
-            published++;
         }
 
         logger.LogInformation(

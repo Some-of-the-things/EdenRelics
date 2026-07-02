@@ -38,7 +38,7 @@ export class CollectionPageComponent {
     if (!c) {
       return [];
     }
-    return orderedCollectionProducts(this.productStore.liveProducts(), collectionProductSlugs(c));
+    return orderedCollectionProducts(this.productStore.liveOrSoldProducts(), collectionProductSlugs(c));
   });
 
   private readonly seoApplied = signal('');
