@@ -9,6 +9,28 @@
       <img [src]="logoUrl()" alt="Eden Relics — Vintage Clothing" class="header__logo-img" width="56" height="72" fetchpriority="high" />
     </a>
     <nav class="header__nav" aria-label="Main navigation">
+      <div class="header__shop" [class.header__shop--open]="shopOpen()">
+        <button
+          type="button"
+          class="header__link header__shop-toggle"
+          (click)="toggleShop($event)"
+          [attr.aria-expanded]="shopOpen()"
+          aria-haspopup="true"
+          aria-controls="shop-menu"
+        >
+          Shop
+          <span class="header__shop-caret" aria-hidden="true"></span>
+        </button>
+        <ul id="shop-menu" class="header__shop-menu" [hidden]="!shopOpen()">
+          <li><a routerLink="/shop" class="header__shop-item" (click)="closeShop()">All Dresses</a></li>
+          <li><a routerLink="/collections/wildflower-edit" class="header__shop-item" (click)="closeShop()">The Wildflower Edit</a></li>
+          <li><a routerLink="/shop/1950s" class="header__shop-item" (click)="closeShop()">1950s</a></li>
+          <li><a routerLink="/shop/1960s" class="header__shop-item" (click)="closeShop()">1960s</a></li>
+          <li><a routerLink="/shop/1970s" class="header__shop-item" (click)="closeShop()">1970s</a></li>
+          <li><a routerLink="/shop/1980s" class="header__shop-item" (click)="closeShop()">1980s</a></li>
+          <li><a routerLink="/shop/1990s" class="header__shop-item" (click)="closeShop()">1990s</a></li>
+        </ul>
+      </div>
       <a routerLink="/about" class="header__link">About</a>
       <a routerLink="/blog" class="header__link">Blog</a>
       @if (auth.isAdmin()) {

@@ -1,0 +1,34 @@
+.shop {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 0;
+}
+
+.shop__header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.shop__title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.9rem, 4vw, 2.8rem);
+  margin: 0 0 0.75rem;
+  color: var(--text-primary);
+}
+
+.shop__lede {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .shop {
+    padding: 1.5rem 1rem 0;
+  }
+}

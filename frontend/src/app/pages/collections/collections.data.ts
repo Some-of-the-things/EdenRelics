@@ -32,9 +32,9 @@ export const COLLECTIONS: CollectionProfile[] = [
     name: 'The Wildflower Edit',
     metaTitle: 'The Wildflower Edit — Vintage Floral Dresses | Eden Relics',
     metaDescription:
-      'Thirteen hand-picked vintage dresses united by romantic florals, graceful silhouettes and exceptional craftsmanship — Laura Ashley, Angela Gore, Van Allan and more.',
+      'Thirteen hand-picked vintage dresses united by romantic florals, graceful silhouettes and thoughtful craftsmanship — Laura Ashley, Angela Gore, Van Allan and more.',
     intro:
-      'The Wildflower Edit is a celebration of vintage dresses that feel timeless rather than trend-led. Thirteen carefully chosen originals united by romantic florals, graceful silhouettes and exceptional craftsmanship. Each dress has its own story, but together they speak the same language: soft structure, thoughtful detail and the quiet confidence of clothes made to be loved for decades, not seasons.',
+      'The Wildflower Edit is a celebration of vintage dresses that feel timeless rather than trend-led. Thirteen carefully chosen originals united by romantic florals, graceful silhouettes and thoughtful craftsmanship. Each dress has its own story, but together they speak the same language: soft structure, thoughtful detail and the quiet confidence of clothes made to be loved for decades, not seasons.',
     items: [
       { sku: 'ER-00121', slug: '1980s-90s-laura-ashley-floral-dress-pastel-lightweight-cotton-v-waist' },
       { sku: 'ER-00120', slug: '1980s-laura-ashley-red-floral-dress-wool-cotton-self-covered-buttons' },

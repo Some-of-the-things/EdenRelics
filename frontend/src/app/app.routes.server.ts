@@ -21,6 +21,8 @@ export const serverRoutes: ServerRoute[] = [
   // ContentService.load(), which need a live API at build time. Keeping SSR
   // until those are made SSR-skip-safe.)
   { path: '', renderMode: RenderMode.Server },
+  { path: 'shop', renderMode: RenderMode.Server },
+  { path: 'shop/:decade', renderMode: RenderMode.Server },
   { path: 'product/:id', renderMode: RenderMode.Server },
   { path: 'blog', renderMode: RenderMode.Server },
   { path: 'blog/:slug', renderMode: RenderMode.Server },

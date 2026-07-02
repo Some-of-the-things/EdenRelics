@@ -1,14 +1,14 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Product browsing', () => {
-  test('home page loads and shows products', async ({ page }) => {
-    await page.goto('/');
+  test('shop page loads and shows products', async ({ page }) => {
+    await page.goto('/shop');
     // Wait for product cards to appear
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('can filter products by category', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/shop');
     // Wait for products to load
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
     // Click a category filter button
@@ -21,7 +21,7 @@ test.describe('Product browsing', () => {
   });
 
   test('can view product detail page', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/shop');
     // Wait for product cards
     await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 10_000 });
     // Click the first product name link
