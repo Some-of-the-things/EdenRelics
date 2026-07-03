@@ -269,10 +269,14 @@ export class ProductDetailComponent {
             '@type': 'Product',
             name: product.name,
             description,
-            image: [product.imageUrl, ...(product.additionalImageUrls ?? [])],
+            // Google Merchant listings require a non-empty image; guard against
+            // any falsy/blank URLs slipping into the array.
+            image: [product.imageUrl, ...(product.additionalImageUrls ?? [])].filter(Boolean),
             sku: product.id,
             url: productUrl,
-            brand: { '@type': 'Brand', name: 'Eden Relics' },
+            // Prefer the garment's actual maker/label as the brand (a genuine
+            // global identifier); fall back to the shop name when unknown.
+            brand: { '@type': 'Brand', name: findDesignerForProduct(product.name)?.name ?? 'Eden Relics' },
             category: product.era,
             itemCondition: schemaCondition(product.condition),
             ...(videos.length > 0 ? { video: videos.length === 1 ? videos[0] : videos } : {}),
@@ -286,6 +290,27 @@ export class ProductDetailComponent {
                 : 'https://schema.org/OutOfStock',
               itemCondition: schemaCondition(product.condition),
               seller: { '@type': 'Organization', name: 'Eden Relics' },
+              // Domestic (UK) shipping — matches ShippingZones 'uk-standard'.
+              shippingDetails: {
+                '@type': 'OfferShippingDetails',
+                shippingRate: { '@type': 'MonetaryAmount', value: '3.95', currency: 'GBP' },
+                shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'GB' },
+                deliveryTime: {
+                  '@type': 'ShippingDeliveryTime',
+                  handlingTime: { '@type': 'QuantitativeValue', minValue: 0, maxValue: 2, unitCode: 'DAY' },
+                  transitTime: { '@type': 'QuantitativeValue', minValue: 3, maxValue: 5, unitCode: 'DAY' },
+                },
+              },
+              // 14-day cancellation right (Consumer Contracts Regs 2013); the
+              // buyer covers return postage for change-of-mind returns.
+              hasMerchantReturnPolicy: {
+                '@type': 'MerchantReturnPolicy',
+                applicableCountry: 'GB',
+                returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+                merchantReturnDays: 14,
+                returnMethod: 'https://schema.org/ReturnByMail',
+                returnFees: 'https://schema.org/ReturnShippingFees',
+              },
             },
           },
         ];
