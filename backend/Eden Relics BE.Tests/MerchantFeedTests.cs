@@ -63,6 +63,34 @@ public class MerchantFeedTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Feed_FallsBackToMulticolourWhenTitleHasNoColour()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-feed-colour@test.com");
+
+        await client.PostAsJsonAsync("/api/products", new
+        {
+            name = "Feed Test Paisley Print Maxi Dress",
+            description = "A busy multi-tone print with no single dominant colour.",
+            price = 55m,
+            era = "1970s",
+            category = "70s",
+            size = "12",
+            condition = "good",
+            imageUrl = "https://example.com/feed-paisley.webp",
+            inStock = true,
+            status = "live",
+        });
+
+        HttpClient anon = _factory.CreateClient();
+        string xml = await (await anon.GetAsync("/api/merchant-feed.xml")).Content.ReadAsStringAsync();
+
+        // The item must still carry a colour (required for UK apparel).
+        Assert.Contains("Feed Test Paisley Print Maxi Dress", xml);
+        Assert.Contains("<g:color>Multicolour</g:color>", xml);
+    }
+
+    [Fact]
     public async Task Feed_ExcludesNonLiveProducts()
     {
         HttpClient client = _factory.CreateClient();
