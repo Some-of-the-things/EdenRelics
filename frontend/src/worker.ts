@@ -158,6 +158,19 @@ export default {
       }
     }
 
+    // Google Merchant Center product feed — proxy to API for live product data
+    if (url.pathname === '/merchant-feed.xml') {
+      try {
+        const apiRes = await fetch('https://api.edenrelics.co.uk/api/merchant-feed.xml');
+        return withSecurityHeaders(new Response(apiRes.body, {
+          status: apiRes.status,
+          headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' },
+        }));
+      } catch {
+        return withSecurityHeaders(new Response('Feed temporarily unavailable', { status: 503 }));
+      }
+    }
+
     // Serve static assets (files with extensions) via ASSETS binding
     if (url.pathname.includes('.')) {
       try {

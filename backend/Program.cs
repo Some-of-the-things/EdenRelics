@@ -128,6 +128,7 @@ builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<ICalendarFeedService, CalendarFeedService>();
 builder.Services.AddScoped<ISitemapService, SitemapService>();
+builder.Services.AddScoped<IMerchantFeedService, MerchantFeedService>();
 builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
