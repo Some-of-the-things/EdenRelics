@@ -70,7 +70,13 @@ public class ProductsController : ControllerBase
         {
             return Ok(products.Select(ToAdminDto));
         }
-        return Ok(products.Where(p => p.Status == ProductStatus.Live).Select(p => ToDto(p, locale)));
+        // Public listing is Live-only, except sold pieces that belong to a curated
+        // collection — those stay visible so the collection page (and homepage
+        // strip) can show them marked "Sold". Normal browsing filters to Live
+        // on the client, so these don't leak into the shop/designer lists.
+        return Ok(products
+            .Where(p => p.Status == ProductStatus.Live || (p.Status == ProductStatus.Sold && p.InCollection))
+            .Select(p => ToDto(p, locale)));
     }
 
     [HttpGet("{id:guid}")]
@@ -112,8 +118,10 @@ public class ProductsController : ControllerBase
         return Ok(ToDto(product, locale));
     }
 
-    /// Sold products are hidden from the public, except for the user who favourited them —
-    /// so their favourites list and any bookmarked URLs continue to render.
+    /// Sold products are hidden from the public, except: (a) sold pieces in a curated
+    /// collection stay public (shown as "Sold" on their detail page), and (b) the user
+    /// who favourited a sold piece can still see it — so their favourites list and any
+    /// bookmarked URLs continue to render.
     private async Task<bool> IsVisibleToCurrentUserAsync(Product product)
     {
         if (product.Status == ProductStatus.Live)
@@ -123,6 +131,10 @@ public class ProductsController : ControllerBase
         if (product.Status != ProductStatus.Sold)
         {
             return false;
+        }
+        if (product.InCollection)
+        {
+            return true;
         }
         string? userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(userIdStr, out Guid userId))

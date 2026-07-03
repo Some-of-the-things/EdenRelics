@@ -31,6 +31,9 @@
                 @if (product.imageUrl) {
                   <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
                 }
+                @if (!product.inStock) {
+                  <span class="home__featured-sold">Sold</span>
+                }
               </div>
               <div class="home__featured-body">
                 <h3 class="home__featured-name">{{ product.name }}</h3>

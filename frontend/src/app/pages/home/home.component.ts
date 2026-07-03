@@ -48,7 +48,7 @@ export class HomeComponent implements OnInit {
     if (!c) {
       return [];
     }
-    return orderedCollectionProducts(this.productStore.liveProducts(), collectionFeaturedSlugs(c));
+    return orderedCollectionProducts(this.productStore.liveOrSoldProducts(), collectionFeaturedSlugs(c));
   });
 
   subscribeToMailingList(): void {

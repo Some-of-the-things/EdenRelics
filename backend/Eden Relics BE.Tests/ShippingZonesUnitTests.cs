@@ -5,9 +5,9 @@ namespace Eden_Relics_BE.Tests;
 public class ShippingZonesUnitTests
 {
     [Fact]
-    public void GetShippingCost_Standard_Returns395()
+    public void GetShippingCost_Standard_IsFree()
     {
-        Assert.Equal(3.95m, ShippingZones.GetShippingCost("standard", null));
+        Assert.Equal(0m, ShippingZones.GetShippingCost("standard", null));
     }
 
     [Fact]
@@ -87,11 +87,13 @@ public class ShippingZonesUnitTests
     }
 
     [Fact]
-    public void AllZones_HavePositivePrice()
+    public void AllZones_HaveNonNegativePrice()
     {
+        // UK standard is intentionally free (£0); every other zone charges a
+        // positive rate. A negative price would be the real bug to catch.
         foreach (var zone in ShippingZones.All)
         {
-            Assert.True(zone.Price > 0, $"Zone {zone.Zone} has non-positive price");
+            Assert.True(zone.Price >= 0, $"Zone {zone.Zone} has a negative price");
         }
     }
 

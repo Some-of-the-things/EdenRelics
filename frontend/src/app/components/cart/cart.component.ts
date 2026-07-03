@@ -42,12 +42,12 @@ export class CartComponent implements OnInit {
 
   countries: ShippingCountry[] = [];
   shippingOptions: ShippingOption[] = [
-    { value: 'standard', label: 'Standard UK Delivery', price: 3.95, estimate: '3\u20135 working days' },
+    { value: 'standard', label: 'Standard UK Delivery', price: 0, estimate: '3\u20135 working days' },
     { value: 'express', label: 'Express UK Delivery', price: 6.95, estimate: '1\u20132 working days' },
   ];
 
   get shippingCost(): number {
-    return this.shippingOptions.find(o => o.value === this.shippingMethod)?.price ?? 3.95;
+    return this.shippingOptions.find(o => o.value === this.shippingMethod)?.price ?? 0;
   }
 
   get orderTotal(): number {
@@ -117,7 +117,7 @@ export class CartComponent implements OnInit {
     const country = this.shipping.country;
     if (country === 'GB') {
       this.shippingOptions = [
-        { value: 'standard', label: 'Standard UK Delivery', price: 3.95, estimate: '3\u20135 working days' },
+        { value: 'standard', label: 'Standard UK Delivery', price: 0, estimate: '3\u20135 working days' },
         { value: 'express', label: 'Express UK Delivery', price: 6.95, estimate: '1\u20132 working days' },
       ];
       if (this.shippingMethod !== 'standard' && this.shippingMethod !== 'express') {

@@ -32,6 +32,15 @@ public class Product : BaseEntity
     public List<string> AdditionalImageUrls { get; set; } = [];
     public List<string> VideoUrls { get; set; } = [];
     public ProductStatus Status { get; set; } = ProductStatus.Live;
+
+    /// <summary>
+    /// True when this product belongs to a curated collection. Collection members
+    /// stay publicly visible after they sell (shown as "Sold" on the collection
+    /// page and their own detail page) — every other sold product is hidden from
+    /// the public. Set by the collection publish flow.
+    /// </summary>
+    public bool InCollection { get; set; }
+
     public decimal? SalePrice { get; set; }
 
     /// <summary>When the current Price was set (for 28-day reduction rule compliance)</summary>

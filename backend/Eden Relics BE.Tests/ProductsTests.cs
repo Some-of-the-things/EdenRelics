@@ -827,6 +827,86 @@ public class ProductsTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    [Fact]
+    public async Task SoldProduct_InCollection_StaysVisibleToPublic()
+    {
+        HttpClient admin = _factory.CreateClient();
+        await RegisterAdmin(admin, _factory, "admin-coll-sold-visible@test.com");
+
+        HttpResponseMessage create = await admin.PostAsJsonAsync("/api/products", new
+        {
+            name = "Collection Sold Piece",
+            description = "Desc",
+            price = 120m,
+            era = "1970s",
+            category = "70s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/coll.webp",
+            inStock = true,
+            sku = "COLL-SOLD-1"
+        });
+        ProductResponse? created = await create.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.NotNull(created);
+
+        // Mark it a collection member (this is what keeps it visible once sold).
+        HttpResponseMessage publish = await admin.PostAsJsonAsync("/api/collections/publish", new
+        {
+            items = new[] { new { sku = "COLL-SOLD-1", slug = (string?)null } }
+        });
+        Assert.Equal(HttpStatusCode.OK, publish.StatusCode);
+
+        // Sell it.
+        HttpResponseMessage sell = await admin.PutAsJsonAsync($"/api/products/{created!.Id}", new { inStock = false });
+        Assert.Equal(HttpStatusCode.OK, sell.StatusCode);
+
+        // An unauthenticated visitor can still open its page and see it in the list.
+        HttpClient pub = _factory.CreateClient();
+        ProductResponse? viaId = await pub.GetFromJsonAsync<ProductResponse>($"/api/products/{created.Id}", JsonOptions);
+        Assert.NotNull(viaId);
+        Assert.False(viaId.InStock);
+
+        List<ProductResponse>? all = await pub.GetFromJsonAsync<List<ProductResponse>>("/api/products", JsonOptions);
+        Assert.NotNull(all);
+        Assert.Contains(all, p => p.Id == created.Id);
+    }
+
+    [Fact]
+    public async Task SoldProduct_NotInCollection_HiddenFromPublic()
+    {
+        HttpClient admin = _factory.CreateClient();
+        await RegisterAdmin(admin, _factory, "admin-plain-sold-hidden@test.com");
+
+        HttpResponseMessage create = await admin.PostAsJsonAsync("/api/products", new
+        {
+            name = "Plain Sold Piece",
+            description = "Desc",
+            price = 90m,
+            era = "1980s",
+            category = "80s",
+            size = "M",
+            condition = "good",
+            imageUrl = "https://example.com/plain.webp",
+            inStock = true,
+            sku = "PLAIN-SOLD-1"
+        });
+        ProductResponse? created = await create.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        Assert.NotNull(created);
+
+        // Sell it without ever adding it to a collection.
+        HttpResponseMessage sell = await admin.PutAsJsonAsync($"/api/products/{created!.Id}", new { inStock = false });
+        Assert.Equal(HttpStatusCode.OK, sell.StatusCode);
+
+        // The public can no longer see it, by id or in the list.
+        HttpClient pub = _factory.CreateClient();
+        HttpResponseMessage viaId = await pub.GetAsync($"/api/products/{created.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, viaId.StatusCode);
+
+        List<ProductResponse>? all = await pub.GetFromJsonAsync<List<ProductResponse>>("/api/products", JsonOptions);
+        Assert.NotNull(all);
+        Assert.DoesNotContain(all, p => p.Id == created.Id);
+    }
+
     private static MultipartFormDataContent CreateImageUploadContent(string fileName)
     {
         using Image<Rgba32> image = new(100, 100);
