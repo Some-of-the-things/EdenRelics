@@ -75,7 +75,6 @@ public static class ShippingZones
             new("AE", "United Arab Emirates"),
             new("SA", "Saudi Arabia"),
             new("QA", "Qatar"),
-            new("IL", "Israel"),
         ]),
 
         new("rest-of-world", "Rest of World", "international", "10–21 working days", 18.95m,

@@ -58,7 +58,7 @@ public class OrderShippingTests : IClassFixture<ApiFactory>
     public async Task ShippingRate_MiddleEast_CorrectPrice()
     {
         HttpClient client = _factory.CreateClient();
-        string[] meCountries = ["AE", "SA", "QA", "IL"];
+        string[] meCountries = ["AE", "SA", "QA"];
 
         foreach (string code in meCountries)
         {
