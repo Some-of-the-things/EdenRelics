@@ -58,12 +58,15 @@ export class CollectionPageComponent {
         }
         return;
       }
-      // Avoid re-emitting tags for the same collection on every CD cycle.
-      if (this.seoApplied() === c.slug) {
-        return;
+      // Meta tags depend only on the collection — apply once per slug.
+      if (this.seoApplied() !== c.slug) {
+        this.seoApplied.set(c.slug);
+        this.applyMeta(c);
       }
-      this.seoApplied.set(c.slug);
-      this.applySeo(c);
+      // The JSON-LD ItemList depends on the resolved products, which populate
+      // after this effect first runs. Re-emit reactively as they load so the
+      // list isn't frozen empty from the initial (pre-hydration) pass.
+      this.applyJsonLd(c, this.products());
     });
   }
 
@@ -75,41 +78,49 @@ export class CollectionPageComponent {
     this.seo.updateTags({ title: 'Collection not found', noIndex: true });
   }
 
-  private applySeo(c: CollectionProfile): void {
+  private applyMeta(c: CollectionProfile): void {
     this.seo.updateTags({
       title: c.metaTitle,
       description: c.metaDescription,
       url: `/collections/${c.slug}`,
     });
+  }
 
-    const products = orderedCollectionProducts(this.productStore.liveProducts(), collectionProductSlugs(c));
+  private applyJsonLd(c: CollectionProfile, products: readonly Product[]): void {
     const pageUrl = `https://edenrelics.co.uk/collections/${c.slug}`;
+    const collectionPage: Record<string, unknown> = {
+      '@type': 'CollectionPage',
+      name: c.name,
+      description: c.intro,
+      url: pageUrl,
+      isPartOf: {
+        '@type': 'WebSite',
+        '@id': 'https://edenrelics.co.uk/#website',
+        name: 'Eden Relics',
+        url: 'https://edenrelics.co.uk',
+      },
+    };
+
+    // Only attach the ItemList once products have resolved — an empty list
+    // would otherwise be served to crawlers as a thin, item-less page.
+    if (products.length > 0) {
+      collectionPage['mainEntity'] = {
+        '@type': 'ItemList',
+        numberOfItems: products.length,
+        itemListElement: products.map((p, idx) => ({
+          '@type': 'ListItem',
+          position: idx + 1,
+          url: `https://edenrelics.co.uk/product/${p.slug || p.id}`,
+          name: p.name,
+          image: p.imageUrl,
+        })),
+      };
+    }
+
     this.seo.setJsonLd({
       '@context': 'https://schema.org',
       '@graph': [
-        {
-          '@type': 'CollectionPage',
-          name: c.name,
-          description: c.intro,
-          url: pageUrl,
-          isPartOf: {
-            '@type': 'WebSite',
-            '@id': 'https://edenrelics.co.uk/#website',
-            name: 'Eden Relics',
-            url: 'https://edenrelics.co.uk',
-          },
-          mainEntity: {
-            '@type': 'ItemList',
-            numberOfItems: products.length,
-            itemListElement: products.map((p, idx) => ({
-              '@type': 'ListItem',
-              position: idx + 1,
-              url: `https://edenrelics.co.uk/product/${p.slug || p.id}`,
-              name: p.name,
-              image: p.imageUrl,
-            })),
-          },
-        },
+        collectionPage,
         {
           '@type': 'BreadcrumbList',
           itemListElement: [
