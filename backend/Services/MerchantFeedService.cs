@@ -47,10 +47,12 @@ public partial class MerchantFeedService(IRepository<Product> products) : IMerch
     [
         "powder blue", "forest green", "navy blue", "off white", "dusky pink",
         "black", "white", "cream", "ivory", "navy", "blue", "teal", "green",
-        "olive", "sage", "khaki", "burgundy", "maroon", "red", "coral", "pink",
-        "purple", "lilac", "lavender", "plum", "yellow", "mustard", "orange",
-        "brown", "chocolate", "tan", "beige", "camel", "grey", "gray", "gold",
-        "silver", "turquoise", "peach", "rust", "wine",
+        "olive", "sage", "khaki", "burgundy", "maroon", "crimson", "scarlet",
+        "raspberry", "red", "coral", "magenta", "pink", "purple", "aubergine",
+        "lilac", "lavender", "plum", "yellow", "mustard", "amber", "ochre",
+        "orange", "terracotta", "rust", "brown", "chocolate", "tan", "taupe",
+        "beige", "ecru", "camel", "charcoal", "grey", "gray", "gold", "silver",
+        "turquoise", "emerald", "jade", "indigo", "peach", "wine",
     ];
 
     public async Task<string> BuildFeedXmlAsync()
@@ -121,11 +123,10 @@ public partial class MerchantFeedService(IRepository<Product> products) : IMerch
             xml.AppendLine($"      <g:size>{Escape(product.Size)}</g:size>");
         }
 
-        string? colour = DetectColour(product.Name);
-        if (colour is not null)
-        {
-            xml.AppendLine($"      <g:color>{Escape(colour)}</g:color>");
-        }
+        // color is a required attribute for UK apparel. Use the colour named in
+        // the title where we can spot one; otherwise the piece is a print or
+        // pattern, for which Multicolour is the accurate value.
+        xml.AppendLine($"      <g:color>{Escape(DetectColour(product.Name) ?? "Multicolour")}</g:color>");
 
         if (!string.IsNullOrWhiteSpace(product.Material))
         {
