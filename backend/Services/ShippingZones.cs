@@ -12,7 +12,7 @@ public static class ShippingZones
 {
     public static readonly List<ShippingZone> All =
     [
-        new("uk-standard", "Standard UK Delivery", "standard", "3–5 working days", 3.95m,
+        new("uk-standard", "Standard UK Delivery", "standard", "3–5 working days", 0m,
         [
             new("GB", "United Kingdom"),
         ]),
@@ -86,7 +86,7 @@ public static class ShippingZones
 
     public static decimal GetShippingCost(string? shippingMethod, string? country)
     {
-        if (shippingMethod is "standard") { return 3.95m; }
+        if (shippingMethod is "standard") { return 0m; } // Free standard UK shipping.
         if (shippingMethod is "express") { return 6.95m; }
 
         if (!string.IsNullOrWhiteSpace(country))

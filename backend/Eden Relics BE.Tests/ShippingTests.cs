@@ -55,12 +55,12 @@ public class ShippingTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task GetRate_UK_ReturnsStandardRate()
+    public async Task GetRate_UK_ReturnsFreeStandardShipping()
     {
         HttpClient client = _factory.CreateClient();
         ShippingRateResponse? rate = await client.GetFromJsonAsync<ShippingRateResponse>("/api/shipping/rate?country=GB", JsonOptions);
         Assert.NotNull(rate);
-        Assert.Equal(3.95m, rate.Price);
+        Assert.Equal(0m, rate.Price);
         Assert.Equal("standard", rate.Method);
     }
 
@@ -141,7 +141,7 @@ public class ShippingTests : IClassFixture<ApiFactory>
         HttpClient client = _factory.CreateClient();
         ShippingRateResponse? rate = await client.GetFromJsonAsync<ShippingRateResponse>("/api/shipping/rate?country=gb", JsonOptions);
         Assert.NotNull(rate);
-        Assert.Equal(3.95m, rate.Price);
+        Assert.Equal(0m, rate.Price);
     }
 
     private record ShippingRateResponse(string Zone, string Label, string DeliveryEstimate, decimal Price, string Method);

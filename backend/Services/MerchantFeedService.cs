@@ -21,7 +21,7 @@ public partial class MerchantFeedService(IRepository<Product> products) : IMerch
     // One shipping rate per destination country, sourced from ShippingZones so
     // the feed can never advertise a country (or price) checkout won't honour.
     // Deduped by country code, keeping the first (standard) rate — e.g. GB maps
-    // to the £3.95 standard rate, not the express one.
+    // to free standard UK shipping, not the £6.95 express rate.
     private static readonly IReadOnlyList<(string Country, decimal Price)> ShippingRates = BuildShippingRates();
 
     private static List<(string Country, decimal Price)> BuildShippingRates()

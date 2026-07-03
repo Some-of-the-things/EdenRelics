@@ -103,7 +103,7 @@
               <input type="radio" [(ngModel)]="shippingMethod" [value]="option.value" name="shippingMethod" />
               <span class="checkout__radio-label">
                 <span>{{ option.label }}<span class="checkout__radio-estimate"> ({{ option.estimate }})</span></span>
-                <span class="checkout__radio-price">{{ option.price | currency:'GBP' }}</span>
+                <span class="checkout__radio-price">{{ option.price === 0 ? 'Free' : (option.price | currency:'GBP') }}</span>
               </span>
             </label>
           }
@@ -168,7 +168,7 @@
         </div>
         <div class="checkout__summary-line">
           <span>Shipping</span>
-          <span>{{ shippingCost | currency:'GBP' }}</span>
+          <span>{{ shippingCost === 0 ? 'Free' : (shippingCost | currency:'GBP') }}</span>
         </div>
         <div class="checkout__summary-total">
           <span>Total</span>

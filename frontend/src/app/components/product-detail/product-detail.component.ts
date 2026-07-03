@@ -290,10 +290,10 @@ export class ProductDetailComponent {
                 : 'https://schema.org/OutOfStock',
               itemCondition: schemaCondition(product.condition),
               seller: { '@type': 'Organization', name: 'Eden Relics' },
-              // Domestic (UK) shipping — matches ShippingZones 'uk-standard'.
+              // Free standard UK shipping — matches ShippingZones 'uk-standard'.
               shippingDetails: {
                 '@type': 'OfferShippingDetails',
-                shippingRate: { '@type': 'MonetaryAmount', value: '3.95', currency: 'GBP' },
+                shippingRate: { '@type': 'MonetaryAmount', value: '0', currency: 'GBP' },
                 shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'GB' },
                 deliveryTime: {
                   '@type': 'ShippingDeliveryTime',
