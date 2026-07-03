@@ -18,6 +18,29 @@ public partial class MerchantFeedService(IRepository<Product> products) : IMerch
 {
     private const string BaseUrl = "https://edenrelics.co.uk";
 
+    // One shipping rate per destination country, sourced from ShippingZones so
+    // the feed can never advertise a country (or price) checkout won't honour.
+    // Deduped by country code, keeping the first (standard) rate — e.g. GB maps
+    // to the £3.95 standard rate, not the express one.
+    private static readonly IReadOnlyList<(string Country, decimal Price)> ShippingRates = BuildShippingRates();
+
+    private static List<(string Country, decimal Price)> BuildShippingRates()
+    {
+        List<(string, decimal)> rates = [];
+        HashSet<string> seen = [];
+        foreach (ShippingZone zone in ShippingZones.All)
+        {
+            foreach (ShippingCountry country in zone.Countries)
+            {
+                if (seen.Add(country.Code))
+                {
+                    rates.Add((country.Code, zone.Price));
+                }
+            }
+        }
+        return rates;
+    }
+
     // Google Shopping requires a real colour word for apparel. Ordered longest-first
     // so multi-word tells ("forest green") win over their single-word substring.
     private static readonly string[] ColourWords =
@@ -109,11 +132,13 @@ public partial class MerchantFeedService(IRepository<Product> products) : IMerch
             xml.AppendLine($"      <g:material>{Escape(product.Material)}</g:material>");
         }
 
-        xml.AppendLine("      <g:shipping>");
-        xml.AppendLine("        <g:country>GB</g:country>");
-        xml.AppendLine("        <g:service>Standard</g:service>");
-        xml.AppendLine("        <g:price>3.95 GBP</g:price>");
-        xml.AppendLine("      </g:shipping>");
+        foreach ((string country, decimal price) in ShippingRates)
+        {
+            xml.AppendLine("      <g:shipping>");
+            xml.AppendLine($"        <g:country>{country}</g:country>");
+            xml.AppendLine($"        <g:price>{Money(price)}</g:price>");
+            xml.AppendLine("      </g:shipping>");
+        }
         xml.AppendLine("    </item>");
     }
 
