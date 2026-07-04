@@ -59,8 +59,9 @@ public class AnalyticsTests : IClassFixture<ApiFactory>
     {
         HttpClient client = _factory.CreateClient();
 
-        // Unique path so assertions are independent of other tests sharing the in-memory DB.
-        string path = "/agg-" + Guid.NewGuid().ToString("N");
+        // Unique but real-route-shaped path (/product/:id) so it is recordable and still
+        // independent of other tests sharing the in-memory DB.
+        string path = "/product/agg-" + Guid.NewGuid().ToString("N");
 
         // Two human renders + one crawler render of the same page.
         Assert.Equal(HttpStatusCode.NoContent, (await client.SendAsync(Beacon(path, HumanUa, Secret))).StatusCode);
@@ -77,6 +78,25 @@ public class AnalyticsTests : IClassFixture<ApiFactory>
         Assert.NotNull(page);
         Assert.Equal(2, page!.Humans);
         Assert.Equal(1, page.Bots);
+    }
+
+    [Fact]
+    public async Task PageView_UnknownPath_IsAccepted_ButNotRecorded()
+    {
+        HttpClient client = _factory.CreateClient();
+
+        // A path that matches no real route (what the SPA serves from its "**" not-found
+        // route with a 200). The beacon is accepted (204) but must not create a row, so it
+        // can't be used to flood PageViewDaily with attacker-chosen paths.
+        string junk = "/not-a-real-route-" + Guid.NewGuid().ToString("N");
+        Assert.Equal(HttpStatusCode.NoContent, (await client.SendAsync(Beacon(junk, HumanUa, Secret))).StatusCode);
+
+        await RegisterAdmin(client, _factory, "analytics-junk-admin@test.com");
+        PageViewStatsResponse? stats = await client.GetFromJsonAsync<PageViewStatsResponse>(
+            "/api/seo/traffic/page-views?days=2&limit=500", JsonOptions);
+
+        Assert.NotNull(stats);
+        Assert.DoesNotContain(stats!.TopPages, p => p.Path == junk);
     }
 
     [Fact]
