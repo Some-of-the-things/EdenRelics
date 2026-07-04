@@ -17,18 +17,21 @@
       <p class="carehub__finder-intro">Pick a fabric and a problem for tailored guidance.</p>
 
       <div class="carehub__identify">
-        <label class="carehub__identify-btn">
+        <label class="carehub__identify-btn" for="carehub-photo">
           📷 Not sure of the fabric? Identify from a photo
-          <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhotoSelected($event)" hidden />
+          <!-- Visually hidden (sr-only) rather than `hidden` so it stays in the tab order
+               and is keyboard-operable; the label shows a focus ring via :focus-within. -->
+          <input id="carehub-photo" class="sr-only" type="file"
+                 accept="image/png,image/jpeg,image/webp" (change)="onPhotoSelected($event)" />
         </label>
         @if (identifyLoading()) {
-          <span class="carehub__identify-status">Analysing…</span>
+          <span class="carehub__identify-status" role="status" aria-live="polite">Analysing…</span>
         }
         @if (identifyError()) {
-          <span class="carehub__finder-error">{{ identifyError() }}</span>
+          <span class="carehub__finder-error" role="alert">{{ identifyError() }}</span>
         }
         @if (identifyResult(); as r) {
-          <div class="carehub__identify-result">
+          <div class="carehub__identify-result" role="status" aria-live="polite">
             <p class="carehub__identify-note">Best guesses (a photo can only get us so far — please double-check):</p>
             <ul>
               @for (g of r.guesses; track g.name) {
@@ -67,11 +70,11 @@
       </div>
 
       @if (finderError()) {
-        <p class="carehub__finder-error">{{ finderError() }}</p>
+        <p class="carehub__finder-error" role="alert">{{ finderError() }}</p>
       }
 
       @if (finderResult(); as r) {
-        <div class="carehub__finder-result">
+        <div class="carehub__finder-result" role="status" aria-live="polite">
           <h3>{{ r.issueName }} — {{ r.fabricName }}</h3>
           @if (!r.isGeneral && safetyLabel(r.safety)) {
             <span class="carehub__safety carehub__safety--{{ r.safety }}">{{ safetyLabel(r.safety) }}</span>
