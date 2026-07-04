@@ -1,10 +1,11 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { SeoService } from '../../services/seo.service';
 import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-security-report',
   templateUrl: './security-report.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './security-report.component.scss',
 })
 export class SecurityReportComponent implements OnInit {

@@ -1,4 +1,11 @@
-import { Component, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  OnInit,
+  PLATFORM_ID,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -20,6 +27,7 @@ interface BlogSummary {
   selector: 'app-blog-list',
   imports: [RouterLink, DatePipe],
   templateUrl: './blog-list.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './blog.component.scss',
 })
 export class BlogListComponent implements OnInit {

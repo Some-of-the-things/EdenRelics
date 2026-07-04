@@ -1,10 +1,11 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { SeoService } from '../../services/seo.service';
 import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-supply-chain-policy',
   templateUrl: './supply-chain-policy.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './privacy-policy.component.scss',
 })
 export class SupplyChainPolicyComponent implements OnInit {

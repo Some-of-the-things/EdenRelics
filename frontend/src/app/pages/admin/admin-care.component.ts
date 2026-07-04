@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -76,6 +76,7 @@ interface IssueDto {
   selector: 'app-admin-care',
   imports: [FormsModule, DatePipe],
   templateUrl: './admin-care.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './admin-care.component.scss',
 })
 export class AdminCareComponent implements OnInit {
@@ -130,24 +131,26 @@ export class AdminCareComponent implements OnInit {
     this.saving.set(true);
     this.error.set('');
     this.message.set('');
-    this.http.post<FabricDto | IssueDto>(`${this.api}/api/care/admin/${type}/${id}/generate`, {}).subscribe({
-      next: (updated) => {
-        if (type === 'fabric') {
-          this.fabric = updated as FabricDto;
-          this.dosText = (this.fabric.dos ?? []).join('\n');
-          this.dontsText = (this.fabric.donts ?? []).join('\n');
-        } else {
-          this.issue = updated as IssueDto;
-        }
-        this.saving.set(false);
-        this.message.set('AI draft generated — please review before publishing.');
-        this.loadWorklist();
-      },
-      error: () => {
-        this.saving.set(false);
-        this.error.set('Draft generation failed.');
-      },
-    });
+    this.http
+      .post<FabricDto | IssueDto>(`${this.api}/api/care/admin/${type}/${id}/generate`, {})
+      .subscribe({
+        next: (updated) => {
+          if (type === 'fabric') {
+            this.fabric = updated as FabricDto;
+            this.dosText = (this.fabric.dos ?? []).join('\n');
+            this.dontsText = (this.fabric.donts ?? []).join('\n');
+          } else {
+            this.issue = updated as IssueDto;
+          }
+          this.saving.set(false);
+          this.message.set('AI draft generated — please review before publishing.');
+          this.loadWorklist();
+        },
+        error: () => {
+          this.saving.set(false);
+          this.error.set('Draft generation failed.');
+        },
+      });
   }
 
   loadWorklist(): void {
@@ -199,7 +202,11 @@ export class AdminCareComponent implements OnInit {
       .subscribe({
         next: (g) => {
           if (g) {
-            this.guidanceForm = { safety: g.safety, shortAnswer: g.shortAnswer, specificMethod: g.specificMethod };
+            this.guidanceForm = {
+              safety: g.safety,
+              shortAnswer: g.shortAnswer,
+              specificMethod: g.specificMethod,
+            };
             this.guidanceStatus.set(g.status);
           } else {
             this.guidanceForm = { safety: 'Unknown', shortAnswer: '', specificMethod: '' };
@@ -237,7 +244,9 @@ export class AdminCareComponent implements OnInit {
 
   /** Review notes live on whichever record is being edited; proxy so the shared brief panel can bind. */
   get reviewNotesModel(): string {
-    return (this.editingType() === 'fabric' ? this.fabric?.reviewNotes : this.issue?.reviewNotes) ?? '';
+    return (
+      (this.editingType() === 'fabric' ? this.fabric?.reviewNotes : this.issue?.reviewNotes) ?? ''
+    );
   }
   set reviewNotesModel(value: string) {
     if (this.editingType() === 'fabric' && this.fabric) {
@@ -441,19 +450,48 @@ function lines(text: string): string[] {
 
 function blankFabric(): FabricDto {
   return {
-    id: '', slug: '', name: '', alsoKnownAs: [], targetKeywords: [], intro: '',
-    fiberContent: '', howToIdentify: '', washing: '', drying: '', ironing: '',
-    storing: '', vintageCautions: '', dos: [], donts: [], metaTitle: '',
-    metaDescription: '', status: 'Draft', reviewNotes: '', reviewedBy: null,
-    lastReviewedUtc: null, isPublished: false,
+    id: '',
+    slug: '',
+    name: '',
+    alsoKnownAs: [],
+    targetKeywords: [],
+    intro: '',
+    fiberContent: '',
+    howToIdentify: '',
+    washing: '',
+    drying: '',
+    ironing: '',
+    storing: '',
+    vintageCautions: '',
+    dos: [],
+    donts: [],
+    metaTitle: '',
+    metaDescription: '',
+    status: 'Draft',
+    reviewNotes: '',
+    reviewedBy: null,
+    lastReviewedUtc: null,
+    isPublished: false,
   };
 }
 
 function blankIssue(): IssueDto {
   return {
-    id: '', slug: '', name: '', alsoKnownAs: [], targetKeywords: [], causes: '',
-    generalMethod: '', whatNotToDo: '', whenToSeeAPro: '', metaTitle: '',
-    metaDescription: '', status: 'Draft', reviewNotes: '', reviewedBy: null,
-    lastReviewedUtc: null, isPublished: false,
+    id: '',
+    slug: '',
+    name: '',
+    alsoKnownAs: [],
+    targetKeywords: [],
+    causes: '',
+    generalMethod: '',
+    whatNotToDo: '',
+    whenToSeeAPro: '',
+    metaTitle: '',
+    metaDescription: '',
+    status: 'Draft',
+    reviewNotes: '',
+    reviewedBy: null,
+    lastReviewedUtc: null,
+    isPublished: false,
   };
 }

@@ -1,5 +1,12 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  signal,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import {
   AccountingService,
   AccountingSnapshot,
@@ -8,8 +15,18 @@ import {
 } from '../../services/accounting.service';
 
 const MONTH_LABELS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /**
@@ -21,6 +38,7 @@ const MONTH_LABELS = [
   selector: 'app-admin-accounting',
   imports: [DatePipe],
   templateUrl: './admin-accounting.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './admin-accounting.component.scss',
 })
 export class AdminAccountingComponent implements OnInit {
@@ -62,10 +80,14 @@ export class AdminAccountingComponent implements OnInit {
 
   protected exportCsv(): void {
     const snap = this.snapshot();
-    if (!snap) { return; }
+    if (!snap) {
+      return;
+    }
     const rows: string[] = ['Year,Month,Revenue,Expenses,Net'];
     for (const m of snap.months) {
-      rows.push([m.year, m.month, m.revenue.toFixed(2), m.expenses.toFixed(2), m.net.toFixed(2)].join(','));
+      rows.push(
+        [m.year, m.month, m.revenue.toFixed(2), m.expenses.toFixed(2), m.net.toFixed(2)].join(','),
+      );
     }
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

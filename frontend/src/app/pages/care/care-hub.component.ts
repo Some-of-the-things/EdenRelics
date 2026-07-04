@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -42,6 +42,7 @@ interface IdentifyResult {
   selector: 'app-care-hub',
   imports: [RouterLink, FormsModule],
   templateUrl: './care-hub.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './care-hub.component.scss',
 })
 export class CareHubComponent implements OnInit {
@@ -102,7 +103,10 @@ export class CareHubComponent implements OnInit {
       const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
       const mediaType = file.type || 'image/jpeg';
       this.http
-        .post<IdentifyResult>(`${environment.apiUrl}/api/care/identify`, { imageBase64: base64, mediaType })
+        .post<IdentifyResult>(`${environment.apiUrl}/api/care/identify`, {
+          imageBase64: base64,
+          mediaType,
+        })
         .subscribe({
           next: (r) => {
             this.identifyResult.set(r);
@@ -164,7 +168,12 @@ export class CareHubComponent implements OnInit {
           '@type': 'BreadcrumbList',
           itemListElement: [
             { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://edenrelics.co.uk' },
-            { '@type': 'ListItem', position: 2, name: 'Vintage Care', item: 'https://edenrelics.co.uk/care' },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: 'Vintage Care',
+              item: 'https://edenrelics.co.uk/care',
+            },
           ],
         },
       ],

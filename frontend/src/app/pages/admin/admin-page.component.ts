@@ -1,4 +1,13 @@
-import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import {
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  OnInit,
+  signal,
+  ViewChild,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe } from '@angular/common';
@@ -7,14 +16,17 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
 import { Product, ProductStatus } from '../../models/product.model';
-import { filterAdminProducts, productStatusLabel, resolveProductStatus, sortAdminProducts, ProductSort } from '../../utils/product-status';
+import {
+  filterAdminProducts,
+  productStatusLabel,
+  resolveProductStatus,
+  sortAdminProducts,
+  ProductSort,
+} from '../../utils/product-status';
 import { SeoService } from '../../services/seo.service';
 import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
-import {
-  OrderAdminService,
-  AdminOrder,
-} from '../../services/order-admin.service';
+import { OrderAdminService, AdminOrder } from '../../services/order-admin.service';
 import { environment } from '../../../environments/environment';
 import { BrandingService, Branding } from '../../services/branding.service';
 import { ContentService } from '../../services/content.service';
@@ -76,8 +88,21 @@ interface AccountsSummary {
   totalOrders: number;
   totalItemsSold: number;
   averageOrderValue: number;
-  revenueByMonth: { month: string; revenue: number; cost: number; profit: number; orders: number; itemsSold: number }[];
-  revenueByCategory: { category: string; revenue: number; cost: number; profit: number; itemsSold: number }[];
+  revenueByMonth: {
+    month: string;
+    revenue: number;
+    cost: number;
+    profit: number;
+    orders: number;
+    itemsSold: number;
+  }[];
+  revenueByCategory: {
+    category: string;
+    revenue: number;
+    cost: number;
+    profit: number;
+    itemsSold: number;
+  }[];
   revenueByEra: { era: string; revenue: number; cost: number; profit: number; itemsSold: number }[];
   inventory: { inStock: number; outOfStock: number; retailValue: number; costValue: number };
   ordersByStatus: { status: string; count: number }[];
@@ -351,8 +376,18 @@ interface PageViewStats {
 
 @Component({
   selector: 'app-admin-page',
-  imports: [FormsModule, CurrencyPipe, TitleCasePipe, DatePipe, DecimalPipe, AdminCalendarComponent, AdminAccountingComponent, AdminCareComponent],
+  imports: [
+    FormsModule,
+    CurrencyPipe,
+    TitleCasePipe,
+    DatePipe,
+    DecimalPipe,
+    AdminCalendarComponent,
+    AdminAccountingComponent,
+    AdminCareComponent,
+  ],
   templateUrl: './admin-page.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './admin-page.component.scss',
 })
 export class AdminPageComponent implements OnInit {
@@ -372,7 +407,23 @@ export class AdminPageComponent implements OnInit {
   private readonly sanitizer = inject(DomSanitizer);
 
   @ViewChild('descriptionEditor') descriptionEditor!: ElementRef<HTMLElement>;
-  readonly activeTab = signal<'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews' | 'signature' | 'care'>('products');
+  readonly activeTab = signal<
+    | 'products'
+    | 'orders'
+    | 'users'
+    | 'finance'
+    | 'accounting'
+    | 'calendar'
+    | 'seo'
+    | 'branding'
+    | 'content'
+    | 'marketplace'
+    | 'blog'
+    | 'offsite-sales'
+    | 'reviews'
+    | 'signature'
+    | 'care'
+  >('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
@@ -408,7 +459,9 @@ export class AdminPageComponent implements OnInit {
     </td>
   </tr>
 </table>`;
-  readonly emailSignaturePreview: SafeHtml = this.sanitizer.bypassSecurityTrustHtml(this.emailSignatureHtml);
+  readonly emailSignaturePreview: SafeHtml = this.sanitizer.bypassSecurityTrustHtml(
+    this.emailSignatureHtml,
+  );
   readonly signatureCopied = signal(false);
 
   // Orders
@@ -462,7 +515,9 @@ export class AdminPageComponent implements OnInit {
     this.reviewsModerating.set(id);
     this.reviewsService.approve(id).subscribe({
       next: () => {
-        this.reviews.update((rs) => rs.filter((r) => r.id !== id || this.reviewsFilter() === 'all'));
+        this.reviews.update((rs) =>
+          rs.filter((r) => r.id !== id || this.reviewsFilter() === 'all'),
+        );
         this.reviewsModerating.set(null);
         if (this.reviewsFilter() !== 'all') {
           this.loadReviews();
@@ -489,9 +544,15 @@ export class AdminPageComponent implements OnInit {
 
   // Product stats
   readonly totalItems = computed(() => this.store.products().length);
-  readonly itemsForSale = computed(() => this.store.products().filter((p) => this.resolveStatus(p) === 'live').length);
-  readonly itemsSold = computed(() => this.store.products().filter((p) => this.resolveStatus(p) === 'sold').length);
-  readonly itemsStock = computed(() => this.store.products().filter((p) => this.resolveStatus(p) === 'stock').length);
+  readonly itemsForSale = computed(
+    () => this.store.products().filter((p) => this.resolveStatus(p) === 'live').length,
+  );
+  readonly itemsSold = computed(
+    () => this.store.products().filter((p) => this.resolveStatus(p) === 'sold').length,
+  );
+  readonly itemsStock = computed(
+    () => this.store.products().filter((p) => this.resolveStatus(p) === 'stock').length,
+  );
 
   // Product list filters
   readonly productSearch = signal('');
@@ -500,8 +561,8 @@ export class AdminPageComponent implements OnInit {
   readonly filteredProducts = computed(() =>
     sortAdminProducts(
       filterAdminProducts(this.store.products(), this.productSearch(), this.productStatusFilter()),
-      this.productSort()
-    )
+      this.productSort(),
+    ),
   );
 
   resolveStatus(product: Product): ProductStatus {
@@ -559,7 +620,12 @@ export class AdminPageComponent implements OnInit {
     {
       title: 'Header Banner',
       fields: [
-        { key: 'header.banner', label: 'Announcement (leave blank to hide)', type: 'text', fallback: 'Free shipping on UK orders' },
+        {
+          key: 'header.banner',
+          label: 'Announcement (leave blank to hide)',
+          type: 'text',
+          fallback: 'Free shipping on UK orders',
+        },
       ],
     },
     {
@@ -573,109 +639,259 @@ export class AdminPageComponent implements OnInit {
     {
       title: 'About Section',
       fields: [
-        { key: 'home.about.title', label: 'Section Title', type: 'text', fallback: 'Why Eden Relics?' },
-        { key: 'home.about.card1.title', label: 'Card 1 Title', type: 'text', fallback: 'Authentically Vintage' },
+        {
+          key: 'home.about.title',
+          label: 'Section Title',
+          type: 'text',
+          fallback: 'Why Eden Relics?',
+        },
+        {
+          key: 'home.about.card1.title',
+          label: 'Card 1 Title',
+          type: 'text',
+          fallback: 'Authentically Vintage',
+        },
         { key: 'home.about.card1.text', label: 'Card 1 Text', type: 'textarea' },
-        { key: 'home.about.card2.title', label: 'Card 2 Title', type: 'text', fallback: 'Quality Assured' },
+        {
+          key: 'home.about.card2.title',
+          label: 'Card 2 Title',
+          type: 'text',
+          fallback: 'Quality Assured',
+        },
         { key: 'home.about.card2.text', label: 'Card 2 Text', type: 'textarea' },
-        { key: 'home.about.card3.title', label: 'Card 3 Title', type: 'text', fallback: 'Sustainable Fashion' },
+        {
+          key: 'home.about.card3.title',
+          label: 'Card 3 Title',
+          type: 'text',
+          fallback: 'Sustainable Fashion',
+        },
         { key: 'home.about.card3.text', label: 'Card 3 Text', type: 'textarea' },
-        { key: 'home.about.card4.title', label: 'Card 4 Title', type: 'text', fallback: 'Spanning the Decades' },
+        {
+          key: 'home.about.card4.title',
+          label: 'Card 4 Title',
+          type: 'text',
+          fallback: 'Spanning the Decades',
+        },
         { key: 'home.about.card4.text', label: 'Card 4 Text', type: 'textarea' },
       ],
     },
     {
       title: 'Footer',
       fields: [
-        { key: 'footer.tagline', label: 'Tagline', type: 'text', fallback: 'Carefully sourced & lovingly preserved vintage clothing.' },
-        { key: 'footer.company.line1', label: 'Company Line 1', type: 'text', fallback: 'Company No. 17153907' },
-        { key: 'footer.company.line2', label: 'Company Line 2', type: 'text', fallback: 'Registered in England and Wales' },
+        {
+          key: 'footer.tagline',
+          label: 'Tagline',
+          type: 'text',
+          fallback: 'Carefully sourced & lovingly preserved vintage clothing.',
+        },
+        {
+          key: 'footer.company.line1',
+          label: 'Company Line 1',
+          type: 'text',
+          fallback: 'Company No. 17153907',
+        },
+        {
+          key: 'footer.company.line2',
+          label: 'Company Line 2',
+          type: 'text',
+          fallback: 'Registered in England and Wales',
+        },
         { key: 'footer.company.line3', label: 'Company Line 3', type: 'text' },
-        { key: 'footer.contact.email', label: 'Email', type: 'text', fallback: 'edenrelics@dcp-net.com' },
-        { key: 'footer.contact.phone', label: 'Phone', type: 'text', fallback: '+44 (0) 7454 905173' },
-        { key: 'footer.contact.address', label: 'Address', type: 'textarea', fallback: 'EDEN RELICS LTD\n30 Vane Close\nNorwich, NR7 0US\nUnited Kingdom' },
+        {
+          key: 'footer.contact.email',
+          label: 'Email',
+          type: 'text',
+          fallback: 'edenrelics@dcp-net.com',
+        },
+        {
+          key: 'footer.contact.phone',
+          label: 'Phone',
+          type: 'text',
+          fallback: '+44 (0) 7454 905173',
+        },
+        {
+          key: 'footer.contact.address',
+          label: 'Address',
+          type: 'textarea',
+          fallback: 'EDEN RELICS LTD\n30 Vane Close\nNorwich, NR7 0US\nUnited Kingdom',
+        },
       ],
     },
     {
       title: 'Contact Page',
       fields: [
         { key: 'contact.title', label: 'Title', type: 'text', fallback: 'Get in Touch' },
-        { key: 'contact.subtitle', label: 'Subtitle', type: 'text', fallback: 'Have a question or want to know more? Drop us a message.' },
+        {
+          key: 'contact.subtitle',
+          label: 'Subtitle',
+          type: 'text',
+          fallback: 'Have a question or want to know more? Drop us a message.',
+        },
       ],
     },
     {
       title: 'About Page',
       fields: [
-        { key: 'page.about.meta.title', label: 'SEO Title (browser tab + search results)', type: 'text', fallback: 'About Eden Relics — Lovingly Handpicked Vintage' },
-        { key: 'page.about.meta.description', label: 'SEO Meta Description (search results snippet)', type: 'textarea', fallback: 'Eden Relics is a curated vintage shop in Norwich, UK, specialising in 1970s, 80s, and 90s dresses — personally sourced, photographed, and chosen for their quality and character.' },
-        { key: 'page.about.title', label: 'Page Title (H1)', type: 'text', fallback: 'Lovingly handpicked vintage' },
-        { key: 'page.about.content', label: 'Body Content (HTML)', type: 'html', fallback: '<p>Eden Relics is a curated vintage shop based in Norwich, UK, specialising in dresses from the 1970s, 80s, and 90s — the kind that were made to last, cut with intention, and worn by someone who loved them first.</p>\n<p>Every piece is personally sourced and chosen for its quality, character, and the way it moves. Wherever possible the dresses are modelled — by one of us or a friend — so you can see how they actually fall on a real body. For pieces that don\'t suit a modelled shot, we photograph them carefully on a mannequin so nothing is left to guesswork.</p>\n<p>We started Eden Relics because we believe in buying less and buying better. Fast fashion has a cost the price tag doesn\'t show — in waste, in craft, in the stories we throw away. Vintage is the alternative: beautiful things that already exist, waiting to be worn again.</p>\n<p>Every purchase here is an act of intention. We hope you find something that feels like it was always meant to be yours.</p>' },
-        { key: 'page.about.founders.title', label: 'Founders Section Heading', type: 'text', fallback: 'Meet the founders' },
-        { key: 'page.about.founders.content', label: 'Founders Section Content (HTML)', type: 'html', fallback: '<p>Eden Relics is run by Teodora Carter and Peter Carter, a couple based in Norwich. We started it together because we believe in buying less and buying better — giving a well-made vintage piece a second life instead of letting it disappear.</p>\n<p>Teodora leads the sourcing, styling, and photography — the eye behind which pieces make the cut. Peter builds and runs the website and looks after the behind-the-scenes side of the shop. Every dress on the site has been chosen, checked, and photographed by the two of us, here in Norwich.</p>' },
-        { key: 'page.about.signature', label: 'Signature', type: 'text', fallback: 'Teodora Carter & Peter Carter' },
-        { key: 'page.about.jsonld.description', label: 'Structured Data — Organisation Description (one sentence, used by Google for the business)', type: 'textarea', fallback: 'A curated vintage shop based in Norwich, UK, specialising in dresses from the 1970s, 80s, and 90s.' },
+        {
+          key: 'page.about.meta.title',
+          label: 'SEO Title (browser tab + search results)',
+          type: 'text',
+          fallback: 'About Eden Relics — Lovingly Handpicked Vintage',
+        },
+        {
+          key: 'page.about.meta.description',
+          label: 'SEO Meta Description (search results snippet)',
+          type: 'textarea',
+          fallback:
+            'Eden Relics is a curated vintage shop in Norwich, UK, specialising in 1970s, 80s, and 90s dresses — personally sourced, photographed, and chosen for their quality and character.',
+        },
+        {
+          key: 'page.about.title',
+          label: 'Page Title (H1)',
+          type: 'text',
+          fallback: 'Lovingly handpicked vintage',
+        },
+        {
+          key: 'page.about.content',
+          label: 'Body Content (HTML)',
+          type: 'html',
+          fallback:
+            "<p>Eden Relics is a curated vintage shop based in Norwich, UK, specialising in dresses from the 1970s, 80s, and 90s — the kind that were made to last, cut with intention, and worn by someone who loved them first.</p>\n<p>Every piece is personally sourced and chosen for its quality, character, and the way it moves. Wherever possible the dresses are modelled — by one of us or a friend — so you can see how they actually fall on a real body. For pieces that don't suit a modelled shot, we photograph them carefully on a mannequin so nothing is left to guesswork.</p>\n<p>We started Eden Relics because we believe in buying less and buying better. Fast fashion has a cost the price tag doesn't show — in waste, in craft, in the stories we throw away. Vintage is the alternative: beautiful things that already exist, waiting to be worn again.</p>\n<p>Every purchase here is an act of intention. We hope you find something that feels like it was always meant to be yours.</p>",
+        },
+        {
+          key: 'page.about.founders.title',
+          label: 'Founders Section Heading',
+          type: 'text',
+          fallback: 'Meet the founders',
+        },
+        {
+          key: 'page.about.founders.content',
+          label: 'Founders Section Content (HTML)',
+          type: 'html',
+          fallback:
+            '<p>Eden Relics is run by Teodora Carter and Peter Carter, a couple based in Norwich. We started it together because we believe in buying less and buying better — giving a well-made vintage piece a second life instead of letting it disappear.</p>\n<p>Teodora leads the sourcing, styling, and photography — the eye behind which pieces make the cut. Peter builds and runs the website and looks after the behind-the-scenes side of the shop. Every dress on the site has been chosen, checked, and photographed by the two of us, here in Norwich.</p>',
+        },
+        {
+          key: 'page.about.signature',
+          label: 'Signature',
+          type: 'text',
+          fallback: 'Teodora Carter & Peter Carter',
+        },
+        {
+          key: 'page.about.jsonld.description',
+          label:
+            'Structured Data — Organisation Description (one sentence, used by Google for the business)',
+          type: 'textarea',
+          fallback:
+            'A curated vintage shop based in Norwich, UK, specialising in dresses from the 1970s, 80s, and 90s.',
+        },
       ],
     },
     {
       title: 'Privacy Policy',
       fields: [
-        { key: 'policy.privacy.updated', label: 'Last Updated', type: 'text', fallback: 'March 2026' },
+        {
+          key: 'policy.privacy.updated',
+          label: 'Last Updated',
+          type: 'text',
+          fallback: 'March 2026',
+        },
         { key: 'policy.privacy.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Returns Policy',
       fields: [
-        { key: 'policy.returns.updated', label: 'Last Updated', type: 'text', fallback: 'March 2026' },
+        {
+          key: 'policy.returns.updated',
+          label: 'Last Updated',
+          type: 'text',
+          fallback: 'March 2026',
+        },
         { key: 'policy.returns.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Supply Chain Policy',
       fields: [
-        { key: 'policy.supply-chain.updated', label: 'Last Updated', type: 'text', fallback: 'March 2026' },
+        {
+          key: 'policy.supply-chain.updated',
+          label: 'Last Updated',
+          type: 'text',
+          fallback: 'March 2026',
+        },
         { key: 'policy.supply-chain.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Modern Slavery Policy',
       fields: [
-        { key: 'policy.modern-slavery.updated', label: 'Last Updated', type: 'text', fallback: 'March 2026' },
+        {
+          key: 'policy.modern-slavery.updated',
+          label: 'Last Updated',
+          type: 'text',
+          fallback: 'March 2026',
+        },
         { key: 'policy.modern-slavery.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Terms & Conditions',
       fields: [
-        { key: 'policy.terms.updated', label: 'Last Updated', type: 'text', fallback: 'April 2026' },
+        {
+          key: 'policy.terms.updated',
+          label: 'Last Updated',
+          type: 'text',
+          fallback: 'April 2026',
+        },
         { key: 'policy.terms.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Cookie Policy',
       fields: [
-        { key: 'policy.cookies.updated', label: 'Last Updated', type: 'text', fallback: 'April 2026' },
+        {
+          key: 'policy.cookies.updated',
+          label: 'Last Updated',
+          type: 'text',
+          fallback: 'April 2026',
+        },
         { key: 'policy.cookies.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Latest Security Report',
       fields: [
-        { key: 'report.security.updated', label: 'Last Updated', type: 'text', fallback: 'April 2026' },
+        {
+          key: 'report.security.updated',
+          label: 'Last Updated',
+          type: 'text',
+          fallback: 'April 2026',
+        },
         { key: 'report.security.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Accessibility Report',
       fields: [
-        { key: 'report.accessibility.updated', label: 'Last Updated', type: 'text', fallback: 'April 2026' },
+        {
+          key: 'report.accessibility.updated',
+          label: 'Last Updated',
+          type: 'text',
+          fallback: 'April 2026',
+        },
         { key: 'report.accessibility.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
     {
       title: 'Compliance Report',
       fields: [
-        { key: 'report.compliance.updated', label: 'Last Updated', type: 'text', fallback: 'April 2026' },
+        {
+          key: 'report.compliance.updated',
+          label: 'Last Updated',
+          type: 'text',
+          fallback: 'April 2026',
+        },
         { key: 'report.compliance.content', label: 'Content (HTML)', type: 'html' },
       ],
     },
@@ -683,10 +899,19 @@ export class AdminPageComponent implements OnInit {
 
   // Branding
   brandingForm: Branding = {
-    logoUrl: null, bgPrimary: '#F5F0E6', bgSecondary: '#EAE0CC', bgCard: '#FBF8F1',
-    bgDark: '#1C1510', textPrimary: '#2E1A0E', textSecondary: '#5C3D1E',
-    textMuted: '#6E4A22', textInverse: '#F5F0E6', accent: '#9B4A1E',
-    accentHover: '#7A3A16', fontDisplay: 'Playfair Display', fontBody: 'EB Garamond',
+    logoUrl: null,
+    bgPrimary: '#F5F0E6',
+    bgSecondary: '#EAE0CC',
+    bgCard: '#FBF8F1',
+    bgDark: '#1C1510',
+    textPrimary: '#2E1A0E',
+    textSecondary: '#5C3D1E',
+    textMuted: '#6E4A22',
+    textInverse: '#F5F0E6',
+    accent: '#9B4A1E',
+    accentHover: '#7A3A16',
+    fontDisplay: 'Playfair Display',
+    fontBody: 'EB Garamond',
   };
   readonly brandingSaving = signal(false);
   readonly brandingSuccess = signal('');
@@ -722,11 +947,10 @@ export class AdminPageComponent implements OnInit {
   });
 
   private luminance(hex: string): number {
-    const rgb = [hex.slice(1, 3), hex.slice(3, 5), hex.slice(5, 7)]
-      .map(c => {
-        const v = parseInt(c, 16) / 255;
-        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-      });
+    const rgb = [hex.slice(1, 3), hex.slice(3, 5), hex.slice(5, 7)].map((c) => {
+      const v = parseInt(c, 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
     return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
   }
 
@@ -745,7 +969,9 @@ export class AdminPageComponent implements OnInit {
 
   private confirmLargeImageUpload(file: File, warnBytes: number): boolean {
     if (file.size > AdminPageComponent.MAX_UPLOAD_BYTES) {
-      alert(`"${file.name}" is over the ${AdminPageComponent.MAX_UPLOAD_DISPLAY} upload maximum and cannot be uploaded.`);
+      alert(
+        `"${file.name}" is over the ${AdminPageComponent.MAX_UPLOAD_DISPLAY} upload maximum and cannot be uploaded.`,
+      );
       return false;
     }
     if (file.size <= warnBytes) {
@@ -753,33 +979,88 @@ export class AdminPageComponent implements OnInit {
     }
     const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
     return confirm(
-      `"${file.name}" is ${sizeMb} MB. It will be resized to fit our display dimensions, which may reduce image quality. For best results, we recommend resizing it manually before uploading.\n\nContinue with the upload?`
+      `"${file.name}" is ${sizeMb} MB. It will be resized to fit our display dimensions, which may reduce image quality. For best results, we recommend resizing it manually before uploading.\n\nContinue with the upload?`,
     );
   }
 
   readonly fontOptions = [
-    'Playfair Display', 'EB Garamond', 'Cinzel Decorative', 'Work Sans', 'Inter',
-    'Lora', 'Merriweather', 'Montserrat', 'Open Sans', 'Poppins', 'Raleway', 'Roboto',
-    'Source Sans 3', 'Nunito', 'PT Serif', 'Crimson Text', 'Libre Baskerville',
-    'DM Sans', 'Outfit', 'Cormorant Garamond', 'Josefin Sans',
+    'Playfair Display',
+    'EB Garamond',
+    'Cinzel Decorative',
+    'Work Sans',
+    'Inter',
+    'Lora',
+    'Merriweather',
+    'Montserrat',
+    'Open Sans',
+    'Poppins',
+    'Raleway',
+    'Roboto',
+    'Source Sans 3',
+    'Nunito',
+    'PT Serif',
+    'Crimson Text',
+    'Libre Baskerville',
+    'DM Sans',
+    'Outfit',
+    'Cormorant Garamond',
+    'Josefin Sans',
   ];
 
   // Blog
-  readonly blogPosts = signal<{ id: string; title: string; slug: string; published: boolean; publishedAtUtc: string | null; createdAtUtc: string }[]>([]);
+  readonly blogPosts = signal<
+    {
+      id: string;
+      title: string;
+      slug: string;
+      published: boolean;
+      publishedAtUtc: string | null;
+      createdAtUtc: string;
+    }[]
+  >([]);
   readonly blogLoading = signal(false);
   readonly showBlogForm = signal(false);
   readonly editingBlogId = signal<string | null>(null);
   readonly blogUploading = signal(false);
   readonly blogError = signal('');
   readonly blogSuccess = signal('');
-  blogForm = { title: '', content: '', excerpt: '', featuredImageUrl: '', author: 'Teodora Carter', published: false };
+  blogForm = {
+    title: '',
+    content: '',
+    excerpt: '',
+    featuredImageUrl: '',
+    author: 'Teodora Carter',
+    published: false,
+  };
 
   // Marketplace
-  readonly pendingRemovals = signal<{ listingId: string; productId: string; productName: string; platform: string; externalUrl: string | null }[]>([]);
-  readonly marketplaceProducts = signal<{ product: Product; listings: { id: string; platform: string; status: string; externalUrl: string | null }[] }[]>([]);
+  readonly pendingRemovals = signal<
+    {
+      listingId: string;
+      productId: string;
+      productName: string;
+      platform: string;
+      externalUrl: string | null;
+    }[]
+  >([]);
+  readonly marketplaceProducts = signal<
+    {
+      product: Product;
+      listings: { id: string; platform: string; status: string; externalUrl: string | null }[];
+    }[]
+  >([]);
   readonly marketplaceLoading = signal(false);
-  readonly generatedListing = signal<{ title: string; description: string; price: number; imageUrl: string } | null>(null);
-  readonly etsyStatus = signal<{ apiKeyConfigured: boolean; connected: boolean; shopId: string | null } | null>(null);
+  readonly generatedListing = signal<{
+    title: string;
+    description: string;
+    price: number;
+    imageUrl: string;
+  } | null>(null);
+  readonly etsyStatus = signal<{
+    apiKeyConfigured: boolean;
+    connected: boolean;
+    shopId: string | null;
+  } | null>(null);
   private etsyCodeVerifier = '';
   readonly marketplaceError = signal('');
   readonly marketplaceSuccess = signal('');
@@ -794,7 +1075,9 @@ export class AdminPageComponent implements OnInit {
   readonly usersError = signal('');
 
   // Mailing list
-  readonly mailingListSubs = signal<{ id: string; email: string; firstName: string | null; source: string; createdAtUtc: string }[]>([]);
+  readonly mailingListSubs = signal<
+    { id: string; email: string; firstName: string | null; source: string; createdAtUtc: string }[]
+  >([]);
   readonly mailingListLoading = signal(false);
 
   // Accounts
@@ -814,10 +1097,26 @@ export class AdminPageComponent implements OnInit {
   readonly financeMonthFilter = signal<string>('all');
   readonly financeSourceFilter = signal<'all' | 'site' | 'external'>('all');
   readonly backfillingSales = signal(false);
-  financeForm = { date: '', description: '', amount: 0, category: 'Stock', platform: '', reference: '', notes: '' };
+  financeForm = {
+    date: '',
+    description: '',
+    amount: 0,
+    category: 'Stock',
+    platform: '',
+    reference: '',
+    notes: '',
+  };
   financeReceiptUrl: string | null = null;
 
-  readonly financeCategories = ['Stock', 'Shipping', 'Fees', 'Packaging', 'Owner Draw', 'Sales', 'Other'];
+  readonly financeCategories = [
+    'Stock',
+    'Shipping',
+    'Fees',
+    'Packaging',
+    'Owner Draw',
+    'Sales',
+    'Other',
+  ];
   readonly financePlatforms = ['Website', 'Etsy', 'Depop', 'Vinted', 'eBay', ''];
 
   // Monzo bank
@@ -846,7 +1145,7 @@ export class AdminPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.seo.updateTags({ title: 'Admin', url: '/admin', noIndex: true });
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       if (params['monzo'] === 'callback' && params['code']) {
         this.handleMonzoCallback(params['code'], params['state'] ?? '');
       }
@@ -859,7 +1158,7 @@ export class AdminPageComponent implements OnInit {
   }
 
   toggleMobileMenu(): void {
-    this.mobileMenuOpen.update(v => !v);
+    this.mobileMenuOpen.update((v) => !v);
   }
 
   copySignature(): void {
@@ -869,7 +1168,24 @@ export class AdminPageComponent implements OnInit {
     });
   }
 
-  switchTab(tab: 'products' | 'orders' | 'users' | 'finance' | 'accounting' | 'calendar' | 'seo' | 'branding' | 'content' | 'marketplace' | 'blog' | 'offsite-sales' | 'reviews' | 'signature' | 'care'): void {
+  switchTab(
+    tab:
+      | 'products'
+      | 'orders'
+      | 'users'
+      | 'finance'
+      | 'accounting'
+      | 'calendar'
+      | 'seo'
+      | 'branding'
+      | 'content'
+      | 'marketplace'
+      | 'blog'
+      | 'offsite-sales'
+      | 'reviews'
+      | 'signature'
+      | 'care',
+  ): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
     if (tab === 'orders' && this.orders().length === 0) {
@@ -1023,7 +1339,14 @@ export class AdminPageComponent implements OnInit {
 
   openBlogForm(): void {
     this.editingBlogId.set(null);
-    this.blogForm = { title: '', content: '', excerpt: '', featuredImageUrl: '', author: 'Teodora Carter', published: false };
+    this.blogForm = {
+      title: '',
+      content: '',
+      excerpt: '',
+      featuredImageUrl: '',
+      author: 'Teodora Carter',
+      published: false,
+    };
     this.blogError.set('');
     this.blogSuccess.set('');
     this.showBlogForm.set(true);
@@ -1083,13 +1406,15 @@ export class AdminPageComponent implements OnInit {
     this.blogUploading.set(true);
     const formData = new FormData();
     formData.append('file', file);
-    this.http.post<{ imageUrl: string }>(`${environment.apiUrl}/api/blog/upload-image`, formData).subscribe({
-      next: (res) => {
-        this.blogForm.content += `\n<img src="${res.imageUrl}" alt="" />\n`;
-        this.blogUploading.set(false);
-      },
-      error: () => this.blogUploading.set(false),
-    });
+    this.http
+      .post<{ imageUrl: string }>(`${environment.apiUrl}/api/blog/upload-image`, formData)
+      .subscribe({
+        next: (res) => {
+          this.blogForm.content += `\n<img src="${res.imageUrl}" alt="" />\n`;
+          this.blogUploading.set(false);
+        },
+        error: () => this.blogUploading.set(false),
+      });
   }
 
   onFeaturedImageUpload(event: Event): void {
@@ -1103,13 +1428,15 @@ export class AdminPageComponent implements OnInit {
     this.blogUploading.set(true);
     const formData = new FormData();
     formData.append('file', file);
-    this.http.post<{ imageUrl: string }>(`${environment.apiUrl}/api/blog/upload-image`, formData).subscribe({
-      next: (res) => {
-        this.blogForm.featuredImageUrl = res.imageUrl;
-        this.blogUploading.set(false);
-      },
-      error: () => this.blogUploading.set(false),
-    });
+    this.http
+      .post<{ imageUrl: string }>(`${environment.apiUrl}/api/blog/upload-image`, formData)
+      .subscribe({
+        next: (res) => {
+          this.blogForm.featuredImageUrl = res.imageUrl;
+          this.blogUploading.set(false);
+        },
+        error: () => this.blogUploading.set(false),
+      });
   }
 
   insertHeading(level: 2 | 3): void {
@@ -1125,10 +1452,17 @@ export class AdminPageComponent implements OnInit {
       next: (r) => this.pendingRemovals.set(r),
     });
 
-    this.http.get<{ apiKeyConfigured: boolean; connected: boolean; shopId: string | null }>(`${environment.apiUrl}/api/marketplace/etsy/status`).subscribe({
-      next: (r) => this.etsyStatus.set(r),
-      error: () => this.etsyStatus.set({ apiKeyConfigured: false, connected: false, shopId: null }),
-    });
+    this.http
+      .get<{
+        apiKeyConfigured: boolean;
+        connected: boolean;
+        shopId: string | null;
+      }>(`${environment.apiUrl}/api/marketplace/etsy/status`)
+      .subscribe({
+        next: (r) => this.etsyStatus.set(r),
+        error: () =>
+          this.etsyStatus.set({ apiKeyConfigured: false, connected: false, shopId: null }),
+      });
 
     // Load listings for all products
     const products = this.store.products();
@@ -1140,80 +1474,109 @@ export class AdminPageComponent implements OnInit {
     let loaded = 0;
     const result: { product: Product; listings: any[] }[] = [];
     for (const product of products) {
-      this.http.get<any[]>(`${environment.apiUrl}/api/marketplace/listings/${product.id}`).subscribe({
-        next: (listings) => {
-          result.push({ product, listings });
-          loaded++;
-          if (loaded === products.length) {
-            this.marketplaceProducts.set(result.sort((a, b) => a.product.name.localeCompare(b.product.name)));
-            this.marketplaceLoading.set(false);
-          }
-        },
-        error: () => {
-          loaded++;
-          if (loaded === products.length) {
-            this.marketplaceProducts.set(result);
-            this.marketplaceLoading.set(false);
-          }
-        },
-      });
+      this.http
+        .get<any[]>(`${environment.apiUrl}/api/marketplace/listings/${product.id}`)
+        .subscribe({
+          next: (listings) => {
+            result.push({ product, listings });
+            loaded++;
+            if (loaded === products.length) {
+              this.marketplaceProducts.set(
+                result.sort((a, b) => a.product.name.localeCompare(b.product.name)),
+              );
+              this.marketplaceLoading.set(false);
+            }
+          },
+          error: () => {
+            loaded++;
+            if (loaded === products.length) {
+              this.marketplaceProducts.set(result);
+              this.marketplaceLoading.set(false);
+            }
+          },
+        });
     }
   }
 
   listOnPlatform(productId: string, platform: string): void {
     if (platform === 'Etsy') {
-      this.http.post<any>(`${environment.apiUrl}/api/marketplace/etsy/create-listing`, { productId }).subscribe({
-        next: () => {
-          this.marketplaceSuccess.set(`Listed on Etsy successfully.`);
-          this.loadMarketplace();
-        },
-        error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to list on Etsy.'),
-      });
+      this.http
+        .post<any>(`${environment.apiUrl}/api/marketplace/etsy/create-listing`, { productId })
+        .subscribe({
+          next: () => {
+            this.marketplaceSuccess.set(`Listed on Etsy successfully.`);
+            this.loadMarketplace();
+          },
+          error: (err) =>
+            this.marketplaceError.set(err.error?.message ?? 'Failed to list on Etsy.'),
+        });
     } else {
       // For Depop/Vinted, mark as listed manually and show copy text
-      this.http.post<any>(`${environment.apiUrl}/api/marketplace/listings`, {
-        productId, platform, externalListingId: null, externalUrl: null,
-      }).subscribe({
-        next: () => this.loadMarketplace(),
-      });
+      this.http
+        .post<any>(`${environment.apiUrl}/api/marketplace/listings`, {
+          productId,
+          platform,
+          externalListingId: null,
+          externalUrl: null,
+        })
+        .subscribe({
+          next: () => this.loadMarketplace(),
+        });
     }
   }
 
   generateListing(productId: string, platform: string): void {
     this.generatedListing.set(null);
-    this.http.get<any>(`${environment.apiUrl}/api/marketplace/generate-listing/${productId}?platform=${platform}`).subscribe({
-      next: (r) => this.generatedListing.set(r),
-    });
+    this.http
+      .get<any>(
+        `${environment.apiUrl}/api/marketplace/generate-listing/${productId}?platform=${platform}`,
+      )
+      .subscribe({
+        next: (r) => this.generatedListing.set(r),
+      });
   }
 
   markSoldOn(productId: string, platform: string): void {
-    this.http.post<any>(`${environment.apiUrl}/api/marketplace/mark-sold/${productId}`, { soldOn: platform }).subscribe({
-      next: (r) => {
-        this.marketplaceSuccess.set(r.message);
-        this.loadMarketplace();
-      },
-      error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to mark as sold.'),
-    });
+    this.http
+      .post<any>(`${environment.apiUrl}/api/marketplace/mark-sold/${productId}`, {
+        soldOn: platform,
+      })
+      .subscribe({
+        next: (r) => {
+          this.marketplaceSuccess.set(r.message);
+          this.loadMarketplace();
+        },
+        error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to mark as sold.'),
+      });
   }
 
   acknowledgeRemoval(listingId: string): void {
-    this.http.post(`${environment.apiUrl}/api/marketplace/acknowledge-removal/${listingId}`, {}).subscribe({
-      next: () => {
-        this.pendingRemovals.update(list => list.filter(r => r.listingId !== listingId));
-      },
-    });
+    this.http
+      .post(`${environment.apiUrl}/api/marketplace/acknowledge-removal/${listingId}`, {})
+      .subscribe({
+        next: () => {
+          this.pendingRemovals.update((list) => list.filter((r) => r.listingId !== listingId));
+        },
+      });
   }
 
   connectEtsy(): void {
     this.marketplaceError.set('');
-    this.http.get<{ url: string; state: string; codeVerifier: string }>(`${environment.apiUrl}/api/marketplace/etsy/connect`).subscribe({
-      next: (r) => {
-        this.etsyCodeVerifier = r.codeVerifier;
-        localStorage.setItem('etsy_code_verifier', r.codeVerifier);
-        window.location.href = r.url;
-      },
-      error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to start Etsy connection.'),
-    });
+    this.http
+      .get<{
+        url: string;
+        state: string;
+        codeVerifier: string;
+      }>(`${environment.apiUrl}/api/marketplace/etsy/connect`)
+      .subscribe({
+        next: (r) => {
+          this.etsyCodeVerifier = r.codeVerifier;
+          localStorage.setItem('etsy_code_verifier', r.codeVerifier);
+          window.location.href = r.url;
+        },
+        error: (err) =>
+          this.marketplaceError.set(err.error?.message ?? 'Failed to start Etsy connection.'),
+      });
   }
 
   handleEtsyCallback(code: string): void {
@@ -1224,16 +1587,22 @@ export class AdminPageComponent implements OnInit {
     }
     localStorage.removeItem('etsy_code_verifier');
 
-    this.http.post<{ message: string; shopId: string }>(`${environment.apiUrl}/api/marketplace/etsy/callback`, {
-      code,
-      codeVerifier,
-    }).subscribe({
-      next: (r) => {
-        this.marketplaceSuccess.set(r.message);
-        this.etsyStatus.set({ apiKeyConfigured: true, connected: true, shopId: r.shopId });
-      },
-      error: (err) => this.marketplaceError.set(err.error?.message ?? 'Failed to complete Etsy connection.'),
-    });
+    this.http
+      .post<{ message: string; shopId: string }>(
+        `${environment.apiUrl}/api/marketplace/etsy/callback`,
+        {
+          code,
+          codeVerifier,
+        },
+      )
+      .subscribe({
+        next: (r) => {
+          this.marketplaceSuccess.set(r.message);
+          this.etsyStatus.set({ apiKeyConfigured: true, connected: true, shopId: r.shopId });
+        },
+        error: (err) =>
+          this.marketplaceError.set(err.error?.message ?? 'Failed to complete Etsy connection.'),
+      });
   }
 
   disconnectEtsy(): void {
@@ -1267,20 +1636,28 @@ export class AdminPageComponent implements OnInit {
   }
 
   hasUserAccount(email: string): boolean {
-    return this.adminUsers().some(u => u.email.toLowerCase() === email.toLowerCase());
+    return this.adminUsers().some((u) => u.email.toLowerCase() === email.toLowerCase());
   }
 
   loadMailingList(): void {
     this.mailingListLoading.set(true);
-    this.http.get<{ id: string; email: string; firstName: string | null; source: string; createdAtUtc: string }[]>(
-      `${environment.apiUrl}/api/mailing-list/subscribers`
-    ).subscribe({
-      next: (subs) => {
-        this.mailingListSubs.set(subs);
-        this.mailingListLoading.set(false);
-      },
-      error: () => this.mailingListLoading.set(false),
-    });
+    this.http
+      .get<
+        {
+          id: string;
+          email: string;
+          firstName: string | null;
+          source: string;
+          createdAtUtc: string;
+        }[]
+      >(`${environment.apiUrl}/api/mailing-list/subscribers`)
+      .subscribe({
+        next: (subs) => {
+          this.mailingListSubs.set(subs);
+          this.mailingListLoading.set(false);
+        },
+        error: () => this.mailingListLoading.set(false),
+      });
   }
 
   openViewAnalytics(product: Product): void {
@@ -1288,13 +1665,15 @@ export class AdminPageComponent implements OnInit {
     this.viewAnalyticsData.set(null);
     this.viewAnalyticsLoading.set(true);
     this.showViewAnalytics.set(true);
-    this.http.get<ViewAnalytics>(`${environment.apiUrl}/api/products/${product.id}/views`).subscribe({
-      next: (data) => {
-        this.viewAnalyticsData.set(data);
-        this.viewAnalyticsLoading.set(false);
-      },
-      error: () => this.viewAnalyticsLoading.set(false),
-    });
+    this.http
+      .get<ViewAnalytics>(`${environment.apiUrl}/api/products/${product.id}/views`)
+      .subscribe({
+        next: (data) => {
+          this.viewAnalyticsData.set(data);
+          this.viewAnalyticsLoading.set(false);
+        },
+        error: () => this.viewAnalyticsLoading.set(false),
+      });
   }
 
   closeViewAnalytics(): void {
@@ -1339,17 +1718,19 @@ export class AdminPageComponent implements OnInit {
     this.contentError.set('');
     this.contentSuccess.set('');
 
-    this.http.put<Record<string, string>>(`${environment.apiUrl}/api/content`, this.contentForm).subscribe({
-      next: (c) => {
-        this.contentSaving.set(false);
-        this.contentSuccess.set('Content saved. Changes are live.');
-        this.contentService.setAll(c);
-      },
-      error: (err) => {
-        this.contentSaving.set(false);
-        this.contentError.set(err.error?.message ?? 'Failed to save content.');
-      },
-    });
+    this.http
+      .put<Record<string, string>>(`${environment.apiUrl}/api/content`, this.contentForm)
+      .subscribe({
+        next: (c) => {
+          this.contentSaving.set(false);
+          this.contentSuccess.set('Content saved. Changes are live.');
+          this.contentService.setAll(c);
+        },
+        error: (err) => {
+          this.contentSaving.set(false);
+          this.contentError.set(err.error?.message ?? 'Failed to save content.');
+        },
+      });
   }
 
   loadBranding(): void {
@@ -1363,7 +1744,9 @@ export class AdminPageComponent implements OnInit {
 
   saveBranding(): void {
     if (this.contrastErrors().length > 0) {
-      this.brandingError.set('Cannot save: colour combinations do not meet WCAG AA contrast requirements.');
+      this.brandingError.set(
+        'Cannot save: colour combinations do not meet WCAG AA contrast requirements.',
+      );
       return;
     }
     this.brandingSaving.set(true);
@@ -1398,23 +1781,26 @@ export class AdminPageComponent implements OnInit {
     const formData = new FormData();
     formData.append('file', file);
 
-    this.http.post<{ logoUrl: string; faviconUrl: string | null }>(
-      `${environment.apiUrl}/api/branding/upload-logo`, formData
-    ).subscribe({
-      next: (res) => {
-        this.brandingForm.logoUrl = res.logoUrl;
-        this.logoUploading.set(false);
-      },
-      error: () => {
-        this.logoUploading.set(false);
-        this.logoPreview.set(this.brandingForm.logoUrl);
-      },
-    });
+    this.http
+      .post<{
+        logoUrl: string;
+        faviconUrl: string | null;
+      }>(`${environment.apiUrl}/api/branding/upload-logo`, formData)
+      .subscribe({
+        next: (res) => {
+          this.brandingForm.logoUrl = res.logoUrl;
+          this.logoUploading.set(false);
+        },
+        error: () => {
+          this.logoUploading.set(false);
+          this.logoPreview.set(this.brandingForm.logoUrl);
+        },
+      });
   }
 
   previewBranding(): void {
     this.brandingService.apply(this.brandingForm);
-    this.contrastCheckTrigger.update(v => v + 1);
+    this.contrastCheckTrigger.update((v) => v + 1);
   }
 
   loadTrackedKeywords(): void {
@@ -1431,31 +1817,35 @@ export class AdminPageComponent implements OnInit {
   loadSeoHealth(): void {
     this.seoHealthLoading.set(true);
     this.seoHealthError.set('');
-    this.http.get<SeoHealthSnapshot[]>(`${environment.apiUrl}/api/seo/health/snapshots?take=30`).subscribe({
-      next: (snapshots) => {
-        this.seoHealthSnapshots.set(snapshots);
-        this.seoHealthLoading.set(false);
-      },
-      error: () => {
-        this.seoHealthLoading.set(false);
-        this.seoHealthError.set('Failed to load SEO health snapshots.');
-      },
-    });
+    this.http
+      .get<SeoHealthSnapshot[]>(`${environment.apiUrl}/api/seo/health/snapshots?take=30`)
+      .subscribe({
+        next: (snapshots) => {
+          this.seoHealthSnapshots.set(snapshots);
+          this.seoHealthLoading.set(false);
+        },
+        error: () => {
+          this.seoHealthLoading.set(false);
+          this.seoHealthError.set('Failed to load SEO health snapshots.');
+        },
+      });
   }
 
   runSeoHealthSnapshot(): void {
     this.seoHealthRunning.set(true);
     this.seoHealthError.set('');
-    this.http.post<SeoHealthSnapshot>(`${environment.apiUrl}/api/seo/health/snapshots/run`, {}).subscribe({
-      next: (snapshot) => {
-        this.seoHealthRunning.set(false);
-        this.seoHealthSnapshots.update((list) => [snapshot, ...list]);
-      },
-      error: () => {
-        this.seoHealthRunning.set(false);
-        this.seoHealthError.set('Snapshot capture failed.');
-      },
-    });
+    this.http
+      .post<SeoHealthSnapshot>(`${environment.apiUrl}/api/seo/health/snapshots/run`, {})
+      .subscribe({
+        next: (snapshot) => {
+          this.seoHealthRunning.set(false);
+          this.seoHealthSnapshots.update((list) => [snapshot, ...list]);
+        },
+        error: () => {
+          this.seoHealthRunning.set(false);
+          this.seoHealthError.set('Snapshot capture failed.');
+        },
+      });
   }
 
   loadTraffic(days?: number): void {
@@ -1474,19 +1864,26 @@ export class AdminPageComponent implements OnInit {
     const overviewDays = Math.max(window, 30);
     forkJoin({
       overview: this.http.get<TrafficOverview>(
-        `${environment.apiUrl}/api/seo/traffic/overview?days=${overviewDays}`),
+        `${environment.apiUrl}/api/seo/traffic/overview?days=${overviewDays}`,
+      ),
       queries: this.http.get<QueryRollup[]>(
-        `${environment.apiUrl}/api/seo/traffic/queries?days=${window}&limit=50`),
+        `${environment.apiUrl}/api/seo/traffic/queries?days=${window}&limit=50`,
+      ),
       pages: this.http.get<PageRollup[]>(
-        `${environment.apiUrl}/api/seo/traffic/pages?days=${window}&limit=50`),
+        `${environment.apiUrl}/api/seo/traffic/pages?days=${window}&limit=50`,
+      ),
       opportunities: this.http.get<QueryRollup[]>(
-        `${environment.apiUrl}/api/seo/traffic/opportunities?days=${window}`),
+        `${environment.apiUrl}/api/seo/traffic/opportunities?days=${window}`,
+      ),
       sources: this.http.get<SourceRollup[]>(
-        `${environment.apiUrl}/api/seo/traffic/sources?days=${window}&limit=20`),
+        `${environment.apiUrl}/api/seo/traffic/sources?days=${window}&limit=20`,
+      ),
       landingPages: this.http.get<LandingPageRollup[]>(
-        `${environment.apiUrl}/api/seo/traffic/landing-pages?days=${window}&limit=50`),
+        `${environment.apiUrl}/api/seo/traffic/landing-pages?days=${window}&limit=50`,
+      ),
       pageViews: this.http.get<PageViewStats>(
-        `${environment.apiUrl}/api/seo/traffic/page-views?days=${window}&limit=50`),
+        `${environment.apiUrl}/api/seo/traffic/page-views?days=${window}&limit=50`,
+      ),
     }).subscribe({
       next: (r) => {
         this.trafficOverview.set(r.overview);
@@ -1553,7 +1950,7 @@ export class AdminPageComponent implements OnInit {
       .subscribe({
         next: (updated) => {
           this.trackedKeywords.update((list) =>
-            list.map((k) => (k.id === updated.id ? updated : k))
+            list.map((k) => (k.id === updated.id ? updated : k)),
           );
         },
       });
@@ -1597,9 +1994,7 @@ export class AdminPageComponent implements OnInit {
           this.seoLoading.set(false);
         },
         error: (err) => {
-          this.seoError.set(
-            err.error?.message ?? 'Failed to analyse. Check the URL.'
-          );
+          this.seoError.set(err.error?.message ?? 'Failed to analyse. Check the URL.');
           this.seoLoading.set(false);
         },
       });
@@ -1629,9 +2024,7 @@ export class AdminPageComponent implements OnInit {
   updateOrderStatus(order: AdminOrder, status: string): void {
     this.orderService.updateStatus(order.id, status).subscribe({
       next: (updated) => {
-        this.orders.update((orders) =>
-          orders.map((o) => (o.id === updated.id ? updated : o))
-        );
+        this.orders.update((orders) => orders.map((o) => (o.id === updated.id ? updated : o)));
       },
       error: () => this.ordersError.set('Failed to update order status.'),
     });
@@ -1757,9 +2150,7 @@ export class AdminPageComponent implements OnInit {
       error: (err) => {
         this.uploading.set(false);
         this.imagePreview.set(null);
-        this.uploadError.set(
-          err.error?.error ?? 'Upload failed. Please try again.'
-        );
+        this.uploadError.set(err.error?.error ?? 'Upload failed. Please try again.');
       },
     });
   }
@@ -1771,27 +2162,43 @@ export class AdminPageComponent implements OnInit {
     }
     this.analysing.set(true);
     this.analyseError.set('');
-    this.http.post<any>(`${environment.apiUrl}/api/products/analyse-image`, { imageUrl: this.form.imageUrl }).subscribe({
-      next: (result) => {
-        if (result.name) { this.form.name = result.name; }
-        if (result.description) {
-          this.form.description = result.description;
-          if (this.descriptionEditor) {
-            this.descriptionEditor.nativeElement.innerHTML = result.description;
+    this.http
+      .post<any>(`${environment.apiUrl}/api/products/analyse-image`, {
+        imageUrl: this.form.imageUrl,
+      })
+      .subscribe({
+        next: (result) => {
+          if (result.name) {
+            this.form.name = result.name;
           }
-        }
-        if (result.era) { this.form.era = result.era; }
-        if (result.category) { this.form.category = result.category; }
-        if (result.size) { this.form.size = result.size; }
-        if (result.condition) { this.form.condition = result.condition; }
-        if (result.suggestedPrice) { this.form.price = result.suggestedPrice; }
-        this.analysing.set(false);
-      },
-      error: (err) => {
-        this.analyseError.set(err.error?.error ?? 'Analysis failed. Please try again.');
-        this.analysing.set(false);
-      },
-    });
+          if (result.description) {
+            this.form.description = result.description;
+            if (this.descriptionEditor) {
+              this.descriptionEditor.nativeElement.innerHTML = result.description;
+            }
+          }
+          if (result.era) {
+            this.form.era = result.era;
+          }
+          if (result.category) {
+            this.form.category = result.category;
+          }
+          if (result.size) {
+            this.form.size = result.size;
+          }
+          if (result.condition) {
+            this.form.condition = result.condition;
+          }
+          if (result.suggestedPrice) {
+            this.form.price = result.suggestedPrice;
+          }
+          this.analysing.set(false);
+        },
+        error: (err) => {
+          this.analyseError.set(err.error?.error ?? 'Analysis failed. Please try again.');
+          this.analysing.set(false);
+        },
+      });
   }
 
   save(): void {
@@ -1902,18 +2309,20 @@ export class AdminPageComponent implements OnInit {
   }
 
   setPrimaryImage(url: string): void {
-    const others = this.allProductImages().filter(img => img !== url);
+    const others = this.allProductImages().filter((img) => img !== url);
     this.form.imageUrl = url;
     this.form.additionalImageUrls = others;
   }
 
   removeProductImage(url: string): void {
     if (url === this.form.imageUrl) {
-      const others = (this.form.additionalImageUrls ?? []).filter(img => img !== url);
+      const others = (this.form.additionalImageUrls ?? []).filter((img) => img !== url);
       this.form.imageUrl = others[0] ?? '';
       this.form.additionalImageUrls = others.slice(1);
     } else {
-      this.form.additionalImageUrls = (this.form.additionalImageUrls ?? []).filter(img => img !== url);
+      this.form.additionalImageUrls = (this.form.additionalImageUrls ?? []).filter(
+        (img) => img !== url,
+      );
     }
   }
 
@@ -1982,7 +2391,9 @@ export class AdminPageComponent implements OnInit {
           if (pending === 0) {
             this.videoUploading.set(false);
           }
-          this.videoUploadError.set(`Video upload failed. Max size is ${AdminPageComponent.MAX_UPLOAD_DISPLAY}.`);
+          this.videoUploadError.set(
+            `Video upload failed. Max size is ${AdminPageComponent.MAX_UPLOAD_DISPLAY}.`,
+          );
         },
       });
     }
@@ -1990,7 +2401,7 @@ export class AdminPageComponent implements OnInit {
   }
 
   removeVideo(url: string): void {
-    this.form.videoUrls = (this.form.videoUrls ?? []).filter(v => v !== url);
+    this.form.videoUrls = (this.form.videoUrls ?? []).filter((v) => v !== url);
   }
 
   loadFinance(): void {
@@ -2015,45 +2426,51 @@ export class AdminPageComponent implements OnInit {
     this.backfillingSales.set(true);
     this.financeError.set('');
     this.financeSuccess.set('');
-    this.http.post<{
-      backfilled: number;
-      totalPaid: number;
-      totalSoldProducts: number;
-      breakdown: { fromOrders: number; fromProducts: number; cogs: number };
-    }>(
-      `${environment.apiUrl}/api/finance/backfill-sales`, {}
-    ).subscribe({
-      next: (res) => {
-        this.backfillingSales.set(false);
-        const totalKnownSales = res.totalPaid + res.totalSoldProducts;
-        if (res.backfilled === 0) {
-          this.financeSuccess.set(
-            totalKnownSales === 0
-              ? 'No known sales to backfill — nothing in the Orders table and no products marked Sold.'
-              : `Everything is already in the ledger — ${totalKnownSales} known sale${totalKnownSales === 1 ? '' : 's'} and their cost-of-goods expenses.`,
-          );
-        } else {
-          const parts: string[] = [];
-          if (res.breakdown.fromOrders > 0) {
-            parts.push(`${res.breakdown.fromOrders} sale${res.breakdown.fromOrders === 1 ? '' : 's'} from paid orders`);
+    this.http
+      .post<{
+        backfilled: number;
+        totalPaid: number;
+        totalSoldProducts: number;
+        breakdown: { fromOrders: number; fromProducts: number; cogs: number };
+      }>(`${environment.apiUrl}/api/finance/backfill-sales`, {})
+      .subscribe({
+        next: (res) => {
+          this.backfillingSales.set(false);
+          const totalKnownSales = res.totalPaid + res.totalSoldProducts;
+          if (res.backfilled === 0) {
+            this.financeSuccess.set(
+              totalKnownSales === 0
+                ? 'No known sales to backfill — nothing in the Orders table and no products marked Sold.'
+                : `Everything is already in the ledger — ${totalKnownSales} known sale${totalKnownSales === 1 ? '' : 's'} and their cost-of-goods expenses.`,
+            );
+          } else {
+            const parts: string[] = [];
+            if (res.breakdown.fromOrders > 0) {
+              parts.push(
+                `${res.breakdown.fromOrders} sale${res.breakdown.fromOrders === 1 ? '' : 's'} from paid orders`,
+              );
+            }
+            if (res.breakdown.fromProducts > 0) {
+              parts.push(
+                `${res.breakdown.fromProducts} sale${res.breakdown.fromProducts === 1 ? '' : 's'} from products marked Sold`,
+              );
+            }
+            if (res.breakdown.cogs > 0) {
+              parts.push(
+                `${res.breakdown.cogs} cost-of-goods expense${res.breakdown.cogs === 1 ? '' : 's'}`,
+              );
+            }
+            this.financeSuccess.set(
+              `Backfilled ${res.backfilled} ledger entr${res.backfilled === 1 ? 'y' : 'ies'} (${parts.join(', ')}).`,
+            );
+            this.loadFinance();
           }
-          if (res.breakdown.fromProducts > 0) {
-            parts.push(`${res.breakdown.fromProducts} sale${res.breakdown.fromProducts === 1 ? '' : 's'} from products marked Sold`);
-          }
-          if (res.breakdown.cogs > 0) {
-            parts.push(`${res.breakdown.cogs} cost-of-goods expense${res.breakdown.cogs === 1 ? '' : 's'}`);
-          }
-          this.financeSuccess.set(
-            `Backfilled ${res.backfilled} ledger entr${res.backfilled === 1 ? 'y' : 'ies'} (${parts.join(', ')}).`,
-          );
-          this.loadFinance();
-        }
-      },
-      error: () => {
-        this.backfillingSales.set(false);
-        this.financeError.set('Failed to backfill sales.');
-      },
-    });
+        },
+        error: () => {
+          this.backfillingSales.set(false);
+          this.financeError.set('Failed to backfill sales.');
+        },
+      });
   }
 
   get filteredFinanceTransactions(): FinanceTransaction[] {
@@ -2061,15 +2478,15 @@ export class AdminPageComponent implements OnInit {
     const sourceFilter = this.financeSourceFilter();
     let result = this.financeTransactions();
     if (monthFilter !== 'all') {
-      result = result.filter(t => t.date.startsWith(monthFilter));
+      result = result.filter((t) => t.date.startsWith(monthFilter));
     }
     if (sourceFilter === 'site') {
-      result = result.filter(t => t.platform === 'Website');
+      result = result.filter((t) => t.platform === 'Website');
     } else if (sourceFilter === 'external') {
       // External = a known non-Website platform (Etsy, Depop, Vinted, eBay, etc.).
       // Transactions with no platform set are considered Unspecified and excluded
       // from both Site and External filters so the buckets don't overlap.
-      result = result.filter(t => !!t.platform && t.platform !== 'Website');
+      result = result.filter((t) => !!t.platform && t.platform !== 'Website');
     }
     return result;
   }
@@ -2083,12 +2500,20 @@ export class AdminPageComponent implements OnInit {
     if (filter === 'all') {
       return null;
     }
-    return summary.byMonth.find(m => m.month === filter) ?? null;
+    return summary.byMonth.find((m) => m.month === filter) ?? null;
   }
 
   openFinanceForm(): void {
     this.editingTransactionId.set(null);
-    this.financeForm = { date: new Date().toISOString().slice(0, 10), description: '', amount: 0, category: 'Stock', platform: '', reference: '', notes: '' };
+    this.financeForm = {
+      date: new Date().toISOString().slice(0, 10),
+      description: '',
+      amount: 0,
+      category: 'Stock',
+      platform: '',
+      reference: '',
+      notes: '',
+    };
     this.financeReceiptUrl = null;
     this.financeError.set('');
     this.financeSuccess.set('');
@@ -2136,13 +2561,17 @@ export class AdminPageComponent implements OnInit {
       this.http.post<FinanceTransaction>(`${environment.apiUrl}/api/finance`, body).subscribe({
         next: (created) => {
           if (this.financeReceiptUrl) {
-            this.http.put(`${environment.apiUrl}/api/finance/${created.id}`, { receiptUrl: this.financeReceiptUrl }).subscribe({
-              next: () => {
-                this.financeSuccess.set('Transaction created.');
-                this.showFinanceForm.set(false);
-                this.loadFinance();
-              },
-            });
+            this.http
+              .put(`${environment.apiUrl}/api/finance/${created.id}`, {
+                receiptUrl: this.financeReceiptUrl,
+              })
+              .subscribe({
+                next: () => {
+                  this.financeSuccess.set('Transaction created.');
+                  this.showFinanceForm.set(false);
+                  this.loadFinance();
+                },
+              });
           } else {
             this.financeSuccess.set('Transaction created.');
             this.showFinanceForm.set(false);
@@ -2172,16 +2601,18 @@ export class AdminPageComponent implements OnInit {
     this.financeReceiptUploading.set(true);
     const formData = new FormData();
     formData.append('file', file);
-    this.http.post<{ receiptUrl: string }>(`${environment.apiUrl}/api/finance/upload-receipt`, formData).subscribe({
-      next: (res) => {
-        this.financeReceiptUrl = res.receiptUrl;
-        this.financeReceiptUploading.set(false);
-      },
-      error: () => {
-        this.financeReceiptUploading.set(false);
-        this.financeError.set('Receipt upload failed.');
-      },
-    });
+    this.http
+      .post<{ receiptUrl: string }>(`${environment.apiUrl}/api/finance/upload-receipt`, formData)
+      .subscribe({
+        next: (res) => {
+          this.financeReceiptUrl = res.receiptUrl;
+          this.financeReceiptUploading.set(false);
+        },
+        error: () => {
+          this.financeReceiptUploading.set(false);
+          this.financeError.set('Receipt upload failed.');
+        },
+      });
   }
 
   exportFinanceCsv(): void {
@@ -2205,13 +2636,15 @@ export class AdminPageComponent implements OnInit {
 
   // Monzo bank methods
   connectMonzo(): void {
-    this.http.get<{ url: string; state: string }>(`${environment.apiUrl}/api/monzo/connect`).subscribe({
-      next: (res) => {
-        localStorage.setItem('monzo_state', res.state);
-        window.location.href = res.url;
-      },
-      error: () => this.monzoError.set('Failed to start Monzo connection.'),
-    });
+    this.http
+      .get<{ url: string; state: string }>(`${environment.apiUrl}/api/monzo/connect`)
+      .subscribe({
+        next: (res) => {
+          localStorage.setItem('monzo_state', res.state);
+          window.location.href = res.url;
+        },
+        error: () => this.monzoError.set('Failed to start Monzo connection.'),
+      });
   }
 
   private handleMonzoCallback(code: string, state: string): void {
@@ -2223,26 +2656,32 @@ export class AdminPageComponent implements OnInit {
     // Clean up URL
     this.router.navigate(['/admin'], { queryParams: {} });
 
-    this.http.post<{ pendingApproval?: boolean }>(`${environment.apiUrl}/api/monzo/callback`, { code, state }).subscribe({
-      next: (res) => {
-        if (res.pendingApproval) {
-          this.monzoPendingApproval.set(true);
+    this.http
+      .post<{
+        pendingApproval?: boolean;
+      }>(`${environment.apiUrl}/api/monzo/callback`, { code, state })
+      .subscribe({
+        next: (res) => {
+          if (res.pendingApproval) {
+            this.monzoPendingApproval.set(true);
+            this.monzoLoading.set(false);
+          } else {
+            this.monzoConnected.set(true);
+            this.loadMonzoBalance();
+            this.loadMonzoTransactions();
+          }
+        },
+        error: (err) => {
+          this.monzoError.set(err.error?.error ?? 'Failed to connect Monzo.');
           this.monzoLoading.set(false);
-        } else {
-          this.monzoConnected.set(true);
-          this.loadMonzoBalance();
-          this.loadMonzoTransactions();
-        }
-      },
-      error: (err) => {
-        this.monzoError.set(err.error?.error ?? 'Failed to connect Monzo.');
-        this.monzoLoading.set(false);
-      },
-    });
+        },
+      });
   }
 
   disconnectMonzo(): void {
-    if (!confirm('Disconnect Monzo? You can reconnect at any time.')) { return; }
+    if (!confirm('Disconnect Monzo? You can reconnect at any time.')) {
+      return;
+    }
     this.http.post(`${environment.apiUrl}/api/monzo/disconnect`, {}).subscribe({
       next: () => {
         this.monzoConnected.set(false);
@@ -2257,47 +2696,54 @@ export class AdminPageComponent implements OnInit {
   loadMonzo(): void {
     this.monzoLoading.set(true);
     this.monzoError.set('');
-    this.http.get<{ connected: boolean; pendingApproval: boolean }>(`${environment.apiUrl}/api/monzo/status`).subscribe({
-      next: (status) => {
-        this.monzoConnected.set(status.connected);
-        this.monzoPendingApproval.set(status.pendingApproval);
-        if (status.connected) {
-          this.loadMonzoBalance();
-          this.loadMonzoPots();
-          this.loadMonzoTransactions();
-          this.loadMonzoSummary();
-        } else {
+    this.http
+      .get<{
+        connected: boolean;
+        pendingApproval: boolean;
+      }>(`${environment.apiUrl}/api/monzo/status`)
+      .subscribe({
+        next: (status) => {
+          this.monzoConnected.set(status.connected);
+          this.monzoPendingApproval.set(status.pendingApproval);
+          if (status.connected) {
+            this.loadMonzoBalance();
+            this.loadMonzoPots();
+            this.loadMonzoTransactions();
+            this.loadMonzoSummary();
+          } else {
+            this.monzoLoading.set(false);
+          }
+        },
+        error: () => {
+          this.monzoError.set('Failed to check Monzo status.');
           this.monzoLoading.set(false);
-        }
-      },
-      error: () => {
-        this.monzoError.set('Failed to check Monzo status.');
-        this.monzoLoading.set(false);
-      },
-    });
+        },
+      });
   }
 
   verifyMonzo(): void {
     this.monzoLoading.set(true);
     this.monzoError.set('');
-    this.http.post<{ verified: boolean; message?: string }>(`${environment.apiUrl}/api/monzo/verify`, {}).subscribe({
-      next: (res) => {
-        if (res.verified) {
-          this.monzoPendingApproval.set(false);
-          this.monzoConnected.set(true);
-          this.loadMonzoBalance();
-          this.loadMonzoPots();
-          this.loadMonzoTransactions();
-        } else {
-          this.monzoError.set(res.message ?? 'Still waiting for approval in the Monzo app.');
+    this.http
+      .post<{ verified: boolean; message?: string }>(`${environment.apiUrl}/api/monzo/verify`, {})
+      .subscribe({
+        next: (res) => {
+          if (res.verified) {
+            this.monzoPendingApproval.set(false);
+            this.monzoConnected.set(true);
+            this.loadMonzoBalance();
+            this.loadMonzoPots();
+            this.loadMonzoTransactions();
+          } else {
+            this.monzoError.set(res.message ?? 'Still waiting for approval in the Monzo app.');
+            this.monzoLoading.set(false);
+          }
+        },
+        error: (err) => {
+          this.monzoError.set(err.error?.error ?? 'Verification failed.');
           this.monzoLoading.set(false);
-        }
-      },
-      error: (err) => {
-        this.monzoError.set(err.error?.error ?? 'Verification failed.');
-        this.monzoLoading.set(false);
-      },
-    });
+        },
+      });
   }
 
   loadMonzoBalance(): void {
@@ -2348,32 +2794,48 @@ export class AdminPageComponent implements OnInit {
 
   annotateMonzoTransaction(txn: MonzoTransaction, patch: Partial<MonzoAnnotatePayload>): void {
     this.monzoAnnotating.set(txn.id);
-    this.http.patch<MonzoTransaction>(`${environment.apiUrl}/api/monzo/transactions/${txn.id}/annotate`, patch).subscribe({
-      next: (updated) => {
-        this.monzoTransactions.update(list => list.map(t => t.id === updated.id ? updated : t));
-        this.monzoAnnotating.set(null);
-      },
-      error: () => this.monzoAnnotating.set(null),
-    });
+    this.http
+      .patch<MonzoTransaction>(
+        `${environment.apiUrl}/api/monzo/transactions/${txn.id}/annotate`,
+        patch,
+      )
+      .subscribe({
+        next: (updated) => {
+          this.monzoTransactions.update((list) =>
+            list.map((t) => (t.id === updated.id ? updated : t)),
+          );
+          this.monzoAnnotating.set(null);
+        },
+        error: () => this.monzoAnnotating.set(null),
+      });
   }
 
   uploadMonzoReceipt(txn: MonzoTransaction, event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (!file) { return; }
+    if (!file) {
+      return;
+    }
     this.monzoReceiptUploading.set(txn.id);
     const formData = new FormData();
     formData.append('file', file);
-    this.http.post<MonzoTransaction>(`${environment.apiUrl}/api/monzo/transactions/${txn.id}/upload-receipt`, formData).subscribe({
-      next: (updated) => {
-        this.monzoTransactions.update(list => list.map(t => t.id === updated.id ? updated : t));
-        this.monzoReceiptUploading.set(null);
-      },
-      error: () => {
-        this.monzoError.set('Receipt upload failed.');
-        this.monzoReceiptUploading.set(null);
-      },
-    });
+    this.http
+      .post<MonzoTransaction>(
+        `${environment.apiUrl}/api/monzo/transactions/${txn.id}/upload-receipt`,
+        formData,
+      )
+      .subscribe({
+        next: (updated) => {
+          this.monzoTransactions.update((list) =>
+            list.map((t) => (t.id === updated.id ? updated : t)),
+          );
+          this.monzoReceiptUploading.set(null);
+        },
+        error: () => {
+          this.monzoError.set('Receipt upload failed.');
+          this.monzoReceiptUploading.set(null);
+        },
+      });
   }
 
   loadMonzoSummary(): void {
@@ -2405,9 +2867,11 @@ export class AdminPageComponent implements OnInit {
   get filteredMonzoTransactions(): MonzoTransaction[] {
     const filter = this.monzoMonthFilter();
     const txns = this.monzoTransactions();
-    if (filter === 'all') { return txns; }
+    if (filter === 'all') {
+      return txns;
+    }
     const [year, month] = filter.split('-').map(Number);
-    return txns.filter(t => {
+    return txns.filter((t) => {
       const d = new Date(t.date);
       return d.getFullYear() === year && d.getMonth() + 1 === month;
     });
@@ -2416,7 +2880,9 @@ export class AdminPageComponent implements OnInit {
   get monzoSelectedMonthSummary(): MonzoSummary['byMonth'][0] | null {
     const summary = this.monzoSummary();
     const filter = this.monzoMonthFilter();
-    if (!summary) { return null; }
+    if (!summary) {
+      return null;
+    }
     if (filter === 'all') {
       return {
         month: 'All Time',
@@ -2424,11 +2890,11 @@ export class AdminPageComponent implements OnInit {
         expenses: summary.totalExpenses,
         profit: summary.totalProfit,
         count: summary.transactionCount,
-        byCategory: summary.byMonth.flatMap(m => m.byCategory),
-        byPlatform: summary.byMonth.flatMap(m => m.byPlatform),
+        byCategory: summary.byMonth.flatMap((m) => m.byCategory),
+        byPlatform: summary.byMonth.flatMap((m) => m.byPlatform),
       };
     }
-    return summary.byMonth.find(m => m.month === filter) ?? null;
+    return summary.byMonth.find((m) => m.month === filter) ?? null;
   }
 
   switchFinanceSubTab(tab: 'transactions' | 'bank'): void {
@@ -2500,7 +2966,22 @@ export class AdminPageComponent implements OnInit {
   private sanitisePastedHtml(html: string): string {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
-    const allowedTags = new Set(['P', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'UL', 'OL', 'LI', 'H2', 'H3', 'H4', 'A']);
+    const allowedTags = new Set([
+      'P',
+      'BR',
+      'B',
+      'STRONG',
+      'I',
+      'EM',
+      'U',
+      'UL',
+      'OL',
+      'LI',
+      'H2',
+      'H3',
+      'H4',
+      'A',
+    ]);
 
     function clean(node: Node): string {
       if (node.nodeType === Node.TEXT_NODE) {

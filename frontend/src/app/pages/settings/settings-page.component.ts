@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -6,12 +6,21 @@ import { AuthService, AccountProfileDto, AddressDto } from '../../services/auth.
 import { PasskeyService, PasskeyInfo } from '../../services/passkey.service';
 import { SeoService } from '../../services/seo.service';
 
-type Section = 'name' | 'delivery' | 'billing' | 'payment' | 'password' | 'mfa' | 'passkeys' | 'data';
+type Section =
+  | 'name'
+  | 'delivery'
+  | 'billing'
+  | 'payment'
+  | 'password'
+  | 'mfa'
+  | 'passkeys'
+  | 'data';
 
 @Component({
   selector: 'app-settings-page',
   imports: [FormsModule, RouterLink, DatePipe],
   templateUrl: './settings-page.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './settings-page.component.scss',
 })
 export class SettingsPageComponent implements OnInit {
@@ -110,57 +119,63 @@ export class SettingsPageComponent implements OnInit {
   saveDeliveryAddress(): void {
     this.saving.set(true);
     this.message.set('');
-    this.auth.updateDeliveryAddress({
-      addressLine1: this.deliveryLine1 || null,
-      addressLine2: this.deliveryLine2 || null,
-      city: this.deliveryCity || null,
-      county: this.deliveryCounty || null,
-      postcode: this.deliveryPostcode || null,
-      country: this.deliveryCountry || null,
-    }).subscribe({
-      next: (p) => {
-        this.populateForm(p);
-        this.showSuccess('Delivery address updated.');
-      },
-      error: () => this.showError('Failed to update delivery address.'),
-    });
+    this.auth
+      .updateDeliveryAddress({
+        addressLine1: this.deliveryLine1 || null,
+        addressLine2: this.deliveryLine2 || null,
+        city: this.deliveryCity || null,
+        county: this.deliveryCounty || null,
+        postcode: this.deliveryPostcode || null,
+        country: this.deliveryCountry || null,
+      })
+      .subscribe({
+        next: (p) => {
+          this.populateForm(p);
+          this.showSuccess('Delivery address updated.');
+        },
+        error: () => this.showError('Failed to update delivery address.'),
+      });
   }
 
   saveBillingAddress(): void {
     this.saving.set(true);
     this.message.set('');
-    this.auth.updateBillingAddress({
-      addressLine1: this.billingLine1 || null,
-      addressLine2: this.billingLine2 || null,
-      city: this.billingCity || null,
-      county: this.billingCounty || null,
-      postcode: this.billingPostcode || null,
-      country: this.billingCountry || null,
-    }).subscribe({
-      next: (p) => {
-        this.populateForm(p);
-        this.showSuccess('Billing address updated.');
-      },
-      error: () => this.showError('Failed to update billing address.'),
-    });
+    this.auth
+      .updateBillingAddress({
+        addressLine1: this.billingLine1 || null,
+        addressLine2: this.billingLine2 || null,
+        city: this.billingCity || null,
+        county: this.billingCounty || null,
+        postcode: this.billingPostcode || null,
+        country: this.billingCountry || null,
+      })
+      .subscribe({
+        next: (p) => {
+          this.populateForm(p);
+          this.showSuccess('Billing address updated.');
+        },
+        error: () => this.showError('Failed to update billing address.'),
+      });
   }
 
   savePayment(): void {
     this.saving.set(true);
     this.message.set('');
-    this.auth.updatePayment({
-      cardholderName: this.cardholderName,
-      cardLast4: this.cardLast4,
-      cardBrand: this.cardBrand,
-      expiryMonth: this.expiryMonth ?? 0,
-      expiryYear: this.expiryYear ?? 0,
-    }).subscribe({
-      next: (p) => {
-        this.populateForm(p);
-        this.showSuccess('Payment details updated.');
-      },
-      error: () => this.showError('Failed to update payment details.'),
-    });
+    this.auth
+      .updatePayment({
+        cardholderName: this.cardholderName,
+        cardLast4: this.cardLast4,
+        cardBrand: this.cardBrand,
+        expiryMonth: this.expiryMonth ?? 0,
+        expiryYear: this.expiryYear ?? 0,
+      })
+      .subscribe({
+        next: (p) => {
+          this.populateForm(p);
+          this.showSuccess('Payment details updated.');
+        },
+        error: () => this.showError('Failed to update payment details.'),
+      });
   }
 
   changePassword(): void {
@@ -197,7 +212,7 @@ export class SettingsPageComponent implements OnInit {
   removePasskey(id: string): void {
     this.passkeyService.deleteCredential(id).subscribe({
       next: () => {
-        this.passkeys.set(this.passkeys().filter(p => p.id !== id));
+        this.passkeys.set(this.passkeys().filter((p) => p.id !== id));
         this.showSuccess('Passkey removed.');
       },
       error: () => this.showError('Failed to remove passkey.'),
@@ -211,7 +226,9 @@ export class SettingsPageComponent implements OnInit {
       next: (res) => {
         this.saving.set(false);
         this.mfaSetupSecret.set(res.secret);
-        this.mfaQrUrl.set(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(res.qrUri)}`);
+        this.mfaQrUrl.set(
+          `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(res.qrUri)}`,
+        );
       },
       error: (err) => this.showError(err.error?.message ?? 'Failed to set up MFA.'),
     });

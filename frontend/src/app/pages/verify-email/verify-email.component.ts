@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -8,6 +8,7 @@ import { SeoService } from '../../services/seo.service';
   selector: 'app-verify-email',
   imports: [FormsModule, RouterLink],
   templateUrl: './verify-email.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './verify-email.component.scss',
 })
 export class VerifyEmailComponent implements OnInit {

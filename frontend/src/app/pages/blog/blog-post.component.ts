@@ -1,4 +1,13 @@
-import { Component, computed, inject, input, signal, OnInit, RESPONSE_INIT } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  signal,
+  OnInit,
+  RESPONSE_INIT,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -35,6 +44,7 @@ interface BlogPostSummary {
   selector: 'app-blog-post',
   imports: [RouterLink, DatePipe, ShareButtonsComponent, VintageSizeConverterComponent],
   templateUrl: './blog-post.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './blog.component.scss',
 })
 export class BlogPostComponent implements OnInit {

@@ -1,4 +1,4 @@
-import { Component, inject, signal, PLATFORM_ID } from '@angular/core';
+import { Component, inject, signal, PLATFORM_ID, ChangeDetectionStrategy } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
   selector: 'app-cookie-banner',
   imports: [RouterLink],
   templateUrl: './cookie-banner.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './cookie-banner.component.scss',
 })
 export class CookieBannerComponent {

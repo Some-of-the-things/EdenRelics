@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -9,6 +9,7 @@ import { SeoService } from '../../services/seo.service';
   selector: 'app-contact-page',
   imports: [FormsModule],
   templateUrl: './contact-page.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './contact-page.component.scss',
 })
 export class ContactPageComponent implements OnInit {
@@ -27,7 +28,8 @@ export class ContactPageComponent implements OnInit {
   ngOnInit(): void {
     this.seo.updateTags({
       title: 'Contact',
-      description: 'Get in touch with Eden Relics — questions about a piece, sizing, sourcing, or partnership enquiries.',
+      description:
+        'Get in touch with Eden Relics — questions about a piece, sizing, sourcing, or partnership enquiries.',
       url: '/contact',
       hreflang: true,
     });
@@ -67,7 +69,12 @@ export class ContactPageComponent implements OnInit {
           '@type': 'BreadcrumbList',
           itemListElement: [
             { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://edenrelics.co.uk' },
-            { '@type': 'ListItem', position: 2, name: 'Contact', item: 'https://edenrelics.co.uk/contact' },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: 'Contact',
+              item: 'https://edenrelics.co.uk/contact',
+            },
           ],
         },
       ],

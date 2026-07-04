@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CurrencyPipe, DatePipe } from '@angular/common';
@@ -9,6 +9,7 @@ import { SeoService } from '../../services/seo.service';
   selector: 'app-review-page',
   imports: [FormsModule, RouterLink, CurrencyPipe, DatePipe],
   templateUrl: './review-page.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './review-page.component.scss',
 })
 export class ReviewPageComponent implements OnInit {
@@ -62,10 +63,15 @@ export class ReviewPageComponent implements OnInit {
 
   // Arrow-key navigation for the star radiogroups (WAI-ARIA radio pattern): move
   // selection and focus relative to the focused star.
-  onStarKey(field: 'transaction' | 'delivery' | 'product', current: number, event: KeyboardEvent): void {
+  onStarKey(
+    field: 'transaction' | 'delivery' | 'product',
+    current: number,
+    event: KeyboardEvent,
+  ): void {
     let next: number;
     if (event.key === 'ArrowRight' || event.key === 'ArrowUp') next = Math.min(5, current + 1);
-    else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') next = Math.max(1, current - 1);
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown')
+      next = Math.max(1, current - 1);
     else if (event.key === 'Home') next = 1;
     else if (event.key === 'End') next = 5;
     else return;

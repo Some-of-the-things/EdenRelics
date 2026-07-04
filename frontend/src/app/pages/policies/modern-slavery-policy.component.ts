@@ -1,10 +1,11 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { SeoService } from '../../services/seo.service';
 import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-modern-slavery-policy',
   templateUrl: './modern-slavery-policy.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './modern-slavery-policy.component.scss',
 })
 export class ModernSlaveryPolicyComponent implements OnInit {

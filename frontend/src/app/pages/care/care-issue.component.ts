@@ -1,4 +1,12 @@
-import { Component, OnInit, RESPONSE_INIT, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  RESPONSE_INIT,
+  inject,
+  input,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { SeoService } from '../../services/seo.service';
@@ -21,6 +29,7 @@ interface CareIssue {
   selector: 'app-care-issue',
   imports: [RouterLink],
   templateUrl: './care-issue.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './care-fabric.component.scss',
 })
 export class CareIssueComponent implements OnInit {
@@ -37,7 +46,8 @@ export class CareIssueComponent implements OnInit {
       next: (issue) => {
         this.issue.set(issue);
         const title = issue.metaTitle || issue.name;
-        const description = issue.metaDescription || this.snippet(issue.causes || issue.generalMethod);
+        const description =
+          issue.metaDescription || this.snippet(issue.causes || issue.generalMethod);
         const url = `/care/problem/${issue.slug}`;
         this.seo.updateTags({ title, description, url, type: 'article', hreflang: true });
         this.seo.setJsonLd({
@@ -59,9 +69,24 @@ export class CareIssueComponent implements OnInit {
             {
               '@type': 'BreadcrumbList',
               itemListElement: [
-                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://edenrelics.co.uk' },
-                { '@type': 'ListItem', position: 2, name: 'Vintage Care', item: 'https://edenrelics.co.uk/care' },
-                { '@type': 'ListItem', position: 3, name: title, item: `https://edenrelics.co.uk${url}` },
+                {
+                  '@type': 'ListItem',
+                  position: 1,
+                  name: 'Home',
+                  item: 'https://edenrelics.co.uk',
+                },
+                {
+                  '@type': 'ListItem',
+                  position: 2,
+                  name: 'Vintage Care',
+                  item: 'https://edenrelics.co.uk/care',
+                },
+                {
+                  '@type': 'ListItem',
+                  position: 3,
+                  name: title,
+                  item: `https://edenrelics.co.uk${url}`,
+                },
               ],
             },
           ],

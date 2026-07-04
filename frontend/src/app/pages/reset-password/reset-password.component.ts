@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -8,6 +8,7 @@ import { SeoService } from '../../services/seo.service';
   selector: 'app-reset-password',
   imports: [FormsModule, RouterLink],
   templateUrl: './reset-password.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './reset-password.component.scss',
 })
 export class ResetPasswordComponent implements OnInit {
