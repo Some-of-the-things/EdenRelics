@@ -90,7 +90,7 @@ jobs:
     # pre-baked, so there is no install step to hang on the apt/dpkg lock.
     # Keep the tag in sync with the @playwright/test version in package.json.
     container:
-      image: mcr.microsoft.com/playwright:v1.58.2-noble
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
     services:
       postgres:
         image: postgres:16-alpine
