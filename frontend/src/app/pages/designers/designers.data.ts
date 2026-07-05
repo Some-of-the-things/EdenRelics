@@ -63,6 +63,10 @@ const CAROLE_LITTLE_POST: RelatedPost = {
   slug: 'how-to-identify-and-date-vintage-carole-little-dresses',
   title: 'How to Identify and Date Vintage Carole Little Dresses',
 };
+const ROBBIE_BEE_POST: RelatedPost = {
+  slug: 'how-to-identify-vintage-robbie-bee-dresses',
+  title: 'How to Identify Vintage Robbie Bee Dresses',
+};
 
 export const DESIGNERS: DesignerProfile[] = [
   {
@@ -227,7 +231,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'All-over florals and simple shift or midi silhouettes are characteristic of the era.',
     ],
     productMatchers: ['robbie bee'],
-    relatedPosts: [RAYON_POST],
+    relatedPosts: [ROBBIE_BEE_POST, RAYON_POST],
   },
   {
     slug: 'rk-originals',
