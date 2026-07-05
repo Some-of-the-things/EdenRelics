@@ -213,8 +213,12 @@ jobs:
       - name: Patch server bundle for Workers runtime
         run: |
           cd frontend/dist/eden-relics/server
-          sed -i "s/import { createRequire } from 'node:module';//g" *.mjs
-          sed -i "s/globalThis\['require'\] ??= createRequire(import.meta.url);//g" *.mjs
+          # Angular's SSR bundle adds a createRequire(import.meta.url) shim that the
+          # Workers runtime rejects (path 'undefined'). Angular 22 aliases the import as
+          # __ngCreateRequire, so delete both lines by pattern rather than exact string —
+          # this survives future build-output renames.
+          sed -i "/from 'node:module';/d" *.mjs
+          sed -i "/globalThis\['require'\] ??=/d" *.mjs
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
@@ -341,8 +345,12 @@ jobs:
       - name: Patch server bundle for Workers runtime
         run: |
           cd dist/eden-relics/server
-          sed -i "s/import { createRequire } from 'node:module';//g" *.mjs
-          sed -i "s/globalThis\['require'\] ??= createRequire(import.meta.url);//g" *.mjs
+          # Angular's SSR bundle adds a createRequire(import.meta.url) shim that the
+          # Workers runtime rejects (path 'undefined'). Angular 22 aliases the import as
+          # __ngCreateRequire, so delete both lines by pattern rather than exact string —
+          # this survives future build-output renames.
+          sed -i "/from 'node:module';/d" *.mjs
+          sed -i "/globalThis\['require'\] ??=/d" *.mjs
 
       - name: Deploy to Cloudflare Workers (staging)
         uses: cloudflare/wrangler-action@v3
