@@ -1,5 +1,12 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  signal,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   CalendarConfig,
@@ -11,8 +18,18 @@ import {
 } from '../../services/calendar.service';
 
 const MONTH_LABELS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 interface CalendarDay {
@@ -43,6 +60,7 @@ type CreateMode = 'closed' | 'open';
   selector: 'app-admin-calendar',
   imports: [ReactiveFormsModule, DatePipe],
   templateUrl: './admin-calendar.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './admin-calendar.component.scss',
 })
 export class AdminCalendarComponent implements OnInit {
@@ -78,8 +96,12 @@ export class AdminCalendarComponent implements OnInit {
   });
 
   protected readonly createForm = this.fb.nonNullable.group({
-    title: this.fb.nonNullable.control('', { validators: [Validators.required, Validators.maxLength(200)] }),
-    dueDate: this.fb.nonNullable.control(this.todayIsoDate(), { validators: [Validators.required] }),
+    title: this.fb.nonNullable.control('', {
+      validators: [Validators.required, Validators.maxLength(200)],
+    }),
+    dueDate: this.fb.nonNullable.control(this.todayIsoDate(), {
+      validators: [Validators.required],
+    }),
     scheduledFor: this.fb.nonNullable.control(''),
     notes: this.fb.nonNullable.control(''),
   });
@@ -114,7 +136,9 @@ export class AdminCalendarComponent implements OnInit {
       this.config.set(config);
       this.error.set(null);
     } catch {
-      this.error.set('Could not load the calendar — check the API is up and you hold the Admin role.');
+      this.error.set(
+        'Could not load the calendar — check the API is up and you hold the Admin role.',
+      );
     } finally {
       this.loading.set(false);
     }
@@ -162,16 +186,22 @@ export class AdminCalendarComponent implements OnInit {
 
   protected beginSchedule(): void {
     const o = this.selected();
-    if (!o) { return; }
+    if (!o) {
+      return;
+    }
     this.scheduleForm.reset({
-      scheduledFor: o.scheduledFor ? this.toLocalInput(o.scheduledFor) : this.defaultScheduleLocal(),
+      scheduledFor: o.scheduledFor
+        ? this.toLocalInput(o.scheduledFor)
+        : this.defaultScheduleLocal(),
     });
     this.mode.set('schedule');
   }
 
   protected beginComplete(): void {
     const o = this.selected();
-    if (!o) { return; }
+    if (!o) {
+      return;
+    }
     this.completeForm.reset({
       submissionReference: o.submissionReference ?? '',
       paidAmountMajor: o.paidAmountMinor !== null ? o.paidAmountMinor / 100 : null,
@@ -185,7 +215,9 @@ export class AdminCalendarComponent implements OnInit {
 
   protected async submitSchedule(): Promise<void> {
     const o = this.selected();
-    if (!o || this.scheduleForm.invalid || this.working()) { return; }
+    if (!o || this.scheduleForm.invalid || this.working()) {
+      return;
+    }
     this.working.set(true);
     this.error.set(null);
     try {
@@ -205,7 +237,9 @@ export class AdminCalendarComponent implements OnInit {
 
   protected async unschedule(): Promise<void> {
     const o = this.selected();
-    if (!o || this.working()) { return; }
+    if (!o || this.working()) {
+      return;
+    }
     this.working.set(true);
     this.error.set(null);
     try {
@@ -222,7 +256,9 @@ export class AdminCalendarComponent implements OnInit {
 
   protected async submitComplete(): Promise<void> {
     const o = this.selected();
-    if (!o || this.working()) { return; }
+    if (!o || this.working()) {
+      return;
+    }
     this.working.set(true);
     this.error.set(null);
     try {
@@ -252,8 +288,12 @@ export class AdminCalendarComponent implements OnInit {
 
   protected async waive(): Promise<void> {
     const o = this.selected();
-    if (!o || this.working()) { return; }
-    if (!confirm(`Mark "${o.title}" as not applicable?`)) { return; }
+    if (!o || this.working()) {
+      return;
+    }
+    if (!confirm(`Mark "${o.title}" as not applicable?`)) {
+      return;
+    }
     this.working.set(true);
     this.error.set(null);
     try {
@@ -270,7 +310,9 @@ export class AdminCalendarComponent implements OnInit {
 
   protected async reopen(): Promise<void> {
     const o = this.selected();
-    if (!o || this.working()) { return; }
+    if (!o || this.working()) {
+      return;
+    }
     this.working.set(true);
     this.error.set(null);
     try {
@@ -301,7 +343,9 @@ export class AdminCalendarComponent implements OnInit {
   }
 
   protected async submitCreate(): Promise<void> {
-    if (this.createForm.invalid || this.working()) { return; }
+    if (this.createForm.invalid || this.working()) {
+      return;
+    }
     this.working.set(true);
     this.error.set(null);
     try {
@@ -330,9 +374,15 @@ export class AdminCalendarComponent implements OnInit {
 
   protected async deleteSelected(): Promise<void> {
     const o = this.selected();
-    if (!o || this.working()) { return; }
-    if (o.kind !== 'other') { return; }
-    if (!confirm(`Delete "${o.title}"? This can't be undone.`)) { return; }
+    if (!o || this.working()) {
+      return;
+    }
+    if (o.kind !== 'other') {
+      return;
+    }
+    if (!confirm(`Delete "${o.title}"? This can't be undone.`)) {
+      return;
+    }
     this.working.set(true);
     this.error.set(null);
     try {
@@ -350,17 +400,23 @@ export class AdminCalendarComponent implements OnInit {
 
   protected async copySubscribeUrl(): Promise<void> {
     const url = this.config()?.icalSubscribeUrl;
-    if (!url) { return; }
+    if (!url) {
+      return;
+    }
     try {
       await navigator.clipboard.writeText(url);
-      this.message.set('Subscribe URL copied — paste it into Google Calendar / Outlook / iPhone Settings → Calendar.');
+      this.message.set(
+        'Subscribe URL copied — paste it into Google Calendar / Outlook / iPhone Settings → Calendar.',
+      );
     } catch {
       this.message.set('Copy failed — select the URL manually.');
     }
   }
 
   protected formatMoney(amountMinor: number | null, currency: string): string {
-    if (amountMinor === null || amountMinor === undefined) { return ''; }
+    if (amountMinor === null || amountMinor === undefined) {
+      return '';
+    }
     return new Intl.NumberFormat('en-GB', {
       style: 'currency',
       currency: currency.toUpperCase(),
@@ -369,7 +425,9 @@ export class AdminCalendarComponent implements OnInit {
   }
 
   protected statusLabel(status: LiabilityStatus): string {
-    if (status === 'waived') { return 'N/A'; }
+    if (status === 'waived') {
+      return 'N/A';
+    }
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
@@ -440,11 +498,21 @@ export class AdminCalendarComponent implements OnInit {
   }
 
   private classFor(o: LiabilityObligation, todayIso: string): ObligationChip['kindClass'] {
-    if (o.status === 'complete') { return 'complete'; }
-    if (o.status === 'waived') { return 'waived'; }
-    if (o.status === 'submitted' || o.status === 'paid') { return 'submitted'; }
-    if (o.dueDate < todayIso) { return 'overdue'; }
-    if (o.scheduledFor) { return 'scheduled'; }
+    if (o.status === 'complete') {
+      return 'complete';
+    }
+    if (o.status === 'waived') {
+      return 'waived';
+    }
+    if (o.status === 'submitted' || o.status === 'paid') {
+      return 'submitted';
+    }
+    if (o.dueDate < todayIso) {
+      return 'overdue';
+    }
+    if (o.scheduledFor) {
+      return 'scheduled';
+    }
     return 'pending';
   }
 

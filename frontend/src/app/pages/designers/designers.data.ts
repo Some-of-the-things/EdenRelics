@@ -51,6 +51,18 @@ const RAYON_POST: RelatedPost = {
   slug: 'the-rise-and-fall-of-rayon',
   title: 'The Rise and Fall of Rayon',
 };
+const LESLIE_FAY_POST: RelatedPost = {
+  slug: 'how-to-identify-and-date-vintage-leslie-fay-dresses',
+  title: 'How to Identify and Date Vintage Leslie Fay Dresses',
+};
+const CAROLINE_WELLS_POST: RelatedPost = {
+  slug: 'how-to-identify-vintage-caroline-wells-collection-dresses',
+  title: 'How to Identify Vintage Caroline Wells Collection Dresses',
+};
+const CAROLE_LITTLE_POST: RelatedPost = {
+  slug: 'how-to-identify-and-date-vintage-carole-little-dresses',
+  title: 'How to Identify and Date Vintage Carole Little Dresses',
+};
 
 export const DESIGNERS: DesignerProfile[] = [
   {
@@ -72,7 +84,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Patchwork-print midi dresses with crimson, teal, and floral panels are a particularly collected silhouette.',
     ],
     productMatchers: ['leslie fay'],
-    relatedPosts: [RAYON_POST],
+    relatedPosts: [LESLIE_FAY_POST, RAYON_POST],
   },
   {
     slug: 'carole-little',
@@ -93,7 +105,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Prints are typically all-over florals, abstract brushstrokes, or hand-painted-look botanicals — not geometric or ditsy.',
     ],
     productMatchers: ['carole little'],
-    relatedPosts: [RAYON_POST],
+    relatedPosts: [CAROLE_LITTLE_POST, RAYON_POST],
   },
   {
     slug: 'caroline-wells',
@@ -113,7 +125,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Look for button-front bodices, square or scoop necklines, and side pockets — common construction details for the era.',
     ],
     productMatchers: ['caroline wells'],
-    relatedPosts: [RAYON_POST],
+    relatedPosts: [CAROLINE_WELLS_POST, RAYON_POST],
   },
   {
     slug: 'laura-ashley',

@@ -1,10 +1,11 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { SeoService } from '../../services/seo.service';
 import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-privacy-policy',
   templateUrl: './privacy-policy.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './privacy-policy.component.scss',
 })
 export class PrivacyPolicyComponent implements OnInit {
@@ -14,7 +15,8 @@ export class PrivacyPolicyComponent implements OnInit {
   ngOnInit(): void {
     this.seo.updateTags({
       title: 'Privacy Policy',
-      description: 'Eden Relics privacy policy — how we collect, use, and protect your personal data.',
+      description:
+        'Eden Relics privacy policy — how we collect, use, and protect your personal data.',
       url: '/privacy-policy',
     });
   }

@@ -1,8 +1,8 @@
 <article class="collection-page collection-preview">
   @if (loading()) {
-    <p class="collection-preview__status">Loading preview…</p>
+    <p class="collection-preview__status" role="status" aria-live="polite">Loading preview…</p>
   } @else if (error()) {
-    <p class="collection-preview__status collection-preview__status--error">{{ error() }}</p>
+    <p class="collection-preview__status collection-preview__status--error" role="alert">{{ error() }}</p>
   } @else if (collection(); as c) {
     <div class="collection-preview__bar" [class.collection-preview__bar--done]="allLive()">
       @if (allLive()) {
@@ -27,7 +27,7 @@
     </div>
 
     @if (published(); as result) {
-      <p class="collection-preview__success">
+      <p class="collection-preview__success" role="status" aria-live="polite">
         {{ result.published }} piece{{ result.published === 1 ? '' : 's' }} published.
         The Wildflower Edit now appears on the homepage and at
         <a [routerLink]="['/collections', c.slug]">/collections/{{ c.slug }}</a>.

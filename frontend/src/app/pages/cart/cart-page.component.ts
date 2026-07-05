@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CartComponent } from '../../components/cart/cart.component';
 import { SeoService } from '../../services/seo.service';
 
@@ -6,6 +6,7 @@ import { SeoService } from '../../services/seo.service';
   selector: 'app-cart-page',
   imports: [CartComponent],
   templateUrl: './cart-page.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './cart-page.component.scss',
 })
 export class CartPageComponent implements OnInit {

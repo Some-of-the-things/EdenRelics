@@ -1,4 +1,12 @@
-import { Component, afterNextRender, output, signal, inject, PLATFORM_ID } from '@angular/core';
+import {
+  Component,
+  afterNextRender,
+  output,
+  signal,
+  inject,
+  PLATFORM_ID,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 declare const google: any;
@@ -8,6 +16,7 @@ declare const AppleID: any;
 @Component({
   selector: 'app-social-login',
   templateUrl: './social-login.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './social-login.component.scss',
 })
 export class SocialLoginComponent {
@@ -66,11 +75,17 @@ export class SocialLoginComponent {
     if (typeof FB === 'undefined') {
       return;
     }
-    FB.login((response: any) => {
-      if (response.authResponse?.accessToken) {
-        this.tokenReceived.emit({ provider: 'Facebook', idToken: response.authResponse.accessToken });
-      }
-    }, { scope: 'email,public_profile' });
+    FB.login(
+      (response: any) => {
+        if (response.authResponse?.accessToken) {
+          this.tokenReceived.emit({
+            provider: 'Facebook',
+            idToken: response.authResponse.accessToken,
+          });
+        }
+      },
+      { scope: 'email,public_profile' },
+    );
   }
 
   loginWithApple(): void {
@@ -88,11 +103,14 @@ export class SocialLoginComponent {
       redirectURI: window.location.origin + '/login',
       usePopup: true,
     });
-    AppleID.auth.signIn().then((res: any) => {
-      if (res.authorization?.id_token) {
-        this.tokenReceived.emit({ provider: 'Apple', idToken: res.authorization.id_token });
-      }
-    }).catch(() => {});
+    AppleID.auth
+      .signIn()
+      .then((res: any) => {
+        if (res.authorization?.id_token) {
+          this.tokenReceived.emit({ provider: 'Apple', idToken: res.authorization.id_token });
+        }
+      })
+      .catch(() => {});
   }
 
   private initializeGoogle(): void {
@@ -147,10 +165,14 @@ export class SocialLoginComponent {
 
   private loadAppleSdk(): Promise<void> {
     return new Promise((resolve) => {
-      if (document.getElementById('apple-signin')) { resolve(); return; }
+      if (document.getElementById('apple-signin')) {
+        resolve();
+        return;
+      }
       const script = document.createElement('script');
       script.id = 'apple-signin';
-      script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+      script.src =
+        'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
       script.async = true;
       script.onload = () => resolve();
       document.head.appendChild(script);

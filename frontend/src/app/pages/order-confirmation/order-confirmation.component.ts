@@ -1,4 +1,4 @@
-import { Component, inject, input, signal, OnInit } from '@angular/core';
+import { Component, inject, input, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,6 +11,7 @@ import { SeoService } from '../../services/seo.service';
   selector: 'app-order-confirmation',
   imports: [RouterLink, CurrencyPipe, DatePipe, FormsModule],
   templateUrl: './order-confirmation.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './order-confirmation.component.scss',
 })
 export class OrderConfirmationComponent implements OnInit {
@@ -25,20 +26,27 @@ export class OrderConfirmationComponent implements OnInit {
   readonly mailingSubscribed = signal(false);
 
   ngOnInit(): void {
-    this.seo.updateTags({ title: 'Order Confirmation', url: `/order-confirmation/${this.id()}`, noIndex: true });
+    this.seo.updateTags({
+      title: 'Order Confirmation',
+      url: `/order-confirmation/${this.id()}`,
+      noIndex: true,
+    });
     this.orderService.getById(this.id()).subscribe({
       next: (order) => this.order.set(order),
-      error: () => this.error.set('Could not load order details. Please check the link and try again.'),
+      error: () =>
+        this.error.set('Could not load order details. Please check the link and try again.'),
     });
   }
 
   subscribeToMailingList(): void {
     if (!this.mailingEmail.trim()) return;
-    this.http.post(`${environment.apiUrl}/api/mailing-list/subscribe`, {
-      email: this.mailingEmail,
-      source: 'Order Confirmation',
-    }).subscribe({
-      next: () => this.mailingSubscribed.set(true),
-    });
+    this.http
+      .post(`${environment.apiUrl}/api/mailing-list/subscribe`, {
+        email: this.mailingEmail,
+        source: 'Order Confirmation',
+      })
+      .subscribe({
+        next: () => this.mailingSubscribed.set(true),
+      });
   }
 }

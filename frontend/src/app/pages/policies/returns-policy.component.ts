@@ -1,10 +1,11 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { SeoService } from '../../services/seo.service';
 import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-returns-policy',
   templateUrl: './returns-policy.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './privacy-policy.component.scss',
 })
 export class ReturnsPolicyComponent implements OnInit {
@@ -14,7 +15,8 @@ export class ReturnsPolicyComponent implements OnInit {
   ngOnInit(): void {
     this.seo.updateTags({
       title: 'Returns Policy',
-      description: 'Eden Relics returns policy — how to return or exchange vintage items purchased from our shop.',
+      description:
+        'Eden Relics returns policy — how to return or exchange vintage items purchased from our shop.',
       url: '/returns-policy',
     });
   }

@@ -1,4 +1,14 @@
-import { Component, computed, effect, inject, input, signal, PLATFORM_ID, RESPONSE_INIT } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  PLATFORM_ID,
+  RESPONSE_INIT,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CurrencyPipe, isPlatformBrowser, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -51,8 +61,16 @@ function schemaCondition(condition: string): string {
 
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, CurrencyPipe, TitleCasePipe, LocalPricePipe, ShareButtonsComponent, FocusTrapDirective],
+  imports: [
+    RouterLink,
+    CurrencyPipe,
+    TitleCasePipe,
+    LocalPricePipe,
+    ShareButtonsComponent,
+    FocusTrapDirective,
+  ],
   templateUrl: './product-detail.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './product-detail.component.scss',
 })
 export class ProductDetailComponent {
@@ -85,7 +103,11 @@ export class ProductDetailComponent {
   readonly product = computed(() => {
     const param = this.id();
     const store = this.productStore.products();
-    return store.find(p => p.id === param) ?? store.find(p => p.slug === param) ?? this.fetchedProduct();
+    return (
+      store.find((p) => p.id === param) ??
+      store.find((p) => p.slug === param) ??
+      this.fetchedProduct()
+    );
   });
 
   readonly allImages = computed(() => {
@@ -106,9 +128,7 @@ export class ProductDetailComponent {
     return p ? findDesignerForProduct(p.name) : undefined;
   });
 
-  readonly currentImage = computed(() =>
-    this.selectedImage() ?? this.product()?.imageUrl ?? ''
-  );
+  readonly currentImage = computed(() => this.selectedImage() ?? this.product()?.imageUrl ?? '');
 
   readonly srcset = imageSrcset;
   readonly srcAt = imageSrcAt;
@@ -177,7 +197,7 @@ export class ProductDetailComponent {
     effect(() => {
       const param = this.id();
       const store = this.productStore.products();
-      const inStore = store.find(p => p.id === param || p.slug === param);
+      const inStore = store.find((p) => p.id === param || p.slug === param);
       if (!inStore && !this.fetchedProduct() && param) {
         const fetch$ = UUID_PATTERN.test(param)
           ? this.productService.getById(param)
@@ -204,9 +224,10 @@ export class ProductDetailComponent {
       }
       this.lastResolvedMaterial = material;
       this.http
-        .get<{ slug: string; name: string }>(
-          `${environment.apiUrl}/api/care/resolve?material=${encodeURIComponent(material)}`,
-        )
+        .get<{
+          slug: string;
+          name: string;
+        }>(`${environment.apiUrl}/api/care/resolve?material=${encodeURIComponent(material)}`)
         .subscribe({
           next: (g) => this.careGuide.set(g),
           error: () => this.careGuide.set(null),
@@ -235,17 +256,20 @@ export class ProductDetailComponent {
         this.analytics.viewProduct(product.id, product.name, product.price);
         if (this.isBrowser) {
           const params = new URLSearchParams(window.location.search);
-          this.productService.recordView(product.id, {
-            referrer: document.referrer || undefined,
-            utmSource: params.get('utm_source') || undefined,
-            utmMedium: params.get('utm_medium') || undefined,
-            utmCampaign: params.get('utm_campaign') || undefined,
-            screenResolution: `${window.screen.width}x${window.screen.height}`,
-            // Sold pieces (visible via a collection) don't record views — the API
-            // returns 404 for them; swallow it rather than surfacing an error.
-          }).subscribe({ error: () => {} });
+          this.productService
+            .recordView(product.id, {
+              referrer: document.referrer || undefined,
+              utmSource: params.get('utm_source') || undefined,
+              utmMedium: params.get('utm_medium') || undefined,
+              utmCampaign: params.get('utm_campaign') || undefined,
+              screenResolution: `${window.screen.width}x${window.screen.height}`,
+              // Sold pieces (visible via a collection) don't record views — the API
+              // returns 404 for them; swallow it rather than surfacing an error.
+            })
+            .subscribe({ error: () => {} });
         }
-        const activePrice = product.showReduction && product.salePrice ? product.salePrice : product.price;
+        const activePrice =
+          product.showReduction && product.salePrice ? product.salePrice : product.price;
         const productUrl = `https://edenrelics.co.uk${canonicalPath}`;
         const description = stripHtml(product.description);
         const uploadDate = product.createdAtUtc ?? new Date().toISOString();
@@ -276,7 +300,10 @@ export class ProductDetailComponent {
             url: productUrl,
             // Prefer the garment's actual maker/label as the brand (a genuine
             // global identifier); fall back to the shop name when unknown.
-            brand: { '@type': 'Brand', name: findDesignerForProduct(product.name)?.name ?? 'Eden Relics' },
+            brand: {
+              '@type': 'Brand',
+              name: findDesignerForProduct(product.name)?.name ?? 'Eden Relics',
+            },
             category: product.era,
             itemCondition: schemaCondition(product.condition),
             ...(videos.length > 0 ? { video: videos.length === 1 ? videos[0] : videos } : {}),
@@ -297,8 +324,18 @@ export class ProductDetailComponent {
                 shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'GB' },
                 deliveryTime: {
                   '@type': 'ShippingDeliveryTime',
-                  handlingTime: { '@type': 'QuantitativeValue', minValue: 0, maxValue: 2, unitCode: 'DAY' },
-                  transitTime: { '@type': 'QuantitativeValue', minValue: 3, maxValue: 5, unitCode: 'DAY' },
+                  handlingTime: {
+                    '@type': 'QuantitativeValue',
+                    minValue: 0,
+                    maxValue: 2,
+                    unitCode: 'DAY',
+                  },
+                  transitTime: {
+                    '@type': 'QuantitativeValue',
+                    minValue: 3,
+                    maxValue: 5,
+                    unitCode: 'DAY',
+                  },
                 },
               },
               // 14-day cancellation right (Consumer Contracts Regs 2013); the

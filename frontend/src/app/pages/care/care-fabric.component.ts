@@ -1,4 +1,12 @@
-import { Component, OnInit, RESPONSE_INIT, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  RESPONSE_INIT,
+  inject,
+  input,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { SeoService } from '../../services/seo.service';
@@ -36,6 +44,7 @@ interface CareFabric {
   selector: 'app-care-fabric',
   imports: [RouterLink],
   templateUrl: './care-fabric.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './care-fabric.component.scss',
 })
 export class CareFabricComponent implements OnInit {
@@ -49,10 +58,12 @@ export class CareFabricComponent implements OnInit {
   readonly error = signal(false);
 
   ngOnInit(): void {
-    this.http.get<CareProduct[]>(`${environment.apiUrl}/api/care/fabric/${this.slug()}/products`).subscribe({
-      next: (products) => this.products.set(products),
-      error: () => {},
-    });
+    this.http
+      .get<CareProduct[]>(`${environment.apiUrl}/api/care/fabric/${this.slug()}/products`)
+      .subscribe({
+        next: (products) => this.products.set(products),
+        error: () => {},
+      });
     this.http.get<CareFabric>(`${environment.apiUrl}/api/care/fabric/${this.slug()}`).subscribe({
       next: (fabric) => {
         this.fabric.set(fabric);
@@ -86,9 +97,24 @@ export class CareFabricComponent implements OnInit {
             {
               '@type': 'BreadcrumbList',
               itemListElement: [
-                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://edenrelics.co.uk' },
-                { '@type': 'ListItem', position: 2, name: 'Vintage Care', item: 'https://edenrelics.co.uk/care' },
-                { '@type': 'ListItem', position: 3, name: title, item: `https://edenrelics.co.uk${url}` },
+                {
+                  '@type': 'ListItem',
+                  position: 1,
+                  name: 'Home',
+                  item: 'https://edenrelics.co.uk',
+                },
+                {
+                  '@type': 'ListItem',
+                  position: 2,
+                  name: 'Vintage Care',
+                  item: 'https://edenrelics.co.uk/care',
+                },
+                {
+                  '@type': 'ListItem',
+                  position: 3,
+                  name: title,
+                  item: `https://edenrelics.co.uk${url}`,
+                },
               ],
             },
           ],

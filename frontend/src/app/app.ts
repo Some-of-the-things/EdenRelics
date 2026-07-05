@@ -1,4 +1,4 @@
-import { Component, inject, afterNextRender } from '@angular/core';
+import { Component, inject, afterNextRender, ChangeDetectionStrategy } from '@angular/core';
 import { NavigationEnd, NavigationError, Router, RouterOutlet } from '@angular/router';
 import { ViewportScroller, DOCUMENT } from '@angular/common';
 import { HeaderComponent } from './components/header/header.component';
@@ -22,6 +22,7 @@ const RELOAD_FLAG = 'chunkReloadAttempted';
   selector: 'app-root',
   imports: [RouterOutlet, HeaderComponent, FooterComponent, CookieBannerComponent],
   templateUrl: './app.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.scss',
 })
 export class App {
@@ -73,7 +74,11 @@ export class App {
 
   private maybeReloadOnChunkError(error: unknown): void {
     const message =
-      error instanceof Error ? error.message : typeof error === 'string' ? error : String(error ?? '');
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
+          : String(error ?? '');
     if (!CHUNK_LOAD_ERROR_PATTERN.test(message)) {
       return;
     }

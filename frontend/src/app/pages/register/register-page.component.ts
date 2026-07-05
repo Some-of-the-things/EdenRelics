@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -9,6 +9,7 @@ import { SeoService } from '../../services/seo.service';
   selector: 'app-register-page',
   imports: [FormsModule, RouterLink, SocialLoginComponent],
   templateUrl: './register-page.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './register-page.component.scss',
 })
 export class RegisterPageComponent implements OnInit {

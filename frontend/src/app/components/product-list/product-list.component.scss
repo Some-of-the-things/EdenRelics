@@ -9,7 +9,7 @@
   width: 100%;
   padding: 0.85rem 1.25rem;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-control); /* WCAG 1.4.11 — control boundary, was --border-color (1.37:1) */
   border-radius: 0;
   color: var(--text-primary);
   font-size: 0.95rem;
@@ -51,7 +51,7 @@
 .products__size-select {
   padding: 0.5rem 0.85rem;
   background: var(--bg-card);
-  border: 1px solid var(--border-dark);
+  border: 1px solid var(--border-control); /* WCAG 1.4.11 — control boundary, was --border-dark (1.72:1) */
   border-radius: 0;
   color: var(--text-primary);
   font-family: var(--font-body);
@@ -69,7 +69,7 @@
 .products__cat-btn {
   padding: 0.5rem 1.25rem;
   background: transparent;
-  border: 1px solid var(--border-dark);
+  border: 1px solid var(--border-control); /* WCAG 1.4.11 — control boundary, was --border-dark (1.72:1) */
   border-radius: 0;
   color: var(--text-secondary);
   cursor: pointer;

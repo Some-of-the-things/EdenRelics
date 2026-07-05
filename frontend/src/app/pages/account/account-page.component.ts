@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { AccountProfileDto, AuthService } from '../../services/auth.service';
@@ -10,6 +10,7 @@ import { EligibleOrder, MyReview, ReviewsService } from '../../services/reviews.
   selector: 'app-account-page',
   imports: [RouterLink, DatePipe],
   templateUrl: './account-page.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './account-page.component.scss',
 })
 export class AccountPageComponent implements OnInit {
