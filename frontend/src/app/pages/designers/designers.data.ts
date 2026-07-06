@@ -71,6 +71,10 @@ const VIYELLA_POST: RelatedPost = {
   slug: 'how-to-identify-and-date-vintage-viyella',
   title: 'How to Identify and Date Vintage Viyella',
 };
+const US_LABELS_COMPARISON_POST: RelatedPost = {
+  slug: 'how-to-tell-vintage-american-dress-labels-apart',
+  title: 'Telling Vintage American Dress Labels Apart: Leslie Fay, Liz Claiborne, Alfred Dunner & Sag Harbor',
+};
 
 export const DESIGNERS: DesignerProfile[] = [
   {
@@ -93,7 +97,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Recognise it by triangulation. Because Leslie Fay was a mass-market house, no single print or silhouette is brand-defining — read the label, the construction quality and the overall 1980s–90s department-store styling together rather than relying on any one "tell".',
     ],
     productMatchers: ['leslie fay'],
-    relatedPosts: [LESLIE_FAY_POST, RAYON_POST],
+    relatedPosts: [LESLIE_FAY_POST, US_LABELS_COMPARISON_POST, RAYON_POST],
   },
   {
     slug: 'carole-little',
