@@ -67,6 +67,10 @@ const ROBBIE_BEE_POST: RelatedPost = {
   slug: 'how-to-identify-vintage-robbie-bee-dresses',
   title: 'How to Identify Vintage Robbie Bee Dresses',
 };
+const VIYELLA_POST: RelatedPost = {
+  slug: 'how-to-identify-and-date-vintage-viyella',
+  title: 'How to Identify and Date Vintage Viyella',
+};
 
 export const DESIGNERS: DesignerProfile[] = [
   {
@@ -212,6 +216,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Quality construction: neat seams, substantial buttons, and a soft but substantial drape.',
     ],
     productMatchers: ['viyella'],
+    relatedPosts: [VIYELLA_POST],
   },
   {
     slug: 'robbie-bee',

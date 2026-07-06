@@ -22,6 +22,7 @@
   { "path": "/designers/rk-originals", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/designers/mondi", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/collections/wildflower-edit", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/collections/vintage-tartan", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/privacy-policy", "changefreq": "yearly", "priority": "0.3" },
   { "path": "/modern-slavery-policy", "changefreq": "yearly", "priority": "0.3" },
   { "path": "/supply-chain-policy", "changefreq": "yearly", "priority": "0.3" },
