@@ -41,6 +41,11 @@ public class Product : BaseEntity
     /// </summary>
     public bool InCollection { get; set; }
 
+    /// <summary>When this product transitioned to Sold. Drives the "sold listings
+    /// stay live for ~60 days, then 301-redirect" rule so sold URLs never dead-end.
+    /// Set on the Sold transition; cleared if the product is relisted.</summary>
+    public DateTime? SoldAtUtc { get; set; }
+
     public decimal? SalePrice { get; set; }
 
     /// <summary>When the current Price was set (for 28-day reduction rule compliance)</summary>

@@ -414,7 +414,7 @@ public class ProductSkuAndStatusTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task SoldProduct_HiddenFromPublic_VisibleToAdmin()
+    public async Task SoldProduct_StaysViewableDuringGrace_ThenHidden_AlwaysVisibleToAdmin()
     {
         HttpClient client = _factory.CreateClient();
         await RegisterAdmin(client, _factory, "admin-sold-hidden@test.com");
@@ -423,13 +423,34 @@ public class ProductSkuAndStatusTests : IClassFixture<ApiFactory>
             "/api/products",
             NewProductPayload(status: "sold"));
         AdminProductResponse? p = await create.Content.ReadFromJsonAsync<AdminProductResponse>(JsonOptions);
+        Assert.NotNull(p);
 
-        // Public users get 404 for sold products (vintage = one-of-one, gone is gone)
         HttpClient anon = _factory.CreateClient();
-        HttpResponseMessage publicResponse = await anon.GetAsync($"/api/products/{p!.Id}");
-        Assert.Equal(HttpStatusCode.NotFound, publicResponse.StatusCode);
 
-        // Admin can still see sold products for bookkeeping/management
+        // Within the 60-day grace window a just-sold piece stays viewable, so its
+        // URL doesn't dead-end the moment it sells.
+        HttpResponseMessage duringGrace = await anon.GetAsync($"/api/products/{p!.Id}");
+        Assert.Equal(HttpStatusCode.OK, duringGrace.StatusCode);
+
+        // Backdate the sold date past the grace window.
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+            Product? row = await db.Products.FindAsync(p.Id);
+            Assert.NotNull(row);
+            row!.SoldAtUtc = DateTime.UtcNow.AddDays(-61);
+            await db.SaveChangesAsync();
+        }
+
+        // Now the public page is hidden (vintage = one-of-one; long-gone is gone)...
+        HttpResponseMessage afterGrace = await anon.GetAsync($"/api/products/{p.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, afterGrace.StatusCode);
+
+        // ...and the resolve endpoint tells the edge layer to 301 it away.
+        string resolved = await anon.GetStringAsync($"/api/products/resolve/{p.Slug}");
+        Assert.Contains("redirect", resolved);
+
+        // Admin can always see sold products for bookkeeping/management.
         HttpResponseMessage adminResponse = await client.GetAsync($"/api/products/{p.Id}");
         Assert.Equal(HttpStatusCode.OK, adminResponse.StatusCode);
     }

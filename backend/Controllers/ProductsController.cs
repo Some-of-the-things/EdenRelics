@@ -118,6 +118,42 @@ public class ProductsController : ControllerBase
         return Ok(ToDto(product, locale));
     }
 
+    /// <summary>Days a sold product's page stays live before the edge layer 301s it away.</summary>
+    private const int SoldGraceDays = 60;
+
+    /// <summary>
+    /// Resolves a product slug for the edge redirect layer (frontend server.ts) so sold
+    /// or removed product URLs 301 to a relevant page instead of dead-ending. Public and
+    /// unauthenticated — crawlers and SSR call it. Returns one of:
+    ///   <c>render</c>   serve the page normally (live, or sold within the grace window);
+    ///   <c>redirect</c>  301 away (sold beyond the window, or soft-deleted) — includes
+    ///                    Name/Era so the caller maps to a designer hub or decade page;
+    ///   <c>gone</c>      no such product — caller falls back to its legacy map or a 404.
+    /// </summary>
+    [HttpGet("resolve/{slug}")]
+    public async Task<ActionResult<ProductResolveDto>> Resolve(string slug)
+    {
+        IEnumerable<Product> matches = await _repository.FindAsync(p => p.Slug == slug, includeDeleted: true);
+        Product? product = matches.FirstOrDefault();
+        if (product is null)
+        {
+            return Ok(new ProductResolveDto { Action = "gone" });
+        }
+        if (product.IsDeleted)
+        {
+            return Ok(new ProductResolveDto { Action = "redirect", Name = product.Name, Era = product.Era });
+        }
+        if (product.Status == ProductStatus.Sold)
+        {
+            DateTime soldAt = product.SoldAtUtc ?? product.UpdatedAtUtc;
+            if (soldAt <= DateTime.UtcNow.AddDays(-SoldGraceDays))
+            {
+                return Ok(new ProductResolveDto { Action = "redirect", Name = product.Name, Era = product.Era });
+            }
+        }
+        return Ok(new ProductResolveDto { Action = "render" });
+    }
+
     /// Sold products are hidden from the public, except: (a) sold pieces in a curated
     /// collection stay public (shown as "Sold" on their detail page), and (b) the user
     /// who favourited a sold piece can still see it — so their favourites list and any
@@ -133,6 +169,14 @@ public class ProductsController : ControllerBase
             return false;
         }
         if (product.InCollection)
+        {
+            return true;
+        }
+        // Sold pieces stay viewable on their own detail page for a grace window so the
+        // URL doesn't dead-end the moment a piece sells; the edge redirect layer 301s
+        // them away once the window passes.
+        DateTime soldAt = product.SoldAtUtc ?? product.UpdatedAtUtc;
+        if (soldAt > DateTime.UtcNow.AddDays(-SoldGraceDays))
         {
             return true;
         }
@@ -337,6 +381,16 @@ public class ProductsController : ControllerBase
             // Backward-compat: callers that still send only InStock can flip between Live and Sold,
             // but cannot put a product into Stock without sending Status.
             product.Status = dto.InStock.Value ? ProductStatus.Live : ProductStatus.Sold;
+        }
+        // Stamp the sold date on the transition into Sold (drives the 60-day
+        // "stay live then redirect" rule), and clear it if the piece is relisted.
+        if (product.Status == ProductStatus.Sold && previousStatus != ProductStatus.Sold)
+        {
+            product.SoldAtUtc = DateTime.UtcNow;
+        }
+        else if (product.Status != ProductStatus.Sold)
+        {
+            product.SoldAtUtc = null;
         }
         bool shouldNotifySale = false;
         if (dto.SalePrice.HasValue)

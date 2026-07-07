@@ -872,7 +872,7 @@ public class ProductsTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task SoldProduct_NotInCollection_HiddenFromPublic()
+    public async Task SoldProduct_NotInCollection_ViewableDuringGrace_ButNotListed()
     {
         HttpClient admin = _factory.CreateClient();
         await RegisterAdmin(admin, _factory, "admin-plain-sold-hidden@test.com");
@@ -897,11 +897,12 @@ public class ProductsTests : IClassFixture<ApiFactory>
         HttpResponseMessage sell = await admin.PutAsJsonAsync($"/api/products/{created!.Id}", new { inStock = false });
         Assert.Equal(HttpStatusCode.OK, sell.StatusCode);
 
-        // The public can no longer see it, by id or in the list.
+        // Within the grace window its page stays viewable, so the URL doesn't dead-end...
         HttpClient pub = _factory.CreateClient();
         HttpResponseMessage viaId = await pub.GetAsync($"/api/products/{created.Id}");
-        Assert.Equal(HttpStatusCode.NotFound, viaId.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, viaId.StatusCode);
 
+        // ...but it is not surfaced in the public product list.
         List<ProductResponse>? all = await pub.GetFromJsonAsync<List<ProductResponse>>("/api/products", JsonOptions);
         Assert.NotNull(all);
         Assert.DoesNotContain(all, p => p.Id == created.Id);
