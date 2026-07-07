@@ -45,7 +45,7 @@ export interface DesignerProfile {
 // Shared post references so the slug/title stay consistent across designers.
 const ST_MICHAEL_POST: RelatedPost = {
   slug: 'st-michael-by-ms-how-to-identify-and-date-vintage-marks-spencer-clothing',
-  title: 'St Michael by M&S: How to Identify and Date Vintage Marks & Spencer Clothing',
+  title: 'St Michael by M&S: How to Identify & Date Vintage Clothing',
 };
 const RAYON_POST: RelatedPost = {
   slug: 'the-rise-and-fall-of-rayon',
