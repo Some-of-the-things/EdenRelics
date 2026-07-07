@@ -1,4 +1,5 @@
 import { AngularAppEngine, createRequestHandler } from '@angular/ssr';
+import { findDesignerForProduct } from './app/pages/designers/designers.data';
 
 const angularApp = new AngularAppEngine();
 
@@ -124,6 +125,70 @@ function withSecurityHeaders(response: Response): Response {
   return secured;
 }
 
+/**
+ * Product-URL redirect layer — the "no dead 404s" rule. A sold piece's page stays
+ * live for a grace window (enforced by the backend), then this 301s it to a
+ * relevant page instead of letting the URL dead-end; soft-deleted pieces and known
+ * legacy/renamed URLs 301 too. Genuinely unknown URLs fall through to the app's
+ * 404. Target: the piece's designer hub, else its decade shop page, else /shop.
+ */
+const VALID_DECADES = new Set(['1950s', '1960s', '1970s', '1980s', '1990s']);
+
+/** Known legacy/renamed product URLs still indexed by search engines. */
+const LEGACY_REDIRECTS: Record<string, string> = {
+  // ER-00008 was renamed off this early placeholder slug.
+  'velvet-mini-dress': '/product/1980s-90s-st-michael-tartan-wool-pencil-skirt-jewel-tones',
+  // Legacy numeric id from the pre-slug catalogue.
+  '10': '/shop',
+};
+
+function redirectTargetFor(name?: string, era?: string): string {
+  const designer = name ? findDesignerForProduct(name) : undefined;
+  if (designer) {
+    return `/designers/${designer.slug}`;
+  }
+  if (era && VALID_DECADES.has(era)) {
+    return `/shop/${era}`;
+  }
+  return '/shop';
+}
+
+/**
+ * Decide whether a /product/{slug} URL should 301, and to where. Returns null to
+ * let the request render normally (live piece, sold within grace, or unknown —
+ * which the app then 404s). Fails open (null) on any network/parse error.
+ */
+async function resolveProductRedirect(pathname: string, env: WorkerEnv): Promise<string | null> {
+  const raw = pathname.slice('/product/'.length);
+  if (!raw || raw.includes('/')) {
+    return null;
+  }
+  let slug: string;
+  try {
+    slug = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  const legacy = LEGACY_REDIRECTS[slug];
+  if (legacy) {
+    return legacy;
+  }
+  try {
+    const apiBase = env.API_BASE ?? DEFAULT_API_BASE;
+    const resp = await fetch(`${apiBase}/api/products/resolve/${encodeURIComponent(slug)}`);
+    if (!resp.ok) {
+      return null;
+    }
+    const data = (await resp.json()) as { action?: string; name?: string; era?: string };
+    if (data.action === 'redirect') {
+      return redirectTargetFor(data.name, data.era);
+    }
+  } catch {
+    // Fail open — never let the redirect check break a page render.
+  }
+  return null;
+}
+
 export default {
   async fetch(request: Request, env: WorkerEnv, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -182,6 +247,20 @@ export default {
         // Asset not found — return 404 instead of crashing
       }
       return withSecurityHeaders(new Response('Not Found', { status: 404 }));
+    }
+
+    // Product-URL redirect layer — 301 sold-past-grace / soft-deleted / legacy
+    // product URLs to a relevant page so they never dead-end (see resolveProductRedirect).
+    if (request.method === 'GET' && url.pathname.startsWith('/product/')) {
+      const target = await resolveProductRedirect(url.pathname, env);
+      if (target) {
+        return withSecurityHeaders(
+          new Response(null, {
+            status: 301,
+            headers: { Location: target, 'Cache-Control': 'public, max-age=3600' },
+          }),
+        );
+      }
     }
 
     // Try Angular SSR for all routes
