@@ -65,7 +65,7 @@ export const COLLECTIONS: CollectionProfile[] = [
       { sku: 'ER-00037', slug: 'late-1990s-plaid-bodycon-midi-dress-burgundy-black-cream-check-front-slit' },
       { sku: 'ER-00101', slug: '1970s-handmade-pinafore-maxi-dress-blue-green-plaid-eyelet-bib' },
       { sku: 'ER-00050', slug: '1970s-viyella-tartan-two-piece-set-double-breasted-blouse-skirt' },
-      { sku: 'ER-00008', slug: 'velvet-mini-dress' },
+      { sku: 'ER-00008', slug: '1980s-90s-st-michael-tartan-wool-pencil-skirt-jewel-tones' },
     ],
     featuredSkus: ['ER-00039', 'ER-00037', 'ER-00101'],
   },
