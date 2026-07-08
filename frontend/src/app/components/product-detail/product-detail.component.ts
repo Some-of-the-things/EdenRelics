@@ -26,6 +26,7 @@ import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { ShareButtonsComponent } from '../share-buttons/share-buttons.component';
 import { resolveProductStatus } from '../../utils/product-status';
 import { findDesignerForProduct } from '../../pages/designers/designers.data';
+import { findHubsForProduct, hubPath } from '../../pages/category/category.data';
 import { FocusTrapDirective } from '../../directives/focus-trap.directive';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -127,6 +128,14 @@ export class ProductDetailComponent {
     const p = this.product();
     return p ? findDesignerForProduct(p.name) : undefined;
   });
+
+  /** Style/garment hubs this piece belongs to — cross-linked to feed authority into the hub pages. */
+  readonly hubs = computed(() => {
+    const p = this.product();
+    return p ? findHubsForProduct(p) : [];
+  });
+
+  readonly hubPath = hubPath;
 
   /**
    * Buyable pieces to surface on a sold listing, so the page never dead-ends a

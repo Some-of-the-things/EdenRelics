@@ -178,17 +178,29 @@ export function hubPath(hub: CategoryHub): string {
   return hub.kind === 'style' ? `/style/${hub.slug}` : `/dresses/${hub.slug}`;
 }
 
+/** True when a product's name qualifies it for a hub (include hit, no exclude hit). */
+function productMatchesHub(name: string, hub: CategoryHub): boolean {
+  if (hub.exclude?.some((x) => name.includes(x.toLowerCase()))) {
+    return false;
+  }
+  return hub.include.some((k) => name.includes(k.toLowerCase()));
+}
+
 /**
  * Products belonging to a hub: name contains an include keyword and no exclude
  * keyword. Matching on the name (not description) keeps membership precise and
  * predictable. Order is preserved from the caller (typically newest-first).
  */
 export function matchProductsToHub(products: readonly Product[], hub: CategoryHub): Product[] {
-  return products.filter((p) => {
-    const name = p.name.toLowerCase();
-    if (hub.exclude?.some((x) => name.includes(x.toLowerCase()))) {
-      return false;
-    }
-    return hub.include.some((k) => name.includes(k.toLowerCase()));
-  });
+  return products.filter((p) => productMatchesHub(p.name.toLowerCase(), hub));
+}
+
+/**
+ * The hubs (aesthetic + garment) a single product belongs to — used to cross-link
+ * a product page back to its category hubs, feeding internal link authority into
+ * the hubs so they aren't orphaned on the footer alone.
+ */
+export function findHubsForProduct(product: Product): CategoryHub[] {
+  const name = product.name.toLowerCase();
+  return CATEGORY_HUBS.filter((hub) => productMatchesHub(name, hub));
 }

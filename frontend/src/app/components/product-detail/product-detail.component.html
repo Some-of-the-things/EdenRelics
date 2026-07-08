@@ -81,6 +81,13 @@
             </div>
           }
         </div>
+        @if (hubs().length) {
+          <nav class="detail__hubs" aria-label="Browse similar pieces">
+            @for (h of hubs(); track h.slug) {
+              <a class="detail__hub-chip" [routerLink]="hubPath(h)">{{ h.name }}</a>
+            }
+          </nav>
+        }
         @if (isSold()) {
           <div class="detail__sold">
             <span class="detail__sold-badge">Sold</span>
