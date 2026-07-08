@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  PLATFORM_ID,
+  inject,
+  signal,
+} from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 interface SizeResult {
   ukSize: string;
@@ -22,8 +29,33 @@ interface SizeResult {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VintageSizeConverterComponent {
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
   readonly result = signal<SizeResult | null>(null);
   readonly error = signal<string | null>(null);
+  /** Transient "Copied!" confirmation after the link is copied to the clipboard. */
+  readonly linkCopied = signal(false);
+
+  /**
+   * Copies the URL of the page hosting this tool so a reader can paste it into
+   * their own blog/forum post — a low-friction nudge toward the inbound links
+   * that build the site's authority. Best-effort: silently no-ops if the
+   * Clipboard API is unavailable (older browsers, insecure contexts).
+   */
+  copyLink(): void {
+    if (!this.isBrowser || !navigator.clipboard) {
+      return;
+    }
+    navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => {
+        this.linkCopied.set(true);
+        setTimeout(() => this.linkCopied.set(false), 2500);
+      })
+      .catch(() => {
+        // Clipboard write refused (permissions/insecure context) — no-op.
+      });
+  }
 
   calculate(ptpStr: string, waistStr: string, lengthStr: string): void {
     const ptp = parseFloat(ptpStr);
