@@ -107,6 +107,62 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       { label: 'Midi Dresses', path: '/dresses/midi' },
     ],
   },
+  {
+    kind: 'garment',
+    slug: 'midi',
+    name: 'Midi Dresses',
+    metaTitle: 'Vintage Midi Dresses',
+    metaDescription:
+      'Original vintage midi dresses from the 1960s to the 1990s — floral, paisley and printed mid-length styles. Genuine one-of-a-kind pieces, hand-measured and inspected, with UK shipping.',
+    tagline: 'The mid-calf cut that runs through every decade on the rail.',
+    intro:
+      'The midi — roughly mid-calf, between the mini and the maxi — is the length that keeps coming back, and vintage is full of it. These are original mid-length dresses from the 1960s through the 1990s: watercolour and folk prints, ditsy florals, paisley and block prints, in everything from structured 1980s shapes to fluid 1990s viscose.',
+    body: [
+      'Midi is less an era than a proportion, which is why it spans the whole catalogue. A 1960s wool block-print, an 1980s dropped-waist floral and a 1990s rust viscose all share the same flattering mid-calf line. The decade shows in the details — the shoulder, the waist, the fabric weight — rather than the length itself.',
+      'Because the midi sits at a specific point on the leg, where the hem falls on you depends on your height, so the length is worth checking as carefully as the bust and waist. Every listing states it.',
+      'All one-of-a-kind vintage in a single size, so the selection here shifts as pieces are found and sold.',
+    ],
+    lookFor: [
+      'Hem around mid-calf — check the stated length against your height, as “midi” on a taller original can read closer to maxi on a shorter frame.',
+      'Decade tells in the shaping: structured waists and shoulders lean 1980s; softer, fluid drape leans 1990s.',
+      'A defined waist (belted, tie or seamed) is common on midis — read both bust and waist measurements, as they can suggest different sizes.',
+      'One-of-one in a single size: trust the pit-to-pit, waist and length figures over any vintage label size.',
+    ],
+    include: ['midi'],
+    relatedLinks: [
+      { label: '1980s Vintage Dresses', path: '/shop/1980s' },
+      { label: 'Maxi Dresses', path: '/dresses/maxi' },
+      { label: 'Cottagecore & Prairie', path: '/style/cottagecore' },
+    ],
+  },
+  {
+    kind: 'style',
+    slug: 'boho',
+    name: 'Boho & Paisley',
+    metaTitle: 'Vintage Boho & Paisley Dresses',
+    metaDescription:
+      'Original vintage boho and paisley pieces — swirling paisley prints, 1970s folk maxis and free-spirited dresses. Genuine one-of-a-kind vintage, hand-inspected, with UK shipping.',
+    tagline: 'Seventies folk, swirling paisley and a free-spirited print.',
+    intro:
+      'Boho draws on the 1970s at its most romantic and well-travelled — paisley and folk prints, soft maxi shapes, lace and velvet trim, the odd bishop or bell sleeve. These are the originals: genuine vintage pieces, many of them paisley, that carry the easy, layered spirit the look is named for.',
+    body: [
+      'Paisley is the thread that runs through most of it — the teardrop motif turns up on Liberty prints, on fluid rayon robe-style maxis, on skirts and blouses, and it reads as boho almost wherever it lands. Around it sit folk and peasant influences, animal and botanical prints, and the relaxed drape that lets a piece be layered rather than structured.',
+      'The look leans 1970s in origin but isn’t bound to it: a 1990s rayon paisley maxi belongs to it as readily as a 1970s folk one. What unites them is print and ease over polish and tailoring.',
+      'Everything here is one-of-a-kind vintage, so the rail moves — paisley and boho pieces come and go as they are found.',
+    ],
+    lookFor: [
+      'Paisley and folk prints — the swirling teardrop motif is the surest boho signal, on dresses, skirts and blouses alike.',
+      'Soft, layerable shaping — fluid maxis, robe styles and relaxed waists rather than sharp tailoring.',
+      'Natural drape fabrics, especially rayon and lightweight blends, and romantic trim like lace, velvet and bishop sleeves.',
+      'One-of-one in a single size: read the measurements rather than the label, as relaxed vintage cuts vary widely.',
+    ],
+    include: ['paisley', 'boho'],
+    relatedLinks: [
+      { label: '1970s Vintage Dresses', path: '/shop/1970s' },
+      { label: 'Maxi Dresses', path: '/dresses/maxi' },
+      { label: 'Cottagecore & Prairie', path: '/style/cottagecore' },
+    ],
+  },
 ];
 
 export function hubsOfKind(kind: CategoryHub['kind']): CategoryHub[] {

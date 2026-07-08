@@ -138,6 +138,15 @@ const VALID_DECADES = new Set(['1950s', '1960s', '1970s', '1980s', '1990s']);
 const LEGACY_REDIRECTS: Record<string, string> = {
   // ER-00008 was renamed off this early placeholder slug.
   'velvet-mini-dress': '/product/1980s-90s-st-michael-tartan-wool-pencil-skirt-jewel-tones',
+  // ER-00002…00010 were seeded with placeholder slugs that described the wrong
+  // garment entirely; renamed to descriptive, keyword-accurate slugs, with the
+  // old (indexed) URLs 301'd here so their search authority carries over.
+  'wrap-dress': '/product/1970s-80s-martha-s-miniatures-prairie-dress-scarlet-red',
+  'power-shoulder-dress': '/product/late-1970s-prairie-dress-indigo-patchwork',
+  'sequin-party-dress': '/product/1980s-laura-ashley-prairie-midi-dress-burgundy-floral',
+  'grunge-babydoll-dress': '/product/1970s-paganne-by-gene-berk-printed-dress-red',
+  'asymmetric-midi-dress': '/product/1990s-c-a-floral-cotton-smock-dress-navy',
+  'cut-out-maxi-dress': '/product/1970s-algo-ettes-striped-midi-dress-jewel-tones',
   // Legacy numeric id from the pre-slug catalogue.
   '10': '/shop',
 };
