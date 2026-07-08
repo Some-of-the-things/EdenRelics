@@ -140,7 +140,7 @@ internal static class RouteAllowList
         "/care", "/contact", "/about", "/settings", "/forgot-password", "/reset-password",
         "/verify-email", "/admin", "/privacy-policy", "/modern-slavery-policy",
         "/supply-chain-policy", "/returns-policy", "/security", "/terms-conditions",
-        "/cookie-policy", "/accessibility-report", "/compliance-report",
+        "/cookie-policy", "/accessibility-report", "/compliance-report", "/style", "/dresses",
     };
 
     // Parameterised routes, expressed as the fixed leading segments; the path must have
@@ -152,6 +152,8 @@ internal static class RouteAllowList
         ["order-confirmation"],      // /order-confirmation/:id
         ["review"],                  // /review/:orderId
         ["designers"],               // /designers/:slug
+        ["style"],                   // /style/:slug
+        ["dresses"],                 // /dresses/:slug
         ["collections"],             // /collections/:slug
         ["collections", "preview"],  // /collections/preview/:slug
         ["blog"],                    // /blog/:slug

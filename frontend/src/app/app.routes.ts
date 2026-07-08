@@ -198,6 +198,38 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'style',
+    data: { kind: 'style' },
+    loadComponent: () =>
+      import('./pages/category/category-index.component').then(
+        (m) => m.CategoryIndexComponent
+      ),
+  },
+  {
+    path: 'style/:slug',
+    data: { kind: 'style' },
+    loadComponent: () =>
+      import('./pages/category/category-hub.component').then(
+        (m) => m.CategoryHubComponent
+      ),
+  },
+  {
+    path: 'dresses',
+    data: { kind: 'garment' },
+    loadComponent: () =>
+      import('./pages/category/category-index.component').then(
+        (m) => m.CategoryIndexComponent
+      ),
+  },
+  {
+    path: 'dresses/:slug',
+    data: { kind: 'garment' },
+    loadComponent: () =>
+      import('./pages/category/category-hub.component').then(
+        (m) => m.CategoryHubComponent
+      ),
+  },
+  {
     path: 'collections/preview/:slug',
     data: { preview: true },
     canActivate: [adminGuard],

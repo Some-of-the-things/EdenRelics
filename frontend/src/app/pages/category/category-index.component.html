@@ -1,0 +1,25 @@
+<article class="catindex">
+  <header class="catindex__header">
+    <h1 class="catindex__title">{{ copy.heading }}</h1>
+    <p class="catindex__lede">{{ copy.lede }}</p>
+  </header>
+
+  <ul class="catindex__grid">
+    @for (card of cards(); track card.hub.slug) {
+      <li class="cat-card">
+        <a [routerLink]="card.path" class="cat-card__link">
+          <h2 class="cat-card__name">{{ card.hub.name }}</h2>
+          <p class="cat-card__tagline">{{ card.hub.tagline }}</p>
+          <p class="cat-card__intro">{{ card.hub.intro }}</p>
+          <p class="cat-card__count">
+            @if (card.productCount > 0) {
+              {{ card.productCount }} piece{{ card.productCount === 1 ? '' : 's' }} in stock →
+            } @else {
+              Currently between pieces — check back soon →
+            }
+          </p>
+        </a>
+      </li>
+    }
+  </ul>
+</article>
