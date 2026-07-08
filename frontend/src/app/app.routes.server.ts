@@ -15,6 +15,9 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'verify-email', renderMode: RenderMode.Client },
   // Private, token-gated collection review page — client-only, never prerendered.
   { path: 'collections/preview/:slug', renderMode: RenderMode.Client },
+  // Auth-gated order review + admin blog preview — user/token state, client-only.
+  { path: 'review/:orderId', renderMode: RenderMode.Client },
+  { path: 'blog/preview/:slug', renderMode: RenderMode.Client },
 
   // Public routes — SSR on-demand for SEO. (Prerender would be a perf win for
   // the policy pages, but the App-root constructor calls BrandingService and
@@ -30,6 +33,13 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'about', renderMode: RenderMode.Server },
   { path: 'designers', renderMode: RenderMode.Server },
   { path: 'designers/:slug', renderMode: RenderMode.Server },
+  { path: 'style', renderMode: RenderMode.Server },
+  { path: 'style/:slug', renderMode: RenderMode.Server },
+  { path: 'dresses', renderMode: RenderMode.Server },
+  { path: 'dresses/:slug', renderMode: RenderMode.Server },
+  { path: 'care', renderMode: RenderMode.Server },
+  { path: 'care/fabric/:slug', renderMode: RenderMode.Server },
+  { path: 'care/problem/:slug', renderMode: RenderMode.Server },
   { path: 'collections/:slug', renderMode: RenderMode.Server },
   { path: 'privacy-policy', renderMode: RenderMode.Server },
   { path: 'modern-slavery-policy', renderMode: RenderMode.Server },
