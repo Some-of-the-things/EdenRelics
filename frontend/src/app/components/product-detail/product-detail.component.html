@@ -81,6 +81,13 @@
             </div>
           }
         </div>
+        @if (hubs().length) {
+          <nav class="detail__hubs" aria-label="Browse similar pieces">
+            @for (h of hubs(); track h.slug) {
+              <a class="detail__hub-chip" [routerLink]="hubPath(h)">{{ h.name }}</a>
+            }
+          </nav>
+        }
         @if (isSold()) {
           <div class="detail__sold">
             <span class="detail__sold-badge">Sold</span>
@@ -117,6 +124,31 @@
         />
       </div>
     </div>
+
+    @if (relatedPieces().length) {
+      <section class="detail__related" aria-labelledby="detail-related-heading">
+        <h2 id="detail-related-heading" class="detail__related-heading">Pieces still available</h2>
+        <ul class="detail__related-grid">
+          @for (piece of relatedPieces(); track piece.id) {
+            <li class="detail__related-item">
+              <a class="detail__related-link" [routerLink]="['/product', piece.slug || piece.id]">
+                <img
+                  class="detail__related-image"
+                  [src]="srcAt(piece.imageUrl, 400)"
+                  [srcset]="srcset(piece.imageUrl)"
+                  sizes="(max-width: 700px) 45vw, 220px"
+                  [alt]="piece.name"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span class="detail__related-name">{{ piece.name }}</span>
+                <span class="detail__related-price">{{ (piece.salePrice ?? piece.price) | currency:'GBP' }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
 
     @if (showSalePrompt()) {
       <div class="detail__overlay" (click)="confirmSaleNotification(false)"></div>

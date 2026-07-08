@@ -10,6 +10,7 @@ import { ReviewsService } from '../../services/reviews.service';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { collectionFeaturedSlugs, findCollectionBySlug, orderedCollectionProducts } from '../collections/collections.data';
+import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { environment } from '../../../environments/environment';
 
 interface BlogPostSummary {
@@ -41,6 +42,9 @@ export class HomeComponent implements OnInit {
   mailingEmail = '';
   readonly mailingSubscribed = signal(false);
   readonly latestBlogPost = signal<BlogPostSummary | null>(null);
+
+  readonly srcset = imageSrcset;
+  readonly srcAt = imageSrcAt;
 
   /** The 5 featured pieces from The Wildflower Edit, in curated order. */
   readonly featured = computed<Product[]>(() => {

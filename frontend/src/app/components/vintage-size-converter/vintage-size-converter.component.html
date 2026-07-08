@@ -66,5 +66,15 @@
         }
       }
     </div>
+
+    <div class="converter__share">
+      <p class="converter__share-text">
+        Found this useful? It's a free tool — feel free to link to it from your own
+        blog, forum post, or listing so other vintage shoppers can find it.
+      </p>
+      <button type="button" class="converter__share-btn" (click)="copyLink()">
+        {{ linkCopied() ? 'Link copied ✓' : 'Copy link to this tool' }}
+      </button>
+    </div>
   </div>
 </div>

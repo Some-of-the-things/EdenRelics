@@ -26,6 +26,7 @@ import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { ShareButtonsComponent } from '../share-buttons/share-buttons.component';
 import { resolveProductStatus } from '../../utils/product-status';
 import { findDesignerForProduct } from '../../pages/designers/designers.data';
+import { findHubsForProduct, hubPath } from '../../pages/category/category.data';
 import { FocusTrapDirective } from '../../directives/focus-trap.directive';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -126,6 +127,44 @@ export class ProductDetailComponent {
   readonly designer = computed(() => {
     const p = this.product();
     return p ? findDesignerForProduct(p.name) : undefined;
+  });
+
+  /** Style/garment hubs this piece belongs to — cross-linked to feed authority into the hub pages. */
+  readonly hubs = computed(() => {
+    const p = this.product();
+    return p ? findHubsForProduct(p) : [];
+  });
+
+  readonly hubPath = hubPath;
+
+  /**
+   * Buyable pieces to surface on a sold listing, so the page never dead-ends a
+   * visitor (or the authority a search engine has parked on it): it always
+   * offers a live piece to move to. Ranked by relevance — same designer, then
+   * same era — falling back to the newest live stock so the strip is never
+   * empty. Only computed for sold pieces; live pieces show Add-to-Cart instead.
+   */
+  readonly relatedPieces = computed(() => {
+    const current = this.product();
+    if (!current || !this.isSold()) {
+      return [];
+    }
+    const currentDesigner = this.designer();
+    const live = this.productStore.liveProducts().filter((p) => p.id !== current.id);
+    // liveProducts() is already newest-first; a stable sort by score keeps that
+    // ordering within each score band (ES2019 guarantees Array.sort stability).
+    const scored = live.map((p) => {
+      let score = 0;
+      if (currentDesigner && findDesignerForProduct(p.name)?.slug === currentDesigner.slug) {
+        score += 2;
+      }
+      if (p.era === current.era) {
+        score += 1;
+      }
+      return { p, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, 4).map((s) => s.p);
   });
 
   readonly currentImage = computed(() => this.selectedImage() ?? this.product()?.imageUrl ?? '');

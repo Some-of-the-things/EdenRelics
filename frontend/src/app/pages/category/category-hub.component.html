@@ -1,0 +1,85 @@
+@if (hub(); as h) {
+  <article class="cathub">
+    <nav class="cathub__breadcrumb" aria-label="Breadcrumb">
+      <a routerLink="/">Home</a>
+      <span aria-hidden="true">›</span>
+      <a [routerLink]="indexPath">{{ indexLabel }}</a>
+      <span aria-hidden="true">›</span>
+      <span aria-current="page">{{ h.name }}</span>
+    </nav>
+
+    <header class="cathub__header">
+      <h1 class="cathub__title">Vintage {{ h.name }}</h1>
+      <p class="cathub__tagline">{{ h.tagline }}</p>
+      <p class="cathub__intro">{{ h.intro }}</p>
+    </header>
+
+    <section class="cathub__section">
+      <div class="cathub__prose">
+        @for (para of h.body; track $index) {
+          <p>{{ para }}</p>
+        }
+      </div>
+    </section>
+
+    <section class="cathub__section">
+      <h2 class="cathub__section-title">What to look for</h2>
+      <ul class="cathub__lookfor">
+        @for (point of h.lookFor; track $index) {
+          <li>{{ point }}</li>
+        }
+      </ul>
+    </section>
+
+    <section class="cathub__section">
+      <h2 class="cathub__section-title">
+        {{ h.name }} at Eden Relics
+        @if (products().length > 0) {
+          <span class="cathub__count">({{ products().length }})</span>
+        }
+      </h2>
+
+      @if (products().length > 0) {
+        <ul class="cathub__products">
+          @for (product of products(); track product.id) {
+            <li class="cathub-product">
+              <a [routerLink]="['/product', product.slug || product.id]" class="cathub-product__link">
+                <div class="cathub-product__image-wrap">
+                  @if (product.imageUrl) {
+                    <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" decoding="async" />
+                  }
+                </div>
+                <div class="cathub-product__body">
+                  <h3 class="cathub-product__name">{{ product.name }}</h3>
+                  <span class="cathub-product__price">
+                    {{ (product.salePrice ?? product.price) | currency:'GBP' }}
+                  </span>
+                </div>
+              </a>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="cathub__empty">
+          None in stock at this exact moment — the rail is one-of-a-kind and moves quickly.
+          <a routerLink="/">Browse all vintage</a> or check back soon.
+        </p>
+      }
+    </section>
+
+    @if (h.relatedLinks && h.relatedLinks.length > 0) {
+      <section class="cathub__section">
+        <h2 class="cathub__section-title">Explore more</h2>
+        <ul class="cathub__related">
+          @for (link of h.relatedLinks; track link.path) {
+            <li><a [routerLink]="link.path">{{ link.label }}</a></li>
+          }
+        </ul>
+      </section>
+    }
+
+    <p class="cathub__back">
+      <a [routerLink]="indexPath">← Back to {{ indexLabel }}</a>
+    </p>
+  </article>
+}

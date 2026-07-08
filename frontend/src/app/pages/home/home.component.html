@@ -73,13 +73,32 @@
 
   @if (latestBlogPost(); as post) {
     <section class="home__journal">
-      <a [routerLink]="['/blog', post.slug]" class="home__journal-card">
-        <span class="home__journal-eyebrow">From the Journal</span>
-        <h2 class="home__journal-title">{{ post.title }}</h2>
-        @if (post.excerpt) {
-          <p class="home__journal-excerpt">{{ post.excerpt }}</p>
+      <a
+        [routerLink]="['/blog', post.slug]"
+        class="home__journal-card"
+        [class.home__journal-card--with-image]="post.featuredImageUrl"
+      >
+        @if (post.featuredImageUrl) {
+          <div class="home__journal-image-wrap">
+            <img
+              [src]="srcAt(post.featuredImageUrl, 800)"
+              [srcset]="srcset(post.featuredImageUrl)"
+              sizes="(max-width: 700px) 100vw, 340px"
+              [alt]="post.title"
+              class="home__journal-image"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
         }
-        <span class="home__journal-cta">Read more →</span>
+        <div class="home__journal-content">
+          <span class="home__journal-eyebrow">From the Journal</span>
+          <h2 class="home__journal-title">{{ post.title }}</h2>
+          @if (post.excerpt) {
+            <p class="home__journal-excerpt">{{ post.excerpt }}</p>
+          }
+          <span class="home__journal-cta">Read more →</span>
+        </div>
       </a>
     </section>
   }

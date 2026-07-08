@@ -52,6 +52,23 @@ export const COLLECTIONS: CollectionProfile[] = [
     ],
     featuredSkus: ['ER-00119', 'ER-00118', 'ER-00100', 'ER-00114', 'ER-00120'],
   },
+  {
+    slug: 'vintage-tartan',
+    name: 'Vintage Tartan',
+    metaTitle: 'Vintage Tartan Dresses & Skirts | Eden Relics',
+    metaDescription:
+      'Original vintage tartan and plaid — green tartan shirt dresses, plaid midis, wool tartan skirts and Viyella checks. Each a genuine one-of-a-kind piece, hand-inspected.',
+    intro:
+      'A gathering of original tartan and plaid — the checks that never really leave, from a forest-green shirt dress to a wool pencil skirt in jewel tones. Some are dresses, some are separates, and all are genuine vintage: one-of-a-kind pieces chosen for their cloth and their colour. Tartan is a small, fast-moving corner of the rail, so what you see here is what remains.',
+    items: [
+      { sku: 'ER-00039', slug: '1990s-canda-tartan-shirt-dress-forest-green-navy-plaid-versatile-fit' },
+      { sku: 'ER-00037', slug: 'late-1990s-plaid-bodycon-midi-dress-burgundy-black-cream-check-front-slit' },
+      { sku: 'ER-00101', slug: '1970s-handmade-pinafore-maxi-dress-blue-green-plaid-eyelet-bib' },
+      { sku: 'ER-00050', slug: '1970s-viyella-tartan-two-piece-set-double-breasted-blouse-skirt' },
+      { sku: 'ER-00008', slug: '1980s-90s-st-michael-tartan-wool-pencil-skirt-jewel-tones' },
+    ],
+    featuredSkus: ['ER-00039', 'ER-00037', 'ER-00101'],
+  },
 ];
 
 export function findCollectionBySlug(slug: string): CollectionProfile | undefined {

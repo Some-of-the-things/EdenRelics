@@ -239,6 +239,37 @@
   }
 }
 
+// Style/garment hub chips — cross-links from a piece to its category hubs.
+.detail__hubs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.detail__hub-chip {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: border-color var(--transition), color var(--transition);
+
+  &:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
 .detail__not-found {
   text-align: center;
   color: var(--text-muted);
@@ -385,4 +416,72 @@
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
+}
+
+// "Pieces still available" strip on a sold listing — keeps the page (and the
+// search authority parked on it) pointing at buyable stock instead of dead-ending.
+.detail__related {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.detail__related-heading {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem;
+  color: var(--text-primary);
+}
+
+.detail__related-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+
+  @media (max-width: 700px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.detail__related-item {
+  margin: 0;
+}
+
+.detail__related-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--text-primary);
+
+  &:hover .detail__related-name {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.detail__related-image {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: var(--bg-secondary);
+}
+
+.detail__related-name {
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.detail__related-price {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
