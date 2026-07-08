@@ -10,6 +10,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { SeoService } from '../../services/seo.service';
+import { buildFaqPage } from '../../utils/faq-schema';
 import { environment } from '../../../environments/environment';
 
 interface CareProduct {
@@ -77,6 +78,17 @@ export class CareFabricComponent implements OnInit {
           type: 'article',
           hreflang: true,
         });
+        // FAQ schema mirrors the visible care sections so answer text matches
+        // the on-page content (Google's requirement for FAQPage).
+        const fab = fabric.name.toLowerCase();
+        const faqPage = buildFaqPage([
+          { question: `How can you identify vintage ${fab}?`, answer: fabric.howToIdentify },
+          { question: `How do you wash vintage ${fab}?`, answer: fabric.washing },
+          { question: `How should you dry vintage ${fab}?`, answer: fabric.drying },
+          { question: `Can you iron vintage ${fab}?`, answer: fabric.ironing },
+          { question: `How should you store vintage ${fab}?`, answer: fabric.storing },
+          { question: `What should you watch out for with vintage ${fab}?`, answer: fabric.vintageCautions },
+        ]);
         this.seo.setJsonLd({
           '@context': 'https://schema.org',
           '@graph': [
@@ -117,6 +129,7 @@ export class CareFabricComponent implements OnInit {
                 },
               ],
             },
+            ...(faqPage ? [faqPage] : []),
           ],
         });
       },

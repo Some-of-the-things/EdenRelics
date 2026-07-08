@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CurrencyPipe, isPlatformBrowser } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { SeoService } from '../../services/seo.service';
+import { buildFaqPage } from '../../utils/faq-schema';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { DesignerProfile, findDesignerBySlug, matchProductsToDesigner } from './designers.data';
@@ -84,6 +85,12 @@ export class DesignerPageComponent {
 
     const products = matchProductsToDesigner(this.productStore.liveProducts(), d);
     const pageUrl = `https://edenrelics.co.uk/designers/${d.slug}`;
+    // FAQ schema from the visible identification section — the answer text is the
+    // same tips shown on the page (Google's requirement for FAQPage).
+    const idHeading = d.identificationHeading || `How to identify authentic ${d.name}`;
+    const faqPage = buildFaqPage([
+      { question: `${idHeading}?`, answer: d.identification.join(' ') },
+    ]);
     this.seo.setJsonLd({
       '@context': 'https://schema.org',
       '@graph': [
@@ -133,6 +140,7 @@ export class DesignerPageComponent {
             },
           ],
         },
+        ...(faqPage ? [faqPage] : []),
       ],
     });
   }
