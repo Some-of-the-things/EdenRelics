@@ -151,6 +151,15 @@ export class HomeComponent implements OnInit {
           postalCode: 'NR7 0US',
           addressCountry: 'GB',
         },
+        // Local presence (Norwich) + the national area we actually ship to.
+        // Reinforces the "vintage clothing Norwich" / "Norwich vintage shops"
+        // local queries the site already appears for, without implying a
+        // walk-in storefront.
+        areaServed: [
+          { '@type': 'City', name: 'Norwich' },
+          { '@type': 'AdministrativeArea', name: 'Norfolk' },
+          { '@type': 'Country', name: 'United Kingdom' },
+        ],
       },
     ];
 
