@@ -13,12 +13,24 @@ primary_region = 'ams'
   ASPNETCORE_ENVIRONMENT = 'Production'
   ASPNETCORE_URLS = 'http://0.0.0.0:8080'
 
+# Two roles from one image. `web` machines serve HTTP behind the load balancer with the
+# scheduled background jobs OFF; `worker` is a single machine that runs the scheduled jobs
+# (reminder emails, Monzo sync, SEO snapshots, traffic/rank ingest, liability schedule) and
+# takes no load-balancer traffic. Running the jobs on exactly one machine is what makes it
+# safe to scale `web` out — otherwise every instance would double-fire (duplicate emails etc).
+# The command is appended to the Dockerfile ENTRYPOINT (dotnet "Eden Relics BE.dll") and
+# ASP.NET reads --BackgroundJobs:Enabled into IConfiguration.
+[processes]
+  web = '--BackgroundJobs:Enabled=false'
+  worker = '--BackgroundJobs:Enabled=true'
+
 [http_service]
   internal_port = 8080
   force_https = true
   auto_stop_machines = 'suspend'
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 2
+  processes = ['web']
 
   [http_service.concurrency]
     type = 'requests'
@@ -35,4 +47,4 @@ primary_region = 'ams'
 [[vm]]
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 512
+  memory_mb = 1024
