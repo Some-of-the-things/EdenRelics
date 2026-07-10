@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductListComponent } from '../../components/product-list/product-list.component';
 import { ProductStore } from '../../store/product.store';
 import { SeoService } from '../../services/seo.service';
@@ -18,6 +18,8 @@ interface ShopView {
   title: string;
   /** SEO meta description. */
   description: string;
+  /** Optional related-content CTA rendered as a second paragraph under the lede. */
+  relatedLink?: { lead: string; text: string; routerLink: string };
 }
 
 /**
@@ -46,7 +48,12 @@ const DECADE_VIEWS: Record<string, ShopView> = {
     path: '/shop/1970s',
     category: '70s',
     heading: '1970s Vintage Dresses',
-    lede: 'Flowing prints and boho romance — authentic 1970s pieces, hand-picked and inspected.',
+    lede: 'The 1970s is the heartland of our collection — the decade of the prairie dress, the folk maxi, and romantic dressmaking at its most inventive. Expect high necks, bell sleeves, lace and crochet bibs, paisley and ditsy florals, and skirts cut to move. This is the era of Laura Ashley at her height and of the small British boutique labels we hunt for, alongside beautifully made handmade pieces whose only label is the quality of their finishing. Every dress is dated from its label generation and construction — not guesswork — and measured properly, with sizing given as a “best fits UK” size.',
+    relatedLink: {
+      lead: 'For the story behind the silhouette, read our ',
+      text: 'The Complete Guide to Vintage Prairie Dresses',
+      routerLink: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
+    },
     title: '1970s Vintage Dresses',
     description: 'Authentic 1970s vintage dresses, hand-picked and inspected. Boho prairie, maxi and prints from the seventies, with UK shipping.',
   },
@@ -79,7 +86,7 @@ const ALL_VIEW: ShopView = {
 
 @Component({
   selector: 'app-shop',
-  imports: [ProductListComponent],
+  imports: [ProductListComponent, RouterLink],
   templateUrl: './shop-page.component.html',
   styleUrl: './shop-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
