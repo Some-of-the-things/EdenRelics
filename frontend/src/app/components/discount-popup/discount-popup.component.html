@@ -1,0 +1,53 @@
+@if (show() && !closed()) {
+  <div class="discount-popup__overlay" (click)="dismiss()"></div>
+  <div
+    class="discount-popup"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="discount-popup-title"
+    appFocusTrap
+    (keydown.escape)="dismiss()"
+  >
+    @if (!subscribed()) {
+      <h2 id="discount-popup-title" class="discount-popup__title">15% off your first order</h2>
+      <p class="discount-popup__text">
+        Enjoying the browse? Join our newsletter for first look at new one-of-a-kind pieces —
+        and take <strong>15% off</strong> your first order.
+      </p>
+      <form class="discount-popup__form" (ngSubmit)="submit()">
+        <label class="discount-popup__label" for="discount-popup-email">Email address</label>
+        <input
+          id="discount-popup-email"
+          name="email"
+          type="email"
+          required
+          autocomplete="email"
+          class="discount-popup__input"
+          placeholder="you@example.com"
+          [(ngModel)]="email"
+          [disabled]="submitting()"
+        />
+        <button type="submit" class="discount-popup__submit" [disabled]="submitting()">
+          {{ submitting() ? 'Signing you up…' : 'Get my 15% off' }}
+        </button>
+        @if (error()) {
+          <p class="discount-popup__error" role="alert">Something went wrong — please try again.</p>
+        }
+      </form>
+      <p class="discount-popup__fineprint">
+        One code per customer, redeemable at checkout. We’ll email it to you too. Unsubscribe anytime.
+      </p>
+    } @else {
+      <h2 id="discount-popup-title" class="discount-popup__title">You’re in — here’s your 15%</h2>
+      <p class="discount-popup__text">
+        Enter this code at checkout to take 15% off. We’ve emailed it to you as well.
+      </p>
+      <p class="discount-popup__code">{{ code }}</p>
+      <button type="button" class="discount-popup__submit" (click)="dismiss()">Keep browsing</button>
+    }
+
+    <button type="button" class="discount-popup__close" aria-label="Close" (click)="dismiss()">
+      &times;
+    </button>
+  </div>
+}

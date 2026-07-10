@@ -81,6 +81,7 @@ public class FakeEmailService : IEmailService
     public Task SendContactEmailAsync(string fromName, string fromEmail, string subject, string message) => Task.CompletedTask;
     public Task SendSaleNotificationAsync(string toEmail, string firstName, string productName, decimal originalPrice, decimal salePrice) => Task.CompletedTask;
     public Task SendReviewRequestEmailAsync(string toEmail, string firstName, Guid orderId) => Task.CompletedTask;
+    public Task SendDiscountWelcomeEmailAsync(string toEmail, string code) => Task.CompletedTask;
     public Task SendOwnerSaleNotificationAsync(Eden_Relics_BE.Data.Entities.Order order) => Task.CompletedTask;
     public Task SendOrderInvoiceEmailAsync(Eden_Relics_BE.Data.Entities.Order order, string? platform = null) => Task.CompletedTask;
     public string BuildOrderInvoiceHtml(Eden_Relics_BE.Data.Entities.Order order, string? platform = null) => string.Empty;
