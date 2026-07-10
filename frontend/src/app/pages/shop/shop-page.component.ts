@@ -75,7 +75,7 @@ const DECADE_VIEWS: Record<string, ShopView> = {
     path: '/shop/1990s',
     category: '90s',
     heading: '1990s Vintage Dresses',
-    lede: 'Understated slips and minimalist florals — authentic 1990s pieces, hand-picked and inspected.',
+    lede: '1990s vintage dresses are the newest arrivals to true vintage, and the decade’s best work is coming back hard: the soft rayon floral maxi — drapey, hand-painted-look prints with a California-meets-bohemian ease — made by a cohort of American labels now genuinely sought after secondhand, alongside quieter minimalist pieces. Survival is the filter here: high-street quality varied enormously in the nineties, so we select for fabric, cut and construction first, and every piece is inspected and dated before listing. Sizing, as everywhere in the shop, comes from real measurements — a “best fits UK” size — with the label size as a footnote.',
     title: '1990s Vintage Dresses',
     description: 'Authentic 1990s vintage dresses, hand-picked and inspected. Slip dresses, florals and nineties minimalism, with UK shipping.',
   },
