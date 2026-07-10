@@ -19,7 +19,7 @@ interface ShopView {
   /** SEO meta description. */
   description: string;
   /** Optional related-content CTA rendered as a second paragraph under the lede. */
-  relatedLink?: { lead: string; text: string; routerLink: string };
+  relatedLink?: { lead: string; text: string; routerLink: string; after?: string };
 }
 
 /**
@@ -61,7 +61,13 @@ const DECADE_VIEWS: Record<string, ShopView> = {
     path: '/shop/1980s',
     category: '80s',
     heading: '1980s Vintage Dresses',
-    lede: 'Bold colour and statement shapes — authentic 1980s pieces, hand-picked and inspected.',
+    lede: 'Authentic 1980s vintage dresses, better made than the decade’s reputation suggests. This is prime territory for the great British high-street labels — Laura Ashley’s wool-cotton florals, and St Michael by Marks & Spencer, quietly one of Britain’s most recognised vintage high-street labels and one of the most precisely datable, since M&S label designs changed in documented ways across the decade. We date every piece from that kind of evidence, disclose condition plainly, and size from the tape measure, not the label.',
+    relatedLink: {
+      lead: 'If there’s an old M&S dress in your own loft, our ',
+      text: 'St Michael dating guide',
+      routerLink: '/blog/st-michael-by-ms-how-to-identify-and-date-vintage-marks-spencer-clothing',
+      after: ' will tell you exactly what you’re holding.',
+    },
     title: '1980s Vintage Dresses',
     description: 'Authentic 1980s vintage dresses, hand-picked and inspected. Peplums, power shoulders and eighties colour, with UK shipping.',
   },

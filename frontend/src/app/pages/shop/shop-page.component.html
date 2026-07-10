@@ -3,7 +3,7 @@
     <h1 class="shop__title">{{ view().heading }}</h1>
     <p class="shop__lede">{{ view().lede }}</p>
     @if (view().relatedLink; as link) {
-      <p class="shop__lede shop__lede--cta">{{ link.lead }}<a [routerLink]="link.routerLink">{{ link.text }}</a>.</p>
+      <p class="shop__lede shop__lede--cta">{{ link.lead }}<a [routerLink]="link.routerLink">{{ link.text }}</a>{{ link.after ?? '.' }}</p>
     }
   </header>
 
