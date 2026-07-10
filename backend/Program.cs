@@ -377,17 +377,23 @@ if (app.Environment.IsEnvironment("Staging"))
 app.MapControllers();
 app.MapHealthChecks("/healthz");
 
-// Optimize images and backfill responsive variants in the background after the
-// app starts accepting requests. Both calls are idempotent.
-app.Lifetime.ApplicationStarted.Register(() =>
+// Optimize images and backfill responsive variants in the background after the app starts.
+// Gated to the worker (runScheduledJobs) so the HTTP-serving `web` machines never run the
+// bulk ImageSharp decode on boot — decoding full-resolution source images is memory-hungry
+// and previously OOM-killed the (then 512 MB) instance mid-startup, taking the site down.
+// Both calls are idempotent (they skip already-converted images).
+if (runScheduledJobs)
 {
-    _ = Task.Run(async () =>
+    app.Lifetime.ApplicationStarted.Register(() =>
     {
-        ImageOptimizationService optimizer = app.Services.GetRequiredService<ImageOptimizationService>();
-        await optimizer.OptimizeExistingImagesAsync();
-        await optimizer.BackfillImageVariantsAsync();
+        _ = Task.Run(async () =>
+        {
+            ImageOptimizationService optimizer = app.Services.GetRequiredService<ImageOptimizationService>();
+            await optimizer.OptimizeExistingImagesAsync();
+            await optimizer.BackfillImageVariantsAsync();
+        });
     });
-});
+}
 
 app.Run();
 
