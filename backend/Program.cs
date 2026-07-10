@@ -144,13 +144,24 @@ builder.Services.AddSingleton<ImageStorageService>();
 // Cart interest tracking
 builder.Services.AddSingleton<CartInterestService>();
 
+// Scheduled/singleton background jobs must run on exactly ONE instance when scaled out,
+// or they double-fire: duplicate reminder emails, duplicate SEO snapshots, and racing
+// Monzo/liability/traffic writes. Gate them behind a flag and set BackgroundJobs__Enabled
+// to false on every machine except one. (TranslationBackgroundService is deliberately NOT
+// gated — it drains a per-process in-memory queue fed by requests on its own instance, so
+// it must run everywhere and never duplicates work across instances.)
+bool runScheduledJobs = builder.Configuration.GetValue("BackgroundJobs:Enabled", true);
+
 // Translation
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddHostedService<TranslationBackgroundService>();
 
 // SEO rank checking (now backed by GSC position data instead of Custom Search API)
 builder.Services.AddScoped<RankCheckerService>();
-builder.Services.AddHostedService<RankCheckBackgroundService>();
+if (runScheduledJobs)
+{
+    builder.Services.AddHostedService<RankCheckBackgroundService>();
+}
 
 // Sitemap static-route list, sourced from the frontend's deployed assets
 // so the backend can't advertise URLs the frontend hasn't shipped.
@@ -158,12 +169,18 @@ builder.Services.AddSingleton<SitemapRoutesService>();
 
 // SEO health snapshots (catalog quality, sitemap counts, keyword positions)
 builder.Services.AddSingleton<SeoHealthService>();
-builder.Services.AddHostedService<SeoHealthBackgroundService>();
+if (runScheduledJobs)
+{
+    builder.Services.AddHostedService<SeoHealthBackgroundService>();
+}
 
 // Google Search Console + GA4 daily ingest
 builder.Services.AddSingleton<GoogleSearchConsoleService>();
 builder.Services.AddSingleton<GoogleAnalyticsService>();
-builder.Services.AddHostedService<TrafficIngestBackgroundService>();
+if (runScheduledJobs)
+{
+    builder.Services.AddHostedService<TrafficIngestBackgroundService>();
+}
 
 // First-party cookieless page-view analytics (beacon ingest from the CF Worker)
 builder.Services.AddScoped<IAnalyticsIngestService, AnalyticsIngestService>();
@@ -175,14 +192,20 @@ builder.Services.AddScoped<ICareService, CareService>();
 // Monzo bank integration
 builder.Services.AddHttpClient<MonzoApiClient>();
 builder.Services.AddScoped<IMonzoService, MonzoService>();
-builder.Services.AddHostedService<MonzoSyncBackgroundService>();
+if (runScheduledJobs)
+{
+    builder.Services.AddHostedService<MonzoSyncBackgroundService>();
+}
 
 // Regulatory-obligations calendar + operator reminders
 builder.Services.Configure<LiabilityOptions>(builder.Configuration.GetSection(LiabilityOptions.SectionName));
 builder.Services.AddScoped<ILiabilityScheduleService, LiabilityScheduleService>();
 builder.Services.AddScoped<IObligationReminderSync, ObligationReminderSync>();
-builder.Services.AddHostedService<LiabilityScheduleHostedService>();
-builder.Services.AddHostedService<ReminderDispatcher>();
+if (runScheduledJobs)
+{
+    builder.Services.AddHostedService<LiabilityScheduleHostedService>();
+    builder.Services.AddHostedService<ReminderDispatcher>();
+}
 
 // HttpClient for external OAuth token verification
 builder.Services.AddHttpClient();
@@ -268,6 +291,11 @@ builder.Services.AddCors(options =>
 });
 
 WebApplication app = builder.Build();
+
+// Surfaces per-machine which role this instance is running as. On a multi-machine
+// (process-group) deploy exactly one machine — the `worker` — should log this true;
+// every `web` machine should log false. Greppable in `fly logs`.
+app.Logger.LogInformation("Scheduled background jobs enabled on this instance: {Enabled}", runScheduledJobs);
 
 if (app.Environment.IsDevelopment())
 {
