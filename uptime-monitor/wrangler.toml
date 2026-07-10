@@ -2,6 +2,7 @@ name = "eden-relics-uptime-monitor"
 main = "src/index.js"
 compatibility_date = "2026-07-01"
 workers_dev = false
+account_id = "81096838098d07cc3955844c8a32663f"
 
 # Check every 5 minutes.
 [triggers]
@@ -10,9 +11,9 @@ crons = ["*/5 * * * *"]
 [vars]
 # Comma-separate multiple recipients if needed.
 ALERT_TO = "peter.carter@dcp-net.com"
-# IMPORTANT: the from-address domain must be VERIFIED in Resend, or sends 403.
-# Match the backend's verified sender domain (see backend Email:From config).
-ALERT_FROM = "Eden Relics Monitor <noreply@edenrelics.co.uk>"
+# From-address domain must be VERIFIED in Resend. This matches the backend's
+# verified sender (Email__From = site@edenrelics.co.uk).
+ALERT_FROM = "Eden Relics Monitor <site@edenrelics.co.uk>"
 
 # Persists the consecutive-failure count + up/down state across cron runs.
 # Create the namespace and paste its id below:

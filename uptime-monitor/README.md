@@ -13,21 +13,24 @@ recovers.
 
 ## One-time setup / deploy
 
-From this directory (`uptime-monitor/`):
+`account_id` and `ALERT_FROM` (verified Resend sender `site@edenrelics.co.uk`)
+are already filled in. Remaining steps, from this directory (`uptime-monitor/`):
 
 ```sh
-# 1. Authenticate wrangler (interactive — run it yourself in the terminal):
-#    ! npx wrangler login
+# 1. Auth: a narrowly-scoped CLOUDFLARE_API_TOKEN in the environment blocks
+#    OAuth login and can't create KV. Unset it, then log in (interactive):
+#      PowerShell:  Remove-Item Env:\CLOUDFLARE_API_TOKEN; npx wrangler login
+#    (For subsequent non-interactive wrangler calls, prefix with `env -u
+#     CLOUDFLARE_API_TOKEN` so the OAuth session is used, not the token.)
 
-# 2. Create the KV namespace for failure-count state, then paste the printed id
-#    into wrangler.toml (kv_namespaces.id):
+# 2. Create the KV namespace, then paste the printed id into wrangler.toml
+#    (kv_namespaces.id):
 npx wrangler kv namespace create MONITOR_STATE
 
-# 3. Set the Resend API key as a secret (reuse the backend's Resend key):
+# 3. Set the Resend API key as a secret (same key as the backend, Email__ResendApiKey):
 npx wrangler secret put RESEND_API_KEY
 
-# 4. Confirm ALERT_FROM in wrangler.toml uses a Resend-VERIFIED sender domain,
-#    then deploy:
+# 4. Deploy:
 npx wrangler deploy
 ```
 
