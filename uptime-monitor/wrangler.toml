@@ -20,7 +20,7 @@ ALERT_FROM = "Eden Relics Monitor <site@edenrelics.co.uk>"
 #   npx wrangler kv namespace create MONITOR_STATE
 [[kv_namespaces]]
 binding = "MONITOR_STATE"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "e6b9e9aa55094800978be55a576293f3"
 
 # RESEND_API_KEY is a secret, NOT a var — set it with:
 #   npx wrangler secret put RESEND_API_KEY
