@@ -38,7 +38,7 @@ const DECADE_VIEWS: Record<string, ShopView> = {
     path: '/shop/1960s',
     category: '60s',
     heading: '1960s Vintage Dresses',
-    lede: 'Clean lines and mod-era colour — authentic 1960s pieces, hand-picked and inspected.',
+    lede: 'Authentic 1960s vintage dresses from a decade when shapes simplified and colour did the work ornament used to do — shifts, A-lines, clean necklines, during one of the last decades when large-scale British dressmaking was still commonplace. Because “60s style” has been revived endlessly, we date every piece from physical evidence rather than appearance: label typefaces, the wording of fibre content, zip types, seam finishes. Stock in this category rotates as one-of-a-kind pieces come and go, but the standard doesn’t — each dress is inspected, honestly described, and sized from real measurements as a “best fits UK” size, never from the label, since sixties sizing runs roughly two modern sizes small.',
     title: '1960s Vintage Dresses',
     description: 'Authentic 1960s vintage dresses, hand-picked and inspected. Mod shifts, shift dresses and sixties style, with UK shipping.',
   },
