@@ -186,8 +186,8 @@ export const DESIGNERS: DesignerProfile[] = [
   {
     slug: 'st-michael',
     name: 'St Michael (Marks & Spencer)',
-    metaTitle: 'Vintage St Michael Clothing — M&S Dresses & Knitwear',
-    metaDescription: 'Vintage St Michael clothing — Marks & Spencer\'s original house label from the 1970s-90s. Dresses, knits & blouses, plus how to identify and date the M&S label.',
+    metaTitle: 'Vintage St Michael (M&S) Clothing — Dresses & Knitwear',
+    metaDescription: 'Shop vintage St Michael — Marks & Spencer\'s original house label of the 1970s-90s: dresses, knitwear and blouses, hand-picked and inspected. Plus how to identify and date the M&S label.',
     origin: 'United Kingdom — Marks & Spencer house label, 1928–2000',
     intro: 'St Michael was Marks & Spencer\'s house label for the better part of the 20th century, and authentic vintage St Michael clothing is popular with vintage collectors for its construction quality and era-defining prints. The dresses, knitwear, blouses and tailored skirts that filled British wardrobes from the 1970s to the 90s came from a period when M&S was closely tied to British manufacturing and clothes built to last.',
     history: [

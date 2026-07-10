@@ -15,8 +15,8 @@ export class SeoService {
   private readonly meta = inject(Meta);
   private readonly document = inject(DOCUMENT);
 
-  private readonly defaultTitle = 'Eden Relics — Vintage Clothing';
-  private readonly defaultDescription = 'Vintage women’s clothing from the 1960s, 70s, 80s and 90s. Thoughtfully sourced, carefully assessed — slow fashion worth wearing again.';
+  private readonly defaultTitle = 'Eden Relics — Vintage Dresses & Womenswear, 1960s–90s';
+  private readonly defaultDescription = 'Hand-picked vintage dresses and womenswear from the 1960s to the 90s — each piece one of a kind, inspected and ready to wear again. UK vintage, thoughtfully sourced.';
   private readonly defaultImage = 'https://edenrelics.co.uk/og-image.png';
   private readonly siteUrl = 'https://edenrelics.co.uk';
   private readonly ogLocale = 'en_GB';
