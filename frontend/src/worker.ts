@@ -63,6 +63,13 @@ const NO_CACHE_PREFIXES = [
  * Once purge-on-inventory-change lands, those can move here too.
  */
 const SSR_STATIC_CACHE_TTL = 3600;
+/**
+ * Product detail pages: 30 min. Safe without purge-on-change because a SOLD item
+ * is 301'd by the /product/ redirect layer that runs on every request BEFORE the
+ * cache — so the only staleness is a rare admin edit to a still-live one-of-one.
+ * Listing pages (home/shop/collections) stay short so new/sold items surface fast.
+ */
+const SSR_PRODUCT_CACHE_TTL = 1800;
 const STATIC_PATH_PREFIXES = [
   '/blog',
   '/designers',
@@ -88,7 +95,13 @@ function edgeCacheTtl(url: URL): number {
   const isStatic = STATIC_PATH_PREFIXES.some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`),
   );
-  return isStatic ? SSR_STATIC_CACHE_TTL : SSR_CACHE_TTL;
+  if (isStatic) {
+    return SSR_STATIC_CACHE_TTL;
+  }
+  if (path.startsWith('/product/')) {
+    return SSR_PRODUCT_CACHE_TTL;
+  }
+  return SSR_CACHE_TTL;
 }
 
 /**
