@@ -33,18 +33,63 @@ async function fetchWithTimeout(
   }
 }
 
-/** Routes we must never edge-cache: auth-gated, personalised, or state-changing. */
+/** Routes we must never edge-cache: auth-gated, personalised, state-changing, or draft previews. */
 const NO_CACHE_PREFIXES = [
   '/admin',
   '/account',
+  '/settings',
   '/checkout',
   '/basket',
   '/cart',
   '/orders',
+  '/order-confirmation',
+  '/review',
   '/wishlist',
   '/login',
   '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+  // Admin-only draft previews of unpublished content — must never be cached/served publicly.
+  '/blog/preview',
+  '/collections/preview',
 ];
+
+/**
+ * Long edge TTL for pages whose primary content has no live-inventory dependency:
+ * blog posts, designer/style/garment hubs, care guides, and static/legal pages.
+ * Everything else (home, /shop listings, /product, /collections) stays on the
+ * short TTL because those reflect the live catalogue (an add/sale changes them).
+ * Once purge-on-inventory-change lands, those can move here too.
+ */
+const SSR_STATIC_CACHE_TTL = 3600;
+const STATIC_PATH_PREFIXES = [
+  '/blog',
+  '/designers',
+  '/style',
+  '/dresses',
+  '/care',
+  '/about',
+  '/contact',
+  '/privacy-policy',
+  '/returns-policy',
+  '/security',
+  '/terms-conditions',
+  '/cookie-policy',
+  '/accessibility-report',
+  '/compliance-report',
+  '/modern-slavery-policy',
+  '/supply-chain-policy',
+];
+
+/** Edge TTL (seconds) for a cacheable page: long for static content, short otherwise. */
+function edgeCacheTtl(url: URL): number {
+  const path = url.pathname;
+  const isStatic = STATIC_PATH_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+  );
+  return isStatic ? SSR_STATIC_CACHE_TTL : SSR_CACHE_TTL;
+}
 
 /**
  * True for anonymous GET navigations whose SSR HTML is identical for every
@@ -347,9 +392,10 @@ export default {
       if (response) {
         if (response.status >= 200 && response.status < 300) {
           const propagated = new Response(response.body, response);
+          const ttl = edgeCacheTtl(url);
           propagated.headers.set(
             'Cache-Control',
-            `public, max-age=60, s-maxage=${SSR_CACHE_TTL}, stale-while-revalidate=600`,
+            `public, max-age=60, s-maxage=${ttl}, stale-while-revalidate=600`,
           );
           // Count this render in our first-party analytics (cookieless, non-blocking).
           sendPageViewBeacon(request, env, ctx, url.pathname);
