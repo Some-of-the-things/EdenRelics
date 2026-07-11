@@ -27,7 +27,10 @@ primary_region = 'ams'
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'suspend'
+  # Never suspend web machines. With only 2 machines and min_machines_running = 2
+  # there is no cost saving from suspend, and a request arriving mid-suspend can
+  # 503 during the resume gap — see the load-shed 503 incident (2026-07-11).
+  auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 2
   processes = ['web']
