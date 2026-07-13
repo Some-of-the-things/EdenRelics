@@ -23,10 +23,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
-// Persistence: the tool's own Postgres DB (separate from the shop). Tests replace this with an
-// in-memory provider. TODO before deploy: swap EnsureCreated (below) for EF migrations.
-builder.Services.AddDbContext<ToolDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("ToolDb")));
+// Persistence: prefer Fly's DATABASE_URL (postgres:// -> Npgsql), else ConnectionStrings:ToolDb.
+// Tests replace this registration with an in-memory provider; startup Migrate()s a relational DB.
+string toolConnection = Environment.GetEnvironmentVariable("DATABASE_URL") is { Length: > 0 } dbUrl
+    ? ConvertPostgresUrl(dbUrl)
+    : builder.Configuration.GetConnectionString("ToolDb") ?? "";
+builder.Services.AddDbContext<ToolDbContext>(options => options.UseNpgsql(toolConnection));
 
 // The dating engine reads its rules from the database, so rules update without a redeploy.
 builder.Services.AddScoped<IRuleStore, DbRuleStore>();
@@ -55,6 +57,20 @@ app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
 app.MapToolEndpoints();
 
 app.Run();
+
+// Convert a postgres:// URL (Fly's DATABASE_URL) into an Npgsql connection string.
+static string ConvertPostgresUrl(string url)
+{
+    Uri uri = new(url);
+    string[] userInfo = uri.UserInfo.Split(':');
+    string query = uri.Query.TrimStart('?');
+    bool isFlyInternal = uri.Host.EndsWith(".flycast") || uri.Host.EndsWith(".internal");
+    string sslMode = isFlyInternal ? "SSL Mode=Disable" : "SSL Mode=Require;Trust Server Certificate=true";
+    string baseConn = $"Host={uri.Host};Port={(uri.Port > 0 ? uri.Port : 5432)};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};{sslMode}";
+    string extraParams = string.Join('&', query.Split('&', StringSplitOptions.RemoveEmptyEntries)
+        .Where(p => !p.StartsWith("sslmode", StringComparison.OrdinalIgnoreCase)));
+    return string.IsNullOrEmpty(extraParams) ? baseConn : $"{baseConn};{extraParams}";
+}
 
 /// <summary>Exposed so the integration tests can spin up the host via WebApplicationFactory.</summary>
 public partial class Program;
