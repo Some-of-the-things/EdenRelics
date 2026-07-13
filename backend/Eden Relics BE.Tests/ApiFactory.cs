@@ -38,6 +38,7 @@ public class ApiFactory : WebApplicationFactory<Program>
                 ["Fido2:Origins:0"] = "http://localhost:4200",
                 ["Cors:AllowedOrigins:0"] = "http://localhost:4200",
                 ["Analytics:IngestSecret"] = "test-analytics-secret",
+                ["Marketplace:Enabled"] = "true",
                 ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Database=unused",
             });
         });
