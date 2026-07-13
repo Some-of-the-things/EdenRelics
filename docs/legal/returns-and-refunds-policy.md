@@ -1,10 +1,10 @@
 # Returns and Refunds Policy
 
-**Last updated: [LAST UPDATED] · Effective: [EFFECTIVE DATE]**
+**Last updated: 13 July 2026 (draft) · Effective: on launch (to be confirmed)**
 
 > **⚠️ DRAFT — NOT LEGAL ADVICE.** This is an unreviewed first draft. It must be reviewed and approved by a solicitor qualified in England & Wales before use. Nothing here is legal advice.
 
-> **Model assumption (to be confirmed):** Eden Relics acts as a **disclosed agent / facilitator**. Each item is sold by an independent **Seller**, who is the seller of record and handles returns for their own items. Eden Relics facilitates payment and refunds via [PAYMENT PROVIDER]. See `00-README.md`.
+> **Model assumption (to be confirmed):** Eden Relics acts as a **disclosed agent / facilitator**. Each item is sold by an independent **Seller**, who is the seller of record and handles returns for their own items. Eden Relics facilitates payment and refunds via Stripe (Stripe Connect). See `00-README.md`.
 
 This policy is part of the `buyer-terms-of-sale.md`. It explains your rights to cancel or return an item and how refunds work across our independent Sellers.
 
@@ -25,7 +25,7 @@ Nothing in this policy reduces your **statutory rights**.
 
 2.1 Every item is **unique** and sold by an individual Seller. **Each Seller handles returns for the item(s) you bought from them.** If you buy from more than one Seller in a single order, a return may involve more than one Seller and more than one return address/parcel.
 
-2.2 To start any return or cancellation, contact us at [SUPPORT EMAIL] (or the Seller directly if their details are on your order). We can coordinate with the Seller on your behalf as facilitator. You will be given the correct **return address** for that Seller's item.
+2.2 To start any return or cancellation, contact us at info@edenrelics.co.uk (or the Seller directly if their details are on your order). We can coordinate with the Seller on your behalf as facilitator. You will be given the correct **return address** for that Seller's item.
 
 2.3 Because items are one-of-one, a like-for-like **replacement is usually not possible**. For faulty/not-as-described items this means your remedy is normally a repair (if you both agree), a price reduction, or a refund, rather than a replacement.
 
@@ -37,7 +37,7 @@ Nothing in this policy reduces your **statutory rights**.
 
 3.2 **The 14 days** start the day after you (or your nominated recipient) receive the item.
 
-3.3 **How to cancel:** tell us or the Seller clearly within the 14 days — email [SUPPORT EMAIL], or use the model cancellation wording:
+3.3 **How to cancel:** tell us or the Seller clearly within the 14 days — email info@edenrelics.co.uk, or use the model cancellation wording:
 > *"I hereby cancel my contract of sale for the following item: [item / order number], ordered on [date], received on [date]. Name / address."*
 
 3.4 **Returning the item:** after cancelling, send the item back to the Seller's return address **without undue delay and within 14 days** of telling us you're cancelling.
@@ -48,7 +48,7 @@ Nothing in this policy reduces your **statutory rights**.
 
 3.7 **Condition / reduced refund:** you may inspect and try on an item as you would in a shop. If the item's value is reduced because you handled or used it more than necessary (e.g. worn out of the home, tags/labels removed, altered, marked or scented), the Seller may reduce your refund to reflect that loss in value.
 
-3.8 **When you get it:** the Seller (via [PAYMENT PROVIDER]) will refund you within **14 days** of getting the item back, or of you providing proof you've sent it back, whichever is sooner.
+3.8 **When you get it:** the Seller (via Stripe (Stripe Connect)) will refund you within **14 days** of getting the item back, or of you providing proof you've sent it back, whichever is sooner.
 
 3.9 **Exceptions.** A few items are excepted from the 14-day right, including **sealed goods that are not suitable for return for health/hygiene reasons once unsealed**, and bespoke/personalised items (e.g. made-to-measure alterations). See `buyer-terms-of-sale.md` clause 7.7.
 
@@ -64,7 +64,7 @@ Nothing in this policy reduces your **statutory rights**.
 
 4.3 **After 30 days.** You may be entitled to a repair or price reduction; because items are one-of-one, replacement is usually not available. If a repair isn't possible or doesn't resolve the issue, you may be entitled to a refund (which may be reduced to reflect use after the first six months).
 
-4.4 **Return postage for faulty/not-as-described items is paid by the Seller** — you should not be out of pocket. Contact [SUPPORT EMAIL] to arrange the return and reimbursement of reasonable return costs.
+4.4 **Return postage for faulty/not-as-described items is paid by the Seller** — you should not be out of pocket. Contact info@edenrelics.co.uk to arrange the return and reimbursement of reasonable return costs.
 
 4.5 If you and the Seller disagree about whether an item is faulty or as described (for example, a disputed dating/authenticity claim), see `complaints-and-disputes.md` for how we help mediate and how to escalate.
 
@@ -82,7 +82,7 @@ Nothing in this policy reduces your **statutory rights**.
 
 ## 6. How refunds are paid (Stripe / transfer reversal)
 
-6.1 Refunds are made through [PAYMENT PROVIDER] to your **original payment method**. You do not receive cash or bank transfers direct from Sellers.
+6.1 Refunds are made through Stripe (Stripe Connect) to your **original payment method**. You do not receive cash or bank transfers direct from Sellers.
 
 6.2 Because the Seller was paid via Stripe Connect, an approved refund is normally made by **reversing the corresponding transfer** to the Seller's connected account (in whole or in part) and returning the funds to you. The delivery element is included where the law requires it (see Section 3).
 
@@ -102,7 +102,7 @@ Nothing in this policy reduces your **statutory rights**.
 
 ## 8. How to start a return or raise a problem
 
-- Email **[SUPPORT EMAIL]** with your order number and what's wrong.
+- Email **info@edenrelics.co.uk** with your order number and what's wrong.
 - We'll confirm the correct return address for that Seller and the next steps.
 - For disputes, see `complaints-and-disputes.md`.
 

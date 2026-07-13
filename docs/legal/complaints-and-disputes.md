@@ -1,6 +1,6 @@
 # Complaints and Disputes Policy
 
-**Last updated: [LAST UPDATED] · Effective: [EFFECTIVE DATE]**
+**Last updated: 13 July 2026 (draft) · Effective: on launch (to be confirmed)**
 
 > **⚠️ DRAFT — NOT LEGAL ADVICE.** This is an unreviewed first draft. It must be reviewed and approved by a solicitor qualified in England & Wales before use. Nothing here is legal advice.
 
@@ -13,12 +13,12 @@ This policy explains how to raise a complaint and how disputes between Buyers an
 ## 1. Raising a complaint — start here
 
 1.1 If you have a problem with an order, item, delivery, or another user, **contact Eden Relics first**:
-- Buyers: [SUPPORT EMAIL] or [COMPLAINTS EMAIL].
-- Sellers: [SUPPORT EMAIL] or [COMPLAINTS EMAIL].
+- Buyers: info@edenrelics.co.uk or info@edenrelics.co.uk.
+- Sellers: info@edenrelics.co.uk or info@edenrelics.co.uk.
 
 1.2 Please include your order number, the item, what has gone wrong, and what outcome you want (e.g. return, refund, repair). This lets us respond quickly.
 
-1.3 We aim to acknowledge complaints within **[X business days]** and to resolve or update you within **[X business days]**. `[Confirm the service levels you can realistically commit to.]`
+1.3 We aim to acknowledge complaints within **3 business days** and to resolve or update you within **14 business days**. *(Suggested service levels — confirm you can realistically meet them.)*
 
 ---
 
@@ -27,7 +27,7 @@ This policy explains how to raise a complaint and how disputes between Buyers an
 2.1 Because the sale is between Buyer and Seller, most item disputes (condition, description, dating/authenticity, delivery, returns) are ultimately **between the Buyer and the Seller**. As facilitator, Eden Relics will:
 - pass information between Buyer and Seller and help them communicate;
 - explain the relevant rights (statutory cancellation, faulty/not-as-described, returns);
-- help arrange returns and, where a refund is agreed or due, operate the refund via [PAYMENT PROVIDER]; and
+- help arrange returns and, where a refund is agreed or due, operate the refund via Stripe (Stripe Connect); and
 - where appropriate, make a **facilitator's assessment** to help resolve the matter fairly.
 
 2.2 Eden Relics' assessment is **not** a binding legal determination or arbitration. It does not remove either party's legal rights, and either party may still pursue their legal remedies.
@@ -50,7 +50,7 @@ This policy explains how to raise a complaint and how disputes between Buyers an
 
 ## 4. Escalation within Eden Relics
 
-4.1 If you are unhappy with our initial response, you can ask for the complaint to be **escalated** to [ESCALATION CONTACT / ROLE]. We will review it afresh and give you our final response, normally within **[X business days]**.
+4.1 If you are unhappy with our initial response, you can ask for the complaint to be **escalated** to a director of Eden Relics. We will review it afresh and give you our final response, normally within **10 business days**.
 
 4.2 We keep records of complaints and their outcomes to improve the Marketplace and meet our obligations.
 
@@ -60,7 +60,7 @@ This policy explains how to raise a complaint and how disputes between Buyers an
 
 5.1 If you paid by card, you may have **chargeback** rights (and possibly **Section 75**, Consumer Credit Act 1974, for eligible credit-card purchases) through your card provider. We ask that you contact us first, because a chargeback raised before we've had a chance to resolve things can slow the outcome and may be unnecessary if a refund is already due.
 
-5.2 Where a chargeback is raised, Eden Relics will respond via [PAYMENT PROVIDER]. As set out in the `seller-agreement.md`, the **Seller bears the liability** for chargebacks relating to their items, and Eden Relics may reverse the corresponding transfer or recover the amount from the Seller.
+5.2 Where a chargeback is raised, Eden Relics will respond via Stripe (Stripe Connect). As set out in the `seller-agreement.md`, the **Seller bears the liability** for chargebacks relating to their items, and Eden Relics may reverse the corresponding transfer or recover the amount from the Seller.
 
 ---
 
@@ -78,7 +78,7 @@ This policy explains how to raise a complaint and how disputes between Buyers an
 
 ## 7. Disputes involving Eden Relics itself
 
-7.1 If your complaint is about **Eden Relics' own services** (e.g. the website, payment facilitation, or fees) rather than a Seller's item, raise it at [COMPLAINTS EMAIL] and we will handle it under this policy.
+7.1 If your complaint is about **Eden Relics' own services** (e.g. the website, payment facilitation, or fees) rather than a Seller's item, raise it at info@edenrelics.co.uk and we will handle it under this policy.
 
 7.2 For Sellers, disputes about the `seller-agreement.md` are governed by that agreement, including its governing-law and jurisdiction clause.
 
@@ -92,7 +92,7 @@ This policy explains how to raise a complaint and how disputes between Buyers an
 
 ## 9. Contact
 
-Complaints: **[COMPLAINTS EMAIL]** · Support: **[SUPPORT EMAIL]** · [COMPANY LEGAL NAME], [REGISTERED OFFICE ADDRESS].
+Complaints: **info@edenrelics.co.uk** · Support: **info@edenrelics.co.uk** · Eden Relics Ltd, 30 Vane Close, Norwich, NR7 0US.
 
 ---
 

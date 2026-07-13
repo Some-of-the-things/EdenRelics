@@ -14,6 +14,10 @@
 | 4 | **Payout timing** | **Held until the 14-day statutory cancellation window closes**, then released to the seller's connected account — so a statutory refund is always covered. |
 | 5 | **Restricted items** | **Ban** real fur, ivory, and CITES-restricted materials (incl. tortoiseshell/exotic skins). Ivory per the Ivory Act 2018. |
 | 6 | **Returns window** | **14-day statutory** distance-selling cancellation **+ a voluntary 30-day** returns window as a trust signal. |
+| 7 | **Listing fee** | **None** — sellers pay only the 15% commission on a sale. |
+| 8 | **Return address** | Provided **per-return via the platform** once a return is authorised. |
+| 9 | **Complaint SLAs** *(suggested)* | Acknowledge within 3 business days; resolve/update within 14; escalation to a director within 10. Confirm you can meet these. |
+| 10 | **Seller termination notice** *(suggested)* | 30 days' written notice. |
 
 ### Worked commission example (15%, platform absorbs Stripe)
 Item sells for £100 (+ delivery handled separately). Buyer pays Eden Relics via Stripe. Platform
@@ -40,7 +44,18 @@ seller's identity to the buyer, let sellers set their own prices, and don't desc
   over-apply it. Solicitor to confirm the final returns wording.
 - **ADR provider**: pick an Alternative Dispute Resolution scheme to signpost (post-Brexit position).
 
-## Company details still to fill (factual placeholders across the docs)
-`[COMPANY LEGAL NAME]` · `[COMPANY NUMBER]` · `[REGISTERED OFFICE ADDRESS]` · `[VAT NUMBER]` (+ reg.
-status) · `[ICO REGISTRATION NUMBER]` · `[CONTACT/SUPPORT/PRIVACY/COMPLAINTS EMAIL]` · `[WEBSITE URL]`
-· `[EFFECTIVE DATE]`.
+## Company details — FILLED across all docs (2026-07-13)
+- **Legal name:** Eden Relics Ltd · **Company no.:** 17153907
+- **Registered office / trading address:** 30 Vane Close, Norwich, NR7 0US
+- **VAT:** not currently VAT-registered · **ICO:** not yet registered (registration pending)
+- **All contact emails:** info@edenrelics.co.uk *(single address for now; disambiguate later)*
+- **Website:** https://edenrelics.co.uk · **Effective date:** on launch (to be confirmed)
+
+> ⚠️ **ICO registration:** a marketplace processing buyers'/sellers' personal data almost certainly
+> **must register with the ICO** (a legal requirement for most businesses handling personal data;
+> ~£40–60/yr). Do this before going live. VAT: below the threshold for now — the accountant reviews as
+> turnover grows and before any international selling.
+
+## Only TWO placeholders remain (both for the solicitor)
+- `[ADR PROVIDER]` — the Alternative Dispute Resolution scheme to signpost (`complaints-and-disputes.md` §6).
+- `£[LIABILITY CAP FLOOR]` — the floor for Eden Relics' liability cap in the Seller Agreement (`seller-agreement.md` §14.3).

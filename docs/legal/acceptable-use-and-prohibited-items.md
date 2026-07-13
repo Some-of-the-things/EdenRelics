@@ -1,6 +1,6 @@
 # Acceptable Use and Prohibited Items Policy
 
-**Last updated: [LAST UPDATED] · Effective: [EFFECTIVE DATE]**
+**Last updated: 13 July 2026 (draft) · Effective: on launch (to be confirmed)**
 
 > **⚠️ DRAFT — NOT LEGAL ADVICE.** This is an unreviewed first draft. It must be reviewed and approved by a solicitor qualified in England & Wales before use. Nothing here is legal advice. In particular, the **materials-restriction rules (fur, ivory, CITES), product-safety and hygiene requirements below must be verified against current legislation and guidance** before the policy is relied upon.
 
@@ -92,7 +92,7 @@ You must **not** list or sell any of the following:
 
 ## 7. Reporting a problem listing
 
-If you believe a Listing breaches this policy or the law, contact **[CONTACT EMAIL]** with the item link and details so we can review and act.
+If you believe a Listing breaches this policy or the law, contact **info@edenrelics.co.uk** with the item link and details so we can review and act.
 
 ---
 

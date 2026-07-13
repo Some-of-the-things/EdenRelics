@@ -1,18 +1,18 @@
 # Marketplace Privacy Addendum
 
-**Last updated: [LAST UPDATED] · Effective: [EFFECTIVE DATE]**
+**Last updated: 13 July 2026 (draft) · Effective: on launch (to be confirmed)**
 
 > **⚠️ DRAFT — NOT LEGAL ADVICE.** This is an unreviewed first draft. It must be reviewed and approved by a solicitor / data-protection adviser qualified in England & Wales before use. Nothing here is legal advice.
 
 > **Model assumption (to be confirmed):** Eden Relics operates a **curated marketplace** as a **disclosed agent / facilitator**. Sellers are independent sellers of record who receive Buyer delivery details to fulfil orders. The controller/processor characterisations below are **provisional and must be confirmed**. See `00-README.md`.
 
-This Addendum supplements Eden Relics' main Privacy Policy at [WEBSITE URL]/privacy and explains the **additional data flows created by the multi-seller marketplace**. Where this Addendum and the main Privacy Policy conflict on a marketplace-specific point, this Addendum applies. Both are subject to the UK GDPR and the Data Protection Act 2018.
+This Addendum supplements Eden Relics' main Privacy Policy at https://edenrelics.co.uk/privacy and explains the **additional data flows created by the multi-seller marketplace**. Where this Addendum and the main Privacy Policy conflict on a marketplace-specific point, this Addendum applies. Both are subject to the UK GDPR and the Data Protection Act 2018.
 
 ---
 
 ## 1. Who is responsible for your data
 
-1.1 **Eden Relics as controller.** [COMPANY LEGAL NAME] (company number [COMPANY NUMBER], registered office [REGISTERED OFFICE ADDRESS]; ICO registration [ICO REGISTRATION NUMBER]) is the **controller** of personal data it processes to operate the Marketplace — for example account data, browsing/analytics, payments facilitation, curation, marketing, and support. Data-protection contact: [PRIVACY / DPO EMAIL].
+1.1 **Eden Relics as controller.** Eden Relics Ltd (company number 17153907, registered office 30 Vane Close, Norwich, NR7 0US; ICO registration not yet registered (ICO registration pending)) is the **controller** of personal data it processes to operate the Marketplace — for example account data, browsing/analytics, payments facilitation, curation, marketing, and support. Data-protection contact: info@edenrelics.co.uk.
 
 1.2 **Sellers as controllers.** When a Seller receives a Buyer's details to fulfil an order, the Seller acts as an **independent controller** of that data for the purpose of fulfilling and supporting that order and meeting their own legal obligations.
 
@@ -24,7 +24,7 @@ This Addendum supplements Eden Relics' main Privacy Policy at [WEBSITE URL]/priv
 
 ## 2. What data we handle for the Marketplace
 
-2.1 **Buyers:** name, contact details, delivery address, order details, and payment confirmation data (Eden Relics does **not** store full card numbers — payments are handled by [PAYMENT PROVIDER]); account credentials; support messages; and usage/analytics data (see our cookieless first-party analytics in the main Privacy Policy).
+2.1 **Buyers:** name, contact details, delivery address, order details, and payment confirmation data (Eden Relics does **not** store full card numbers — payments are handled by Stripe (Stripe Connect)); account credentials; support messages; and usage/analytics data (see our cookieless first-party analytics in the main Privacy Policy).
 
 2.2 **Sellers:** name, business and contact details, identity/verification data and bank/payout details required for Stripe Connect onboarding (much of this is collected and held by Stripe), tax information, Listing content, sales and payout records, and support messages.
 
@@ -71,7 +71,7 @@ This Addendum supplements Eden Relics' main Privacy Policy at [WEBSITE URL]/priv
 
 ## 6. Other recipients
 
-6.1 We may share data with: [PAYMENT PROVIDER] (Stripe); Sellers (as above); our IT, hosting, email and analytics providers acting as our processors; professional advisers; and authorities or others where required by law or to prevent fraud/harm.
+6.1 We may share data with: Stripe (Stripe Connect) (Stripe); Sellers (as above); our IT, hosting, email and analytics providers acting as our processors; professional advisers; and authorities or others where required by law or to prevent fraud/harm.
 
 6.2 Where providers act as our **processors**, they are bound by data-processing terms under UK GDPR Article 28.
 
@@ -95,7 +95,7 @@ This Addendum supplements Eden Relics' main Privacy Policy at [WEBSITE URL]/priv
 
 ## 9. Your rights
 
-9.1 You have the usual UK GDPR rights (access, rectification, erasure, restriction, objection, portability, and to withdraw consent). Because Buyers' fulfilment data may be held by both Eden Relics and a Seller as separate controllers, a request may need to be directed to each. Contact [PRIVACY / DPO EMAIL] and we will help route your request.
+9.1 You have the usual UK GDPR rights (access, rectification, erasure, restriction, objection, portability, and to withdraw consent). Because Buyers' fulfilment data may be held by both Eden Relics and a Seller as separate controllers, a request may need to be directed to each. Contact info@edenrelics.co.uk and we will help route your request.
 
 9.2 You can complain to the Information Commissioner's Office (ICO) at ico.org.uk.
 
@@ -103,7 +103,7 @@ This Addendum supplements Eden Relics' main Privacy Policy at [WEBSITE URL]/priv
 
 ## 10. Contact
 
-Data-protection contact: **[PRIVACY / DPO EMAIL]** · [COMPANY LEGAL NAME], [REGISTERED OFFICE ADDRESS]. See also the main Privacy Policy at [WEBSITE URL]/privacy.
+Data-protection contact: **info@edenrelics.co.uk** · Eden Relics Ltd, 30 Vane Close, Norwich, NR7 0US. See also the main Privacy Policy at https://edenrelics.co.uk/privacy.
 
 ---
 

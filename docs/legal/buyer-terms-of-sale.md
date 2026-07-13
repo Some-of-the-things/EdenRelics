@@ -1,19 +1,19 @@
 # Buyer Terms of Sale
 
-**Last updated: [LAST UPDATED] · Effective: [EFFECTIVE DATE]**
+**Last updated: 13 July 2026 (draft) · Effective: on launch (to be confirmed)**
 
 > **⚠️ DRAFT — NOT LEGAL ADVICE.** This is an unreviewed first draft. It must be reviewed and approved by a solicitor qualified in England & Wales and by the company's accountant before use. Nothing here is legal or tax advice.
 
-> **Model assumption (to be confirmed):** These terms are written on the basis that **Eden Relics acts as a disclosed agent / facilitator.** The **contract of sale for each item is between you (the buyer) and the third-party seller** who listed it. Eden Relics operates the marketplace and facilitates payment (via [PAYMENT PROVIDER]); it is **not** the seller of the goods. If the company's advisers instead confirm a "reseller / principal" model, these terms change materially. See `00-README.md`.
+> **Model assumption (to be confirmed):** These terms are written on the basis that **Eden Relics acts as a disclosed agent / facilitator.** The **contract of sale for each item is between you (the buyer) and the third-party seller** who listed it. Eden Relics operates the marketplace and facilitates payment (via Stripe (Stripe Connect)); it is **not** the seller of the goods. If the company's advisers instead confirm a "reseller / principal" model, these terms change materially. See `00-README.md`.
 
 ---
 
 ## 1. Who these terms are between
 
-1.1 These Buyer Terms of Sale ("**Terms**") govern your purchase of an item listed on the Eden Relics marketplace at [WEBSITE URL] (the "**Marketplace**").
+1.1 These Buyer Terms of Sale ("**Terms**") govern your purchase of an item listed on the Eden Relics marketplace at https://edenrelics.co.uk (the "**Marketplace**").
 
 1.2 In these Terms:
-- "**We**", "**us**", "**the Platform**", "**Eden Relics**" means [COMPANY LEGAL NAME], a company registered in England and Wales (company number [COMPANY NUMBER]), registered office [REGISTERED OFFICE ADDRESS]. Contact: [CONTACT EMAIL].
+- "**We**", "**us**", "**the Platform**", "**Eden Relics**" means Eden Relics Ltd, a company registered in England and Wales (company number 17153907), registered office 30 Vane Close, Norwich, NR7 0US. Contact: info@edenrelics.co.uk.
 - "**Seller**" means the independent third-party vintage seller who has listed and is selling the item.
 - "**You**" / "**Buyer**" means the person buying the item.
 
@@ -37,7 +37,7 @@
 
 ## 3. Placing an order
 
-3.1 You place an order by following the checkout process on the Marketplace and paying via [PAYMENT PROVIDER]. Payment is taken by Eden Relics as the Seller's payment facilitator.
+3.1 You place an order by following the checkout process on the Marketplace and paying via Stripe (Stripe Connect). Payment is taken by Eden Relics as the Seller's payment facilitator.
 
 3.2 Your order is an offer to buy the item from the Seller. A binding sale contract is formed when we send you an order confirmation on the Seller's behalf (or, if earlier, when the item is dispatched).
 
@@ -53,7 +53,7 @@
 
 4.2 Delivery charges are shown separately at checkout before you pay.
 
-4.3 Payment is processed through [PAYMENT PROVIDER] (Stripe Connect). You pay Eden Relics as the Seller's facilitator; Eden Relics then transfers the Seller's share to the Seller and retains its commission (see `commission-and-fees.md`). You are charged a single amount at checkout.
+4.3 Payment is processed through Stripe (Stripe Connect) (Stripe Connect). You pay Eden Relics as the Seller's facilitator; Eden Relics then transfers the Seller's share to the Seller and retains its commission (see `commission-and-fees.md`). You are charged a single amount at checkout.
 
 > **⚠️ Review note (VAT):** How VAT is shown and accounted for depends on the agent-vs-reseller model, whether Eden Relics and/or the Seller are VAT-registered, and the second-hand **VAT margin scheme**. The accountant must confirm the correct VAT wording and whether VAT can lawfully be described as "included". Do not finalise clause 4.1 until confirmed. For any future international sales, import VAT/duties and marketplace-VAT rules must be addressed separately.
 
@@ -87,7 +87,7 @@
 
 7.2 The 14-day cancellation period runs from the day **after** you (or your nominated recipient) receive the item.
 
-7.3 To cancel, tell us (or the Seller) clearly within the 14 days — for example by email to [SUPPORT EMAIL] or using the model cancellation form. After cancelling, you must return the item to the Seller without undue delay and within 14 days.
+7.3 To cancel, tell us (or the Seller) clearly within the 14 days — for example by email to info@edenrelics.co.uk or using the model cancellation form. After cancelling, you must return the item to the Seller without undue delay and within 14 days.
 
 7.4 On a valid cancellation you are refunded the price you paid **plus** the basic (cheapest) standard delivery cost the Seller offered. Refunds are handled as set out in `returns-and-refunds-policy.md`.
 
@@ -138,13 +138,13 @@
 
 10.1 Your cancellation, return and refund rights, and how they work across independent Sellers, are set out in full in `returns-and-refunds-policy.md`, which forms part of these Terms.
 
-10.2 In summary: each Seller handles returns for their own items; refunds are made through [PAYMENT PROVIDER] to your original payment method, ordinarily by reversing the relevant transfer to the Seller.
+10.2 In summary: each Seller handles returns for their own items; refunds are made through Stripe (Stripe Connect) to your original payment method, ordinarily by reversing the relevant transfer to the Seller.
 
 ---
 
 ## 11. Complaints and disputes
 
-11.1 If something goes wrong, contact us first at [COMPLAINTS EMAIL] / [SUPPORT EMAIL]. As facilitator, we can help mediate between you and the Seller. The full process, including escalation and any Alternative Dispute Resolution signposting, is in `complaints-and-disputes.md`.
+11.1 If something goes wrong, contact us first at info@edenrelics.co.uk / info@edenrelics.co.uk. As facilitator, we can help mediate between you and the Seller. The full process, including escalation and any Alternative Dispute Resolution signposting, is in `complaints-and-disputes.md`.
 
 11.2 If you paid by card and believe a transaction was not honoured, you may also have chargeback or Section 75 (Consumer Credit Act 1974) rights through your card provider — these are separate from your rights under these Terms.
 
@@ -170,7 +170,7 @@
 
 13.2 **Changes.** We may update these Terms; the version that applies to your purchase is the one in force when you placed your order.
 
-13.3 **Contact.** [COMPANY LEGAL NAME], [REGISTERED OFFICE ADDRESS]. Email: [CONTACT EMAIL].
+13.3 **Contact.** Eden Relics Ltd, 30 Vane Close, Norwich, NR7 0US. Email: info@edenrelics.co.uk.
 
 ---
 

@@ -1,6 +1,6 @@
 # Commission and Fees Schedule
 
-**Last updated: [LAST UPDATED] · Effective: [EFFECTIVE DATE]**
+**Last updated: 13 July 2026 (draft) · Effective: on launch (to be confirmed)**
 
 > **⚠️ DRAFT — NOT LEGAL ADVICE.** This is an unreviewed first draft. It must be reviewed and approved by a solicitor qualified in England & Wales and by the company's accountant before use. Nothing here is legal or tax advice. **All figures are placeholders / illustrative.**
 
@@ -16,7 +16,7 @@ This schedule forms part of the `seller-agreement.md` and applies to all Sellers
 
 1.2 Commission is calculated on the **item price only** (not delivery). *(Decision recorded; confirm with the accountant when finalising VAT.)*
 
-1.3 [Listing fee: `[LISTING FEE — e.g. "No listing fee" / "£X per listing"]`.]
+1.3 **No listing fee** — Sellers pay only the 15% commission on a successful sale. *(Decided 2026-07-13.)*
 
 1.4 Commission is deducted automatically at the point of sale via the Stripe Connect transfer (Section 4) — you do not pay it separately.
 
@@ -106,7 +106,7 @@ Assume: item price **£100**, delivery **£5**, platform commission **15% of the
 
 ## 9. Contact
 
-Fee queries: **[SUPPORT EMAIL]** · [COMPANY LEGAL NAME], [REGISTERED OFFICE ADDRESS].
+Fee queries: **info@edenrelics.co.uk** · Eden Relics Ltd, 30 Vane Close, Norwich, NR7 0US.
 
 ---
 

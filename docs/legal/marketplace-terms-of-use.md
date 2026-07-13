@@ -1,6 +1,6 @@
 # Marketplace Terms of Use
 
-**Last updated: [LAST UPDATED] · Effective: [EFFECTIVE DATE]**
+**Last updated: 13 July 2026 (draft) · Effective: on launch (to be confirmed)**
 
 > **⚠️ DRAFT — NOT LEGAL ADVICE.** This is an unreviewed first draft. It must be reviewed and approved by a solicitor qualified in England & Wales before use. Nothing here is legal advice.
 
@@ -10,9 +10,9 @@
 
 ## 1. About these terms
 
-1.1 These Terms of Use govern your access to and use of the Eden Relics website and marketplace at [WEBSITE URL] (the "**Marketplace**"), whether you browse, hold an account, buy, or sell.
+1.1 These Terms of Use govern your access to and use of the Eden Relics website and marketplace at https://edenrelics.co.uk (the "**Marketplace**"), whether you browse, hold an account, buy, or sell.
 
-1.2 The Marketplace is operated by **[COMPANY LEGAL NAME]**, a company registered in England and Wales (company number [COMPANY NUMBER]), registered office [REGISTERED OFFICE ADDRESS] ("**we**", "**us**", "**Eden Relics**"). Contact: [CONTACT EMAIL].
+1.2 The Marketplace is operated by **Eden Relics Ltd**, a company registered in England and Wales (company number 17153907), registered office 30 Vane Close, Norwich, NR7 0US ("**we**", "**us**", "**Eden Relics**"). Contact: info@edenrelics.co.uk.
 
 1.3 These Terms of Use sit alongside our other terms, which apply depending on how you use the Marketplace:
 - **Buying:** `buyer-terms-of-sale.md` and `returns-and-refunds-policy.md`.
@@ -25,7 +25,7 @@
 
 ## 2. What the Marketplace is
 
-2.1 The Marketplace lets vetted third-party Sellers list one-of-one vintage and second-hand womenswear for sale to Buyers. **Eden Relics is not the seller of the items** (subject to the model confirmation in `00-README.md`); it provides the venue, curates Sellers and Listings, and facilitates payment via [PAYMENT PROVIDER].
+2.1 The Marketplace lets vetted third-party Sellers list one-of-one vintage and second-hand womenswear for sale to Buyers. **Eden Relics is not the seller of the items** (subject to the model confirmation in `00-README.md`); it provides the venue, curates Sellers and Listings, and facilitates payment via Stripe (Stripe Connect).
 
 2.2 Listings, descriptions, prices and photographs are provided by Sellers, subject to our curation. While we curate, we do not physically inspect every item and do not guarantee the accuracy of every Listing; your rights if an item is wrong are set out in `buyer-terms-of-sale.md` and `returns-and-refunds-policy.md`.
 
@@ -37,7 +37,7 @@
 
 3.2 You must be at least 18 to hold a selling account or to make a purchase.
 
-3.3 Tell us promptly at [SUPPORT EMAIL] if you suspect unauthorised use of your account.
+3.3 Tell us promptly at info@edenrelics.co.uk if you suspect unauthorised use of your account.
 
 3.4 We may suspend, restrict or close an account if you breach these Terms of Use or any incorporated policy, if we reasonably suspect fraud or illegality, or where necessary to protect users or the Marketplace.
 
@@ -66,7 +66,7 @@
 
 5.3 You warrant that content you post does not infringe anyone's rights and that you are entitled to grant the licence in 5.2.
 
-5.4 **Reporting infringement / illegal content.** If you believe content on the Marketplace infringes your rights or is illegal, contact [CONTACT EMAIL] with details so we can review and, where appropriate, act.
+5.4 **Reporting infringement / illegal content.** If you believe content on the Marketplace infringes your rights or is illegal, contact info@edenrelics.co.uk with details so we can review and, where appropriate, act.
 
 > **⚠️ Review note:** Online-marketplace and online-safety obligations (including notice-and-action for illegal content and, in the UK, duties that may arise under the Online Safety Act regime and e-commerce hosting rules) should be checked by the solicitor to confirm what reporting/takedown processes the Marketplace must operate.
 
@@ -113,7 +113,7 @@
 
 ## 10. Contact
 
-[COMPANY LEGAL NAME], [REGISTERED OFFICE ADDRESS]. Email: [CONTACT EMAIL] · Support: [SUPPORT EMAIL].
+Eden Relics Ltd, 30 Vane Close, Norwich, NR7 0US. Email: info@edenrelics.co.uk · Support: info@edenrelics.co.uk.
 
 ---
 

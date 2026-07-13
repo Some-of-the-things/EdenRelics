@@ -1,6 +1,6 @@
 # Seller Agreement
 
-**Last updated: [LAST UPDATED] · Effective: [EFFECTIVE DATE]**
+**Last updated: 13 July 2026 (draft) · Effective: on launch (to be confirmed)**
 
 > **⚠️ DRAFT — NOT LEGAL ADVICE.** This is an unreviewed first draft. It must be reviewed and approved by a solicitor qualified in England & Wales and by the company's accountant before use. Nothing here is legal or tax advice.
 
@@ -11,18 +11,18 @@
 ## 1. Parties and agreement
 
 1.1 This Seller Agreement ("**Agreement**") is between:
-- **[COMPANY LEGAL NAME]**, company number [COMPANY NUMBER], registered office [REGISTERED OFFICE ADDRESS] ("**Eden Relics**", "**we**", "**the Platform**"); and
+- **Eden Relics Ltd**, company number 17153907, registered office 30 Vane Close, Norwich, NR7 0US ("**Eden Relics**", "**we**", "**the Platform**"); and
 - **you**, the person or business applying to sell on the Marketplace ("**Seller**", "**you**").
 
 1.2 By applying to sell, creating a seller account, or listing an item, you agree to this Agreement, the `marketplace-terms-of-use.md`, the `acceptable-use-and-prohibited-items.md` policy, the `commission-and-fees.md` schedule, and the `privacy-addendum.md`, each of which forms part of this Agreement.
 
-1.3 "**Marketplace**" means the Eden Relics curated vintage marketplace at [WEBSITE URL]. "**Listing**" means an item you offer for sale. "**Buyer**" means a customer who purchases your item.
+1.3 "**Marketplace**" means the Eden Relics curated vintage marketplace at https://edenrelics.co.uk. "**Listing**" means an item you offer for sale. "**Buyer**" means a customer who purchases your item.
 
 ---
 
 ## 2. What Eden Relics does (and does not do)
 
-2.1 Eden Relics provides a **curated marketplace**: it vets sellers, reviews and approves listings, hosts your Listings, markets the Marketplace, and facilitates buyer payments through [PAYMENT PROVIDER] (Stripe Connect).
+2.1 Eden Relics provides a **curated marketplace**: it vets sellers, reviews and approves listings, hosts your Listings, markets the Marketplace, and facilitates buyer payments through Stripe (Stripe Connect) (Stripe Connect).
 
 2.2 **Eden Relics is not the seller of your goods.** The contract of sale is between you and the Buyer. You are the seller of record and the merchant responsible for the goods.
 
@@ -32,7 +32,7 @@
 
 ## 3. Eligibility, curation and approval
 
-3.1 To sell, you must be at least 18, legally able to enter this Agreement, and (if a business) properly constituted. You must provide accurate identity, contact, bank and tax information as required for onboarding and for [PAYMENT PROVIDER] verification.
+3.1 To sell, you must be at least 18, legally able to enter this Agreement, and (if a business) properly constituted. You must provide accurate identity, contact, bank and tax information as required for onboarding and for Stripe (Stripe Connect) verification.
 
 3.2 **Curation is at Eden Relics' sole discretion.** Eden Relics may, at any time and without giving reasons, and without liability to you:
 - approve or reject your application to sell;
@@ -75,11 +75,11 @@
 
 ## 6. Commission, fees and payments
 
-6.1 In consideration for the Marketplace and payment facilitation, you agree to pay Eden Relics the commission and any fees set out in `commission-and-fees.md` (currently a platform commission of [COMMISSION RATE] of the item price; [LISTING FEE]).
+6.1 In consideration for the Marketplace and payment facilitation, you agree to pay Eden Relics the commission and any fees set out in `commission-and-fees.md` (currently a platform commission of 15% of the item price; No listing fee).
 
-6.2 **Separate charges and transfers (Stripe Connect).** The Buyer pays the full amount to Eden Relics through [PAYMENT PROVIDER]. Eden Relics then transfers to your connected Stripe account your share of the sale (the item price and any delivery charge collected) **minus** the platform commission and any applicable fees and taxes on the commission.
+6.2 **Separate charges and transfers (Stripe Connect).** The Buyer pays the full amount to Eden Relics through Stripe (Stripe Connect). Eden Relics then transfers to your connected Stripe account your share of the sale (the item price and any delivery charge collected) **minus** the platform commission and any applicable fees and taxes on the commission.
 
-6.3 [PAYMENT PROVIDER] and card-processing fees are treated as set out in `commission-and-fees.md`. Payouts from your connected account to your bank follow [PAYMENT PROVIDER]'s payout schedule and any holding period applied for buyer-protection reasons (see clause 8).
+6.3 Stripe (Stripe Connect) and card-processing fees are treated as set out in `commission-and-fees.md`. Payouts from your connected account to your bank follow Stripe (Stripe Connect)'s payout schedule and any holding period applied for buyer-protection reasons (see clause 8).
 
 6.4 You are responsible for your own taxes (including income tax and, if applicable, VAT) on your sales. Eden Relics does not give you tax advice.
 
@@ -89,7 +89,7 @@
 
 ## 7. Stripe Connect onboarding
 
-7.1 To receive payouts you must complete [PAYMENT PROVIDER] (Stripe Connect Express) onboarding and accept Stripe's Connected Account Agreement. Your use of Stripe is governed by Stripe's terms in addition to this Agreement.
+7.1 To receive payouts you must complete Stripe (Stripe Connect) (Stripe Connect Express) onboarding and accept Stripe's Connected Account Agreement. Your use of Stripe is governed by Stripe's terms in addition to this Agreement.
 
 7.2 You must keep your connected-account details, identity and bank information accurate and up to date and respond to any Stripe verification (KYC/AML) requests. Eden Relics may withhold payouts if your account is not verified or is flagged by Stripe.
 
@@ -101,7 +101,7 @@
 
 8.1 As the seller of record, **you bear the cost and liability of refunds, returns and chargebacks** relating to your items, including statutory cancellations, faulty/not-as-described claims, and card chargebacks.
 
-8.2 Where a refund is due to a Buyer (whether under the 14-day cancellation right, for a faulty/not-as-described item, or otherwise), you authorise Eden Relics to make that refund through [PAYMENT PROVIDER], ordinarily by **reversing the corresponding transfer** to your connected account (in whole or in part, including the delivery element where applicable) and/or recovering the amount from your balance or future payouts.
+8.2 Where a refund is due to a Buyer (whether under the 14-day cancellation right, for a faulty/not-as-described item, or otherwise), you authorise Eden Relics to make that refund through Stripe (Stripe Connect), ordinarily by **reversing the corresponding transfer** to your connected account (in whole or in part, including the delivery element where applicable) and/or recovering the amount from your balance or future payouts.
 
 8.3 If your connected-account balance is insufficient to cover a refund, chargeback, reversal, fee or other amount you owe, you must pay Eden Relics the shortfall on demand, and you authorise Eden Relics to recover it from future payouts.
 
@@ -155,7 +155,7 @@
 
 ## 13. Suspension and termination
 
-13.1 Either party may terminate this Agreement on [NOTICE PERIOD] written notice. You may not terminate while you have open orders, unresolved returns/disputes, or outstanding amounts owed.
+13.1 Either party may terminate this Agreement on 30 days' written notice. You may not terminate while you have open orders, unresolved returns/disputes, or outstanding amounts owed.
 
 13.2 Eden Relics may **suspend or terminate immediately**, remove your Listings, and/or withhold payouts (subject to Buyer obligations) if: you materially breach this Agreement or a policy; you list prohibited items or counterfeits; you misdescribe items or receive repeated valid complaints/chargebacks; your Stripe account is restricted; we reasonably suspect fraud or illegality; or continued listing would harm Buyers or the Platform's reputation.
 
@@ -187,7 +187,7 @@
 
 15.5 **Governing law and jurisdiction.** This Agreement is governed by the law of **England and Wales**, and the courts of England and Wales have exclusive jurisdiction.
 
-15.6 **Contact.** [COMPANY LEGAL NAME], [REGISTERED OFFICE ADDRESS]. Email: [CONTACT EMAIL].
+15.6 **Contact.** Eden Relics Ltd, 30 Vane Close, Norwich, NR7 0US. Email: info@edenrelics.co.uk.
 
 ---
 
