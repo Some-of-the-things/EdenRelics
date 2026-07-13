@@ -22,6 +22,10 @@ public enum ConfirmationState
 /// label (brief §3.1), so the brand may be unknown and the piece still fully dated.</summary>
 public class Garment : ToolBaseEntity
 {
+    /// <summary>The authenticated user (seller) who owns this garment. Set from the caller's identity;
+    /// non-admins only see/act on their own garments.</summary>
+    public Guid OwnerId { get; set; }
+
     /// <summary>External reference (e.g. the seller's listing id/slug). Optional.</summary>
     public string? Reference { get; set; }
 

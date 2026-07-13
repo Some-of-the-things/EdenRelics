@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Json;
 using EdenRelics.SellerTool.Data;
 using EdenRelics.SellerTool.Dating;
@@ -7,35 +8,43 @@ namespace EdenRelics.SellerTool.Api;
 
 /// <summary>
 /// The tool's HTTP surface: build a garment's evidence set, run the dating engine over it (storing a
-/// proposed estimate with its evidence chain), and manage the rules store.
-/// TODO before any deploy: authentication/authorisation (seller vs admin) — currently open.
+/// proposed estimate with its evidence chain), capture label images, and manage the rules store.
+/// All endpoints require authentication; garments are scoped to their owner (admins see all); rule
+/// management is admin-only.
 /// </summary>
 public static class ToolEndpoints
 {
     public static void MapToolEndpoints(this WebApplication app)
     {
-        // --- Garments + evidence ---
+        // --- Garments + evidence (owner-scoped) ---
 
-        app.MapPost("/garments", async (CreateGarmentRequest req, ToolDbContext db) =>
+        app.MapPost("/garments", async (CreateGarmentRequest req, ClaimsPrincipal user, ToolDbContext db) =>
         {
-            Garment garment = new() { Title = req.Title, SellerRef = req.SellerRef, Reference = req.Reference };
+            Garment garment = new()
+            {
+                OwnerId = UserId(user),
+                Title = req.Title,
+                SellerRef = req.SellerRef,
+                Reference = req.Reference,
+            };
             db.Garments.Add(garment);
             await db.SaveChangesAsync();
             return Results.Created($"/garments/{garment.Id}", new { id = garment.Id });
-        });
+        }).RequireAuthorization();
 
-        app.MapGet("/garments/{id:guid}", async (Guid id, ToolDbContext db) =>
+        app.MapGet("/garments/{id:guid}", async (Guid id, ClaimsPrincipal user, ToolDbContext db) =>
         {
             Garment? garment = await db.Garments
                 .Include(g => g.Evidence)
                 .Include(g => g.Estimates)
                 .FirstOrDefaultAsync(g => g.Id == id);
-            return garment is null ? Results.NotFound() : Results.Ok(ToDto(garment));
-        });
+            return garment is null || !CanAccess(garment, user) ? Results.NotFound() : Results.Ok(ToDto(garment));
+        }).RequireAuthorization();
 
-        app.MapPost("/garments/{id:guid}/evidence", async (Guid id, AddEvidenceRequest req, ToolDbContext db) =>
+        app.MapPost("/garments/{id:guid}/evidence", async (Guid id, AddEvidenceRequest req, ClaimsPrincipal user, ToolDbContext db) =>
         {
-            if (await db.Garments.FindAsync(id) is null)
+            Garment? garment = await db.Garments.FindAsync(id);
+            if (garment is null || !CanAccess(garment, user))
             {
                 return Results.NotFound();
             }
@@ -59,13 +68,14 @@ public static class ToolEndpoints
             db.EvidenceRecords.Add(evidence);
             await db.SaveChangesAsync();
             return Results.Created($"/garments/{id}", new { id = evidence.Id });
-        });
+        }).RequireAuthorization();
 
         // --- Capture pipeline: upload a label/flat-lay photo -> R2 -> evidence record (the archive) ---
 
-        app.MapPost("/garments/{id:guid}/capture", async (Guid id, HttpRequest request, ToolDbContext db, IImageStore images) =>
+        app.MapPost("/garments/{id:guid}/capture", async (Guid id, HttpRequest request, ClaimsPrincipal user, ToolDbContext db, IImageStore images) =>
         {
-            if (await db.Garments.FindAsync(id) is null)
+            Garment? garment = await db.Garments.FindAsync(id);
+            if (garment is null || !CanAccess(garment, user))
             {
                 return Results.NotFound();
             }
@@ -88,8 +98,6 @@ public static class ToolEndpoints
             await using Stream stream = file.OpenReadStream();
             string imageKey = await images.PutAsync(stream, file.ContentType ?? "application/octet-stream", $"garments/{id}");
 
-            // The captured image is stored now; its feature code (what the label shows) may be filled
-            // in later by analysis or a human. The record is proposed until confirmed.
             EvidenceRecord evidence = new()
             {
                 GarmentId = id,
@@ -102,14 +110,14 @@ public static class ToolEndpoints
             db.EvidenceRecords.Add(evidence);
             await db.SaveChangesAsync();
             return Results.Created($"/garments/{id}", new { id = evidence.Id, imageKey });
-        });
+        }).RequireAuthorization();
 
         // --- Dating: run the engine over the garment's evidence, store a proposed estimate ---
 
-        app.MapPost("/garments/{id:guid}/date", async (Guid id, DateGarmentRequest req, ToolDbContext db, IDatingEngine engine) =>
+        app.MapPost("/garments/{id:guid}/date", async (Guid id, DateGarmentRequest req, ClaimsPrincipal user, ToolDbContext db, IDatingEngine engine) =>
         {
             Garment? garment = await db.Garments.Include(g => g.Evidence).FirstOrDefaultAsync(g => g.Id == id);
-            if (garment is null)
+            if (garment is null || !CanAccess(garment, user))
             {
                 return Results.NotFound();
             }
@@ -139,11 +147,12 @@ public static class ToolEndpoints
                 result.Outcome.ToString(),
                 result.ClaimFlag is null ? null : new ClaimFlagDto(result.ClaimFlag.Strength.ToString(), result.ClaimFlag.Message),
                 result.Evidence.Select(e => new EvidenceChainDto(e.RuleId, e.Feature, e.Bound, e.Strength.ToString(), e.Source)).ToList()));
-        });
+        }).RequireAuthorization();
 
-        // --- Rules store ---
+        // --- Rules store (admin only) ---
 
-        app.MapGet("/rules", async (ToolDbContext db) => Results.Ok(await db.StoredRules.ToListAsync()));
+        app.MapGet("/rules", async (ToolDbContext db) => Results.Ok(await db.StoredRules.ToListAsync()))
+            .RequireAuthorization(p => p.RequireRole("Admin"));
 
         app.MapPost("/rules", async (AddRuleRequest req, ToolDbContext db) =>
         {
@@ -164,7 +173,7 @@ public static class ToolEndpoints
             db.StoredRules.Add(rule);
             await db.SaveChangesAsync();
             return Results.Created($"/rules/{rule.Id}", new { id = rule.Id });
-        });
+        }).RequireAuthorization(p => p.RequireRole("Admin"));
 
         app.MapPost("/rules/{id}/verify", async (string id, ToolDbContext db) =>
         {
@@ -176,8 +185,15 @@ public static class ToolEndpoints
             rule.Status = RuleStatus.Verified;
             await db.SaveChangesAsync();
             return Results.Ok(new { id = rule.Id, status = rule.Status.ToString() });
-        });
+        }).RequireAuthorization(p => p.RequireRole("Admin"));
     }
+
+    private static Guid UserId(ClaimsPrincipal user) =>
+        Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? user.FindFirstValue("sub"), out Guid id)
+            ? id : Guid.Empty;
+
+    private static bool CanAccess(Garment garment, ClaimsPrincipal user) =>
+        garment.OwnerId == UserId(user) || user.IsInRole("Admin");
 
     private static GarmentDto ToDto(Garment g) => new(
         g.Id, g.Title, g.SellerRef, g.Reference,

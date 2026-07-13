@@ -21,6 +21,7 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
 
         b.Entity<Garment>(e =>
         {
+            e.HasIndex(g => g.OwnerId);
             e.Property(g => g.Reference).HasMaxLength(200);
             e.Property(g => g.Title).HasMaxLength(300);
             e.Property(g => g.SellerRef).HasMaxLength(200);
