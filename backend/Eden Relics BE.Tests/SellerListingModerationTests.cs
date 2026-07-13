@@ -134,6 +134,30 @@ public class SellerListingModerationTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task SellerPublicProducts_ShowsOnlyApprovedLiveListings()
+    {
+        var (seller, admin, _) = await ApprovedSellerAsync("listing-profile@test.com", "Profile Vintage");
+        JsonElement me = JsonDocument.Parse(await (await seller.GetAsync("/api/sellers/me")).Content.ReadAsStringAsync()).RootElement;
+        string slug = me.GetProperty("slug").GetString()!;
+
+        JsonElement live = await CreateListingAsync(seller, "Live Profile Piece");
+        JsonElement pending = await CreateListingAsync(seller, "Pending Profile Piece");
+        Guid liveId = live.GetProperty("id").GetGuid();
+        Guid pendingId = pending.GetProperty("id").GetGuid();
+
+        (await admin.PostAsync($"/api/seller-listings/admin/{liveId}/approve", null)).EnsureSuccessStatusCode();
+
+        HttpClient anon = _factory.CreateClient();
+        HttpResponseMessage res = await anon.GetAsync($"/api/sellers/{slug}/products");
+        res.EnsureSuccessStatusCode();
+        JsonElement arr = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        List<Guid> ids = arr.EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ToList();
+        Assert.Contains(liveId, ids);
+        Assert.DoesNotContain(pendingId, ids);
+    }
+
+    [Fact]
     public async Task AdminQueue_ListsPendingListings()
     {
         var (seller, admin, _) = await ApprovedSellerAsync("listing-queue@test.com", "Queue Vintage");

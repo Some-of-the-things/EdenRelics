@@ -29,6 +29,32 @@ export const routes: Routes = [
       ),
   },
   {
+    // Marketplace: seller dashboard (apply + manage listings). Any logged-in user may
+    // reach it to apply; the API gates everything until the marketplace is switched on.
+    path: 'seller',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/seller-dashboard/seller-dashboard.component').then(
+        (m) => m.SellerDashboardComponent
+      ),
+  },
+  {
+    path: 'admin/sellers',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./pages/admin/admin-sellers.component').then(
+        (m) => m.AdminSellersComponent
+      ),
+  },
+  {
+    // Public seller profile — the SEO/backlink asset (SSR).
+    path: 'sellers/:slug',
+    loadComponent: () =>
+      import('./pages/sellers/seller-profile.component').then(
+        (m) => m.SellerProfileComponent
+      ),
+  },
+  {
     path: 'cart',
     loadComponent: () =>
       import('./pages/cart/cart-page.component').then(

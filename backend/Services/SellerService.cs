@@ -7,7 +7,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Eden_Relics_BE.Services;
 
-public partial class SellerService(IRepository<Seller> sellers, IRepository<User> users) : ISellerService
+public partial class SellerService(
+    IRepository<Seller> sellers,
+    IRepository<User> users,
+    IRepository<Product> products) : ISellerService
 {
     public async Task<SellerDto> ApplyAsync(Guid userId, SellerApplicationDto dto)
     {
@@ -45,6 +48,23 @@ public partial class SellerService(IRepository<Seller> sellers, IRepository<User
         Seller? seller = await sellers.Query()
             .FirstOrDefaultAsync(s => s.Slug == normalised && s.ApprovalStatus == SellerApprovalStatus.Approved);
         return seller is null ? null : Map(seller);
+    }
+
+    public async Task<IReadOnlyList<SellerProductCardDto>> GetPublicProductsAsync(string slug)
+    {
+        string normalised = slug.Trim().ToLowerInvariant();
+        Seller? seller = await sellers.Query()
+            .FirstOrDefaultAsync(s => s.Slug == normalised && s.ApprovalStatus == SellerApprovalStatus.Approved);
+        if (seller is null)
+        {
+            return [];
+        }
+        List<Product> rows = await products.Query()
+            .Where(p => p.SellerId == seller.Id && p.Status == ProductStatus.Live)
+            .OrderByDescending(p => p.CreatedAtUtc)
+            .ToListAsync();
+        return rows.Select(p => new SellerProductCardDto(
+            p.Id, p.Name, p.Slug, p.Price, p.SalePrice, p.ImageUrl, p.Era, p.Category, p.Size, p.Condition)).ToList();
     }
 
     public async Task<IReadOnlyList<SellerDto>> ListAsync(SellerApprovalStatus? status)

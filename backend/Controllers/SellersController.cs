@@ -71,6 +71,16 @@ public class SellersController(ISellerService sellers, IOptions<MarketplaceOptio
         return seller is null ? NotFound() : Ok(seller);
     }
 
+    [HttpGet("{slug}/products")]
+    public async Task<IActionResult> ProfileProducts(string slug)
+    {
+        if (!GateOpen)
+        {
+            return NotFound();
+        }
+        return Ok(await sellers.GetPublicProductsAsync(slug));
+    }
+
     // ---- Admin moderation (always available so the roster can be prepared pre-launch) ----
 
     [Authorize(Roles = Roles.Admin)]

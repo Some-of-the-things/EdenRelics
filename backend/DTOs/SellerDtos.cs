@@ -23,3 +23,16 @@ public record SellerDto(
 
 /// <summary>Admin note attached to a reject/suspend decision (optional).</summary>
 public record SellerStatusUpdateDto(string? Note);
+
+/// <summary>A live product shown on a seller's public profile page.</summary>
+public record SellerProductCardDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    decimal Price,
+    decimal? SalePrice,
+    string ImageUrl,
+    string Era,
+    string Category,
+    string Size,
+    string Condition);

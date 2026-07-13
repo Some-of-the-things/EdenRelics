@@ -68,6 +68,7 @@ export class AuthService {
   readonly currentUser = signal<UserDto | null>(null);
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
   readonly isAdmin = computed(() => this.currentUser()?.role === 'Admin');
+  readonly isSeller = computed(() => this.currentUser()?.role === 'Seller');
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {

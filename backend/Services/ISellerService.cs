@@ -15,6 +15,9 @@ public interface ISellerService
     /// <summary>Public profile lookup by slug — approved sellers only.</summary>
     Task<SellerDto?> GetPublicBySlugAsync(string slug);
 
+    /// <summary>An approved seller's live (publicly visible) products, for their profile page.</summary>
+    Task<IReadOnlyList<SellerProductCardDto>> GetPublicProductsAsync(string slug);
+
     /// <summary>Admin roster, optionally filtered by approval status, newest first.</summary>
     Task<IReadOnlyList<SellerDto>> ListAsync(SellerApprovalStatus? status);
 
