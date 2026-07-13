@@ -1,4 +1,10 @@
 <Solution>
+  <Folder Name="/Api.Tests/">
+    <Project Path="Api.Tests/EdenRelics.SellerTool.Api.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Api/">
+    <Project Path="Api/EdenRelics.SellerTool.Api.csproj" />
+  </Folder>
   <Folder Name="/Data.Tests/">
     <Project Path="Data.Tests/EdenRelics.SellerTool.Data.Tests.csproj" />
   </Folder>
