@@ -43,4 +43,18 @@ public class StripeConnectService(IConfiguration configuration) : IStripeConnect
         Account account = await new AccountService().GetAsync(connectedAccountId);
         return (account.ChargesEnabled, account.PayoutsEnabled);
     }
+
+    public async Task<string> CreateTransferAsync(string connectedAccountId, long amountMinor, string currency, string idempotencyKey)
+    {
+        SetKey();
+        Transfer transfer = await new TransferService().CreateAsync(
+            new TransferCreateOptions
+            {
+                Amount = amountMinor,
+                Currency = currency,
+                Destination = connectedAccountId,
+            },
+            new RequestOptions { IdempotencyKey = idempotencyKey });
+        return transfer.Id;
+    }
 }

@@ -95,6 +95,9 @@ public class FakeStripeConnectService : IStripeConnectService
     // Pretend the account finishes onboarding immediately (charges + payouts enabled).
     public Task<(bool ChargesEnabled, bool PayoutsEnabled)> GetAccountStatusAsync(string connectedAccountId) =>
         Task.FromResult((true, true));
+
+    public Task<string> CreateTransferAsync(string connectedAccountId, long amountMinor, string currency, string idempotencyKey) =>
+        Task.FromResult("tr_fake_" + idempotencyKey);
 }
 
 public class FakeEmailService : IEmailService

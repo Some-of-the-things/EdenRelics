@@ -20,4 +20,9 @@ public interface IStripeConnectService
 
     /// <summary>Whether the connected account can currently accept charges and receive payouts.</summary>
     Task<(bool ChargesEnabled, bool PayoutsEnabled)> GetAccountStatusAsync(string connectedAccountId);
+
+    /// <summary>Transfer funds from the platform balance to a seller's connected account (the payout
+    /// leg of separate charges & transfers). <paramref name="amountMinor"/> is in minor units (pence).
+    /// <paramref name="idempotencyKey"/> makes retries safe. Returns the "tr_…" transfer id.</summary>
+    Task<string> CreateTransferAsync(string connectedAccountId, long amountMinor, string currency, string idempotencyKey);
 }

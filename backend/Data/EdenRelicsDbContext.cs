@@ -19,6 +19,7 @@ public class EdenRelicsDbContext : DbContext
 
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Seller> Sellers => Set<Seller>();
+    public DbSet<SellerPayout> SellerPayouts => Set<SellerPayout>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
@@ -442,6 +443,19 @@ public class EdenRelicsDbContext : DbContext
                 CreatedAtUtc = seededAt,
                 UpdatedAtUtc = seededAt,
             });
+        });
+
+        modelBuilder.Entity<SellerPayout>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(p => p.GrossAmount).HasPrecision(10, 2);
+            entity.Property(p => p.Commission).HasPrecision(10, 2);
+            entity.Property(p => p.NetAmount).HasPrecision(10, 2);
+            entity.Property(p => p.StripeTransferId).HasMaxLength(64);
+            entity.HasIndex(p => new { p.OrderId, p.SellerId }).IsUnique();
+            entity.HasIndex(p => new { p.Status, p.ReleaseAfterUtc });
+            entity.HasOne(p => p.Seller).WithMany().HasForeignKey(p => p.SellerId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(p => p.Order).WithMany().HasForeignKey(p => p.OrderId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Product>(entity =>

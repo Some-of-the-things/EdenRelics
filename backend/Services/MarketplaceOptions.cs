@@ -13,4 +13,8 @@ public class MarketplaceOptions
 
     /// <summary>Master on/off switch for every marketplace surface. Default false (gated).</summary>
     public bool Enabled { get; set; }
+
+    /// <summary>Platform commission as a fraction of a seller's item subtotal. Default 0.15 (15%).
+    /// A seller's own <c>CommissionRate</c> overrides this.</summary>
+    public decimal DefaultCommissionRate { get; set; } = 0.15m;
 }

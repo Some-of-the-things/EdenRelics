@@ -139,6 +139,7 @@ builder.Services.AddScoped<IPasskeyService, PasskeyService>();
 builder.Services.AddScoped<ISellerService, SellerService>();
 builder.Services.AddScoped<ISellerListingService, SellerListingService>();
 builder.Services.AddScoped<IStripeConnectService, StripeConnectService>();
+builder.Services.AddScoped<ISellerPayoutService, SellerPayoutService>();
 
 // Image optimization & storage
 builder.Services.AddSingleton<ImageOptimizationService>();
@@ -209,6 +210,14 @@ if (runScheduledJobs)
 {
     builder.Services.AddHostedService<LiabilityScheduleHostedService>();
     builder.Services.AddHostedService<ReminderDispatcher>();
+}
+
+// Marketplace seller payouts (held transfers). Runs on the worker only, and is a no-op while the
+// marketplace is gated (Marketplace:Enabled = false) — dormant until launch AND until the checkout
+// webhook starts creating payout rows (a separate, deferred change).
+if (runScheduledJobs)
+{
+    builder.Services.AddHostedService<SellerPayoutReleaseService>();
 }
 
 // HttpClient for external OAuth token verification
