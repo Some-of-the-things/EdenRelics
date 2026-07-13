@@ -1,4 +1,10 @@
 <Solution>
+  <Folder Name="/Data.Tests/">
+    <Project Path="Data.Tests/EdenRelics.SellerTool.Data.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Data/">
+    <Project Path="Data/EdenRelics.SellerTool.Data.csproj" />
+  </Folder>
   <Folder Name="/Dating.Tests/">
     <Project Path="Dating.Tests/EdenRelics.SellerTool.Dating.Tests.csproj" />
   </Folder>
