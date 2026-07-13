@@ -14,6 +14,10 @@ builder.Services.AddDbContext<ToolDbContext>(options =>
 builder.Services.AddScoped<IRuleStore, DbRuleStore>();
 builder.Services.AddScoped<IDatingEngine, DatingEngine>();
 
+// Captured label/flat-lay images -> Cloudflare R2 (the archive/moat). Tests replace the store.
+builder.Services.Configure<R2Options>(builder.Configuration.GetSection(R2Options.SectionName));
+builder.Services.AddScoped<IImageStore, R2ImageStore>();
+
 WebApplication app = builder.Build();
 
 // Create the schema on a fresh relational DB (skipped for the in-memory test provider).

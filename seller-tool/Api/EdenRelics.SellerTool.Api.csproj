@@ -5,6 +5,10 @@
     <ProjectReference Include="..\Dating\EdenRelics.SellerTool.Dating.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="4.0.100.3" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>

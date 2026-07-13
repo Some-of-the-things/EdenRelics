@@ -61,6 +61,49 @@ public static class ToolEndpoints
             return Results.Created($"/garments/{id}", new { id = evidence.Id });
         });
 
+        // --- Capture pipeline: upload a label/flat-lay photo -> R2 -> evidence record (the archive) ---
+
+        app.MapPost("/garments/{id:guid}/capture", async (Guid id, HttpRequest request, ToolDbContext db, IImageStore images) =>
+        {
+            if (await db.Garments.FindAsync(id) is null)
+            {
+                return Results.NotFound();
+            }
+            if (!request.HasFormContentType)
+            {
+                return Results.BadRequest(new { error = "Expected a multipart/form-data upload." });
+            }
+
+            IFormCollection form = await request.ReadFormAsync();
+            IFormFile? file = form.Files.GetFile("file");
+            if (file is null || file.Length == 0)
+            {
+                return Results.BadRequest(new { error = "No file uploaded." });
+            }
+            if (!Enum.TryParse(form["type"].ToString(), ignoreCase: true, out EvidenceType type))
+            {
+                return Results.BadRequest(new { error = $"Unknown evidence type '{form["type"]}'." });
+            }
+
+            await using Stream stream = file.OpenReadStream();
+            string imageKey = await images.PutAsync(stream, file.ContentType ?? "application/octet-stream", $"garments/{id}");
+
+            // The captured image is stored now; its feature code (what the label shows) may be filled
+            // in later by analysis or a human. The record is proposed until confirmed.
+            EvidenceRecord evidence = new()
+            {
+                GarmentId = id,
+                Type = type,
+                Feature = form["feature"].ToString(),
+                ImageKey = imageKey,
+                Origin = "capture",
+                Confirmation = ConfirmationState.Proposed,
+            };
+            db.EvidenceRecords.Add(evidence);
+            await db.SaveChangesAsync();
+            return Results.Created($"/garments/{id}", new { id = evidence.Id, imageKey });
+        });
+
         // --- Dating: run the engine over the garment's evidence, store a proposed estimate ---
 
         app.MapPost("/garments/{id:guid}/date", async (Guid id, DateGarmentRequest req, ToolDbContext db, IDatingEngine engine) =>

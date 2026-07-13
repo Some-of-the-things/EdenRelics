@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using EdenRelics.SellerTool.Data;
@@ -35,8 +36,21 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
                     services.Remove(d);
                 }
                 services.AddDbContext<ToolDbContext>(o => o.UseInMemoryDatabase(_dbName));
+
+                ServiceDescriptor? img = services.SingleOrDefault(d => d.ServiceType == typeof(IImageStore));
+                if (img is not null)
+                {
+                    services.Remove(img);
+                }
+                services.AddScoped<IImageStore, FakeImageStore>();
             });
         }
+    }
+
+    private sealed class FakeImageStore : IImageStore
+    {
+        public Task<string> PutAsync(Stream content, string contentType, string keyPrefix, CancellationToken ct = default) =>
+            Task.FromResult($"{keyPrefix}/fake-{Guid.NewGuid():N}.jpg");
     }
 
     private static async Task<Guid> CreateGarmentAsync(HttpClient client, string title)
@@ -120,6 +134,31 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
         JsonElement after = JsonDocument.Parse(
             await (await client.PostAsJsonAsync($"/garments/{id}/date", new { })).Content.ReadAsStringAsync()).RootElement;
         Assert.Equal(1985, after.GetProperty("earliest").GetInt32());
+    }
+
+    [Fact]
+    public async Task Capture_UploadsImage_CreatesProposedEvidenceWithKey()
+    {
+        HttpClient client = _factory.CreateClient();
+        Guid id = await CreateGarmentAsync(client, "Labelled dress");
+
+        using MultipartFormDataContent content = new();
+        ByteArrayContent file = new([1, 2, 3, 4]);
+        file.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        content.Add(file, "file", "care-label.jpg");
+        content.Add(new StringContent("CareLabel"), "type");
+        content.Add(new StringContent("care.tumble-dry-symbol"), "feature");
+
+        HttpResponseMessage res = await client.PostAsync($"/garments/{id}/capture", content);
+        res.EnsureSuccessStatusCode();
+        JsonElement body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("imageKey").GetString()));
+
+        JsonElement g = JsonDocument.Parse(await (await client.GetAsync($"/garments/{id}")).Content.ReadAsStringAsync()).RootElement;
+        JsonElement ev = g.GetProperty("evidence")[0];
+        Assert.Equal("care.tumble-dry-symbol", ev.GetProperty("feature").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(ev.GetProperty("imageKey").GetString()));
+        Assert.Equal("Proposed", ev.GetProperty("confirmation").GetString());
     }
 
     [Fact]
