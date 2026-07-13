@@ -80,6 +80,7 @@ public class OrderService(
                 return new OrderItem
                 {
                     ProductId = product.Id,
+                    SellerId = product.SellerId,
                     ProductName = product.Name,
                     UnitPrice = product.SalePrice ?? product.Price,
                     Quantity = item.Quantity

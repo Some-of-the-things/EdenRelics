@@ -11,6 +11,11 @@ public enum ProductStatus
 
 public class Product : BaseEntity
 {
+    /// <summary>The seller who owns this listing. Every product belongs to exactly one seller;
+    /// pre-marketplace stock belongs to the well-known <see cref="HouseSeller"/>.</summary>
+    public Guid SellerId { get; set; }
+    public Seller Seller { get; set; } = null!;
+
     public required string Name { get; set; }
     public string Slug { get; set; } = "";
     public string Sku { get; set; } = "";

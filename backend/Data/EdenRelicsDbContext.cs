@@ -18,6 +18,7 @@ public class EdenRelicsDbContext : DbContext
     }
 
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<Seller> Sellers => Set<Seller>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
@@ -131,6 +132,10 @@ public class EdenRelicsDbContext : DbContext
         {
             entity.Property(i => i.ProductName).HasMaxLength(200);
             entity.Property(i => i.UnitPrice).HasPrecision(10, 2);
+            // Denormalised seller reference for per-seller subtotals/transfers; no cascade.
+            entity.HasOne<Seller>().WithMany().HasForeignKey(i => i.SellerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(i => i.SellerId);
         });
 
         modelBuilder.Entity<SiteContent>(entity =>
@@ -349,6 +354,10 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(t => t.Reference).HasMaxLength(100);
             entity.Property(t => t.ReceiptUrl).HasMaxLength(500);
             entity.Property(t => t.Notes).HasMaxLength(500);
+            // Nullable: platform-level rows (commission, expenses) have no seller.
+            entity.HasOne<Seller>().WithMany().HasForeignKey(t => t.SellerId)
+                .IsRequired(false).OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(t => t.SellerId);
         });
 
         modelBuilder.Entity<LiabilityObligation>(entity =>
@@ -406,6 +415,35 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(t => t.ReceiptUrl).HasMaxLength(500);
         });
 
+        modelBuilder.Entity<Seller>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(s => s.BusinessName).HasMaxLength(200);
+            entity.Property(s => s.Slug).HasMaxLength(200);
+            entity.HasIndex(s => s.Slug).IsUnique().HasFilter("\"Slug\" <> ''");
+            entity.Property(s => s.Bio).HasMaxLength(4000);
+            entity.Property(s => s.LogoUrl).HasMaxLength(500);
+            entity.Property(s => s.ContactEmail).HasMaxLength(256);
+            entity.Property(s => s.StripeConnectedAccountId).HasMaxLength(64);
+            entity.Property(s => s.CommissionRate).HasPrecision(5, 4);
+            entity.HasOne(s => s.OwnerUser).WithMany().HasForeignKey(s => s.OwnerUserId)
+                .IsRequired(false).OnDelete(DeleteBehavior.SetNull);
+
+            // The house seller (Eden Relics' own first-party stock). Seeded so every
+            // pre-marketplace product/order/transaction has a real owner from day one.
+            DateTime seededAt = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            entity.HasData(new Seller
+            {
+                Id = HouseSeller.Id,
+                BusinessName = HouseSeller.BusinessName,
+                Slug = HouseSeller.Slug,
+                IsHouse = true,
+                ApprovalStatus = SellerApprovalStatus.Approved,
+                CreatedAtUtc = seededAt,
+                UpdatedAtUtc = seededAt,
+            });
+        });
+
         modelBuilder.Entity<Product>(entity =>
         {
             entity.Property(p => p.Price).HasPrecision(10, 2);
@@ -416,7 +454,11 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(p => p.Slug).HasMaxLength(200);
             entity.HasIndex(p => p.Slug).IsUnique().HasFilter("\"Slug\" <> ''");
             entity.Property(p => p.Sku).HasMaxLength(50).IsRequired();
-            entity.HasIndex(p => p.Sku).IsUnique().HasFilter("\"Sku\" <> ''");
+            // SKU is unique per seller (each seller owns its own ER-#### space), not globally.
+            entity.HasIndex(p => new { p.SellerId, p.Sku }).IsUnique().HasFilter("\"Sku\" <> ''");
+            entity.HasOne(p => p.Seller).WithMany(s => s.Products).HasForeignKey(p => p.SellerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(p => p.SellerId);
             entity.Property(p => p.Era).HasMaxLength(50);
             entity.Property(p => p.Category).HasMaxLength(20);
             entity.Property(p => p.Size).HasMaxLength(20);
@@ -445,6 +487,7 @@ public class EdenRelicsDbContext : DbContext
                     Condition = "good",
                     ImageUrl = "https://placehold.co/400x500/FF6347/FFF?text=Boho+Maxi+Dress",
                     Status = ProductStatus.Live,
+                    SellerId = HouseSeller.Id,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -462,6 +505,7 @@ public class EdenRelicsDbContext : DbContext
                     Condition = "excellent",
                     ImageUrl = "https://placehold.co/400x500/556B2F/FFF?text=Wrap+Dress",
                     Status = ProductStatus.Live,
+                    SellerId = HouseSeller.Id,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -479,6 +523,7 @@ public class EdenRelicsDbContext : DbContext
                     Condition = "excellent",
                     ImageUrl = "https://placehold.co/400x500/191970/FFF?text=Power+Dress",
                     Status = ProductStatus.Live,
+                    SellerId = HouseSeller.Id,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -496,6 +541,7 @@ public class EdenRelicsDbContext : DbContext
                     Condition = "good",
                     ImageUrl = "https://placehold.co/400x500/8B0000/FFF?text=Sequin+Dress",
                     Status = ProductStatus.Live,
+                    SellerId = HouseSeller.Id,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -513,6 +559,7 @@ public class EdenRelicsDbContext : DbContext
                     Condition = "mint",
                     ImageUrl = "https://placehold.co/400x500/DAA520/FFF?text=Silk+Slip+Dress",
                     Status = ProductStatus.Live,
+                    SellerId = HouseSeller.Id,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -530,6 +577,7 @@ public class EdenRelicsDbContext : DbContext
                     Condition = "good",
                     ImageUrl = "https://placehold.co/400x500/2F4F4F/FFF?text=Babydoll+Dress",
                     Status = ProductStatus.Live,
+                    SellerId = HouseSeller.Id,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -547,6 +595,7 @@ public class EdenRelicsDbContext : DbContext
                     Condition = "excellent",
                     ImageUrl = "https://placehold.co/400x500/FF69B4/FFF?text=Y2K+Halter",
                     Status = ProductStatus.Live,
+                    SellerId = HouseSeller.Id,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -564,6 +613,7 @@ public class EdenRelicsDbContext : DbContext
                     Condition = "excellent",
                     ImageUrl = "https://placehold.co/400x500/8B4513/FFF?text=Velvet+Mini",
                     Status = ProductStatus.Live,
+                    SellerId = HouseSeller.Id,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -581,6 +631,7 @@ public class EdenRelicsDbContext : DbContext
                     Condition = "mint",
                     ImageUrl = "https://placehold.co/400x500/556B2F/FFF?text=Asymmetric+Midi",
                     Status = ProductStatus.Live,
+                    SellerId = HouseSeller.Id,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 },
@@ -598,6 +649,7 @@ public class EdenRelicsDbContext : DbContext
                     Condition = "mint",
                     ImageUrl = "https://placehold.co/400x500/1C1C1C/FFF?text=Cut-Out+Maxi",
                     Status = ProductStatus.Live,
+                    SellerId = HouseSeller.Id,
                     CreatedAtUtc = seededAt,
                     UpdatedAtUtc = seededAt
                 }

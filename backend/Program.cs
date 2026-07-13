@@ -199,6 +199,7 @@ if (runScheduledJobs)
 
 // Regulatory-obligations calendar + operator reminders
 builder.Services.Configure<LiabilityOptions>(builder.Configuration.GetSection(LiabilityOptions.SectionName));
+builder.Services.Configure<MarketplaceOptions>(builder.Configuration.GetSection(MarketplaceOptions.SectionName));
 builder.Services.AddScoped<ILiabilityScheduleService, LiabilityScheduleService>();
 builder.Services.AddScoped<IObligationReminderSync, ObligationReminderSync>();
 if (runScheduledJobs)
