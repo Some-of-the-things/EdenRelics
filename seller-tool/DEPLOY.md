@@ -1,8 +1,9 @@
 # Seller Tool — Deploy Runbook
 
 The tool (dating engine + archive + capture) is built, hardened (auth + migrations), and
-Docker/Fly-ready — but **not provisioned or deployed** (that's a spend decision). When you want it
-live, this is the sequence.
+**deployed to prod** (2026-07-13) at https://eden-relics-tool.fly.dev — Fly app `eden-relics-tool`
++ Postgres `eden-relics-tool-db`, suspends when idle. R2 secrets NOT yet set (capture unused). The
+steps below are the provisioning sequence, kept as the runbook for re-provisioning / redeploy.
 
 ## What it needs
 - A **Fly app** (`eden-relics-tool`) — config in `fly.toml`.
