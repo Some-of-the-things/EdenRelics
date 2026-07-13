@@ -9,6 +9,21 @@ public enum ProductStatus
     Sold = 2,
 }
 
+/// <summary>
+/// Curation state of a listing, orthogonal to <see cref="ProductStatus"/>. Seller-submitted
+/// listings enter as PendingReview (and Status=Stock, so they're already hidden from the public);
+/// admin approval flips them to Approved + Status=Live. Platform/house stock is Approved by default
+/// (the column default), so nothing about the existing shop changes. Public visibility is still
+/// governed by Status==Live — this only drives the moderation queue and audit.
+/// </summary>
+public enum ProductModerationStatus
+{
+    Draft = 0,
+    PendingReview = 1,
+    Approved = 2,
+    Rejected = 3,
+}
+
 public class Product : BaseEntity
 {
     /// <summary>The seller who owns this listing. Every product belongs to exactly one seller;
@@ -37,6 +52,13 @@ public class Product : BaseEntity
     public List<string> AdditionalImageUrls { get; set; } = [];
     public List<string> VideoUrls { get; set; } = [];
     public ProductStatus Status { get; set; } = ProductStatus.Live;
+
+    /// <summary>Curation state (see <see cref="ProductModerationStatus"/>). Defaults to Approved so
+    /// platform/admin-created stock needs no moderation; seller listings set PendingReview.</summary>
+    public ProductModerationStatus ModerationStatus { get; set; } = ProductModerationStatus.Approved;
+
+    /// <summary>Admin note attached to a moderation decision (e.g. reason for rejection).</summary>
+    public string? ModerationNote { get; set; }
 
     /// <summary>
     /// True when this product belongs to a curated collection. Collection members

@@ -464,6 +464,11 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(p => p.Size).HasMaxLength(20);
             entity.Property(p => p.Condition).HasMaxLength(20);
             entity.Property(p => p.Material).HasMaxLength(100);
+            // Default Approved so existing/admin-created stock needs no moderation; the SQL default
+            // also backfills every existing row to Approved when the column is added.
+            entity.Property(p => p.ModerationStatus).HasDefaultValue(ProductModerationStatus.Approved);
+            entity.Property(p => p.ModerationNote).HasMaxLength(500);
+            entity.HasIndex(p => p.ModerationStatus);
             entity.Property(p => p.ImageUrl).HasMaxLength(500);
             ConfigureJsonListProperty(entity.Property(p => p.AdditionalImageUrls));
             ConfigureJsonListProperty(entity.Property(p => p.VideoUrls));
