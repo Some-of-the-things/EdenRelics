@@ -12,9 +12,9 @@ This schedule forms part of the `seller-agreement.md` and applies to all Sellers
 
 ## 1. Platform commission
 
-1.1 Eden Relics charges a **platform commission of [COMMISSION RATE]** (e.g. `[X]%`) of the **item price** for each successful sale.
+1.1 Eden Relics charges a **platform commission of 15%** of the **item price** for each successful sale. *(Decided 2026-07-13; see `DECISIONS.md`.)*
 
-1.2 [State clearly whether commission is calculated on the item price only, or on item price **plus** delivery — this is a decision to make: `[COMMISSION BASIS: item price only / item price + delivery]`.]
+1.2 Commission is calculated on the **item price only** (not delivery). *(Decision recorded; confirm with the accountant when finalising VAT.)*
 
 1.3 [Listing fee: `[LISTING FEE — e.g. "No listing fee" / "£X per listing"]`.]
 
@@ -41,10 +41,7 @@ This schedule forms part of the `seller-agreement.md` and applies to all Sellers
 
 3.1 Card and payment processing is provided by **Stripe**. Stripe charges its own processing fees on transactions.
 
-3.2 **How Stripe fees are treated must be decided and stated here.** The two common options are:
-- **(a)** Stripe processing fees are **borne by Eden Relics** out of its commission (the Seller sees a clean deduction of only the platform commission); or
-- **(b)** Stripe processing fees are **passed through** and deducted from the Seller's share in addition to the platform commission.
-- Current choice: `[STRIPE FEE TREATMENT: (a) absorbed by platform / (b) passed through to seller]`.
+3.2 **Stripe processing fees are borne by Eden Relics** out of its 15% commission — the Seller sees a single clean deduction of only the platform commission, with no separate Stripe charge. *(Decided 2026-07-13: option (a), platform absorbs.)*
 
 > **⚠️ Review note (accountant):** The Stripe-fee treatment affects Seller economics, the worked example below, and how fees appear on statements. Under separate charges and transfers, Stripe's processing fee is normally charged to the platform account; confirm with the accountant how it is borne and disclosed, and keep it consistent with the Seller Agreement.
 
@@ -62,7 +59,7 @@ This schedule forms part of the `seller-agreement.md` and applies to all Sellers
 
 ## 5. Worked example (illustrative only — figures are placeholders)
 
-Assume: item price **£100**, delivery **£5**, platform commission **[X]% = 15%** of the item price, Stripe fee illustratively **£X** (treatment per clause 3.2).
+Assume: item price **£100**, delivery **£5**, platform commission **15% of the item price**, Stripe fees **absorbed by the platform** (clause 3.2).
 
 | Line | Amount |
 |---|---|
@@ -70,11 +67,12 @@ Assume: item price **£100**, delivery **£5**, platform commission **[X]% = 15%
 | Delivery | £5.00 |
 | **Buyer pays Eden Relics (via Stripe)** | **£105.00** |
 | Platform commission (15% of £100) | −£15.00 |
-| VAT on commission (if chargeable — see Section 6) | −£[VAT on £15] |
-| Stripe processing fee (if passed through per 3.2(b)) | −£[Stripe fee] |
-| **Transferred to Seller's connected account** | **£[remainder]** |
+| **Transferred to Seller's connected account** (after the 14-day window, incl. delivery) | **£90.00** |
+| Platform keeps | £15.00 |
+| — of which Stripe fee (~1.5% + 20p, borne by platform) | ~−£1.70 |
+| **Net platform margin** | **~£13.30** |
 
-> This example is **illustrative only**. The actual commission rate, whether delivery is commissionable, the Stripe-fee treatment, and the VAT treatment are all placeholders to be finalised with the accountant.
+> The commission rate, Stripe-fee treatment and payout timing above are **decided** (see `DECISIONS.md`). The **VAT** lines remain to be finalised with the accountant (Section 6) — VAT on the £15 commission is not yet shown.
 
 ---
 
@@ -92,7 +90,7 @@ Assume: item price **£100**, delivery **£5**, platform commission **[X]% = 15%
 
 ## 7. Payout timing
 
-7.1 Payouts from your connected Stripe account to your bank follow **[PAYOUT SCHEDULE]** (e.g. Stripe's standard rolling schedule), subject to any **hold or reserve** Eden Relics applies for Buyer-protection reasons — for example, holding a Seller's share until the Buyer's 14-day cancellation window has closed, or maintaining a rolling reserve against chargeback risk (see `seller-agreement.md` clause 8).
+7.1 **A Seller's share is held until the Buyer's 14-day statutory cancellation window has closed**, then released to the Seller's connected Stripe account (from where Stripe pays out to the Seller's bank on its standard schedule). This protects Buyers by ensuring a statutory refund is always covered. *(Decided 2026-07-13.)* A goodwill return in the **voluntary 30-day** window (days 15–30) occurs after payout and is recovered from the Seller's balance / a rolling reserve — see the ⚠️ note in `DECISIONS.md`.
 
 7.2 Payouts may be delayed if your Stripe account is unverified, flagged, or under review, or where a refund/chargeback/dispute is pending.
 
