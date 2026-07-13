@@ -6,25 +6,26 @@ import { SellerService, Seller, SellerListing } from '../../services/seller.serv
   selector: 'app-admin-sellers',
   standalone: true,
   imports: [CommonModule],
+  styleUrl: './admin-sellers.component.scss',
   template: `
-    <section style="max-width:1000px;margin:2rem auto;padding:0 1rem;">
-      <h1>Seller moderation</h1>
+    <section class="mod">
+      <h1 class="mod__title">Seller moderation</h1>
 
-      <h2>Applications awaiting review</h2>
+      <h2 class="mod__heading">Applications awaiting review</h2>
       @if (pendingSellers().length === 0) {
-        <p>No applications awaiting review.</p>
+        <p class="mod__empty">No applications awaiting review.</p>
       } @else {
-        <table style="width:100%;border-collapse:collapse;">
-          <thead><tr><th align="left">Business</th><th align="left">Slug</th><th align="left">Contact</th><th></th></tr></thead>
+        <table class="table">
+          <thead><tr><th>Business</th><th>Slug</th><th>Contact</th><th></th></tr></thead>
           <tbody>
             @for (s of pendingSellers(); track s.id) {
-              <tr style="border-top:1px solid #eee;">
+              <tr>
                 <td>{{ s.businessName }}</td>
                 <td>{{ s.slug }}</td>
                 <td>{{ s.contactEmail || '—' }}</td>
-                <td align="right">
-                  <button (click)="approveSeller(s)">Approve</button>
-                  <button (click)="rejectSeller(s)">Reject</button>
+                <td class="table__actions">
+                  <button class="btn btn--primary" (click)="approveSeller(s)">Approve</button>
+                  <button class="btn btn--ghost" (click)="rejectSeller(s)">Reject</button>
                 </td>
               </tr>
             }
@@ -32,24 +33,26 @@ import { SellerService, Seller, SellerListing } from '../../services/seller.serv
         </table>
       }
 
-      <h2 style="margin-top:2rem;">Listings awaiting review</h2>
+      <h2 class="mod__heading">Listings awaiting review</h2>
       @if (pendingListings().length === 0) {
-        <p>No listings awaiting review.</p>
+        <p class="mod__empty">No listings awaiting review.</p>
       } @else {
-        <table style="width:100%;border-collapse:collapse;">
-          <thead><tr><th align="left">Item</th><th>Price</th><th align="left">Era</th><th></th></tr></thead>
+        <table class="table">
+          <thead><tr><th>Item</th><th>Price</th><th>Era</th><th></th></tr></thead>
           <tbody>
             @for (l of pendingListings(); track l.id) {
-              <tr style="border-top:1px solid #eee;">
-                <td style="display:flex;align-items:center;gap:0.5rem;">
-                  <img [src]="l.imageUrl" alt="" width="40" height="50" style="object-fit:cover;border-radius:4px;" />
-                  {{ l.name }}
+              <tr>
+                <td>
+                  <span class="table__item">
+                    <img class="table__thumb" [src]="l.imageUrl" alt="" width="40" height="50" />
+                    {{ l.name }}
+                  </span>
                 </td>
-                <td align="center">£{{ l.price }}</td>
+                <td>£{{ l.price }}</td>
                 <td>{{ l.era }}</td>
-                <td align="right">
-                  <button (click)="approveListing(l)">Approve</button>
-                  <button (click)="rejectListing(l)">Reject</button>
+                <td class="table__actions">
+                  <button class="btn btn--primary" (click)="approveListing(l)">Approve</button>
+                  <button class="btn btn--ghost" (click)="rejectListing(l)">Reject</button>
                 </td>
               </tr>
             }
@@ -57,7 +60,7 @@ import { SellerService, Seller, SellerListing } from '../../services/seller.serv
         </table>
       }
 
-      @if (message()) { <p style="color:#484;">{{ message() }}</p> }
+      @if (message()) { <p class="mod__message">{{ message() }}</p> }
     </section>
   `,
 })

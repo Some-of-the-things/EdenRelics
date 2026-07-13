@@ -1,0 +1,100 @@
+.mod {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.mod__title {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem;
+  color: var(--text-primary);
+}
+
+.mod__heading {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 2rem 0 0.75rem;
+}
+
+.mod__empty {
+  color: var(--text-muted);
+}
+
+.mod__message {
+  color: #1b6327;
+  font-weight: 500;
+  margin-top: 1.25rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    font-size: 0.72rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-dark);
+  }
+
+  td {
+    padding: 0.7rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    vertical-align: middle;
+  }
+}
+
+.table__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.table__thumb {
+  width: 40px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+.table__actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.btn {
+  font-family: var(--font-decorative);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  border: 1px solid var(--accent);
+  font-size: 0.62rem;
+  padding: 0.38rem 0.75rem;
+  margin-left: 0.4rem;
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: var(--text-inverse);
+
+  &:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--accent-sale);
+  border-color: var(--accent-sale);
+
+  &:hover { background: var(--accent-sale); color: var(--text-inverse); }
+}

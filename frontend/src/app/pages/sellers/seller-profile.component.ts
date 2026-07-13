@@ -8,41 +8,43 @@ import { SellerService, Seller, SellerProductCard } from '../../services/seller.
   selector: 'app-seller-profile',
   standalone: true,
   imports: [CommonModule, RouterLink],
+  styleUrl: './seller-profile.component.scss',
   template: `
     @if (notFound()) {
-      <section style="max-width:800px;margin:3rem auto;padding:0 1rem;text-align:center;">
-        <h1>Seller not found</h1>
+      <section class="notfound">
+        <h1 class="notfound__title">Seller not found</h1>
         <p>This seller profile isn’t available.</p>
         <a routerLink="/shop">Browse the shop →</a>
       </section>
     } @else if (seller(); as s) {
-      <section style="max-width:1000px;margin:2rem auto;padding:0 1rem;">
-        <header style="display:flex;align-items:center;gap:1rem;">
+      <section class="profile">
+        <header class="profile__header">
           @if (s.logoUrl) {
-            <img [src]="s.logoUrl" [alt]="s.businessName" width="72" height="72" style="border-radius:50%;object-fit:cover;" />
+            <img class="profile__logo" [src]="s.logoUrl" [alt]="s.businessName" width="80" height="80" />
           }
           <div>
-            <h1 style="margin:0;">{{ s.businessName }}</h1>
-            <p style="margin:0.25rem 0 0;color:#666;">Curated vintage on Eden Relics</p>
+            <h1 class="profile__name">{{ s.businessName }}</h1>
+            <p class="profile__tagline">Curated vintage on Eden Relics</p>
           </div>
         </header>
 
         @if (s.bio) {
-          <p style="margin-top:1rem;max-width:60ch;">{{ s.bio }}</p>
+          <p class="profile__bio">{{ s.bio }}</p>
         }
 
-        <h2 style="margin-top:2rem;">Available pieces</h2>
+        <h2 class="profile__heading">Available pieces</h2>
         @if (products().length === 0) {
-          <p>No pieces available right now — check back soon.</p>
+          <p class="profile__empty">No pieces available right now — check back soon.</p>
         } @else {
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;">
+          <div class="grid">
             @for (p of products(); track p.id) {
-              <a [routerLink]="['/product', p.slug]" style="text-decoration:none;color:inherit;">
-                <img [src]="p.imageUrl" [alt]="p.name" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;" />
-                <div style="margin-top:0.4rem;font-size:0.9rem;">{{ p.name }}</div>
-                <div style="font-weight:600;">
-                  @if (p.salePrice) { <span>£{{ p.salePrice }}</span> <s style="color:#999;font-weight:400;">£{{ p.price }}</s> }
-                  @else { £{{ p.price }} }
+              <a class="card" [routerLink]="['/product', p.slug]">
+                <img class="card__img" [src]="p.imageUrl" [alt]="p.name" />
+                <div class="card__name">{{ p.name }}</div>
+                <div class="card__price">
+                  @if (p.salePrice) {
+                    <span class="card__sale">£{{ p.salePrice }}</span><span class="card__was">£{{ p.price }}</span>
+                  } @else { £{{ p.price }} }
                 </div>
               </a>
             }
@@ -50,7 +52,7 @@ import { SellerService, Seller, SellerProductCard } from '../../services/seller.
         }
       </section>
     } @else {
-      <section style="max-width:800px;margin:3rem auto;padding:0 1rem;"><p>Loading…</p></section>
+      <section class="profile"><p class="profile__loading">Loading…</p></section>
     }
   `,
 })

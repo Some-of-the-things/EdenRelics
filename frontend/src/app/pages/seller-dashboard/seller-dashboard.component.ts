@@ -12,111 +12,118 @@ const EMPTY_LISTING: SellerListingCreate = {
   selector: 'app-seller-dashboard',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
+  styleUrl: './seller-dashboard.component.scss',
   template: `
-    <section class="seller-dashboard" style="max-width:900px;margin:2rem auto;padding:0 1rem;">
-      <h1>Seller dashboard</h1>
+    <section class="seller">
+      <h1 class="seller__title">Seller dashboard</h1>
 
       @if (loading()) {
-        <p>Loading…</p>
+        <p class="seller__muted">Loading…</p>
       } @else if (!seller()) {
-        <!-- Not yet a seller: application form -->
-        <h2>Apply to sell on Eden Relics</h2>
-        <p>Tell us about your vintage business. Applications are reviewed before you can list.</p>
-        <form (ngSubmit)="apply()" #f="ngForm" class="stack">
-          <label>Business name*
-            <input name="businessName" [(ngModel)]="businessName" required maxlength="200" />
-          </label>
-          <label>About your shop
-            <textarea name="bio" [(ngModel)]="bio" rows="4" maxlength="4000"></textarea>
-          </label>
-          <label>Contact email
-            <input name="contactEmail" type="email" [(ngModel)]="contactEmail" />
-          </label>
-          <button type="submit" [disabled]="!businessName.trim()">Submit application</button>
-        </form>
+        <div class="seller__card">
+          <h2 class="seller__heading">Apply to sell on Eden Relics</h2>
+          <p class="seller__lead">Tell us about your vintage business. Applications are reviewed before you can list.</p>
+          <form class="form" (ngSubmit)="apply()">
+            <label class="field">
+              <span class="field__label">Business name</span>
+              <input class="field__input" name="businessName" [(ngModel)]="businessName" required maxlength="200" />
+            </label>
+            <label class="field">
+              <span class="field__label">About your shop</span>
+              <textarea class="field__input" name="bio" [(ngModel)]="bio" rows="4" maxlength="4000"></textarea>
+            </label>
+            <label class="field">
+              <span class="field__label">Contact email</span>
+              <input class="field__input" name="contactEmail" type="email" [(ngModel)]="contactEmail" />
+            </label>
+            <button class="btn btn--primary" type="submit" [disabled]="!businessName.trim()">Submit application</button>
+          </form>
+        </div>
       } @else {
-        <!-- Existing seller: status + listings -->
-        <p><strong>{{ seller()!.businessName }}</strong>
-          — status: <span class="status status-{{ seller()!.approvalStatus.toLowerCase() }}">{{ seller()!.approvalStatus }}</span>
-        </p>
+        <div class="seller__card">
+          <p class="seller__status-line">
+            <strong>{{ seller()!.businessName }}</strong>
+            <span class="badge badge--{{ seller()!.approvalStatus.toLowerCase() }}">{{ seller()!.approvalStatus }}</span>
+          </p>
 
-        @if (seller()!.approvalStatus === 'Applied') {
-          <p>Your application is with our team for review. You’ll be able to add listings once approved.</p>
-        } @else if (seller()!.approvalStatus === 'Rejected') {
-          <p>Your application wasn’t approved this time. Please contact us if you’d like to discuss it.</p>
-        } @else if (seller()!.approvalStatus === 'Suspended') {
-          <p>Your seller account is currently suspended. Please contact us.</p>
-        } @else {
-          <!-- Approved -->
-          @if (!seller()!.connectOnboardingComplete) {
-            <div style="background:#f5eccf;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;">
-              <strong>Set up payments</strong> to let your listings go live — payouts are handled by Stripe,
-              and held until each buyer’s 14-day return window closes.
-              <button (click)="setupPayments()" style="margin-left:0.5rem;">Set up payments with Stripe</button>
-            </div>
+          @if (seller()!.approvalStatus === 'Applied') {
+            <p class="seller__lead">Your application is with our team for review. You’ll be able to add listings once approved.</p>
+          } @else if (seller()!.approvalStatus === 'Rejected') {
+            <p class="seller__lead">Your application wasn’t approved this time. Please contact us if you’d like to discuss it.</p>
+          } @else if (seller()!.approvalStatus === 'Suspended') {
+            <p class="seller__lead">Your seller account is currently suspended. Please contact us.</p>
           } @else {
-            <p style="color:#3a7d3a;">✓ Payments set up — your approved listings can go live.</p>
-          }
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <h2>Your listings</h2>
-            <button (click)="showListingForm.set(!showListingForm())">
-              {{ showListingForm() ? 'Cancel' : 'Add a listing' }}
-            </button>
-          </div>
-          <p><a [routerLink]="['/sellers', seller()!.slug]">View your public profile →</a></p>
-
-          @if (showListingForm()) {
-            <form (ngSubmit)="createListing()" class="stack" style="border:1px solid #ddd;padding:1rem;border-radius:8px;">
-              <label>Name* <input name="ln" [(ngModel)]="newListing.name" required /></label>
-              <label>Description <textarea name="ld" [(ngModel)]="newListing.description" rows="3"></textarea></label>
-              <label>Price (£)* <input name="lp" type="number" [(ngModel)]="newListing.price" min="0" step="0.01" /></label>
-              <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                <label>Era <input name="le" [(ngModel)]="newListing.era" placeholder="1970s" /></label>
-                <label>Category <input name="lc" [(ngModel)]="newListing.category" placeholder="70s" /></label>
-                <label>Size <input name="ls" [(ngModel)]="newListing.size" /></label>
-                <label>Condition <input name="lco" [(ngModel)]="newListing.condition" /></label>
+            @if (!seller()!.connectOnboardingComplete) {
+              <div class="notice">
+                <span><strong>Set up payments</strong> to let your listings go live — payouts are handled by Stripe,
+                  and held until each buyer’s 14-day return window closes.</span>
+                <button class="btn btn--primary" (click)="setupPayments()">Set up payments with Stripe</button>
               </div>
-              <label>Image URL* <input name="li" [(ngModel)]="newListing.imageUrl" required /></label>
-              <button type="submit" [disabled]="!newListing.name.trim() || !newListing.imageUrl.trim()">
-                Submit for review
-              </button>
-            </form>
-          }
+            } @else {
+              <p class="notice--ok">✓ Payments set up — your approved listings can go live.</p>
+            }
 
-          @if (listings().length === 0) {
-            <p>No listings yet. Add your first piece — it goes live once our team approves it.</p>
-          } @else {
-            <table style="width:100%;border-collapse:collapse;">
-              <thead><tr><th align="left">Item</th><th>Price</th><th>Status</th><th>Moderation</th></tr></thead>
-              <tbody>
-                @for (l of listings(); track l.id) {
-                  <tr style="border-top:1px solid #eee;">
-                    <td>{{ l.name }}</td>
-                    <td align="center">£{{ l.price }}</td>
-                    <td align="center">{{ l.status }}</td>
-                    <td align="center">
-                      <span class="status status-{{ l.moderationStatus.toLowerCase() }}">{{ l.moderationStatus }}</span>
-                      @if (l.moderationNote) { <div style="font-size:0.8em;color:#a33;">{{ l.moderationNote }}</div> }
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+            <a class="seller__profile-link" [routerLink]="['/sellers', seller()!.slug]">View your public profile →</a>
+
+            <div class="seller__row">
+              <h2 class="seller__heading">Your listings</h2>
+              <button class="btn btn--ghost" (click)="showListingForm.set(!showListingForm())">
+                {{ showListingForm() ? 'Cancel' : 'Add a listing' }}
+              </button>
+            </div>
+
+            @if (showListingForm()) {
+              <form class="form" (ngSubmit)="createListing()">
+                <label class="field"><span class="field__label">Name</span>
+                  <input class="field__input" name="ln" [(ngModel)]="newListing.name" required /></label>
+                <label class="field"><span class="field__label">Description</span>
+                  <textarea class="field__input" name="ld" [(ngModel)]="newListing.description" rows="3"></textarea></label>
+                <label class="field"><span class="field__label">Price (£)</span>
+                  <input class="field__input" name="lp" type="number" [(ngModel)]="newListing.price" min="0" step="0.01" /></label>
+                <div class="field__row">
+                  <label class="field"><span class="field__label">Era</span>
+                    <input class="field__input" name="le" [(ngModel)]="newListing.era" placeholder="1970s" /></label>
+                  <label class="field"><span class="field__label">Category</span>
+                    <input class="field__input" name="lc" [(ngModel)]="newListing.category" placeholder="70s" /></label>
+                  <label class="field"><span class="field__label">Size</span>
+                    <input class="field__input" name="ls" [(ngModel)]="newListing.size" /></label>
+                  <label class="field"><span class="field__label">Condition</span>
+                    <input class="field__input" name="lco" [(ngModel)]="newListing.condition" /></label>
+                </div>
+                <label class="field"><span class="field__label">Image URL</span>
+                  <input class="field__input" name="li" [(ngModel)]="newListing.imageUrl" required /></label>
+                <button class="btn btn--primary" type="submit"
+                  [disabled]="!newListing.name.trim() || !newListing.imageUrl.trim()">Submit for review</button>
+              </form>
+            }
+
+            @if (listings().length === 0) {
+              <p class="seller__muted">No listings yet. Add your first piece — it goes live once our team approves it.</p>
+            } @else {
+              <table class="listings">
+                <thead><tr><th>Item</th><th>Price</th><th>Status</th><th>Moderation</th></tr></thead>
+                <tbody>
+                  @for (l of listings(); track l.id) {
+                    <tr>
+                      <td>{{ l.name }}</td>
+                      <td>£{{ l.price }}</td>
+                      <td>{{ l.status }}</td>
+                      <td>
+                        <span class="badge badge--{{ l.moderationStatus.toLowerCase() }}">{{ l.moderationStatus }}</span>
+                        @if (l.moderationNote) { <div class="listings__note">{{ l.moderationNote }}</div> }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
           }
-        }
+        </div>
       }
 
-      @if (error()) { <p style="color:#a33;">{{ error() }}</p> }
+      @if (error()) { <p class="seller__error">{{ error() }}</p> }
     </section>
   `,
-  styles: [`
-    .stack { display:flex; flex-direction:column; gap:0.75rem; max-width:520px; }
-    .stack label { display:flex; flex-direction:column; gap:0.25rem; font-size:0.9rem; }
-    .status { padding:0.1rem 0.5rem; border-radius:999px; font-size:0.8rem; background:#eee; }
-    .status-approved { background:#dce7dc; }
-    .status-pendingreview, .status-applied { background:#f5eccf; }
-    .status-rejected, .status-suspended { background:#f2d9d9; }
-  `],
 })
 export class SellerDashboardComponent implements OnInit {
   private readonly sellers = inject(SellerService);
@@ -143,7 +150,6 @@ export class SellerDashboardComponent implements OnInit {
         }
       },
       error: () => {
-        // 404 — this user hasn't applied yet; show the application form.
         this.seller.set(null);
         this.loading.set(false);
       },
@@ -182,7 +188,6 @@ export class SellerDashboardComponent implements OnInit {
     });
   }
 
-  /** After returning from Stripe onboarding (?connect=...), refresh the seller's payment status. */
   private maybeRefreshConnect(): void {
     if (typeof window === 'undefined' || !new URLSearchParams(window.location.search).has('connect')) {
       return;
