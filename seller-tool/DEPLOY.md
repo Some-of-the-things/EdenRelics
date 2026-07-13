@@ -30,11 +30,25 @@ fly secrets set R2__Endpoint="https://<account>.r2.cloudflarestorage.com" R2__Bu
 
 # 5. Deploy
 fly deploy --remote-only -a eden-relics-tool
+
+# 6. Apply migrations OUT-OF-BAND (see note below — the published assembly doesn't carry them, and
+#    startup auto-migrate is discouraged for prod anyway). Proxy to the DB and run:
+fly proxy 5441:5432 -a eden-relics-tool-db &   # background
+cd Data && dotnet ef database update --project . --startup-project . \
+  --connection "Host=localhost;Port=5441;Database=eden_relics_tool;Username=eden_relics_tool;Password=<from attach>;SSL Mode=Disable"
 ```
+
+> **⚠️ Known issue — migrations aren't in the published assembly.** `dotnet ef` finds the InitialCreate
+> migration, but `dotnet publish Api` produces a `Data.dll` without it ("No migrations were found in
+> assembly 'EdenRelics.SellerTool.Data'"), so the app's startup `Migrate()` is a no-op. Root cause not
+> yet pinned (a .NET-10 publish/project-reference quirk). **Workaround: apply migrations out-of-band
+> (step 6) as the deploy step** — which is the recommended prod pattern anyway (no multi-instance
+> startup races). Revisit the build fix if we want startup auto-migrate.
 
 ## Verify
 - `curl https://eden-relics-tool.fly.dev/healthz` → 200.
-- Migrations applied automatically on boot (Garments / EvidenceRecords / DateEstimates / StoredRules).
+- Tables present after step 6: Garments / EvidenceRecords / DateEstimates / StoredRules.
+- `curl -X POST https://eden-relics-tool.fly.dev/garments -d '{}'` (no token) → 401 (auth active).
 
 ## Still to build before a real beta
 - **Token issuance / login** for tool sellers (the tool only *validates* JWTs today; issuance is
