@@ -24,4 +24,13 @@ public interface ISellerService
     /// <summary>Admin moderation: set a seller's approval status. Approving also grants the owner
     /// the Seller role. The house seller cannot be moderated. Returns null if not found / is house.</summary>
     Task<SellerDto?> SetStatusAsync(Guid sellerId, SellerApprovalStatus status, string? note);
+
+    /// <summary>Start Stripe Connect (Express) onboarding for an approved seller: creates the
+    /// connected account if needed and returns the hosted onboarding link URL. Null if the caller
+    /// isn't an approved seller.</summary>
+    Task<string?> StartConnectOnboardingAsync(Guid userId, string returnUrl, string refreshUrl);
+
+    /// <summary>Refresh the seller's Connect status from Stripe and update ConnectOnboardingComplete.
+    /// Returns the current completion state.</summary>
+    Task<bool> RefreshConnectStatusAsync(Guid userId);
 }

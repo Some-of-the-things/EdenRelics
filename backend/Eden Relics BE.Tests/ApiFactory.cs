@@ -68,11 +68,33 @@ public class ApiFactory : WebApplicationFactory<Program>
             }
             services.AddTransient<IEmailService, FakeEmailService>();
 
+            // Replace Stripe Connect with a fake so onboarding tests don't hit Stripe.
+            ServiceDescriptor? connectDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(IStripeConnectService));
+            if (connectDescriptor is not null)
+            {
+                services.Remove(connectDescriptor);
+            }
+            services.AddScoped<IStripeConnectService, FakeStripeConnectService>();
+
             // Remove background services that interfere with test host disposal
             services.RemoveAll(typeof(Microsoft.Extensions.Hosting.IHostedService));
 
         });
     }
+}
+
+public class FakeStripeConnectService : IStripeConnectService
+{
+    public Task<string> CreateAccountAsync(string? email) =>
+        Task.FromResult("acct_fake_" + Guid.NewGuid().ToString("N")[..12]);
+
+    public Task<string> CreateAccountLinkAsync(string connectedAccountId, string returnUrl, string refreshUrl) =>
+        Task.FromResult($"https://connect.stripe.test/onboarding/{connectedAccountId}");
+
+    // Pretend the account finishes onboarding immediately (charges + payouts enabled).
+    public Task<(bool ChargesEnabled, bool PayoutsEnabled)> GetAccountStatusAsync(string connectedAccountId) =>
+        Task.FromResult((true, true));
 }
 
 public class FakeEmailService : IEmailService

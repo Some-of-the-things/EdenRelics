@@ -11,7 +11,10 @@ namespace Eden_Relics_BE.Controllers;
 
 [ApiController]
 [Route("api/sellers")]
-public class SellersController(ISellerService sellers, IOptions<MarketplaceOptions> marketplace) : ControllerBase
+public class SellersController(
+    ISellerService sellers,
+    IOptions<MarketplaceOptions> marketplace,
+    IConfiguration configuration) : ControllerBase
 {
     /// <summary>Public / seller-facing endpoints are hidden until the marketplace is switched on.
     /// Admin endpoints stay reachable so the roster can be prepared before launch.</summary>
@@ -79,6 +82,43 @@ public class SellersController(ISellerService sellers, IOptions<MarketplaceOptio
             return NotFound();
         }
         return Ok(await sellers.GetPublicProductsAsync(slug));
+    }
+
+    // ---- Stripe Connect onboarding (seller, gated) ----
+
+    [Authorize(Roles = Roles.Seller)]
+    [HttpPost("connect/start")]
+    public async Task<IActionResult> ConnectStart()
+    {
+        if (!GateOpen)
+        {
+            return NotFound();
+        }
+        if (CurrentUserId() is not Guid userId)
+        {
+            return Unauthorized();
+        }
+        string frontend = configuration["Stripe:FrontendUrl"] ?? "https://edenrelics.co.uk";
+        string? url = await sellers.StartConnectOnboardingAsync(
+            userId, $"{frontend}/seller?connect=done", $"{frontend}/seller?connect=refresh");
+        return url is null
+            ? StatusCode(StatusCodes.Status403Forbidden, new { error = "Not an approved seller." })
+            : Ok(new { url });
+    }
+
+    [Authorize(Roles = Roles.Seller)]
+    [HttpPost("connect/refresh")]
+    public async Task<IActionResult> ConnectRefresh()
+    {
+        if (!GateOpen)
+        {
+            return NotFound();
+        }
+        if (CurrentUserId() is not Guid userId)
+        {
+            return Unauthorized();
+        }
+        return Ok(new { onboardingComplete = await sellers.RefreshConnectStatusAsync(userId) });
     }
 
     // ---- Admin moderation (always available so the roster can be prepared pre-launch) ----

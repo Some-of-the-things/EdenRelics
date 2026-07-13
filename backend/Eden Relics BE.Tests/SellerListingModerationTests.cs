@@ -35,6 +35,12 @@ public class SellerListingModerationTests : IClassFixture<ApiFactory>
         login.EnsureSuccessStatusCode();
         AuthResponse? auth = await login.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions);
         seller.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.Token);
+
+        // Complete Stripe Connect onboarding (faked) so the seller is payment-ready — a listing
+        // can't be approved/go live until this is done.
+        (await seller.PostAsync("/api/sellers/connect/start", null)).EnsureSuccessStatusCode();
+        (await seller.PostAsync("/api/sellers/connect/refresh", null)).EnsureSuccessStatusCode();
+
         return (seller, admin, sellerId);
     }
 

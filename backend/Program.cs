@@ -138,6 +138,7 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPasskeyService, PasskeyService>();
 builder.Services.AddScoped<ISellerService, SellerService>();
 builder.Services.AddScoped<ISellerListingService, SellerListingService>();
+builder.Services.AddScoped<IStripeConnectService, StripeConnectService>();
 
 // Image optimization & storage
 builder.Services.AddSingleton<ImageOptimizationService>();

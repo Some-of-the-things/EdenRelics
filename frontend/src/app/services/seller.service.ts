@@ -89,6 +89,14 @@ export class SellerService {
     return this.http.get<SellerListing[]>(`${this.base}/seller-listings/mine`);
   }
 
+  // --- Stripe Connect onboarding ---
+  connectStart(): Observable<{ url: string }> {
+    return this.http.post<{ url: string }>(`${this.base}/sellers/connect/start`, {});
+  }
+  connectRefresh(): Observable<{ onboardingComplete: boolean }> {
+    return this.http.post<{ onboardingComplete: boolean }>(`${this.base}/sellers/connect/refresh`, {});
+  }
+
   // --- Public profile ---
   publicProfile(slug: string): Observable<Seller> {
     return this.http.get<Seller>(`${this.base}/sellers/${slug}`);

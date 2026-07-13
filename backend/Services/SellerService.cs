@@ -10,7 +10,8 @@ namespace Eden_Relics_BE.Services;
 public partial class SellerService(
     IRepository<Seller> sellers,
     IRepository<User> users,
-    IRepository<Product> products) : ISellerService
+    IRepository<Product> products,
+    IStripeConnectService connect) : ISellerService
 {
     public async Task<SellerDto> ApplyAsync(Guid userId, SellerApplicationDto dto)
     {
@@ -102,6 +103,38 @@ public partial class SellerService(
         }
 
         return Map(seller);
+    }
+
+    public async Task<string?> StartConnectOnboardingAsync(Guid userId, string returnUrl, string refreshUrl)
+    {
+        Seller? seller = await sellers.Query().FirstOrDefaultAsync(s => s.OwnerUserId == userId);
+        if (seller is null || seller.ApprovalStatus != SellerApprovalStatus.Approved)
+        {
+            return null;
+        }
+        if (string.IsNullOrEmpty(seller.StripeConnectedAccountId))
+        {
+            seller.StripeConnectedAccountId = await connect.CreateAccountAsync(seller.ContactEmail);
+            await sellers.UpdateAsync(seller);
+        }
+        return await connect.CreateAccountLinkAsync(seller.StripeConnectedAccountId, returnUrl, refreshUrl);
+    }
+
+    public async Task<bool> RefreshConnectStatusAsync(Guid userId)
+    {
+        Seller? seller = await sellers.Query().FirstOrDefaultAsync(s => s.OwnerUserId == userId);
+        if (seller?.StripeConnectedAccountId is null)
+        {
+            return false;
+        }
+        (bool charges, bool payouts) = await connect.GetAccountStatusAsync(seller.StripeConnectedAccountId);
+        bool complete = charges && payouts;
+        if (complete != seller.ConnectOnboardingComplete)
+        {
+            seller.ConnectOnboardingComplete = complete;
+            await sellers.UpdateAsync(seller);
+        }
+        return complete;
     }
 
     private async Task<string> UniqueSlugAsync(string source)

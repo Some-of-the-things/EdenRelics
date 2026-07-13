@@ -78,6 +78,13 @@ public partial class SellerListingService(
         {
             return null;
         }
+        // A listing can only go live once its seller is payment-ready (Stripe Connect onboarded),
+        // so an approved/live listing is always purchasable. The house seller is exempt.
+        Seller? seller = await sellers.GetByIdAsync(product.SellerId);
+        if (seller is null || (!seller.IsHouse && !seller.ConnectOnboardingComplete))
+        {
+            return null;
+        }
         product.Status = ProductStatus.Live;
         product.ModerationStatus = ProductModerationStatus.Approved;
         product.ModerationNote = null;

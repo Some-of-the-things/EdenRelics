@@ -48,6 +48,15 @@ const EMPTY_LISTING: SellerListingCreate = {
           <p>Your seller account is currently suspended. Please contact us.</p>
         } @else {
           <!-- Approved -->
+          @if (!seller()!.connectOnboardingComplete) {
+            <div style="background:#f5eccf;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;">
+              <strong>Set up payments</strong> to let your listings go live — payouts are handled by Stripe,
+              and held until each buyer’s 14-day return window closes.
+              <button (click)="setupPayments()" style="margin-left:0.5rem;">Set up payments with Stripe</button>
+            </div>
+          } @else {
+            <p style="color:#3a7d3a;">✓ Payments set up — your approved listings can go live.</p>
+          }
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <h2>Your listings</h2>
             <button (click)="showListingForm.set(!showListingForm())">
@@ -130,6 +139,7 @@ export class SellerDashboardComponent implements OnInit {
         this.loading.set(false);
         if (s.approvalStatus === 'Approved') {
           this.loadListings();
+          this.maybeRefreshConnect();
         }
       },
       error: () => {
@@ -159,6 +169,30 @@ export class SellerDashboardComponent implements OnInit {
         next: (s) => this.seller.set(s),
         error: () => this.error.set('Sorry — we couldn’t submit your application. Please try again.'),
       });
+  }
+
+  setupPayments(): void {
+    this.sellers.connectStart().subscribe({
+      next: (res) => {
+        if (res.url && typeof window !== 'undefined') {
+          window.location.href = res.url;
+        }
+      },
+      error: () => this.error.set('Could not start payment setup. Please try again.'),
+    });
+  }
+
+  /** After returning from Stripe onboarding (?connect=...), refresh the seller's payment status. */
+  private maybeRefreshConnect(): void {
+    if (typeof window === 'undefined' || !new URLSearchParams(window.location.search).has('connect')) {
+      return;
+    }
+    this.sellers.connectRefresh().subscribe((r) => {
+      const s = this.seller();
+      if (s) {
+        this.seller.set({ ...s, connectOnboardingComplete: r.onboardingComplete });
+      }
+    });
   }
 
   createListing(): void {
