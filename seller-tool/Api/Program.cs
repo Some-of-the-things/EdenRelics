@@ -8,18 +8,33 @@ using Microsoft.IdentityModel.Tokens;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// JWT bearer auth — same signing key/issuer/audience as the main site, so a seller's existing token
-// authorises them on the tool. (Token issuance / a tool-native login is a separate, later feature.)
+// JWT bearer auth — the tool accepts tokens minted by the main site so a seller's existing login
+// authorises them here (token issuance / a tool-native login is a separate, later feature). The main
+// site runs in more than one environment (prod and staging) with DIFFERENT signing keys, issuers, and
+// audiences, so the tool validates against ALL of them: Jwt:Key/Issuer/Audience is the primary set and
+// Jwt:Key2/Issuer2/Audience2 an optional second (e.g. staging). A token is valid if it matches any.
+// NB: read config INSIDE the options lambda — it runs after the host's configuration is finalised,
+// which the test host (and env-var/secret layering) depends on.
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options => options.TokenValidationParameters = new TokenValidationParameters
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "")),
-        ValidateLifetime = true,
+        IConfiguration cfg = builder.Configuration;
+        string[] validIssuers = [.. new[] { cfg["Jwt:Issuer"], cfg["Jwt:Issuer2"] }.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!)];
+        string[] validAudiences = [.. new[] { cfg["Jwt:Audience"], cfg["Jwt:Audience2"] }.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!)];
+        SymmetricSecurityKey[] signingKeys =
+            [.. new[] { cfg["Jwt:Key"], cfg["Jwt:Key2"] }.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => new SymmetricSecurityKey(Encoding.UTF8.GetBytes(s!)))];
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuers = validIssuers,
+            ValidateAudience = true,
+            ValidAudiences = validAudiences,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKeys = signingKeys,
+            TryAllIssuerSigningKeys = true,
+            ValidateLifetime = true,
+        };
     });
 builder.Services.AddAuthorization();
 
