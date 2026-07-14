@@ -1,0 +1,2 @@
+numpy>=2.0
+opencv-contrib-python>=4.7   # ArucoDetector API (4.7+); tested on 5.0.0 / Python 3.14
