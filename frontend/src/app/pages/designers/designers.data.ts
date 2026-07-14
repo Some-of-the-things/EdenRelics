@@ -71,6 +71,10 @@ const VIYELLA_POST: RelatedPost = {
   slug: 'how-to-identify-and-date-vintage-viyella',
   title: 'How to Identify and Date Vintage Viyella',
 };
+const LAURA_ASHLEY_POST: RelatedPost = {
+  slug: 'how-to-identify-and-date-vintage-laura-ashley-dresses',
+  title: 'How to Identify and Date Vintage Laura Ashley Dresses',
+};
 const US_LABELS_COMPARISON_POST: RelatedPost = {
   slug: 'how-to-tell-vintage-american-dress-labels-apart',
   title: 'Telling Vintage American Dress Labels Apart: Leslie Fay, Liz Claiborne, Alfred Dunner & Sag Harbor',
@@ -162,6 +166,7 @@ export const DESIGNERS: DesignerProfile[] = [
       'Be wary of post-2010 reissues which use heavier modern cotton and printed (not woven) labels.',
     ],
     productMatchers: ['laura ashley'],
+    relatedPosts: [LAURA_ASHLEY_POST],
   },
   {
     slug: 'rockmount-ranch-wear',
