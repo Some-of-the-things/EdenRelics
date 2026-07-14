@@ -26,6 +26,7 @@
 const TARGETS = [
   { name: 'Website (SSR)', url: 'https://edenrelics.co.uk/', bustCache: true },
   { name: 'API (/readyz)', url: 'https://api.edenrelics.co.uk/readyz', bustCache: true },
+  { name: 'Staging API (/readyz)', url: 'https://api-staging.edenrelics.co.uk/readyz', bustCache: true },
 ];
 
 const FAILURE_THRESHOLD = 2; // consecutive failing runs before we alert (avoids single-blip noise)
