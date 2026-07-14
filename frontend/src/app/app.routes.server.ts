@@ -8,6 +8,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'admin/login', renderMode: RenderMode.Client },
   { path: 'admin/sellers', renderMode: RenderMode.Client },
   { path: 'seller', renderMode: RenderMode.Client },
+  { path: 'seller-tool', renderMode: RenderMode.Client },
   { path: 'account', renderMode: RenderMode.Client },
   { path: 'settings', renderMode: RenderMode.Client },
   { path: 'login', renderMode: RenderMode.Client },

@@ -39,6 +39,17 @@ export const routes: Routes = [
       ),
   },
   {
+    // Vintage dating tool (standalone seller-tool API). Fully gated during beta: admin-only + not
+    // linked in nav. Loosen to sellerGuard when the seller beta opens. The tool API validates the
+    // same JWT (prod backend's signing key) and owner-scopes garments to the caller.
+    path: 'seller-tool',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./pages/seller-tool/seller-tool.component').then(
+        (m) => m.SellerToolComponent
+      ),
+  },
+  {
     path: 'admin/sellers',
     canActivate: [adminGuard],
     loadComponent: () =>

@@ -23,6 +23,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+// CORS — the tool is called from the Angular front-end (a different origin) with a bearer token in
+// the Authorization header, which triggers a preflight. Allow the known front-end origins (overridable
+// via Cors:AllowedOrigins). No credentials/cookies are used, so we don't enable AllowCredentials.
+string[] allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() is { Length: > 0 } configured
+    ? configured
+    : ["https://edenrelics.co.uk", "https://www.edenrelics.co.uk", "https://staging.edenrelics.co.uk", "http://localhost:4200"];
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
+    .WithOrigins(allowedOrigins)
+    .AllowAnyHeader()
+    .WithMethods("GET", "POST", "OPTIONS")));
+
 // Persistence: prefer Fly's DATABASE_URL (postgres:// -> Npgsql), else ConnectionStrings:ToolDb.
 // Tests replace this registration with an in-memory provider; startup Migrate()s a relational DB.
 string toolConnection = Environment.GetEnvironmentVariable("DATABASE_URL") is { Length: > 0 } dbUrl
@@ -50,6 +61,7 @@ using (IServiceScope scope = app.Services.CreateScope())
     }
 }
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 

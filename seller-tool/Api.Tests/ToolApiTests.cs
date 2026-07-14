@@ -184,6 +184,36 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
         Assert.Equal("Proposed", ev.GetProperty("confirmation").GetString());
     }
 
+    [Fact]
+    public async Task ListGarments_IsOwnerScoped_AndSummarisesEvidence()
+    {
+        Guid ownerId = Guid.NewGuid();
+        HttpClient owner = SellerClient(ownerId);
+        Guid id = await CreateGarmentAsync(owner, "My dress");
+        (await AddEvidenceAsync(owner, id, "CareLabel", "care.tumble-dry-symbol")).EnsureSuccessStatusCode();
+
+        // A different seller has their own (empty) list and never sees the owner's garment.
+        HttpClient other = SellerClient(Guid.NewGuid());
+        JsonElement otherList = JsonDocument.Parse(await (await other.GetAsync("/garments")).Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal(0, otherList.GetArrayLength());
+
+        // The owner sees exactly their garment, with an evidence count.
+        JsonElement ownerList = JsonDocument.Parse(await (await owner.GetAsync("/garments")).Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal(1, ownerList.GetArrayLength());
+        Assert.Equal("My dress", ownerList[0].GetProperty("title").GetString());
+        Assert.Equal(1, ownerList[0].GetProperty("evidenceCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task ListGarments_AsAdmin_SeesAllOwners()
+    {
+        await CreateGarmentAsync(SellerClient(Guid.NewGuid()), "Seller A dress");
+        await CreateGarmentAsync(SellerClient(Guid.NewGuid()), "Seller B dress");
+
+        JsonElement adminList = JsonDocument.Parse(await (await AdminClient().GetAsync("/garments")).Content.ReadAsStringAsync()).RootElement;
+        Assert.True(adminList.GetArrayLength() >= 2);
+    }
+
     // ---- Auth enforcement ----
 
     [Fact]

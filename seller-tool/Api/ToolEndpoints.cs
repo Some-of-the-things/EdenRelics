@@ -32,6 +32,20 @@ public static class ToolEndpoints
             return Results.Created($"/garments/{garment.Id}", new { id = garment.Id });
         }).RequireAuthorization();
 
+        app.MapGet("/garments", async (ClaimsPrincipal user, ToolDbContext db) =>
+        {
+            // Owner-scoped: a seller sees only their own garments; an admin sees all.
+            Guid ownerId = UserId(user);
+            bool isAdmin = user.IsInRole("Admin");
+            List<Garment> garments = await db.Garments
+                .Where(g => isAdmin || g.OwnerId == ownerId)
+                .Include(g => g.Evidence)
+                .Include(g => g.Estimates)
+                .OrderByDescending(g => g.CreatedAtUtc)
+                .ToListAsync();
+            return Results.Ok(garments.Select(ToSummary).ToList());
+        }).RequireAuthorization();
+
         app.MapGet("/garments/{id:guid}", async (Guid id, ClaimsPrincipal user, ToolDbContext db) =>
         {
             Garment? garment = await db.Garments
@@ -194,6 +208,15 @@ public static class ToolEndpoints
 
     private static bool CanAccess(Garment garment, ClaimsPrincipal user) =>
         garment.OwnerId == UserId(user) || user.IsInRole("Admin");
+
+    private static GarmentSummaryDto ToSummary(Garment g)
+    {
+        DateEstimate? latest = g.Estimates.OrderByDescending(e => e.ComputedAtUtc).FirstOrDefault();
+        return new GarmentSummaryDto(
+            g.Id, g.Title, g.SellerRef, g.Reference, g.CreatedAtUtc,
+            g.Evidence.Count,
+            latest?.Earliest, latest?.Latest, latest?.Outcome, latest?.Confirmation.ToString());
+    }
 
     private static GarmentDto ToDto(Garment g) => new(
         g.Id, g.Title, g.SellerRef, g.Reference,

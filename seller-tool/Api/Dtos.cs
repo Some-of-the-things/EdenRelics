@@ -21,6 +21,10 @@ public record GarmentDto(
     Guid Id, string? Title, string? SellerRef, string? Reference,
     IReadOnlyList<EvidenceDto> Evidence, IReadOnlyList<EstimateDto> Estimates);
 
+public record GarmentSummaryDto(
+    Guid Id, string? Title, string? SellerRef, string? Reference, DateTime CreatedAtUtc,
+    int EvidenceCount, int? LatestEarliest, int? LatestLatest, string? LatestOutcome, string? LatestConfirmation);
+
 public record ClaimFlagDto(string Strength, string Message);
 
 public record EvidenceChainDto(string RuleId, string Feature, string Bound, string Strength, string? Source);
