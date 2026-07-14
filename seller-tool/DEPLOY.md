@@ -32,8 +32,18 @@ fly secrets set -a eden-relics-tool \
   Jwt__Key2="<staging backend Jwt:Key>" Jwt__Issuer2="EdenRelics"                      Jwt__Audience2="EdenRelicsApp"
 #    Verify a value matches without printing it: compare `fly secrets list` digests between apps.
 
-# 4. Cloudflare R2 (label archive) — its own bucket
-fly secrets set R2__Endpoint="https://<account>.r2.cloudflarestorage.com" R2__Bucket="eden-relics-tool-labels" R2__AccessKey="<key>" R2__SecretKey="<secret>" -a eden-relics-tool
+# 4. Cloudflare R2 (label archive) — DONE (2026-07-14). Own bucket `eden-relics-tool-labels`
+#    (wrangler r2 bucket create), reusing the account's R2 S3 credentials (the main-site token is
+#    account-scoped, so it writes to the new bucket too — no dashboard-minted key needed). Endpoint =
+#    https://<account-id>.r2.cloudflarestorage.com. NB the tool's key names differ from the backend's:
+#    tool R2:AccessKey/SecretKey/Bucket/Endpoint  <-  backend R2:AccessKeyId/SecretAccessKey/BucketName.
+fly secrets set -a eden-relics-tool \
+  R2__Endpoint="https://81096838098d07cc3955844c8a32663f.r2.cloudflarestorage.com" \
+  R2__Bucket="eden-relics-tool-labels" \
+  R2__AccessKey="<= backend R2:AccessKeyId>" R2__SecretKey="<= backend R2:SecretAccessKey>"
+#    Gotcha extracting values via `fly ssh printenv`: the "No machine specified…region ams" prefix has
+#    NO separator before the value, and a greedy strip eats leading chars — wrap remote output in a
+#    delimiter (printf "~~%s~~") and always digest-check with `fly secrets list` before trusting it.
 
 # 5. Deploy
 fly deploy --remote-only -a eden-relics-tool
@@ -65,11 +75,11 @@ cd Data && dotnet ef database update --project . --startup-project . \
   shared auth interceptor only touches the main API origin). CORS on this API allows the front-end
   origins (prod/staging/localhost:4200) — edit `Cors:AllowedOrigins` to change.
 - **To exercise it:** log into the main site as an admin (prod *or* staging — the tool accepts both),
-  visit `/seller-tool`. Requires a front-end deploy carrying the route.
+  visit `/seller-tool`. Requires a front-end deploy carrying the route. Capture, evidence, and dating
+  all work; dating just returns no bounds until verified rules are seeded.
 
 ## Still to build before a real beta
 - Loosen the `/seller-tool` guard from admin-only to `sellerGuard` when the beta opens.
 - Richer seller UX (§4.6 listing form — needs Teodora's Eden house-copy spec; §4.7 measurement — needs
   the ArUco spike: Peter rigs the marker, Teo photographs garments).
-- **R2 storage** for the capture endpoint (Step 4 secrets) — until set, "Capture a label photo" 500s.
 - Seed the **verified rules** once Teodora's dating-rules doc lands (POST /rules + /rules/{id}/verify).
