@@ -15,6 +15,7 @@ public class StagingAccessMiddleware(RequestDelegate next)
 
         // Always allow health checks and auth endpoints
         if (path.StartsWith("/healthz", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/readyz", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/api/auth/", StringComparison.OrdinalIgnoreCase))
         {
             await next(context);

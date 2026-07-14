@@ -29,6 +29,15 @@ public class PostgresIntegrationTests : IClassFixture<PostgresApiFactory>
     }
 
     [Fact]
+    public async Task ReadinessCheck_WithDatabaseUp_ReturnsOk()
+    {
+        // /readyz runs the DB probe; against the real Testcontainers Postgres it must be reachable.
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("/readyz");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetProducts_ReturnsSeededProducts()
     {
         HttpClient client = _factory.CreateClient();

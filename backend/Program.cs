@@ -100,7 +100,10 @@ builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
 });
-builder.Services.AddHealthChecks();
+// /healthz = liveness (no checks -> always healthy while the process is up; Fly uses this so a DB
+// fault can't make it restart healthy machines). /readyz = readiness, runs the DB probe (tag "ready").
+builder.Services.AddHealthChecks()
+    .AddCheck<Eden_Relics_BE.HealthChecks.DatabaseReadinessCheck>("database", tags: ["ready"]);
 
 // Database — prefer DATABASE_URL (Fly Postgres), fall back to ConnectionStrings:DefaultConnection
 string connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") is { Length: > 0 } databaseUrl
@@ -388,7 +391,16 @@ if (app.Environment.IsEnvironment("Staging"))
 }
 
 app.MapControllers();
-app.MapHealthChecks("/healthz");
+// Liveness: exclude the readiness-tagged checks so /healthz never touches the DB.
+app.MapHealthChecks("/healthz", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => !check.Tags.Contains("ready"),
+});
+// Readiness: DB reachability. 200 when reachable, 503 when not — what the uptime monitor polls.
+app.MapHealthChecks("/readyz", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+});
 
 // Optimize images and backfill responsive variants in the background after the app starts.
 // Gated to the worker (runScheduledJobs) so the HTTP-serving `web` machines never run the
