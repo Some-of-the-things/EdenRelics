@@ -10,9 +10,12 @@
  * threshold survives across the stateless cron invocations.
  *
  * Deliberate design notes:
- *  - We check the API's Fly origin (`/healthz`) directly, so a backend outage
- *    like the 2026-07-10 OOM (healthz timing out) is caught even if the CF edge
- *    still serves a cached homepage.
+ *  - We check the API's Fly origin (`/readyz`) directly, so a backend outage is
+ *    caught even if the CF edge still serves a cached homepage. /readyz is a
+ *    readiness probe (it verifies the DB is reachable), so it catches BOTH an
+ *    app-down/hung backend (like the 2026-07-10 OOM) AND a DB-unreachable fault
+ *    (like the 2026-07-14 staging DB going ROLE=error) — both of which return
+ *    200 from the liveness-only /healthz and would otherwise stay invisible.
  *  - The homepage is fetched cache-busted so a stale edge-cached 200 can't mask
  *    a broken SSR render (the render calls the API, so it's an end-to-end check).
  *  - Blind spot: this Worker runs ON Cloudflare, so a Cloudflare-wide edge
@@ -22,7 +25,7 @@
 
 const TARGETS = [
   { name: 'Website (SSR)', url: 'https://edenrelics.co.uk/', bustCache: true },
-  { name: 'API (/healthz)', url: 'https://api.edenrelics.co.uk/healthz', bustCache: true },
+  { name: 'API (/readyz)', url: 'https://api.edenrelics.co.uk/readyz', bustCache: true },
 ];
 
 const FAILURE_THRESHOLD = 2; // consecutive failing runs before we alert (avoids single-blip noise)
