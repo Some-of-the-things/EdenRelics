@@ -23,8 +23,14 @@ fly postgres attach eden-relics-tool-db -a eden-relics-tool
 #   then set the ToolDb connection string (Npgsql form) from the attach output / DATABASE_URL:
 fly secrets set ConnectionStrings__ToolDb="Host=...;Port=5432;Database=...;Username=...;Password=...;SSL Mode=Require;Trust Server Certificate=true" -a eden-relics-tool
 
-# 3. JWT — SAME key/issuer/audience as the main site so a seller's token authorises them here
-fly secrets set Jwt__Key="<same as backend Jwt:Key>" Jwt__Issuer="EdenRelics" Jwt__Audience="EdenRelicsApp" -a eden-relics-tool
+# 3. JWT — the tool validates tokens from the main site. The main site runs in TWO environments with
+#    DIFFERENT keys/issuers/audiences, and the tool accepts BOTH: a primary set (prod) and a secondary
+#    set (staging). A token is valid if it matches either. Copy each value from the matching backend
+#    (prod = eden-relics-api, staging = eden-relics-api-staging) — issuer/audience differ per env.
+fly secrets set -a eden-relics-tool \
+  Jwt__Key="<prod backend Jwt:Key>"     Jwt__Issuer="https://eden-relics-api.fly.dev" Jwt__Audience="https://eden-relics-api.fly.dev" \
+  Jwt__Key2="<staging backend Jwt:Key>" Jwt__Issuer2="EdenRelics"                      Jwt__Audience2="EdenRelicsApp"
+#    Verify a value matches without printing it: compare `fly secrets list` digests between apps.
 
 # 4. Cloudflare R2 (label archive) — its own bucket
 fly secrets set R2__Endpoint="https://<account>.r2.cloudflarestorage.com" R2__Bucket="eden-relics-tool-labels" R2__AccessKey="<key>" R2__SecretKey="<secret>" -a eden-relics-tool
@@ -51,9 +57,19 @@ cd Data && dotnet ef database update --project . --startup-project . \
 - Tables present after step 6: Garments / EvidenceRecords / DateEstimates / StoredRules.
 - `curl -X POST https://eden-relics-tool.fly.dev/garments -d '{}'` (no token) → 401 (auth active).
 
+## Front-end
+- The gated **`/seller-tool`** page (Angular) drives this API: garment list + create, evidence table +
+  add, label capture, run-dating with claim flags + evidence chain. Route is **adminGuard** during the
+  gated beta (loosen to `sellerGuard` when the seller beta opens) and not linked in nav. `toolApiUrl`
+  in the three `environment.*.ts` points at this app; `ToolService` attaches the bearer itself (the
+  shared auth interceptor only touches the main API origin). CORS on this API allows the front-end
+  origins (prod/staging/localhost:4200) — edit `Cors:AllowedOrigins` to change.
+- **To exercise it:** log into the main site as an admin (prod *or* staging — the tool accepts both),
+  visit `/seller-tool`. Requires a front-end deploy carrying the route.
+
 ## Still to build before a real beta
-- **Token issuance / login** for tool sellers (the tool only *validates* JWTs today; issuance is
-  shared with the main site or a to-be-built tool login).
-- The seller-facing **UI** (§4.6 listing form — needs Teodora's Eden house-copy spec; §4.7 measurement
-  — needs the ArUco spike).
+- Loosen the `/seller-tool` guard from admin-only to `sellerGuard` when the beta opens.
+- Richer seller UX (§4.6 listing form — needs Teodora's Eden house-copy spec; §4.7 measurement — needs
+  the ArUco spike: Peter rigs the marker, Teo photographs garments).
+- **R2 storage** for the capture endpoint (Step 4 secrets) — until set, "Capture a label photo" 500s.
 - Seed the **verified rules** once Teodora's dating-rules doc lands (POST /rules + /rules/{id}/verify).
