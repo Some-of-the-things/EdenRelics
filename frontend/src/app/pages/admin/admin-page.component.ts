@@ -1113,6 +1113,7 @@ export class AdminPageComponent implements OnInit {
     'Shipping',
     'Fees',
     'Packaging',
+    'Write-Offs',
     'Owner Draw',
     'Sales',
     'Other',

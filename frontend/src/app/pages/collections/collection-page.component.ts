@@ -6,6 +6,7 @@ import { SeoService } from '../../services/seo.service';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { CollectionProfile, collectionProductSlugs, findCollectionBySlug, orderedCollectionProducts } from './collections.data';
+import { MarketplaceService } from '../../services/marketplace.service';
 
 @Component({
   selector: 'app-collection-page',
@@ -23,14 +24,38 @@ export class CollectionPageComponent {
   // Present only during server render; null in the browser.
   private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
 
+  private readonly marketplace = inject(MarketplaceService);
+
   private readonly slug = toSignal(
     this.route.paramMap,
     { initialValue: this.route.snapshot.paramMap },
   );
 
+  /**
+   * Slug from the /collections/:slug param, or from a fixed route (e.g. /top-picks) that
+   * supplies it via route data — lets one component back both the generic and dedicated pages.
+   */
+  private readonly routeSlug = computed<string | null>(() =>
+    this.slug().get('slug') ??
+    (this.route.snapshot.data['collectionSlug'] as string | undefined) ??
+    null,
+  );
+
   readonly collection = computed<CollectionProfile | undefined>(() => {
-    const s = this.slug().get('slug');
-    return s ? findCollectionBySlug(s) : undefined;
+    const s = this.routeSlug();
+    const c = s ? findCollectionBySlug(s) : undefined;
+    // Gated collections (e.g. Our Top Picks) only exist once the marketplace is live.
+    if (c?.gated && !this.marketplace.enabled()) {
+      return undefined;
+    }
+    return c;
+  });
+
+  /** Canonical URL path — a dedicated route can override via data.canonicalPath (e.g. /top-picks). */
+  private readonly pagePath = computed<string>(() => {
+    const custom = this.route.snapshot.data['canonicalPath'] as string | undefined;
+    const c = this.collection();
+    return custom ?? (c ? `/collections/${c.slug}` : '/collections');
   });
 
   readonly products = computed<Product[]>(() => {
@@ -44,12 +69,14 @@ export class CollectionPageComponent {
   private readonly seoApplied = signal('');
 
   constructor() {
+    // Needed so gated collections (Our Top Picks) resolve correctly on this page too.
+    this.marketplace.load();
     effect(() => {
       const c = this.collection();
       if (!c) {
-        // Unknown slug. Real visitors get bounced home; crawlers get a genuine
+        // Unknown/gated slug. Real visitors get bounced home; crawlers get a genuine
         // 404 (a soft redirect would otherwise be indexed as 200).
-        if (this.slug().get('slug')) {
+        if (this.routeSlug()) {
           if (this.isBrowser) {
             this.router.navigate(['/']);
           } else {
@@ -82,12 +109,12 @@ export class CollectionPageComponent {
     this.seo.updateTags({
       title: c.metaTitle,
       description: c.metaDescription,
-      url: `/collections/${c.slug}`,
+      url: this.pagePath(),
     });
   }
 
   private applyJsonLd(c: CollectionProfile, products: readonly Product[]): void {
-    const pageUrl = `https://edenrelics.co.uk/collections/${c.slug}`;
+    const pageUrl = `https://edenrelics.co.uk${this.pagePath()}`;
     const collectionPage: Record<string, unknown> = {
       '@type': 'CollectionPage',
       name: c.name,

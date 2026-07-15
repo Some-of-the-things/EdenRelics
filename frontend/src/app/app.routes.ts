@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminGuard, authGuard } from './guards/admin.guard';
+import { marketplaceGuard } from './guards/marketplace.guard';
 
 export const routes: Routes = [
   {
@@ -273,6 +274,17 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/collections/collection-preview.component').then(
         (m) => m.CollectionPreviewComponent
+      ),
+  },
+  {
+    // Dedicated page for the gated "Our Top Picks" collection, backed by the collection page
+    // component. marketplaceGuard keeps it unreachable until the site flips to multi-user.
+    path: 'top-picks',
+    canActivate: [marketplaceGuard],
+    data: { collectionSlug: 'top-picks', canonicalPath: '/top-picks' },
+    loadComponent: () =>
+      import('./pages/collections/collection-page.component').then(
+        (m) => m.CollectionPageComponent
       ),
   },
   {

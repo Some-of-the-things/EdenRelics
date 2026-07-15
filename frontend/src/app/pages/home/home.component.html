@@ -16,6 +16,39 @@
     </div>
   </section>
 
+  @if (marketplace.enabled() && topPicks().length > 0) {
+    <section class="home__featured" aria-labelledby="top-picks-title">
+      <header class="home__featured-header">
+        <p class="home__featured-eyebrow">Our Top Picks</p>
+        <h2 id="top-picks-title" class="home__featured-title">Our Top Picks</h2>
+        <p class="home__featured-lede">A rotating, hand-chosen selection of standout vintage from across the shop.</p>
+      </header>
+      <ul class="home__featured-grid home__featured-grid--preview">
+        @for (product of topPicks(); track product.id) {
+          <li class="home__featured-card">
+            <a [routerLink]="['/product', product.slug || product.id]" class="home__featured-link">
+              <div class="home__featured-image">
+                @if (product.imageUrl) {
+                  <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+                }
+                @if (!product.inStock) {
+                  <span class="home__featured-sold">Sold</span>
+                }
+              </div>
+              <div class="home__featured-body">
+                <h3 class="home__featured-name">{{ product.name }}</h3>
+                <span class="home__featured-price">{{ (product.salePrice ?? product.price) | currency:'GBP' }}</span>
+              </div>
+            </a>
+          </li>
+        }
+      </ul>
+      <div class="home__featured-cta">
+        <a routerLink="/top-picks" class="home__featured-btn">See all top picks</a>
+      </div>
+    </section>
+  }
+
   @if (featured().length > 0) {
     <section class="home__featured" aria-labelledby="wildflower-edit-title">
       <header class="home__featured-header">

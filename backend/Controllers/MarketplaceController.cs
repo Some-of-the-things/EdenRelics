@@ -1,14 +1,28 @@
 using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Eden_Relics_BE.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
-public class MarketplaceController(IMarketplaceService marketplace) : ControllerBase
+public class MarketplaceController(
+    IMarketplaceService marketplace,
+    IOptions<MarketplaceOptions> marketplaceOptions) : ControllerBase
 {
+    /// <summary>
+    /// Public read-only flag telling the frontend whether the multi-seller marketplace is live.
+    /// Drives gated surfaces (e.g. the "Our Top Picks" section/page) that only appear post-launch.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpGet("status")]
+    public ActionResult<object> Status()
+    {
+        return Ok(new { enabled = marketplaceOptions.Value.Enabled });
+    }
+
     // --- Listing management ---
 
     [HttpGet("listings/{productId:guid}")]
