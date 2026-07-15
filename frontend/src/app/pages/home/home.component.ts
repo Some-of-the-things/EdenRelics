@@ -10,6 +10,7 @@ import { ReviewsService } from '../../services/reviews.service';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { collectionFeaturedSlugs, findCollectionBySlug, orderedCollectionProducts } from '../collections/collections.data';
+import { MarketplaceService } from '../../services/marketplace.service';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { environment } from '../../../environments/environment';
 
@@ -36,6 +37,7 @@ export class HomeComponent implements OnInit {
   private readonly productStore = inject(ProductStore);
   private readonly reviewsService = inject(ReviewsService);
   readonly cms = inject(ContentService);
+  readonly marketplace = inject(MarketplaceService);
 
   private reviewSummary: { count: number; overall: number } | null = null;
 
@@ -55,6 +57,18 @@ export class HomeComponent implements OnInit {
     return orderedCollectionProducts(this.productStore.liveOrSoldProducts(), collectionFeaturedSlugs(c));
   });
 
+  /**
+   * The featured pieces from the gated "Our Top Picks" edit. The template only shows the
+   * section when the marketplace is live (multi-user), so this stays dormant until launch.
+   */
+  readonly topPicks = computed<Product[]>(() => {
+    const c = findCollectionBySlug('top-picks');
+    if (!c) {
+      return [];
+    }
+    return orderedCollectionProducts(this.productStore.liveOrSoldProducts(), collectionFeaturedSlugs(c));
+  });
+
   subscribeToMailingList(): void {
     if (!this.mailingEmail.trim()) {
       return;
@@ -68,6 +82,7 @@ export class HomeComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.marketplace.load();
     this.seo.updateTags({
       url: '/',
       hreflang: true,

@@ -4,6 +4,7 @@ import { CartStore } from '../../store/cart.store';
 import { AuthService } from '../../services/auth.service';
 import { BrandingService } from '../../services/branding.service';
 import { ContentService } from '../../services/content.service';
+import { MarketplaceService } from '../../services/marketplace.service';
 
 @Component({
   selector: 'app-header',
@@ -16,7 +17,13 @@ export class HeaderComponent {
   readonly cartStore = inject(CartStore);
   readonly auth = inject(AuthService);
   readonly cms = inject(ContentService);
+  readonly marketplace = inject(MarketplaceService);
   private readonly brandingService = inject(BrandingService);
+
+  constructor() {
+    // Learn whether the multi-seller marketplace is live so the Top Picks nav link can appear.
+    this.marketplace.load();
+  }
   readonly logoUrl = computed(() => this.brandingService.branding()?.logoUrl ?? 'logo.png');
 
   /** Whether the Shop dropdown is expanded. */

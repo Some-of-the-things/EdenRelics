@@ -44,6 +44,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'care/fabric/:slug', renderMode: RenderMode.Server },
   { path: 'care/problem/:slug', renderMode: RenderMode.Server },
   { path: 'collections/:slug', renderMode: RenderMode.Server },
+  { path: 'top-picks', renderMode: RenderMode.Server },
   { path: 'sellers/:slug', renderMode: RenderMode.Server },
   { path: 'privacy-policy', renderMode: RenderMode.Server },
   { path: 'modern-slavery-policy', renderMode: RenderMode.Server },

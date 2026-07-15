@@ -24,6 +24,12 @@ export interface CollectionProfile {
   items: CollectionItem[];
   /** SKUs to feature on the homepage strip, in display order (subset of items). */
   featuredSkus: string[];
+  /**
+   * When true, this collection only exists once the multi-seller marketplace is live
+   * (Marketplace:Enabled). Gated collections are hidden from the homepage and return
+   * not-found on their pages until the site flips to multi-user. See MarketplaceService.
+   */
+  gated?: boolean;
 }
 
 export const COLLECTIONS: CollectionProfile[] = [
@@ -68,6 +74,27 @@ export const COLLECTIONS: CollectionProfile[] = [
       { sku: 'ER-00008', slug: '1980s-90s-st-michael-tartan-wool-pencil-skirt-jewel-tones' },
     ],
     featuredSkus: ['ER-00039', 'ER-00037', 'ER-00101'],
+  },
+  {
+    // Gated: only visible once the multi-seller marketplace is live (Marketplace:Enabled).
+    // PLACEHOLDER selection — swap these SKUs for the real curated picks before go-live.
+    slug: 'top-picks',
+    gated: true,
+    name: 'Our Top Picks',
+    metaTitle: 'Our Top Picks — Curated Vintage Highlights | Eden Relics',
+    metaDescription:
+      "Our Top Picks — a rotating, hand-chosen selection of standout vintage pieces from across the Eden Relics hub. Each one inspected, dated and measured.",
+    intro:
+      "Our Top Picks are the pieces we can't stop looking at — a small, rotating selection of standout vintage chosen by hand from across the shop. Whatever the label or the decade, these are the ones we'd happily keep for ourselves: chosen for character, quality and that bit of something extra. Every piece is inspected, dated from its labels and construction, and measured properly, so what arrives is exactly what you fell for.",
+    items: [
+      { sku: 'ER-00119', slug: '1970s-angela-gore-maxi-dress-paisley-lace-teal-velvet-waist' },
+      { sku: 'ER-00099', slug: '1980s-laura-ashley-rose-print-dress-burgundy-wool-cotton-twill' },
+      { sku: 'ER-00039', slug: '1990s-canda-tartan-shirt-dress-forest-green-navy-plaid-versatile-fit' },
+      { sku: 'ER-00102', slug: '1970s-striped-maxi-dress-crochet-lace-bib-sheer-sleeves' },
+      { sku: 'ER-00050', slug: '1970s-viyella-tartan-two-piece-set-double-breasted-blouse-skirt' },
+      { sku: 'ER-00008', slug: '1980s-90s-st-michael-tartan-wool-pencil-skirt-jewel-tones' },
+    ],
+    featuredSkus: ['ER-00119', 'ER-00099', 'ER-00039', 'ER-00102'],
   },
 ];
 
