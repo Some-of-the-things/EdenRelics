@@ -769,7 +769,7 @@ export class AdminPageComponent implements OnInit {
           label: 'Founders Section Content (HTML)',
           type: 'html',
           fallback:
-            '<p>Eden Relics is run by Teodora Carter and Peter Carter, a couple based in Norwich. We started it together because we believe in buying less and buying better — giving a well-made vintage piece a second life instead of letting it disappear.</p>\n<p>Teodora leads the sourcing, styling, and photography — the eye behind which pieces make the cut. Peter builds and runs the website and looks after the behind-the-scenes side of the shop. Every dress on the site has been chosen, checked, and photographed by the two of us, here in Norwich.</p>',
+            '<p>Eden Relics is run by Teodora Carter and Peter Carter, a couple based in Norwich. We started it together to give well-made vintage pieces a second life instead of letting them disappear.</p>\n<p>Teodora leads the sourcing, styling, and photography — the eye behind which pieces make the cut. Peter builds and runs the website and looks after the behind-the-scenes side of the shop. Every dress on the site has been chosen, checked, and photographed by the two of us, here in Norwich.</p>',
         },
         {
           key: 'page.about.signature',

@@ -100,7 +100,10 @@ builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
 });
-builder.Services.AddHealthChecks();
+// /healthz = liveness (no checks -> always healthy while the process is up; Fly uses this so a DB
+// fault can't make it restart healthy machines). /readyz = readiness, runs the DB probe (tag "ready").
+builder.Services.AddHealthChecks()
+    .AddCheck<Eden_Relics_BE.HealthChecks.DatabaseReadinessCheck>("database", tags: ["ready"]);
 
 // Database — prefer DATABASE_URL (Fly Postgres), fall back to ConnectionStrings:DefaultConnection
 string connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") is { Length: > 0 } databaseUrl
@@ -136,6 +139,10 @@ builder.Services.AddScoped<IFinanceService, FinanceService>();
 builder.Services.AddScoped<ISeoService, SeoService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPasskeyService, PasskeyService>();
+builder.Services.AddScoped<ISellerService, SellerService>();
+builder.Services.AddScoped<ISellerListingService, SellerListingService>();
+builder.Services.AddScoped<IStripeConnectService, StripeConnectService>();
+builder.Services.AddScoped<ISellerPayoutService, SellerPayoutService>();
 
 // Image optimization & storage
 builder.Services.AddSingleton<ImageOptimizationService>();
@@ -199,12 +206,21 @@ if (runScheduledJobs)
 
 // Regulatory-obligations calendar + operator reminders
 builder.Services.Configure<LiabilityOptions>(builder.Configuration.GetSection(LiabilityOptions.SectionName));
+builder.Services.Configure<MarketplaceOptions>(builder.Configuration.GetSection(MarketplaceOptions.SectionName));
 builder.Services.AddScoped<ILiabilityScheduleService, LiabilityScheduleService>();
 builder.Services.AddScoped<IObligationReminderSync, ObligationReminderSync>();
 if (runScheduledJobs)
 {
     builder.Services.AddHostedService<LiabilityScheduleHostedService>();
     builder.Services.AddHostedService<ReminderDispatcher>();
+}
+
+// Marketplace seller payouts (held transfers). Runs on the worker only, and is a no-op while the
+// marketplace is gated (Marketplace:Enabled = false) — dormant until launch AND until the checkout
+// webhook starts creating payout rows (a separate, deferred change).
+if (runScheduledJobs)
+{
+    builder.Services.AddHostedService<SellerPayoutReleaseService>();
 }
 
 // HttpClient for external OAuth token verification
@@ -375,19 +391,34 @@ if (app.Environment.IsEnvironment("Staging"))
 }
 
 app.MapControllers();
-app.MapHealthChecks("/healthz");
-
-// Optimize images and backfill responsive variants in the background after the
-// app starts accepting requests. Both calls are idempotent.
-app.Lifetime.ApplicationStarted.Register(() =>
+// Liveness: exclude the readiness-tagged checks so /healthz never touches the DB.
+app.MapHealthChecks("/healthz", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
-    _ = Task.Run(async () =>
-    {
-        ImageOptimizationService optimizer = app.Services.GetRequiredService<ImageOptimizationService>();
-        await optimizer.OptimizeExistingImagesAsync();
-        await optimizer.BackfillImageVariantsAsync();
-    });
+    Predicate = check => !check.Tags.Contains("ready"),
 });
+// Readiness: DB reachability. 200 when reachable, 503 when not — what the uptime monitor polls.
+app.MapHealthChecks("/readyz", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+});
+
+// Optimize images and backfill responsive variants in the background after the app starts.
+// Gated to the worker (runScheduledJobs) so the HTTP-serving `web` machines never run the
+// bulk ImageSharp decode on boot — decoding full-resolution source images is memory-hungry
+// and previously OOM-killed the (then 512 MB) instance mid-startup, taking the site down.
+// Both calls are idempotent (they skip already-converted images).
+if (runScheduledJobs)
+{
+    app.Lifetime.ApplicationStarted.Register(() =>
+    {
+        _ = Task.Run(async () =>
+        {
+            ImageOptimizationService optimizer = app.Services.GetRequiredService<ImageOptimizationService>();
+            await optimizer.OptimizeExistingImagesAsync();
+            await optimizer.BackfillImageVariantsAsync();
+        });
+    });
+}
 
 app.Run();
 

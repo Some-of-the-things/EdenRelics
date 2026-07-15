@@ -17,3 +17,11 @@ export const adminGuard: CanActivateFn = () => {
   }
   return inject(Router).createUrlTree(['/login']);
 };
+
+export const sellerGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  if (auth.isSeller()) {
+    return true;
+  }
+  return inject(Router).createUrlTree(['/login']);
+};

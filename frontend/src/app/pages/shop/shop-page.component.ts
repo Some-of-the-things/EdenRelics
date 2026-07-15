@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductListComponent } from '../../components/product-list/product-list.component';
 import { ProductStore } from '../../store/product.store';
 import { SeoService } from '../../services/seo.service';
@@ -18,6 +18,8 @@ interface ShopView {
   title: string;
   /** SEO meta description. */
   description: string;
+  /** Optional related-content CTA rendered as a second paragraph under the lede. */
+  relatedLink?: { lead: string; text: string; routerLink: string; after?: string };
 }
 
 /**
@@ -38,7 +40,7 @@ const DECADE_VIEWS: Record<string, ShopView> = {
     path: '/shop/1960s',
     category: '60s',
     heading: '1960s Vintage Dresses',
-    lede: 'Clean lines and mod-era colour — authentic 1960s pieces, hand-picked and inspected.',
+    lede: 'Authentic 1960s vintage dresses from a decade when shapes simplified and colour did the work ornament used to do — shifts, A-lines, clean necklines, during one of the last decades when large-scale British dressmaking was still commonplace. Because “60s style” has been revived endlessly, we date every piece from physical evidence rather than appearance: label typefaces, the wording of fibre content, zip types, seam finishes. Stock in this category rotates as one-of-a-kind pieces come and go, but the standard doesn’t — each dress is inspected, honestly described, and sized from real measurements as a “best fits UK” size, never from the label, since sixties sizing runs roughly two modern sizes small.',
     title: '1960s Vintage Dresses',
     description: 'Authentic 1960s vintage dresses, hand-picked and inspected. Mod shifts, shift dresses and sixties style, with UK shipping.',
   },
@@ -46,7 +48,12 @@ const DECADE_VIEWS: Record<string, ShopView> = {
     path: '/shop/1970s',
     category: '70s',
     heading: '1970s Vintage Dresses',
-    lede: 'Flowing prints and boho romance — authentic 1970s pieces, hand-picked and inspected.',
+    lede: 'The 1970s is the heartland of our collection — the decade of the prairie dress, the folk maxi, and romantic dressmaking at its most inventive. Expect high necks, bell sleeves, lace and crochet bibs, paisley and ditsy florals, and skirts cut to move. This is the era of Laura Ashley at her height and of the small British boutique labels we hunt for, alongside beautifully made handmade pieces whose only label is the quality of their finishing. Every dress is dated from its label generation and construction — not guesswork — and measured properly, with sizing given as a “best fits UK” size.',
+    relatedLink: {
+      lead: 'For the story behind the silhouette, read our ',
+      text: 'The Complete Guide to Vintage Prairie Dresses',
+      routerLink: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
+    },
     title: '1970s Vintage Dresses',
     description: 'Authentic 1970s vintage dresses, hand-picked and inspected. Boho prairie, maxi and prints from the seventies, with UK shipping.',
   },
@@ -54,7 +61,13 @@ const DECADE_VIEWS: Record<string, ShopView> = {
     path: '/shop/1980s',
     category: '80s',
     heading: '1980s Vintage Dresses',
-    lede: 'Bold colour and statement shapes — authentic 1980s pieces, hand-picked and inspected.',
+    lede: 'Authentic 1980s vintage dresses, better made than the decade’s reputation suggests. This is prime territory for the great British high-street labels — Laura Ashley’s wool-cotton florals, and St Michael by Marks & Spencer, quietly one of Britain’s most recognised vintage high-street labels and one of the most precisely datable, since M&S label designs changed in documented ways across the decade. We date every piece from that kind of evidence, disclose condition plainly, and size from the tape measure, not the label.',
+    relatedLink: {
+      lead: 'If there’s an old M&S dress in your own loft, our ',
+      text: 'St Michael dating guide',
+      routerLink: '/blog/st-michael-by-ms-how-to-identify-and-date-vintage-marks-spencer-clothing',
+      after: ' will tell you exactly what you’re holding.',
+    },
     title: '1980s Vintage Dresses',
     description: 'Authentic 1980s vintage dresses, hand-picked and inspected. Peplums, power shoulders and eighties colour, with UK shipping.',
   },
@@ -62,7 +75,7 @@ const DECADE_VIEWS: Record<string, ShopView> = {
     path: '/shop/1990s',
     category: '90s',
     heading: '1990s Vintage Dresses',
-    lede: 'Understated slips and minimalist florals — authentic 1990s pieces, hand-picked and inspected.',
+    lede: '1990s vintage dresses are the newest arrivals to true vintage, and the decade’s best work is coming back hard: the soft rayon floral maxi — drapey, hand-painted-look prints with a California-meets-bohemian ease — made by a cohort of American labels now genuinely sought after secondhand, alongside quieter minimalist pieces. Survival is the filter here: high-street quality varied enormously in the nineties, so we select for fabric, cut and construction first, and every piece is inspected and dated before listing. Sizing, as everywhere in the shop, comes from real measurements — a “best fits UK” size — with the label size as a footnote.',
     title: '1990s Vintage Dresses',
     description: 'Authentic 1990s vintage dresses, hand-picked and inspected. Slip dresses, florals and nineties minimalism, with UK shipping.',
   },
@@ -79,7 +92,7 @@ const ALL_VIEW: ShopView = {
 
 @Component({
   selector: 'app-shop',
-  imports: [ProductListComponent],
+  imports: [ProductListComponent, RouterLink],
   templateUrl: './shop-page.component.html',
   styleUrl: './shop-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

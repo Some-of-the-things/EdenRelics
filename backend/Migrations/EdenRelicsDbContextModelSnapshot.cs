@@ -1017,6 +1017,9 @@ namespace Eden_Relics_BE.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("UnitPrice")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
@@ -1026,6 +1029,8 @@ namespace Eden_Relics_BE.Migrations
                     b.HasIndex("OrderId");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("SellerId");
 
                     b.ToTable("OrderItems");
                 });
@@ -1129,6 +1134,15 @@ namespace Eden_Relics_BE.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("ModerationNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("ModerationStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(2);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1151,6 +1165,9 @@ namespace Eden_Relics_BE.Migrations
 
                     b.Property<DateTime?>("SalePriceSetAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Size")
                         .IsRequired()
@@ -1192,13 +1209,17 @@ namespace Eden_Relics_BE.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Sku")
-                        .IsUnique()
-                        .HasFilter("\"Sku\" <> ''");
+                    b.HasIndex("ModerationStatus");
+
+                    b.HasIndex("SellerId");
 
                     b.HasIndex("Slug")
                         .IsUnique()
                         .HasFilter("\"Slug\" <> ''");
+
+                    b.HasIndex("SellerId", "Sku")
+                        .IsUnique()
+                        .HasFilter("\"Sku\" <> ''");
 
                     b.ToTable("Products");
 
@@ -1217,9 +1238,11 @@ namespace Eden_Relics_BE.Migrations
                             ImageUrl = "https://placehold.co/400x500/FF6347/FFF?text=Boho+Maxi+Dress",
                             InCollection = false,
                             IsDeleted = false,
+                            ModerationStatus = 2,
                             Name = "Bohemian Maxi Dress",
                             NameTranslations = "{}",
                             Price = 195m,
+                            SellerId = new Guid("5e11e400-0000-0000-0000-000000000001"),
                             Size = "10",
                             Sku = "ER-00001",
                             Slug = "bohemian-maxi-dress",
@@ -1242,9 +1265,11 @@ namespace Eden_Relics_BE.Migrations
                             ImageUrl = "https://placehold.co/400x500/556B2F/FFF?text=Wrap+Dress",
                             InCollection = false,
                             IsDeleted = false,
+                            ModerationStatus = 2,
                             Name = "Wrap Dress",
                             NameTranslations = "{}",
                             Price = 275m,
+                            SellerId = new Guid("5e11e400-0000-0000-0000-000000000001"),
                             Size = "12",
                             Sku = "ER-00002",
                             Slug = "wrap-dress",
@@ -1267,9 +1292,11 @@ namespace Eden_Relics_BE.Migrations
                             ImageUrl = "https://placehold.co/400x500/191970/FFF?text=Power+Dress",
                             InCollection = false,
                             IsDeleted = false,
+                            ModerationStatus = 2,
                             Name = "Power Shoulder Dress",
                             NameTranslations = "{}",
                             Price = 185m,
+                            SellerId = new Guid("5e11e400-0000-0000-0000-000000000001"),
                             Size = "8",
                             Sku = "ER-00003",
                             Slug = "power-shoulder-dress",
@@ -1292,9 +1319,11 @@ namespace Eden_Relics_BE.Migrations
                             ImageUrl = "https://placehold.co/400x500/8B0000/FFF?text=Sequin+Dress",
                             InCollection = false,
                             IsDeleted = false,
+                            ModerationStatus = 2,
                             Name = "Sequin Party Dress",
                             NameTranslations = "{}",
                             Price = 220m,
+                            SellerId = new Guid("5e11e400-0000-0000-0000-000000000001"),
                             Size = "6",
                             Sku = "ER-00004",
                             Slug = "sequin-party-dress",
@@ -1317,9 +1346,11 @@ namespace Eden_Relics_BE.Migrations
                             ImageUrl = "https://placehold.co/400x500/DAA520/FFF?text=Silk+Slip+Dress",
                             InCollection = false,
                             IsDeleted = false,
+                            ModerationStatus = 2,
                             Name = "Silk Slip Dress",
                             NameTranslations = "{}",
                             Price = 210m,
+                            SellerId = new Guid("5e11e400-0000-0000-0000-000000000001"),
                             Size = "8",
                             Sku = "ER-00005",
                             Slug = "silk-slip-dress",
@@ -1342,9 +1373,11 @@ namespace Eden_Relics_BE.Migrations
                             ImageUrl = "https://placehold.co/400x500/2F4F4F/FFF?text=Babydoll+Dress",
                             InCollection = false,
                             IsDeleted = false,
+                            ModerationStatus = 2,
                             Name = "Grunge Babydoll Dress",
                             NameTranslations = "{}",
                             Price = 145m,
+                            SellerId = new Guid("5e11e400-0000-0000-0000-000000000001"),
                             Size = "14",
                             Sku = "ER-00006",
                             Slug = "grunge-babydoll-dress",
@@ -1367,9 +1400,11 @@ namespace Eden_Relics_BE.Migrations
                             ImageUrl = "https://placehold.co/400x500/FF69B4/FFF?text=Y2K+Halter",
                             InCollection = false,
                             IsDeleted = false,
+                            ModerationStatus = 2,
                             Name = "Butterfly Halter Dress",
                             NameTranslations = "{}",
                             Price = 165m,
+                            SellerId = new Guid("5e11e400-0000-0000-0000-000000000001"),
                             Size = "6",
                             Sku = "ER-00007",
                             Slug = "butterfly-halter-dress",
@@ -1392,9 +1427,11 @@ namespace Eden_Relics_BE.Migrations
                             ImageUrl = "https://placehold.co/400x500/8B4513/FFF?text=Velvet+Mini",
                             InCollection = false,
                             IsDeleted = false,
+                            ModerationStatus = 2,
                             Name = "Velvet Mini Dress",
                             NameTranslations = "{}",
                             Price = 135m,
+                            SellerId = new Guid("5e11e400-0000-0000-0000-000000000001"),
                             Size = "10",
                             Sku = "ER-00008",
                             Slug = "velvet-mini-dress",
@@ -1417,9 +1454,11 @@ namespace Eden_Relics_BE.Migrations
                             ImageUrl = "https://placehold.co/400x500/556B2F/FFF?text=Asymmetric+Midi",
                             InCollection = false,
                             IsDeleted = false,
+                            ModerationStatus = 2,
                             Name = "Asymmetric Midi Dress",
                             NameTranslations = "{}",
                             Price = 285m,
+                            SellerId = new Guid("5e11e400-0000-0000-0000-000000000001"),
                             Size = "12",
                             Sku = "ER-00009",
                             Slug = "asymmetric-midi-dress",
@@ -1442,9 +1481,11 @@ namespace Eden_Relics_BE.Migrations
                             ImageUrl = "https://placehold.co/400x500/1C1C1C/FFF?text=Cut-Out+Maxi",
                             InCollection = false,
                             IsDeleted = false,
+                            ModerationStatus = 2,
                             Name = "Cut-Out Maxi Dress",
                             NameTranslations = "{}",
                             Price = 320m,
+                            SellerId = new Guid("5e11e400-0000-0000-0000-000000000001"),
                             Size = "16",
                             Sku = "ER-00010",
                             Slug = "cut-out-maxi-dress",
@@ -1761,6 +1802,146 @@ namespace Eden_Relics_BE.Migrations
                     b.ToTable("SearchConsoleDailyTotals");
                 });
 
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Seller", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ApprovalStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Bio")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("BusinessName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<decimal?>("CommissionRate")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("numeric(5,4)");
+
+                    b.Property<bool>("ConnectOnboardingComplete")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsHouse")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("StripeConnectedAccountId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasFilter("\"Slug\" <> ''");
+
+                    b.ToTable("Sellers");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("5e11e400-0000-0000-0000-000000000001"),
+                            ApprovalStatus = 1,
+                            BusinessName = "Eden Relics",
+                            ConnectOnboardingComplete = false,
+                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            IsHouse = true,
+                            Slug = "eden-relics",
+                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.SellerPayout", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Commission")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("GrossAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("NetAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ReleaseAfterUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ReleasedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StripeTransferId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SellerId");
+
+                    b.HasIndex("OrderId", "SellerId")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "ReleaseAfterUtc");
+
+                    b.ToTable("SellerPayouts");
+                });
+
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.SeoHealthSnapshot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2045,10 +2226,15 @@ namespace Eden_Relics_BE.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<Guid?>("SellerId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SellerId");
 
                     b.ToTable("Transactions");
                 });
@@ -2297,9 +2483,26 @@ namespace Eden_Relics_BE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Eden_Relics_BE.Data.Entities.Seller", null)
+                        .WithMany()
+                        .HasForeignKey("SellerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Order");
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Product", b =>
+                {
+                    b.HasOne("Eden_Relics_BE.Data.Entities.Seller", "Seller")
+                        .WithMany("Products")
+                        .HasForeignKey("SellerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Seller");
                 });
 
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.ProductListing", b =>
@@ -2343,6 +2546,43 @@ namespace Eden_Relics_BE.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Seller", b =>
+                {
+                    b.HasOne("Eden_Relics_BE.Data.Entities.User", "OwnerUser")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("OwnerUser");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.SellerPayout", b =>
+                {
+                    b.HasOne("Eden_Relics_BE.Data.Entities.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Eden_Relics_BE.Data.Entities.Seller", "Seller")
+                        .WithMany()
+                        .HasForeignKey("SellerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Seller");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Transaction", b =>
+                {
+                    b.HasOne("Eden_Relics_BE.Data.Entities.Seller", null)
+                        .WithMany()
+                        .HasForeignKey("SellerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.UserCredential", b =>
                 {
                     b.HasOne("Eden_Relics_BE.Data.Entities.User", "User")
@@ -2362,6 +2602,11 @@ namespace Eden_Relics_BE.Migrations
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Product", b =>
                 {
                     b.Navigation("Listings");
+                });
+
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.Seller", b =>
+                {
+                    b.Navigation("Products");
                 });
 #pragma warning restore 612, 618
         }

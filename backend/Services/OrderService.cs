@@ -80,6 +80,7 @@ public class OrderService(
                 return new OrderItem
                 {
                     ProductId = product.Id,
+                    SellerId = product.SellerId,
                     ProductName = product.Name,
                     UnitPrice = product.SalePrice ?? product.Price,
                     Quantity = item.Quantity
@@ -131,6 +132,10 @@ public class OrderService(
             PaymentMethodTypes = ["card"],
             LineItems = lineItems,
             Mode = "payment",
+            // Show the promotion-code field on Stripe Checkout so newsletter/discount
+            // codes (e.g. WELCOME15) can be redeemed. Stripe recalculates the total
+            // server-side from the coupon, so the amount charged stays authoritative.
+            AllowPromotionCodes = true,
             SuccessUrl = $"{frontendUrl}/order-confirmation/{order.Id}?session_id={{CHECKOUT_SESSION_ID}}",
             CancelUrl = $"{frontendUrl}/cart",
             Metadata = new Dictionary<string, string>

@@ -1,0 +1,31 @@
+# Fly config for the seller tool API. DEPLOYED to prod (eden-relics-tool + eden-relics-tool-db) —
+# see DEPLOY.md. Suspends when idle (min_machines_running = 0) so it costs ~nothing until a beta
+# points at it.
+app = 'eden-relics-tool'
+primary_region = 'ams'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  ASPNETCORE_ENVIRONMENT = 'Production'
+  ASPNETCORE_URLS = 'http://0.0.0.0:8080'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  interval = '30s'
+  timeout = '5s'
+  grace_period = '30s'
+  method = 'GET'
+  path = '/healthz'
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 512

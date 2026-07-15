@@ -1,0 +1,328 @@
+.tool {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.tool__head {
+  margin-bottom: 2rem;
+}
+
+.tool__title {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  color: var(--text-primary);
+}
+
+.tool__lead {
+  color: var(--text-secondary);
+  max-width: 60ch;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.tool__grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 1.5rem;
+  align-items: start;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tool__panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1.5rem;
+}
+
+.tool__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tool__heading {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.tool__sub {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 1.75rem 0 0.6rem;
+}
+
+.tool__sub--tight { margin-top: 1rem; }
+
+.tool__muted {
+  color: var(--text-muted);
+  margin: 0.5rem 0;
+}
+
+.tool__muted--small { font-size: 0.85rem; }
+
+.tool__error {
+  color: var(--accent-sale);
+  font-size: 0.9rem;
+  margin: 1rem 0 0;
+}
+
+/* --- Garment list --- */
+.glist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.glist__item {
+  width: 100%;
+  text-align: left;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 0.7rem 0.85rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: border-color var(--transition), background var(--transition);
+
+  &:hover { border-color: var(--border-control); }
+  &--active { border-color: var(--accent); background: var(--bg-secondary); }
+}
+
+.glist__name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.glist__meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* --- Forms (self-contained; component styles are scoped) --- */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form--inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field--grow { flex: 1 1 160px; }
+.field--type { flex: 0 0 auto; min-width: 130px; }
+
+.field__label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.field__input {
+  border: 1px solid var(--border-control);
+  border-radius: 3px;
+  padding: 0.6rem 0.85rem;
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+
+  &:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+}
+
+.tool__file {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  flex: 1 1 180px;
+}
+
+.tool__capture {
+  margin-top: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 0.85rem 1rem;
+  background: var(--bg-primary);
+
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+}
+
+/* --- Buttons --- */
+.btn {
+  font-family: var(--font-decorative);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  border: 1px solid var(--accent);
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: var(--text-inverse);
+
+  &:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--accent);
+
+  &:hover:not(:disabled) { background: var(--accent); color: var(--text-inverse); }
+}
+
+/* --- Detail table --- */
+.dtable {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    font-size: 0.72rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 0.5rem 0.5rem;
+    border-bottom: 1px solid var(--border-dark);
+  }
+
+  td {
+    padding: 0.6rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+}
+
+.dtable__mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+
+/* --- Dating result --- */
+.result {
+  margin-top: 1.25rem;
+  border: 1px solid var(--border-dark);
+  border-left: 3px solid var(--accent);
+  border-radius: 3px;
+  padding: 1.1rem 1.25rem;
+  background: var(--bg-secondary);
+}
+
+.result__range {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.35rem;
+}
+
+.result__outcome {
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.result__flag {
+  font-size: 0.9rem;
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 3px;
+}
+
+.result__flag--hard {
+  color: var(--accent-sale);
+  background: color-mix(in srgb, var(--accent-sale) 10%, transparent);
+}
+
+.result__flag--soft {
+  color: var(--gold-text);
+  background: color-mix(in srgb, var(--gold-text) 12%, transparent);
+}
+
+.chain {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+.chain__strength { color: var(--text-muted); }
+.chain__src { color: var(--text-muted); font-style: italic; }
+
+/* --- Confirmation badges --- */
+.badge {
+  display: inline-block;
+  font-family: var(--font-decorative);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.badge--confirmed {
+  color: #1b6327;
+  border-color: #1b6327;
+}
+
+.badge--proposed {
+  color: var(--gold-text);
+  border-color: var(--gold-text);
+}
+
+.badge--rejected {
+  color: var(--accent-sale);
+  border-color: var(--accent-sale);
+}

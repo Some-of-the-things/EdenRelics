@@ -40,6 +40,11 @@ public class OrderItem
     public Order Order { get; set; } = null!;
     public Guid ProductId { get; set; }
     public Product Product { get; set; } = null!;
+
+    /// <summary>The seller of this line item, snapshotted at checkout. An order can span multiple
+    /// sellers, so per-seller subtotals, payout transfers and notifications are computed from this.</summary>
+    public Guid SellerId { get; set; }
+
     public string ProductName { get; set; } = string.Empty;
     public decimal UnitPrice { get; set; }
     public int Quantity { get; set; }

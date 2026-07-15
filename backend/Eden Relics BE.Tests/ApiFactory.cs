@@ -38,6 +38,7 @@ public class ApiFactory : WebApplicationFactory<Program>
                 ["Fido2:Origins:0"] = "http://localhost:4200",
                 ["Cors:AllowedOrigins:0"] = "http://localhost:4200",
                 ["Analytics:IngestSecret"] = "test-analytics-secret",
+                ["Marketplace:Enabled"] = "true",
                 ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Database=unused",
             });
         });
@@ -67,11 +68,36 @@ public class ApiFactory : WebApplicationFactory<Program>
             }
             services.AddTransient<IEmailService, FakeEmailService>();
 
+            // Replace Stripe Connect with a fake so onboarding tests don't hit Stripe.
+            ServiceDescriptor? connectDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(IStripeConnectService));
+            if (connectDescriptor is not null)
+            {
+                services.Remove(connectDescriptor);
+            }
+            services.AddScoped<IStripeConnectService, FakeStripeConnectService>();
+
             // Remove background services that interfere with test host disposal
             services.RemoveAll(typeof(Microsoft.Extensions.Hosting.IHostedService));
 
         });
     }
+}
+
+public class FakeStripeConnectService : IStripeConnectService
+{
+    public Task<string> CreateAccountAsync(string? email) =>
+        Task.FromResult("acct_fake_" + Guid.NewGuid().ToString("N")[..12]);
+
+    public Task<string> CreateAccountLinkAsync(string connectedAccountId, string returnUrl, string refreshUrl) =>
+        Task.FromResult($"https://connect.stripe.test/onboarding/{connectedAccountId}");
+
+    // Pretend the account finishes onboarding immediately (charges + payouts enabled).
+    public Task<(bool ChargesEnabled, bool PayoutsEnabled)> GetAccountStatusAsync(string connectedAccountId) =>
+        Task.FromResult((true, true));
+
+    public Task<string> CreateTransferAsync(string connectedAccountId, long amountMinor, string currency, string idempotencyKey) =>
+        Task.FromResult("tr_fake_" + idempotencyKey);
 }
 
 public class FakeEmailService : IEmailService
@@ -81,6 +107,7 @@ public class FakeEmailService : IEmailService
     public Task SendContactEmailAsync(string fromName, string fromEmail, string subject, string message) => Task.CompletedTask;
     public Task SendSaleNotificationAsync(string toEmail, string firstName, string productName, decimal originalPrice, decimal salePrice) => Task.CompletedTask;
     public Task SendReviewRequestEmailAsync(string toEmail, string firstName, Guid orderId) => Task.CompletedTask;
+    public Task SendDiscountWelcomeEmailAsync(string toEmail, string code) => Task.CompletedTask;
     public Task SendOwnerSaleNotificationAsync(Eden_Relics_BE.Data.Entities.Order order) => Task.CompletedTask;
     public Task SendOrderInvoiceEmailAsync(Eden_Relics_BE.Data.Entities.Order order, string? platform = null) => Task.CompletedTask;
     public string BuildOrderInvoiceHtml(Eden_Relics_BE.Data.Entities.Order order, string? platform = null) => string.Empty;

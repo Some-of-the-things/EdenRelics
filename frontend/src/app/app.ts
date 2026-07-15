@@ -4,8 +4,10 @@ import { ViewportScroller, DOCUMENT } from '@angular/common';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { CookieBannerComponent } from './components/cookie-banner/cookie-banner.component';
+import { DiscountPopupComponent } from './components/discount-popup/discount-popup.component';
 import { AnalyticsService } from './services/analytics.service';
 import { ContentService } from './services/content.service';
+import { ShopEngagementService } from './services/shop-engagement.service';
 
 /**
  * Regex matching the various flavours of "lazy chunk failed to load" errors
@@ -20,7 +22,7 @@ const RELOAD_FLAG = 'chunkReloadAttempted';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, CookieBannerComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, CookieBannerComponent, DiscountPopupComponent],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.scss',
@@ -29,6 +31,7 @@ export class App {
   protected readonly title = 'Eden Relics';
   private readonly content = inject(ContentService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly engagement = inject(ShopEngagementService);
   private readonly router = inject(Router);
   private readonly scroller = inject(ViewportScroller);
   private readonly document = inject(DOCUMENT);
@@ -39,6 +42,7 @@ export class App {
 
     afterNextRender(() => {
       this.analytics.init();
+      this.engagement.init();
 
       // Anchor links (e.g. /#newsletter) are scrolled by Angular's ViewportScroller,
       // which parks the target at y=0 and only subtracts this offset — it ignores CSS

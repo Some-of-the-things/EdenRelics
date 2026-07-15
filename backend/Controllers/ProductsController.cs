@@ -244,6 +244,9 @@ public class ProductsController : ControllerBase
 
         Product product = new()
         {
+            // Admin-created stock belongs to Eden Relics' own house seller. Seller self-serve
+            // listing creation (attributed to the creating seller) arrives in a later phase.
+            SellerId = HouseSeller.Id,
             Name = dto.Name,
             Slug = uniqueSlug,
             Sku = sku,

@@ -15,6 +15,113 @@ interface WorkerEnv {
 
 const DEFAULT_API_BASE = 'https://api.edenrelics.co.uk';
 
+/** Hard ceiling on any origin subrequest so a slow/hung API can never stall the Worker. */
+const API_FETCH_TIMEOUT_MS = 8000;
+
+/** fetch() with an AbortController deadline — aborts (throws) once `ms` elapses. */
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  ms: number = API_FETCH_TIMEOUT_MS,
+  init?: RequestInit,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Routes we must never edge-cache: auth-gated, personalised, state-changing, or draft previews. */
+const NO_CACHE_PREFIXES = [
+  '/admin',
+  '/account',
+  '/settings',
+  '/checkout',
+  '/basket',
+  '/cart',
+  '/orders',
+  '/order-confirmation',
+  '/review',
+  '/wishlist',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+  // Admin-only draft previews of unpublished content — must never be cached/served publicly.
+  '/blog/preview',
+  '/collections/preview',
+];
+
+/**
+ * Long edge TTL for pages whose primary content has no live-inventory dependency:
+ * blog posts, designer/style/garment hubs, care guides, and static/legal pages.
+ * Everything else (home, /shop listings, /product, /collections) stays on the
+ * short TTL because those reflect the live catalogue (an add/sale changes them).
+ * Once purge-on-inventory-change lands, those can move here too.
+ */
+const SSR_STATIC_CACHE_TTL = 3600;
+/**
+ * Product detail pages: 30 min. Safe without purge-on-change because a SOLD item
+ * is 301'd by the /product/ redirect layer that runs on every request BEFORE the
+ * cache — so the only staleness is a rare admin edit to a still-live one-of-one.
+ * Listing pages (home/shop/collections) stay short so new/sold items surface fast.
+ */
+const SSR_PRODUCT_CACHE_TTL = 1800;
+const STATIC_PATH_PREFIXES = [
+  '/blog',
+  '/designers',
+  '/style',
+  '/dresses',
+  '/care',
+  '/about',
+  '/contact',
+  '/privacy-policy',
+  '/returns-policy',
+  '/security',
+  '/terms-conditions',
+  '/cookie-policy',
+  '/accessibility-report',
+  '/compliance-report',
+  '/modern-slavery-policy',
+  '/supply-chain-policy',
+];
+
+/** Edge TTL (seconds) for a cacheable page: long for static content, short otherwise. */
+function edgeCacheTtl(url: URL): number {
+  const path = url.pathname;
+  const isStatic = STATIC_PATH_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+  );
+  if (isStatic) {
+    return SSR_STATIC_CACHE_TTL;
+  }
+  if (path.startsWith('/product/')) {
+    return SSR_PRODUCT_CACHE_TTL;
+  }
+  return SSR_CACHE_TTL;
+}
+
+/**
+ * True for anonymous GET navigations whose SSR HTML is identical for every
+ * visitor. Auth is a JWT in localStorage attached client-side, so the server
+ * render never sees a user — every render of a given URL is the same, which is
+ * what makes edge-caching it safe (no per-user leak).
+ */
+function isCacheablePageRequest(request: Request, url: URL): boolean {
+  if (request.method !== 'GET') {
+    return false;
+  }
+  if (request.headers.has('Authorization')) {
+    return false;
+  }
+  return !NO_CACHE_PREFIXES.some(
+    (prefix) => url.pathname === prefix || url.pathname.startsWith(`${prefix}/`),
+  );
+}
+
 /** Durable owner opt-out cookie. Set via /?mute-analytics; read here to skip beaconing. */
 const MUTE_COOKIE = 'er_mute';
 
@@ -184,7 +291,7 @@ async function resolveProductRedirect(pathname: string, env: WorkerEnv): Promise
   }
   try {
     const apiBase = env.API_BASE ?? DEFAULT_API_BASE;
-    const resp = await fetch(`${apiBase}/api/products/resolve/${encodeURIComponent(slug)}`);
+    const resp = await fetchWithTimeout(`${apiBase}/api/products/resolve/${encodeURIComponent(slug)}`);
     if (!resp.ok) {
       return null;
     }
@@ -222,7 +329,7 @@ export default {
     // Dynamic sitemap — proxy to API for live product/blog data
     if (url.pathname === '/sitemap.xml') {
       try {
-        const apiRes = await fetch('https://api.edenrelics.co.uk/api/sitemap.xml');
+        const apiRes = await fetchWithTimeout('https://api.edenrelics.co.uk/api/sitemap.xml');
         return withSecurityHeaders(new Response(apiRes.body, {
           status: apiRes.status,
           headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' },
@@ -235,7 +342,7 @@ export default {
     // Google Merchant Center product feed — proxy to API for live product data
     if (url.pathname === '/merchant-feed.xml') {
       try {
-        const apiRes = await fetch('https://api.edenrelics.co.uk/api/merchant-feed.xml');
+        const apiRes = await fetchWithTimeout('https://api.edenrelics.co.uk/api/merchant-feed.xml');
         return withSecurityHeaders(new Response(apiRes.body, {
           status: apiRes.status,
           headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' },
@@ -272,26 +379,59 @@ export default {
       }
     }
 
+    // Anonymous page renders are identical for every visitor (auth lives in
+    // localStorage, unavailable during SSR), so we edge-cache them via the Cache
+    // API. A cache hit skips the Angular render AND its API fan-out entirely —
+    // this is what stops a crawl burst from stacking full renders onto the
+    // shared-CPU API and shedding 503s. Merely setting s-maxage would NOT do this:
+    // the Worker re-runs every request, so we must read/write the cache ourselves.
+    // `caches.default` is Cloudflare's per-colo cache; cast because the ambient
+    // DOM `CacheStorage` type doesn't declare it.
+    const cache = (caches as unknown as { default: Cache }).default;
+    const cacheable = isCacheablePageRequest(request, url);
+    if (cacheable) {
+      const cached = await cache.match(request);
+      if (cached) {
+        // Still count the view; only the expensive render was skipped.
+        sendPageViewBeacon(request, env, ctx, url.pathname);
+        return withSecurityHeaders(cached);
+      }
+    }
+
     // Try Angular SSR for all routes
     try {
       const response = await angularApp.handle(request);
 
       if (response) {
-        const propagated = new Response(response.body, response);
         if (response.status >= 200 && response.status < 300) {
-          propagated.headers.set('Cache-Control', 'public, max-age=60, must-revalidate');
+          const propagated = new Response(response.body, response);
+          const ttl = edgeCacheTtl(url);
+          propagated.headers.set(
+            'Cache-Control',
+            `public, max-age=60, s-maxage=${ttl}, stale-while-revalidate=600`,
+          );
           // Count this render in our first-party analytics (cookieless, non-blocking).
           sendPageViewBeacon(request, env, ctx, url.pathname);
-        } else {
-          propagated.headers.set('Cache-Control', 'no-store');
+          if (cacheable) {
+            // Store a copy at the edge for SSR_CACHE_TTL seconds (non-blocking).
+            ctx.waitUntil(cache.put(request, propagated.clone()));
+          }
+          return withSecurityHeaders(propagated);
         }
-        return withSecurityHeaders(propagated);
+        if (response.status < 500) {
+          // Redirects and genuine 404s are legitimate — propagate as-is, uncached.
+          const propagated = new Response(response.body, response);
+          propagated.headers.set('Cache-Control', 'no-store');
+          return withSecurityHeaders(propagated);
+        }
+        // 5xx: a transient API/SSR failure. Fall through to the CSR shell below so
+        // the visitor gets a working client-rendered page instead of a hard error.
       }
     } catch {
       // SSR failed, fall through to CSR shell
     }
 
-    // Fallback: serve the CSR shell for client-rendered or failed routes
+    // Fallback: serve the CSR shell for client-rendered, failed, or 5xx routes
     const fallback = await env.ASSETS.fetch(new Request(new URL('/index.csr.html', request.url), request));
     return withSecurityHeaders(fallback);
   },

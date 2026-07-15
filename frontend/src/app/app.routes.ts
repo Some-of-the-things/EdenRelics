@@ -29,6 +29,43 @@ export const routes: Routes = [
       ),
   },
   {
+    // Marketplace: seller dashboard (apply + manage listings). Any logged-in user may
+    // reach it to apply; the API gates everything until the marketplace is switched on.
+    path: 'seller',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/seller-dashboard/seller-dashboard.component').then(
+        (m) => m.SellerDashboardComponent
+      ),
+  },
+  {
+    // Vintage dating tool (standalone seller-tool API). Fully gated during beta: admin-only + not
+    // linked in nav. Loosen to sellerGuard when the seller beta opens. The tool API validates the
+    // same JWT (prod backend's signing key) and owner-scopes garments to the caller.
+    path: 'seller-tool',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./pages/seller-tool/seller-tool.component').then(
+        (m) => m.SellerToolComponent
+      ),
+  },
+  {
+    path: 'admin/sellers',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./pages/admin/admin-sellers.component').then(
+        (m) => m.AdminSellersComponent
+      ),
+  },
+  {
+    // Public seller profile — the SEO/backlink asset (SSR).
+    path: 'sellers/:slug',
+    loadComponent: () =>
+      import('./pages/sellers/seller-profile.component').then(
+        (m) => m.SellerProfileComponent
+      ),
+  },
+  {
     path: 'cart',
     loadComponent: () =>
       import('./pages/cart/cart-page.component').then(

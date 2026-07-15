@@ -1,0 +1,26 @@
+name = "eden-relics-uptime-monitor"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+workers_dev = false
+account_id = "81096838098d07cc3955844c8a32663f"
+
+# Check every 5 minutes.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+# Comma-separate multiple recipients if needed.
+ALERT_TO = "peter.carter@dcp-net.com"
+# From-address domain must be VERIFIED in Resend. This matches the backend's
+# verified sender (Email__From = site@edenrelics.co.uk).
+ALERT_FROM = "Eden Relics Monitor <site@edenrelics.co.uk>"
+
+# Persists the consecutive-failure count + up/down state across cron runs.
+# Create the namespace and paste its id below:
+#   npx wrangler kv namespace create MONITOR_STATE
+[[kv_namespaces]]
+binding = "MONITOR_STATE"
+id = "e6b9e9aa55094800978be55a576293f3"
+
+# RESEND_API_KEY is a secret, NOT a var — set it with:
+#   npx wrangler secret put RESEND_API_KEY

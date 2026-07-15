@@ -12,6 +12,10 @@ frontend/.angular/
 frontend/test-results/
 frontend/playwright-report/
 
+# Wrangler (Cloudflare) local cache — never track
+.wrangler/
+**/.wrangler/
+
 # IDE
 .idea/
 .vscode/

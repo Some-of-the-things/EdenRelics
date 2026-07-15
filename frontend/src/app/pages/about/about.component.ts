@@ -12,7 +12,7 @@ const DEFAULT_CONTENT = `<p>Eden Relics is a curated vintage shop based in Norwi
 <p>We started Eden Relics because we believe in buying less and buying better. Fast fashion has a cost the price tag doesn't show — in waste, in craft, in the stories we throw away. Vintage is the alternative: beautiful things that already exist, waiting to be worn again.</p>
 <p>Every purchase here is an act of intention. We hope you find something that feels like it was always meant to be yours.</p>`;
 const DEFAULT_FOUNDERS_TITLE = 'Meet the founders';
-const DEFAULT_FOUNDERS_CONTENT = `<p>Eden Relics is run by Teodora Carter and Peter Carter, a couple based in Norwich. We started it together because we believe in buying less and buying better — giving a well-made vintage piece a second life instead of letting it disappear.</p>
+const DEFAULT_FOUNDERS_CONTENT = `<p>Eden Relics is run by Teodora Carter and Peter Carter, a couple based in Norwich. We started it together to give well-made vintage pieces a second life instead of letting them disappear.</p>
 <p>Teodora leads the sourcing, styling, and photography — the eye behind which pieces make the cut. Peter builds and runs the website and looks after the behind-the-scenes side of the shop. Every dress on the site has been chosen, checked, and photographed by the two of us, here in Norwich.</p>`;
 
 @Component({
