@@ -17,8 +17,7 @@ namespace Eden_Relics_BE.Tests;
 /// </summary>
 public class PostgresApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine")
         .Build();
 
     public async Task InitializeAsync()
