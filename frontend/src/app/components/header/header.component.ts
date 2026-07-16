@@ -4,7 +4,7 @@ import { CartStore } from '../../store/cart.store';
 import { AuthService } from '../../services/auth.service';
 import { BrandingService } from '../../services/branding.service';
 import { ContentService } from '../../services/content.service';
-import { MarketplaceService } from '../../services/marketplace.service';
+import { TopPicksService } from '../../services/top-picks.service';
 
 @Component({
   selector: 'app-header',
@@ -17,12 +17,12 @@ export class HeaderComponent {
   readonly cartStore = inject(CartStore);
   readonly auth = inject(AuthService);
   readonly cms = inject(ContentService);
-  readonly marketplace = inject(MarketplaceService);
+  readonly topPicks = inject(TopPicksService);
   private readonly brandingService = inject(BrandingService);
 
   constructor() {
-    // Learn whether the multi-seller marketplace is live so the Top Picks nav link can appear.
-    this.marketplace.load();
+    // Learn whether Top Picks is switched on so its nav link can appear.
+    this.topPicks.load();
   }
   readonly logoUrl = computed(() => this.brandingService.branding()?.logoUrl ?? 'logo.png');
 

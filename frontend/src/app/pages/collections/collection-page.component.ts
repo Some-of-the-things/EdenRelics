@@ -5,8 +5,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { SeoService } from '../../services/seo.service';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
-import { CollectionProfile, collectionProductSlugs, findCollectionBySlug, orderedCollectionProducts } from './collections.data';
-import { MarketplaceService } from '../../services/marketplace.service';
+import { CollectionProfile, collectionProductSlugs, findCollectionBySlug, orderedCollectionProducts, orderedProductsById } from './collections.data';
+import { TopPicksService } from '../../services/top-picks.service';
 
 @Component({
   selector: 'app-collection-page',
@@ -24,7 +24,7 @@ export class CollectionPageComponent {
   // Present only during server render; null in the browser.
   private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
 
-  private readonly marketplace = inject(MarketplaceService);
+  private readonly topPicks = inject(TopPicksService);
 
   private readonly slug = toSignal(
     this.route.paramMap,
@@ -44,9 +44,14 @@ export class CollectionPageComponent {
   readonly collection = computed<CollectionProfile | undefined>(() => {
     const s = this.routeSlug();
     const c = s ? findCollectionBySlug(s) : undefined;
-    // Gated collections (e.g. Our Top Picks) only exist once the marketplace is live.
-    if (c?.gated && !this.marketplace.enabled()) {
-      return undefined;
+    if (c?.dynamicMembership) {
+      // Top Picks lives only at its canonical /top-picks route (which supplies the slug via route
+      // data), and only once its own switch is on. Reaching it via /collections/top-picks, or while
+      // gated, is a genuine not-found — avoids a duplicate URL and keeps it dormant until launch.
+      const viaGenericRoute = this.slug().get('slug') === c.slug;
+      if (viaGenericRoute || !this.topPicks.enabled()) {
+        return undefined;
+      }
     }
     return c;
   });
@@ -63,14 +68,18 @@ export class CollectionPageComponent {
     if (!c) {
       return [];
     }
+    // Top Picks resolves by product ID from the DB-curated list; static collections resolve by slug.
+    if (c.dynamicMembership) {
+      return orderedProductsById(this.productStore.liveOrSoldProducts(), this.topPicks.productIds());
+    }
     return orderedCollectionProducts(this.productStore.liveOrSoldProducts(), collectionProductSlugs(c));
   });
 
   private readonly seoApplied = signal('');
 
   constructor() {
-    // Needed so gated collections (Our Top Picks) resolve correctly on this page too.
-    this.marketplace.load();
+    // Needed so the gated Top Picks edit resolves (flag + curated SKUs) on this page too.
+    this.topPicks.load();
     effect(() => {
       const c = this.collection();
       if (!c) {

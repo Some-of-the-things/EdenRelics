@@ -110,6 +110,13 @@
     </button>
     <button
       class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'top-picks'"
+      (click)="switchTab('top-picks')"
+    >
+      Top Picks
+    </button>
+    <button
+      class="admin__tab"
       [class.admin__tab--active]="activeTab() === 'marketplace'"
       (click)="switchTab('marketplace')"
     >
@@ -155,6 +162,10 @@
 
   @if (activeTab() === 'care') {
     <app-admin-care />
+  }
+
+  @if (activeTab() === 'top-picks') {
+    <app-admin-top-picks />
   }
 
   @if (activeTab() === 'signature') {

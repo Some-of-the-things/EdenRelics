@@ -51,6 +51,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<LiabilityObligation> LiabilityObligations => Set<LiabilityObligation>();
     public DbSet<OperatorReminder> OperatorReminders => Set<OperatorReminder>();
+    public DbSet<TopPick> TopPicks => Set<TopPick>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -387,6 +388,12 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(r => r.NotifyEmail).HasMaxLength(254);
             entity.HasIndex(r => new { r.IsActive, r.DueAt });
             entity.HasIndex(r => r.LinkedObligationId);
+        });
+
+        modelBuilder.Entity<TopPick>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.HasIndex(p => p.Position);
         });
 
         modelBuilder.Entity<MonzoToken>(entity =>

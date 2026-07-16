@@ -39,6 +39,7 @@ import { AdminReview, ReviewsService } from '../../services/reviews.service';
 import { AdminCalendarComponent } from './admin-calendar.component';
 import { AdminAccountingComponent } from './admin-accounting.component';
 import { AdminCareComponent } from './admin-care.component';
+import { AdminTopPicksComponent } from './admin-top-picks.component';
 
 interface AdminUser {
   id: string;
@@ -385,6 +386,7 @@ interface PageViewStats {
     AdminCalendarComponent,
     AdminAccountingComponent,
     AdminCareComponent,
+    AdminTopPicksComponent,
   ],
   templateUrl: './admin-page.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -423,6 +425,7 @@ export class AdminPageComponent implements OnInit {
     | 'reviews'
     | 'signature'
     | 'care'
+    | 'top-picks'
   >('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
@@ -1185,7 +1188,8 @@ export class AdminPageComponent implements OnInit {
       | 'offsite-sales'
       | 'reviews'
       | 'signature'
-      | 'care',
+      | 'care'
+      | 'top-picks',
   ): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);

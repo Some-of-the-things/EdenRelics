@@ -133,6 +133,7 @@ builder.Services.AddScoped<ICalendarFeedService, CalendarFeedService>();
 builder.Services.AddScoped<ISitemapService, SitemapService>();
 builder.Services.AddScoped<IMerchantFeedService, MerchantFeedService>();
 builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
+builder.Services.AddScoped<ITopPicksService, TopPicksService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
 builder.Services.AddScoped<IFinanceService, FinanceService>();
@@ -207,6 +208,7 @@ if (runScheduledJobs)
 // Regulatory-obligations calendar + operator reminders
 builder.Services.Configure<LiabilityOptions>(builder.Configuration.GetSection(LiabilityOptions.SectionName));
 builder.Services.Configure<MarketplaceOptions>(builder.Configuration.GetSection(MarketplaceOptions.SectionName));
+builder.Services.Configure<TopPicksOptions>(builder.Configuration.GetSection(TopPicksOptions.SectionName));
 builder.Services.AddScoped<ILiabilityScheduleService, LiabilityScheduleService>();
 builder.Services.AddScoped<IObligationReminderSync, ObligationReminderSync>();
 if (runScheduledJobs)

@@ -16,7 +16,7 @@
     </div>
   </section>
 
-  @if (marketplace.enabled() && topPicks().length > 0) {
+  @if (topPicks.enabled() && topPickProducts().length > 0) {
     <section class="home__featured" aria-labelledby="top-picks-title">
       <header class="home__featured-header">
         <p class="home__featured-eyebrow">Our Top Picks</p>
@@ -24,7 +24,7 @@
         <p class="home__featured-lede">A rotating, hand-chosen selection of standout vintage from across the shop.</p>
       </header>
       <ul class="home__featured-grid home__featured-grid--preview">
-        @for (product of topPicks(); track product.id) {
+        @for (product of topPickProducts(); track product.id) {
           <li class="home__featured-card">
             <a [routerLink]="['/product', product.slug || product.id]" class="home__featured-link">
               <div class="home__featured-image">
