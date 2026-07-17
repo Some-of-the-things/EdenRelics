@@ -109,12 +109,26 @@ builder.Services.AddHealthChecks()
 string connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") is { Length: > 0 } databaseUrl
     ? ConvertPostgresUrl(databaseUrl)
     : builder.Configuration.GetConnectionString("DefaultConnection")!;
-NpgsqlDataSourceBuilder dataSourceBuilder = new(connectionString);
+// Connection resilience: the prod DB is a single node reached over Fly's private network, so a
+// momentary hiccup can hand out (or fail to open) a half-dead pooled connection. Keepalive keeps
+// connections warm and detects broken ones, and idle pruning retires stale ones rather than reusing
+// a connection the network may have dropped. This cuts the transient blips that were tripping /readyz.
+NpgsqlConnectionStringBuilder csb = new(connectionString)
+{
+    KeepAlive = 30,       // seconds between protocol keepalives (detects broken connections)
+    TcpKeepAlive = true,
+    ConnectionIdleLifetime = 120,
+};
+NpgsqlDataSourceBuilder dataSourceBuilder = new(csb.ConnectionString);
 dataSourceBuilder.EnableDynamicJson();
 NpgsqlDataSource dataSource = dataSourceBuilder.Build();
 
 builder.Services.AddDbContext<EdenRelicsDbContext>(options =>
-    options.UseNpgsql(dataSource)
+    options.UseNpgsql(dataSource, npgsql =>
+            // Transparently retry transient failures (connection blips, etc.) so a momentary DB
+            // hiccup retries instead of surfacing as a 500. Safe here: the codebase uses no explicit
+            // transactions, so the retrying execution strategy has nothing to conflict with.
+            npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null))
         .AddInterceptors(new SoftDeleteInterceptor())
         .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
@@ -133,6 +147,7 @@ builder.Services.AddScoped<ICalendarFeedService, CalendarFeedService>();
 builder.Services.AddScoped<ISitemapService, SitemapService>();
 builder.Services.AddScoped<IMerchantFeedService, MerchantFeedService>();
 builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
+builder.Services.AddScoped<ITopPicksService, TopPicksService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
 builder.Services.AddScoped<IFinanceService, FinanceService>();
@@ -207,6 +222,7 @@ if (runScheduledJobs)
 // Regulatory-obligations calendar + operator reminders
 builder.Services.Configure<LiabilityOptions>(builder.Configuration.GetSection(LiabilityOptions.SectionName));
 builder.Services.Configure<MarketplaceOptions>(builder.Configuration.GetSection(MarketplaceOptions.SectionName));
+builder.Services.Configure<TopPicksOptions>(builder.Configuration.GetSection(TopPicksOptions.SectionName));
 builder.Services.AddScoped<ILiabilityScheduleService, LiabilityScheduleService>();
 builder.Services.AddScoped<IObligationReminderSync, ObligationReminderSync>();
 if (runScheduledJobs)

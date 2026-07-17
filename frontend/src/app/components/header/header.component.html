@@ -31,7 +31,7 @@
           <li><a routerLink="/shop/1990s" class="header__shop-item" (click)="closeShop()">1990s</a></li>
         </ul>
       </div>
-      @if (marketplace.enabled()) {
+      @if (topPicks.enabled()) {
         <a routerLink="/top-picks" class="header__link">Top Picks</a>
       }
       <a routerLink="/about" class="header__link">About</a>

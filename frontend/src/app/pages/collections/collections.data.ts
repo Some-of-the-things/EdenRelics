@@ -25,11 +25,12 @@ export interface CollectionProfile {
   /** SKUs to feature on the homepage strip, in display order (subset of items). */
   featuredSkus: string[];
   /**
-   * When true, this collection only exists once the multi-seller marketplace is live
-   * (Marketplace:Enabled). Gated collections are hidden from the homepage and return
-   * not-found on their pages until the site flips to multi-user. See MarketplaceService.
+   * When true, this collection's membership is not the static `items` above but is curated at
+   * runtime from the database (admin Top Picks tab) and served — gated by its own switch — via
+   * TopPicksService. Only the profile text (name/meta/intro) comes from here. See
+   * collection-page.component + home.component, which resolve the live SKUs by SKU, not slug.
    */
-  gated?: boolean;
+  dynamicMembership?: boolean;
 }
 
 export const COLLECTIONS: CollectionProfile[] = [
@@ -76,25 +77,19 @@ export const COLLECTIONS: CollectionProfile[] = [
     featuredSkus: ['ER-00039', 'ER-00037', 'ER-00101'],
   },
   {
-    // Gated: only visible once the multi-seller marketplace is live (Marketplace:Enabled).
-    // PLACEHOLDER selection — swap these SKUs for the real curated picks before go-live.
+    // Membership is curated in the admin (Top Picks tab) and served from the DB, gated by its own
+    // TopPicks:Enabled switch — independent of the marketplace. Only the profile text below is
+    // static; `items`/`featuredSkus` stay empty here and are supplied at runtime by TopPicksService.
     slug: 'top-picks',
-    gated: true,
+    dynamicMembership: true,
     name: 'Our Top Picks',
     metaTitle: 'Our Top Picks — Curated Vintage Highlights | Eden Relics',
     metaDescription:
-      "Our Top Picks — a rotating, hand-chosen selection of standout vintage pieces from across the Eden Relics hub. Each one inspected, dated and measured.",
+      "Our Top Picks — a rotating, hand-chosen selection of standout vintage pieces from across the shop. Each one inspected, dated and measured.",
     intro:
       "Our Top Picks are the pieces we can't stop looking at — a small, rotating selection of standout vintage chosen by hand from across the shop. Whatever the label or the decade, these are the ones we'd happily keep for ourselves: chosen for character, quality and that bit of something extra. Every piece is inspected, dated from its labels and construction, and measured properly, so what arrives is exactly what you fell for.",
-    items: [
-      { sku: 'ER-00119', slug: '1970s-angela-gore-maxi-dress-paisley-lace-teal-velvet-waist' },
-      { sku: 'ER-00099', slug: '1980s-laura-ashley-rose-print-dress-burgundy-wool-cotton-twill' },
-      { sku: 'ER-00039', slug: '1990s-canda-tartan-shirt-dress-forest-green-navy-plaid-versatile-fit' },
-      { sku: 'ER-00102', slug: '1970s-striped-maxi-dress-crochet-lace-bib-sheer-sleeves' },
-      { sku: 'ER-00050', slug: '1970s-viyella-tartan-two-piece-set-double-breasted-blouse-skirt' },
-      { sku: 'ER-00008', slug: '1980s-90s-st-michael-tartan-wool-pencil-skirt-jewel-tones' },
-    ],
-    featuredSkus: ['ER-00119', 'ER-00099', 'ER-00039', 'ER-00102'],
+    items: [],
+    featuredSkus: [],
   },
 ];
 
@@ -127,5 +122,21 @@ export function orderedCollectionProducts(
   const bySlug = new Map(products.map((p) => [p.slug ?? p.id, p]));
   return slugs
     .map((s) => bySlug.get(s))
+    .filter((p): p is Product => p !== undefined);
+}
+
+/**
+ * Products for a dynamic (DB-curated) collection, resolved by product ID in the given order. Used by
+ * Top Picks, whose membership is stored by the globally-unique product ID (unambiguous across sellers,
+ * unlike SKU). Products not currently live/sold — or no longer in the store — are omitted, so a
+ * sold-out or removed pick simply drops off.
+ */
+export function orderedProductsById(
+  products: readonly Product[],
+  ids: readonly string[],
+): Product[] {
+  const byId = new Map(products.map((p) => [p.id, p]));
+  return ids
+    .map((id) => byId.get(id))
     .filter((p): p is Product => p !== undefined);
 }

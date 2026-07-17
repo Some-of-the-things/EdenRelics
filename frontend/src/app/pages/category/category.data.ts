@@ -74,6 +74,7 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       'eyelet',
     ],
     relatedLinks: [
+      { label: 'Guide: What Is a Vintage Prairie Dress?', path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1' },
       { label: '1970s Vintage Dresses', path: '/shop/1970s' },
       { label: 'Vintage Laura Ashley', path: '/designers/laura-ashley' },
       { label: 'Maxi Dresses', path: '/dresses/maxi' },
@@ -102,6 +103,7 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     ],
     include: ['maxi'],
     relatedLinks: [
+      { label: 'Guide: What Is a Vintage Prairie Dress?', path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1' },
       { label: '1970s Vintage Dresses', path: '/shop/1970s' },
       { label: 'Cottagecore & Prairie', path: '/style/cottagecore' },
       { label: 'Midi Dresses', path: '/dresses/midi' },

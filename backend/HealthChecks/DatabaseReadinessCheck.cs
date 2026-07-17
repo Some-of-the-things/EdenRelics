@@ -18,20 +18,46 @@ public sealed class DatabaseReadinessCheck(EdenRelicsDbContext db) : IHealthChec
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        // Cap the probe so a hung DB doesn't make /readyz itself hang past the poller's timeout.
+        // Cap the whole probe so a hung DB doesn't make /readyz itself hang past the poller's timeout.
         using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(5));
 
-        try
+        // One transient blip on the single-node DB (a momentary network/connection hiccup) shouldn't
+        // flip readiness and page us — retry once within the budget before declaring it unreachable.
+        // A genuine sustained outage fails both attempts and still reports Unhealthy.
+        Exception? last = null;
+        for (int attempt = 1; attempt <= 2; attempt++)
         {
-            bool canConnect = await db.Database.CanConnectAsync(cts.Token);
-            return canConnect
-                ? HealthCheckResult.Healthy("Database reachable.")
-                : HealthCheckResult.Unhealthy("Database unreachable.");
+            try
+            {
+                if (await db.Database.CanConnectAsync(cts.Token))
+                {
+                    return HealthCheckResult.Healthy("Database reachable.");
+                }
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+            }
+
+            if (cts.IsCancellationRequested)
+            {
+                break;
+            }
+
+            if (attempt == 1)
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(250), cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+            }
         }
-        catch (Exception ex)
-        {
-            return HealthCheckResult.Unhealthy("Database probe failed.", ex);
-        }
+
+        return HealthCheckResult.Unhealthy("Database unreachable.", last);
     }
 }

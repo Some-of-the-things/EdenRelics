@@ -1,0 +1,113 @@
+<div class="tp">
+  <header class="tp__head">
+    <h2 class="tp__title">Our Top Picks</h2>
+    <p class="tp__hint">
+      Curate the hand-picked edit shown on the homepage strip and the <code>/top-picks</code> page.
+      Order matters — drag positions with the arrows. Tick <strong>Homepage</strong> for the few you
+      want on the homepage strip. Picks are stored by SKU and persist here whether or not the section
+      is switched on, so you can build the list first and go live later.
+    </p>
+
+    @if (enabled()) {
+      <p class="tp__status tp__status--on" role="status">
+        Top Picks is <strong>live</strong> — these picks are public now.
+      </p>
+    } @else {
+      <p class="tp__status tp__status--off" role="status">
+        Top Picks is currently <strong>switched off</strong>. Curate here, then set
+        <code>TopPicks:Enabled = true</code> in the API config to make it public.
+      </p>
+    }
+  </header>
+
+  @if (loading()) {
+    <p class="tp__muted">Loading…</p>
+  } @else {
+    @if (error(); as e) {
+      <p class="tp__error" role="alert">{{ e }}</p>
+    }
+
+    <!-- Current selection -->
+    <section class="tp__section" aria-label="Current picks">
+      <div class="tp__section-head">
+        <h3 class="tp__section-title">Current picks ({{ picks().length }})</h3>
+        <button type="button" class="tp__save" (click)="save()" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save picks' }}
+        </button>
+      </div>
+      @if (saved()) {
+        <p class="tp__saved" role="status">Saved.</p>
+      }
+
+      @if (rows().length === 0) {
+        <p class="tp__muted">No picks yet — add some from the catalogue below.</p>
+      } @else {
+        <ul class="tp__list">
+          @for (row of rows(); track row.productId; let i = $index) {
+            <li class="tp__row" [class.tp__row--warn]="!isLive(row.product)">
+              <div class="tp__order">
+                <button type="button" class="tp__arrow" (click)="move(i, -1)" [disabled]="i === 0" aria-label="Move up">↑</button>
+                <span class="tp__pos">{{ i + 1 }}</span>
+                <button type="button" class="tp__arrow" (click)="move(i, 1)" [disabled]="i === rows().length - 1" aria-label="Move down">↓</button>
+              </div>
+
+              @if (row.product; as p) {
+                <img class="tp__thumb" [src]="p.imageUrl" [alt]="p.name" loading="lazy" />
+                <div class="tp__meta">
+                  <span class="tp__name">{{ p.name }}</span>
+                  <span class="tp__sub">
+                    <span class="tp__sku">{{ p.sku }}</span>
+                    <span class="tp__badge" [class.tp__badge--warn]="!isLive(p)">{{ statusLabel(p) }}</span>
+                    <span class="tp__price">{{ (p.salePrice ?? p.price) | currency:'GBP' }}</span>
+                  </span>
+                </div>
+              } @else {
+                <div class="tp__thumb tp__thumb--empty" aria-hidden="true"></div>
+                <div class="tp__meta">
+                  <span class="tp__name tp__name--missing">Unknown product</span>
+                  <span class="tp__sub">
+                    <span class="tp__badge tp__badge--warn">not in catalogue</span>
+                  </span>
+                </div>
+              }
+
+              <label class="tp__feat">
+                <input type="checkbox" [checked]="row.featured" (change)="toggleFeatured(row.productId)" />
+                Homepage
+              </label>
+              <button type="button" class="tp__remove" (click)="remove(row.productId)" aria-label="Remove pick">Remove</button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- Add from catalogue -->
+    <section class="tp__section" aria-label="Add a product">
+      <h3 class="tp__section-title">Add a product</h3>
+      <input
+        type="search"
+        class="tp__search"
+        placeholder="Search live products by name or SKU…"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+      @if (candidates().length === 0) {
+        <p class="tp__muted">No matching live products.</p>
+      } @else {
+        <ul class="tp__grid">
+          @for (p of candidates(); track p.id) {
+            <li class="tp__card">
+              <button type="button" class="tp__card-btn" (click)="add(p.id)">
+                <img class="tp__card-img" [src]="p.imageUrl" [alt]="p.name" loading="lazy" />
+                <span class="tp__card-name">{{ p.name }}</span>
+                <span class="tp__card-sku">{{ p.sku }}</span>
+                <span class="tp__card-add">+ Add</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</div>
