@@ -9,52 +9,7 @@ import { SellerService, Seller, SellerProductCard } from '../../services/seller.
   standalone: true,
   imports: [CommonModule, RouterLink],
   styleUrl: './seller-profile.component.scss',
-  template: `
-    @if (notFound()) {
-      <section class="notfound">
-        <h1 class="notfound__title">Seller not found</h1>
-        <p>This seller profile isn’t available.</p>
-        <a routerLink="/shop">Browse the shop →</a>
-      </section>
-    } @else if (seller(); as s) {
-      <section class="profile">
-        <header class="profile__header">
-          @if (s.logoUrl) {
-            <img class="profile__logo" [src]="s.logoUrl" [alt]="s.businessName" width="80" height="80" />
-          }
-          <div>
-            <h1 class="profile__name">{{ s.businessName }}</h1>
-            <p class="profile__tagline">Curated vintage on Eden Relics</p>
-          </div>
-        </header>
-
-        @if (s.bio) {
-          <p class="profile__bio">{{ s.bio }}</p>
-        }
-
-        <h2 class="profile__heading">Available pieces</h2>
-        @if (products().length === 0) {
-          <p class="profile__empty">No pieces available right now — check back soon.</p>
-        } @else {
-          <div class="grid">
-            @for (p of products(); track p.id) {
-              <a class="card" [routerLink]="['/product', p.slug]">
-                <img class="card__img" [src]="p.imageUrl" [alt]="p.name" />
-                <div class="card__name">{{ p.name }}</div>
-                <div class="card__price">
-                  @if (p.salePrice) {
-                    <span class="card__sale">£{{ p.salePrice }}</span><span class="card__was">£{{ p.price }}</span>
-                  } @else { £{{ p.price }} }
-                </div>
-              </a>
-            }
-          </div>
-        }
-      </section>
-    } @else {
-      <section class="profile"><p class="profile__loading">Loading…</p></section>
-    }
-  `,
+  templateUrl: './seller-profile.component.html',
 })
 export class SellerProfileComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
