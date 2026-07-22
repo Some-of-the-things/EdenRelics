@@ -398,13 +398,23 @@ export default {
       }
     }
 
-    // Try Angular SSR for all routes
+    // Try Angular SSR for all routes. We fully BUFFER the rendered body inside
+    // this try/catch (via arrayBuffer) rather than piping `response.body`
+    // straight through. @angular/ssr can resolve the Response *before* the render
+    // has finished and then throw while the body streams — a failure that a bare
+    // `new Response(response.body, …)` lets escape as an uncaught 500. Observed in
+    // prod: an intermittent NG0200 during render → `undefined.fetch` → hard 500 on
+    // ~8% of cache-miss renders, which is exactly what Googlebot hits crawling
+    // unique URLs (cache misses) and what showed up as GSC "server connectivity"
+    // failures. Awaiting the buffer here pulls any such error into the catch so
+    // every render degrades to the CSR shell instead of a 500.
     try {
       const response = await angularApp.handle(request);
 
       if (response) {
         if (response.status >= 200 && response.status < 300) {
-          const propagated = new Response(response.body, response);
+          const body = await response.arrayBuffer();
+          const propagated = new Response(body, response);
           const ttl = edgeCacheTtl(url);
           propagated.headers.set(
             'Cache-Control',
@@ -420,7 +430,8 @@ export default {
         }
         if (response.status < 500) {
           // Redirects and genuine 404s are legitimate — propagate as-is, uncached.
-          const propagated = new Response(response.body, response);
+          const body = await response.arrayBuffer();
+          const propagated = new Response(body, response);
           propagated.headers.set('Cache-Control', 'no-store');
           return withSecurityHeaders(propagated);
         }
@@ -428,12 +439,38 @@ export default {
         // the visitor gets a working client-rendered page instead of a hard error.
       }
     } catch {
-      // SSR failed, fall through to CSR shell
+      // SSR failed — including a mid-render throw surfaced by buffering above.
+      // Fall through to the CSR shell.
     }
 
-    // Fallback: serve the CSR shell for client-rendered, failed, or 5xx routes
-    const fallback = await env.ASSETS.fetch(new Request(new URL('/index.csr.html', request.url), request));
-    return withSecurityHeaders(fallback);
+    // Fallback: serve the CSR shell for client-rendered, failed, or 5xx routes.
+    // Build a FRESH GET request for the asset rather than cloning the original
+    // `request` — by this point it has already been passed to
+    // `angularApp.handle()`, which consumes/locks it, so `new Request(url,
+    // request)` throws intermittently (this was surfacing as spurious 503s on the
+    // SSR-failure path). A clean request depends on nothing but the shell URL.
+    const shellUrl = new URL('/index.csr.html', request.url);
+    try {
+      const fallback = await env.ASSETS.fetch(new Request(shellUrl, { method: 'GET' }));
+      if (fallback.ok) {
+        // Serve the real CSR shell (a 200 HTML doc that boots the client app),
+        // uncached so a transient failure isn't pinned at the edge.
+        const propagated = new Response(fallback.body, fallback);
+        propagated.headers.set('Cache-Control', 'no-store');
+        return withSecurityHeaders(propagated);
+      }
+      // Asset unexpectedly not ok — fall through to the last-resort response.
+    } catch {
+      // env.ASSETS.fetch threw — fall through to the last-resort response.
+    }
+    // Last resort: a retryable 503 (never a hard 500) if even the shell is
+    // unavailable. Googlebot treats 503 as "try again", not a broken page.
+    return withSecurityHeaders(
+      new Response('Service temporarily unavailable — please retry.', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+      }),
+    );
   },
 };
 

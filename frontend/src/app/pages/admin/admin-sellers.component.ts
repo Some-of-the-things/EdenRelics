@@ -7,62 +7,7 @@ import { SellerService, Seller, SellerListing } from '../../services/seller.serv
   standalone: true,
   imports: [CommonModule],
   styleUrl: './admin-sellers.component.scss',
-  template: `
-    <section class="mod">
-      <h1 class="mod__title">Seller moderation</h1>
-
-      <h2 class="mod__heading">Applications awaiting review</h2>
-      @if (pendingSellers().length === 0) {
-        <p class="mod__empty">No applications awaiting review.</p>
-      } @else {
-        <table class="table">
-          <thead><tr><th>Business</th><th>Slug</th><th>Contact</th><th></th></tr></thead>
-          <tbody>
-            @for (s of pendingSellers(); track s.id) {
-              <tr>
-                <td>{{ s.businessName }}</td>
-                <td>{{ s.slug }}</td>
-                <td>{{ s.contactEmail || '—' }}</td>
-                <td class="table__actions">
-                  <button class="btn btn--primary" (click)="approveSeller(s)">Approve</button>
-                  <button class="btn btn--ghost" (click)="rejectSeller(s)">Reject</button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
-
-      <h2 class="mod__heading">Listings awaiting review</h2>
-      @if (pendingListings().length === 0) {
-        <p class="mod__empty">No listings awaiting review.</p>
-      } @else {
-        <table class="table">
-          <thead><tr><th>Item</th><th>Price</th><th>Era</th><th></th></tr></thead>
-          <tbody>
-            @for (l of pendingListings(); track l.id) {
-              <tr>
-                <td>
-                  <span class="table__item">
-                    <img class="table__thumb" [src]="l.imageUrl" alt="" width="40" height="50" />
-                    {{ l.name }}
-                  </span>
-                </td>
-                <td>£{{ l.price }}</td>
-                <td>{{ l.era }}</td>
-                <td class="table__actions">
-                  <button class="btn btn--primary" (click)="approveListing(l)">Approve</button>
-                  <button class="btn btn--ghost" (click)="rejectListing(l)">Reject</button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
-
-      @if (message()) { <p class="mod__message">{{ message() }}</p> }
-    </section>
-  `,
+  templateUrl: './admin-sellers.component.html',
 })
 export class AdminSellersComponent implements OnInit {
   private readonly sellers = inject(SellerService);
