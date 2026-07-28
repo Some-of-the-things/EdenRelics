@@ -5,3 +5,11 @@ compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "dist/eden-relics/browser"
+
+# Retain Worker logs (Workers Logs). Without this, `wrangler tail` is live-only:
+# the intermittent SSR failures that surface as last-resort 503s are far too rare
+# to catch by tailing, so there is no record of what actually threw.
+# head_sampling_rate = 1 keeps every invocation — traffic is a few thousand/day.
+[observability]
+enabled = true
+head_sampling_rate = 1
