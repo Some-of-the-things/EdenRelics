@@ -5,6 +5,13 @@ compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "dist/eden-relics/browser"
+# `binding` is what creates `env.ASSETS`. Without it Cloudflare still SERVES the
+# files (the asset server answers matching requests before the Worker runs), so
+# the site looks fine — but inside the Worker `env.ASSETS` is `undefined` and
+# every `env.ASSETS.fetch(...)` throws `Cannot read properties of undefined`.
+# That silently disabled the CSR-shell fallback: every failed SSR render fell
+# through to the last-resort 503 instead of degrading to a client-rendered page.
+binding = "ASSETS"
 
 # Retain Worker logs (Workers Logs). Without this, `wrangler tail` is live-only:
 # the intermittent SSR failures that surface as last-resort 503s are far too rare

@@ -5,6 +5,9 @@ compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "dist/eden-relics/browser"
+# Creates `env.ASSETS`; without it the binding is undefined inside the Worker
+# and the CSR-shell fallback throws. See the note in wrangler.toml.
+binding = "ASSETS"
 
 routes = [
   { pattern = "staging.edenrelics.co.uk/*", zone_name = "edenrelics.co.uk" }
