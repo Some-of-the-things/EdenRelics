@@ -89,6 +89,64 @@ const STATIC_PATH_PREFIXES = [
   '/supply-chain-policy',
 ];
 
+/**
+ * Where the client-rendered shell lives, in the order we ask for it.
+ *
+ * Cloudflare's static-asset server applies `html_handling`, which defaults to
+ * `auto-trailing-slash` — and that answers `/index.csr.html` with a **307 to
+ * `/index.csr`**, not the document. A 307 is not `.ok`, so the SSR-failure
+ * fallback below always fell through to the last-resort 503: every failed
+ * render was served to the visitor (in practice Googlebot, on cache-miss
+ * `/product/` URLs) as a hard 503 instead of a working client-rendered page.
+ * `env.ASSETS.fetch` does not follow redirects, so requesting the extensionless
+ * form is what actually returns the shell. The `.html` form is kept as a
+ * second candidate in case `html_handling` is ever set to `none`.
+ */
+const CSR_SHELL_PATHS = ['/index.csr', '/index.csr.html'];
+
+/** Fetch the CSR shell asset, trying each candidate path. Null if none served one. */
+async function fetchCsrShell(request: Request, env: WorkerEnv): Promise<Response | null> {
+  for (const path of CSR_SHELL_PATHS) {
+    // Build a FRESH GET request rather than reusing `request` — by the time we
+    // get here it has already been passed to `angularApp.handle()`, which
+    // consumes/locks it, so `new Request(url, request)` throws intermittently.
+    const shellUrl = new URL(path, request.url);
+    try {
+      const shell = await env.ASSETS.fetch(new Request(shellUrl, { method: 'GET' }));
+      if (shell.ok) {
+        return shell;
+      }
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return null;
+}
+
+/**
+ * Run one Angular SSR pass and buffer the result. Returns null when the render
+ * failed — it threw, produced nothing, or produced a 5xx — so the caller can
+ * retry or fall back. Redirects and genuine 404s come back as-is; they are
+ * legitimate answers, not failures.
+ *
+ * The body is fully BUFFERED inside the try/catch (via arrayBuffer) rather than
+ * piping `response.body` straight through. @angular/ssr can resolve the Response
+ * *before* the render has finished and then throw while the body streams — a
+ * failure that a bare `new Response(response.body, …)` lets escape as an
+ * uncaught 500. Awaiting the buffer here pulls any such error into the catch.
+ */
+async function renderOnce(request: Request): Promise<Response | null> {
+  try {
+    const response = await angularApp.handle(request);
+    if (!response || response.status >= 500) {
+      return null;
+    }
+    return new Response(await response.arrayBuffer(), response);
+  } catch {
+    return null;
+  }
+}
+
 /** Edge TTL (seconds) for a cacheable page: long for static content, short otherwise. */
 function edgeCacheTtl(url: URL): number {
   const path = url.pathname;
@@ -398,70 +456,53 @@ export default {
       }
     }
 
-    // Try Angular SSR for all routes. We fully BUFFER the rendered body inside
-    // this try/catch (via arrayBuffer) rather than piping `response.body`
-    // straight through. @angular/ssr can resolve the Response *before* the render
-    // has finished and then throw while the body streams — a failure that a bare
-    // `new Response(response.body, …)` lets escape as an uncaught 500. Observed in
-    // prod: an intermittent NG0200 during render → `undefined.fetch` → hard 500 on
-    // ~8% of cache-miss renders, which is exactly what Googlebot hits crawling
-    // unique URLs (cache misses) and what showed up as GSC "server connectivity"
-    // failures. Awaiting the buffer here pulls any such error into the catch so
-    // every render degrades to the CSR shell instead of a 500.
-    try {
-      const response = await angularApp.handle(request);
-
-      if (response) {
-        if (response.status >= 200 && response.status < 300) {
-          const body = await response.arrayBuffer();
-          const propagated = new Response(body, response);
-          const ttl = edgeCacheTtl(url);
-          propagated.headers.set(
-            'Cache-Control',
-            `public, max-age=60, s-maxage=${ttl}, stale-while-revalidate=600`,
-          );
-          // Count this render in our first-party analytics (cookieless, non-blocking).
-          sendPageViewBeacon(request, env, ctx, url.pathname);
-          if (cacheable) {
-            // Store a copy at the edge for SSR_CACHE_TTL seconds (non-blocking).
-            ctx.waitUntil(cache.put(request, propagated.clone()));
-          }
-          return withSecurityHeaders(propagated);
-        }
-        if (response.status < 500) {
-          // Redirects and genuine 404s are legitimate — propagate as-is, uncached.
-          const body = await response.arrayBuffer();
-          const propagated = new Response(body, response);
-          propagated.headers.set('Cache-Control', 'no-store');
-          return withSecurityHeaders(propagated);
-        }
-        // 5xx: a transient API/SSR failure. Fall through to the CSR shell below so
-        // the visitor gets a working client-rendered page instead of a hard error.
-      }
-    } catch {
-      // SSR failed — including a mid-render throw surfaced by buffering above.
-      // Fall through to the CSR shell.
+    // Try Angular SSR for all routes, retrying a failed render ONCE. This covers
+    // a genuinely transient failure — notably the mid-render throw that surfaces
+    // only once the body is buffered (see renderOnce). It does NOT rescue a
+    // POISONED isolate: measured in prod over a single keep-alive connection,
+    // 20/20 renders fail on a poisoned isolate and 20/20 succeed on a healthy
+    // one, so failure is a property of the isolate, not of the attempt. The
+    // retry is kept because it is cheap — a poisoned isolate rejects the second
+    // attempt in a few ms, and healthy renders never reach this path at all.
+    // It needs a FRESH request because `angularApp.handle()` consumes the one it
+    // is given.
+    let rendered = await renderOnce(request);
+    if (!rendered && request.method === 'GET') {
+      rendered = await renderOnce(
+        new Request(request.url, { method: 'GET', headers: new Headers(request.headers) }),
+      );
     }
 
-    // Fallback: serve the CSR shell for client-rendered, failed, or 5xx routes.
-    // Build a FRESH GET request for the asset rather than cloning the original
-    // `request` — by this point it has already been passed to
-    // `angularApp.handle()`, which consumes/locks it, so `new Request(url,
-    // request)` throws intermittently (this was surfacing as spurious 503s on the
-    // SSR-failure path). A clean request depends on nothing but the shell URL.
-    const shellUrl = new URL('/index.csr.html', request.url);
-    try {
-      const fallback = await env.ASSETS.fetch(new Request(shellUrl, { method: 'GET' }));
-      if (fallback.ok) {
-        // Serve the real CSR shell (a 200 HTML doc that boots the client app),
-        // uncached so a transient failure isn't pinned at the edge.
-        const propagated = new Response(fallback.body, fallback);
-        propagated.headers.set('Cache-Control', 'no-store');
-        return withSecurityHeaders(propagated);
+    if (rendered) {
+      if (rendered.status >= 200 && rendered.status < 300) {
+        const ttl = edgeCacheTtl(url);
+        rendered.headers.set(
+          'Cache-Control',
+          `public, max-age=60, s-maxage=${ttl}, stale-while-revalidate=600`,
+        );
+        // Count this render in our first-party analytics (cookieless, non-blocking).
+        sendPageViewBeacon(request, env, ctx, url.pathname);
+        if (cacheable) {
+          // Store a copy at the edge for SSR_CACHE_TTL seconds (non-blocking).
+          ctx.waitUntil(cache.put(request, rendered.clone()));
+        }
+        return withSecurityHeaders(rendered);
       }
-      // Asset unexpectedly not ok — fall through to the last-resort response.
-    } catch {
-      // env.ASSETS.fetch threw — fall through to the last-resort response.
+      // Redirects and genuine 404s are legitimate — propagate as-is, uncached.
+      rendered.headers.set('Cache-Control', 'no-store');
+      return withSecurityHeaders(rendered);
+    }
+    // Both render attempts failed — fall through to the CSR shell below so the
+    // visitor gets a working client-rendered page instead of a hard error.
+
+    // Fallback: serve the CSR shell for client-rendered, failed, or 5xx routes.
+    const shell = await fetchCsrShell(request, env);
+    if (shell) {
+      // Serve the real CSR shell (a 200 HTML doc that boots the client app),
+      // uncached so a transient failure isn't pinned at the edge.
+      const propagated = new Response(shell.body, shell);
+      propagated.headers.set('Cache-Control', 'no-store');
+      return withSecurityHeaders(propagated);
     }
     // Last resort: a retryable 503 (never a hard 500) if even the shell is
     // unavailable. Googlebot treats 503 as "try again", not a broken page.
