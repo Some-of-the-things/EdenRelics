@@ -1,0 +1,112 @@
+# Recycle the SSR Worker's isolates by redeploying it unchanged.
+#
+# WHY THIS EXISTS
+# ---------------
+# Cloudflare Worker isolates running our Angular SSR bundle become permanently
+# poisoned. Once poisoned, an isolate throws `NG0200` (circular DI) within ~10 ms
+# on EVERY route, and the Workers runtime then terminates the invocation with
+# "Worker exceeded CPU time limit" — so the request never reaches our CSR-shell
+# fallback in `worker.ts` and the visitor gets a 503.
+#
+# Measured 2026-07-29: over a single keep-alive connection, prod returned 20/20
+# failures on one isolate and 20/20 successes on another, repeatedly. Failure is a
+# property of the isolate, not of the request or the route.
+#
+# The trigger is a render the runtime aborts mid-flight, which leaves Angular's
+# module-global state dirty (`R3Injector.hydrate()` sets `record.value = CIRCULAR`
+# before calling the factory and never restores it if the factory does not
+# return). We cannot repair it from inside the Worker: by the time our code would
+# run, the invocation is already being killed.
+#
+# A deployment replaces every isolate, and that is the ONLY lever we control that
+# reliably clears the state — isolates are otherwise long-lived and evicted on
+# Cloudflare's schedule, not ours. Hence: redeploy on a timer.
+#
+# CADENCE
+# -------
+# Every 3 hours, from the observed decay curve on 2026-07-29. After the 09:14Z
+# deploy the uptime monitor's homepage check was 0/12 failing in the 09:00 hour,
+# 2/12 in the 10:00 hour, and 12/12 by the 11:00 hour — partial degradation at
+# ~1-2 h, total by ~3 h. A nightly job would leave the site poisoned for most of
+# the day.
+#
+# THIS IS A STOPGAP. Delete this workflow once the poisoning trigger is fixed.
+# Ruled out so far: platform-injector reuse (Angular nulls it under ngServerMode),
+# client-side aborts (do not reproduce it), and provideBrowserGlobalErrorListeners
+# (its factory early-returns on the server).
+
+name: Recycle SSR Worker
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+
+# Never let two recycles overlap, and never race a real deploy from CI.
+concurrency:
+  group: deploy-frontend-prod
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  recycle:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      # Scheduled runs check out the default branch (main) — i.e. exactly what is
+      # already live. This job must never introduce a code change; it exists only
+      # to mint a new Worker version so the isolates are replaced.
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Patch server bundle for Workers runtime
+        run: |
+          cd dist/eden-relics/server
+          # Angular's SSR bundle adds a createRequire(import.meta.url) shim that the
+          # Workers runtime rejects (path 'undefined'). Angular 22 aliases the import as
+          # __ngCreateRequire, so delete both lines by pattern rather than exact string.
+          sed -i "/from 'node:module';/d" *.mjs
+          sed -i "/globalThis\['require'\] ??=/d" *.mjs
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: frontend
+          command: deploy
+
+      # Prove the fresh isolates actually render. Cache-busted so every request is a
+      # full SSR render rather than an edge-cache hit, which is the path that breaks.
+      - name: Verify SSR renders after recycle
+        run: |
+          sleep 10
+          fail=0
+          for i in $(seq 1 5); do
+            code=$(curl -s -o /dev/null -m 30 -w "%{http_code}" \
+              "https://edenrelics.co.uk/?_recycle=$(date +%s)-$i")
+            echo "render $i -> $code"
+            [ "$code" = "200" ] || fail=$((fail + 1))
+          done
+          if [ "$fail" -gt 0 ]; then
+            echo "::error::$fail/5 cache-miss renders failed after recycle"
+            exit 1
+          fi
