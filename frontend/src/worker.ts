@@ -90,17 +90,15 @@ const STATIC_PATH_PREFIXES = [
 ];
 
 /**
- * Where the client-rendered shell lives, in the order we ask for it.
+ * Where the client-rendered shell lives, in the order we ask for it. Both forms
+ * resolve through the ASSETS binding (verified against the real edge binding
+ * with `wrangler dev --remote`); the extensionless one is listed first because
+ * that is what a public request to `/index.csr.html` is 307'd to, so it is the
+ * form least dependent on `html_handling` staying at its default.
  *
- * Cloudflare's static-asset server applies `html_handling`, which defaults to
- * `auto-trailing-slash` — and that answers `/index.csr.html` with a **307 to
- * `/index.csr`**, not the document. A 307 is not `.ok`, so the SSR-failure
- * fallback below always fell through to the last-resort 503: every failed
- * render was served to the visitor (in practice Googlebot, on cache-miss
- * `/product/` URLs) as a hard 503 instead of a working client-rendered page.
- * `env.ASSETS.fetch` does not follow redirects, so requesting the extensionless
- * form is what actually returns the shell. The `.html` form is kept as a
- * second candidate in case `html_handling` is ever set to `none`.
+ * NB the reason this fallback never fired in production was not the path — it
+ * was that `[assets]` in wrangler.toml declared no `binding`, so `env.ASSETS`
+ * was `undefined` and every call here threw. See the note in wrangler.toml.
  */
 const CSR_SHELL_PATHS = ['/index.csr', '/index.csr.html'];
 
@@ -366,6 +364,7 @@ async function resolveProductRedirect(pathname: string, env: WorkerEnv): Promise
 export default {
   async fetch(request: Request, env: WorkerEnv, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
 
     // Owner analytics opt-out toggle. Visiting /?mute-analytics sets a durable
     // cookie so the owner's own browsing stops inflating the first-party human
