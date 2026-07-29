@@ -456,14 +456,16 @@ export default {
       }
     }
 
-    // Try Angular SSR for all routes, retrying a failed render ONCE. The failure
-    // we actually see in prod is an intermittent NG0200 (circular DI) thrown when
-    // concurrent renders interleave inside a single isolate — transient, and a
-    // second attempt clears it. Retrying matters because the alternative is the
-    // CSR shell, which costs us the server-rendered HTML Googlebot indexes, and
-    // cache-miss product URLs are precisely what Googlebot crawls. The retry runs
-    // only on the failure path, so healthy renders pay nothing for it. It needs a
-    // FRESH request because `angularApp.handle()` consumes the one it is given.
+    // Try Angular SSR for all routes, retrying a failed render ONCE. This covers
+    // a genuinely transient failure — notably the mid-render throw that surfaces
+    // only once the body is buffered (see renderOnce). It does NOT rescue a
+    // POISONED isolate: measured in prod over a single keep-alive connection,
+    // 20/20 renders fail on a poisoned isolate and 20/20 succeed on a healthy
+    // one, so failure is a property of the isolate, not of the attempt. The
+    // retry is kept because it is cheap — a poisoned isolate rejects the second
+    // attempt in a few ms, and healthy renders never reach this path at all.
+    // It needs a FRESH request because `angularApp.handle()` consumes the one it
+    // is given.
     let rendered = await renderOnce(request);
     if (!rendered && request.method === 'GET') {
       rendered = await renderOnce(
