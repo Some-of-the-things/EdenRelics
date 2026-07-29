@@ -15,6 +15,7 @@ import {
   withNoIncrementalHydration,
 } from '@angular/platform-browser';
 import { authInterceptor } from './interceptors/auth.interceptor';
+import { ssrTimeoutInterceptor } from './interceptors/ssr-timeout.interceptor';
 import { variantImageLoader, VARIANT_WIDTHS } from './utils/image-variant-loader';
 import { BrandingService } from './services/branding.service';
 
@@ -31,7 +32,10 @@ export const appConfig: ApplicationConfig = {
       withInMemoryScrolling({ scrollPositionRestoration: 'top', anchorScrolling: 'enabled' }),
     ),
     provideClientHydration(withEventReplay(), withNoIncrementalHydration()),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    // ssrTimeoutInterceptor is listed last so it wraps the outgoing request:
+    // it bounds how long a server render can wait on the API, which stops one
+    // slow render from occupying a shared Worker isolate. No-op in the browser.
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor, ssrTimeoutInterceptor])),
     { provide: IMAGE_LOADER, useValue: variantImageLoader },
     {
       provide: IMAGE_CONFIG,
