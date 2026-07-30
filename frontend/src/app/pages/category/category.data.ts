@@ -48,19 +48,21 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     metaTitle: 'Vintage Cottagecore & Prairie Dresses',
     metaDescription:
       'Original vintage cottagecore and prairie dresses — floral smocks, folk prints, ditsy florals, pinafores and gingham. Genuine one-of-a-kind pieces, hand-inspected, with UK shipping.',
-    tagline: 'Romantic, rural and softly nostalgic — the vintage roots of the cottagecore look.',
+    tagline:
+      'Romantic, rural and nostalgic. Vintage clothing that inspired the modern cottagecore aesthetic.',
     intro:
-      'Cottagecore borrows almost everything from the real vintage wardrobe: the prairie dresses of the 1970s revival, the folk prints and smocks, the ditsy florals and the soft, unhurried silhouettes. These are the originals rather than the reproductions — genuine period pieces chosen for the same qualities the look is built on: natural cloth, gentle shaping and prints that feel picked from a garden rather than a trend board.',
+      "Looking for a genuine vintage cottagecore dress? This collection brings together original prairie dresses, Laura Ashley pieces, handmade folk dresses and romantic country styles from the 1970s to the 1990s, all chosen for the silhouettes and details that inspired today's cottagecore aesthetic.",
     body: [
-      'The aesthetic leans on a handful of recurring signals. Prairie dresses — often with a yoked or bibbed bodice, a high neck and a tiered or gathered skirt — sit at its centre, a style that had its own strong revival in the mid-to-late 1970s before the current one. Around them gather folk and peasant influences, smock and pinafore shapes, gingham checks and the small repeating "ditsy" florals that read as cottage-garden rather than bold statement.',
-      'Because cottagecore is a mood more than a maker, it cuts across eras and labels. A 1970s handmade folk maxi, an 1980s Laura Ashley prairie midi and a 1990s cotton smock can all belong to it. What ties them together is feeling: soft structure, natural or naturally-drawn fabrics, and a quiet, lived-in romance rather than polish.',
-      'Everything here is one-of-a-kind vintage, so the rail moves — pieces that fit the look come and go as they are found, and what you see is what currently remains.',
+      'Much of what we now call the cottagecore aesthetic has its roots in vintage clothing. Prairie dresses that enjoyed a revival during the 1970s, handmade folk dresses, cotton smocks, pinafores, gingham and tiny floral prints all predate the trend itself. Modern brands continue to reinterpret these styles; the dresses here are original vintage examples.',
+      "Today, cottagecore is generally used to describe romantic clothing inspired by rural life, historical dress and vintage fashion. Long before the term existed, designers such as Laura Ashley were drawing inspiration from Victorian and Edwardian country clothing, while the handmade folk movement of the 1970s embraced many of the same ideas. Today's aesthetic has inherited that visual language rather than inventing it.",
+      "That means cottagecore isn't tied to one decade or one label. A handmade folk maxi from the 1970s, an 1980s Laura Ashley prairie dress and a loose cotton smock from the 1990s can all belong here. They're linked not by age, but by shared design traditions: prairie-inspired silhouettes, folk influences, small floral prints, gathered skirts, smocking, pintucks, lace trims and details that echo romantic country dress.",
+      "Every piece here is genuine vintage and one of a kind. The collection changes constantly as dresses are found and sold, so what you see is simply what's on the rail today.",
     ],
     lookFor: [
-      'Prairie and pinafore shaping — yoked or bibbed bodices, high or ruffled necklines, gathered and tiered skirts.',
-      'Small, dense "ditsy" florals and folk or peasant prints rather than large graphic ones.',
-      'Natural cloth — cotton, cotton-blend and soft lightweight weaves — and cottage details like eyelet, lace trim, smocking and self-covered buttons.',
-      'Because these are one-of-one pieces in a single size, always read the measurements rather than the label size — the vintage size converter on our journal posts helps translate them.',
+      'Prairie silhouettes with bibbed or yoked bodices, high or ruffled necklines, and gathered or tiered skirts.',
+      'Small floral prints, gingham, calico-style florals and folk-inspired patterns rather than bold graphic prints.',
+      'Details such as pintucks, lace trims, eyelet embroidery, smocking, self-covered buttons and generous hems.',
+      'Shop by the measurements rather than the label size. Vintage sizing varies considerably, and our Vintage Size Converter can help you compare vintage measurements with modern sizing.',
     ],
     include: [
       'prairie',
@@ -74,7 +76,10 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       'eyelet',
     ],
     relatedLinks: [
-      { label: 'Guide: What Is a Vintage Prairie Dress?', path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1' },
+      {
+        label: 'Guide: What Is a Vintage Prairie Dress?',
+        path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
+      },
       { label: '1970s Vintage Dresses', path: '/shop/1970s' },
       { label: 'Vintage Laura Ashley', path: '/designers/laura-ashley' },
       { label: 'Maxi Dresses', path: '/dresses/maxi' },
@@ -103,7 +108,10 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     ],
     include: ['maxi'],
     relatedLinks: [
-      { label: 'Guide: What Is a Vintage Prairie Dress?', path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1' },
+      {
+        label: 'Guide: What Is a Vintage Prairie Dress?',
+        path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
+      },
       { label: '1970s Vintage Dresses', path: '/shop/1970s' },
       { label: 'Cottagecore & Prairie', path: '/style/cottagecore' },
       { label: 'Midi Dresses', path: '/dresses/midi' },
