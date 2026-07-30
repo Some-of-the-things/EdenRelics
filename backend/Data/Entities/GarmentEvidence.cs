@@ -26,9 +26,16 @@ public class GarmentEvidence : BaseEntity
     public string Notes { get; set; } = "";
 
     /// <summary>
-    /// The captured image this observation came from. Part of the label archive: every
-    /// listing captures brand and care labels to a fixed standard, and that archive is the
-    /// asset the rest of the business is built on.
+    /// The archived photograph this observation was read from, when it came from one.
+    /// Evidence can also be entered directly (a seller reading a label by eye), so this is
+    /// optional — but a capture-backed observation is the one that can be re-checked later.
+    /// </summary>
+    public Guid? CaptureId { get; set; }
+    public GarmentCapture? Capture { get; set; }
+
+    /// <summary>
+    /// Convenience pointer to the image this came from. Kept for observations recorded
+    /// without a formal capture; prefer <see cref="CaptureId"/> where there is one.
     /// </summary>
     public string? ImageUrl { get; set; }
 

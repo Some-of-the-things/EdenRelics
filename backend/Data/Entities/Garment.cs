@@ -30,6 +30,9 @@ public class Garment : BaseEntity
     /// <summary>Evidence captured from the physical item.</summary>
     public List<GarmentEvidence> Evidence { get; set; } = [];
 
+    /// <summary>Photographs taken against the capture standard — the archive contribution.</summary>
+    public List<GarmentCapture> Captures { get; set; } = [];
+
     /// <summary>Assessments produced from that evidence, newest last.</summary>
     public List<DatingAssessment> Assessments { get; set; } = [];
 }

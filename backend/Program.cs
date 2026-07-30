@@ -214,6 +214,7 @@ builder.Services.AddScoped<ICareService, CareService>();
 // Seller tool: deterministic dating validation over the garment evidence archive
 builder.Services.Configure<DatingOptions>(builder.Configuration.GetSection("Dating"));
 builder.Services.AddScoped<IDatingRulesEngine, DatingRulesEngine>();
+builder.Services.AddScoped<IGarmentCaptureService, GarmentCaptureService>();
 
 // Monzo bank integration
 builder.Services.AddHttpClient<MonzoApiClient>();

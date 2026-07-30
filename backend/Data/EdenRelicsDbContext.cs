@@ -57,6 +57,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<DatingRule> DatingRules => Set<DatingRule>();
     public DbSet<Garment> Garments => Set<Garment>();
     public DbSet<GarmentEvidence> GarmentEvidence => Set<GarmentEvidence>();
+    public DbSet<GarmentCapture> GarmentCaptures => Set<GarmentCapture>();
     public DbSet<DatingAssessment> DatingAssessments => Set<DatingAssessment>();
     public DbSet<DatingAssessmentStep> DatingAssessmentSteps => Set<DatingAssessmentStep>();
 
@@ -435,6 +436,27 @@ public class EdenRelicsDbContext : DbContext
             entity.HasOne(e => e.Garment)
                 .WithMany(g => g.Evidence)
                 .HasForeignKey(e => e.GarmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Deleting a capture must not delete the observation read from it: the reading
+            // may still be correct, and losing it would silently change a past assessment.
+            entity.HasOne(e => e.Capture)
+                .WithMany(c => c.Evidence)
+                .HasForeignKey(e => e.CaptureId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<GarmentCapture>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(c => c.ArchiveUrl).HasMaxLength(500);
+            entity.Property(c => c.DisplayUrl).HasMaxLength(500);
+            entity.Property(c => c.ContentType).HasMaxLength(100);
+            entity.Property(c => c.ArchiveTermsVersion).HasMaxLength(50);
+            entity.Property(c => c.Notes).HasMaxLength(1000);
+            entity.HasIndex(c => new { c.GarmentId, c.Slot });
+            entity.HasOne(c => c.Garment)
+                .WithMany(g => g.Captures)
+                .HasForeignKey(c => c.GarmentId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
