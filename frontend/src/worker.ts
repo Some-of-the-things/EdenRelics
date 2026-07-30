@@ -102,6 +102,38 @@ const STATIC_PATH_PREFIXES = [
  */
 const CSR_SHELL_PATHS = ['/index.csr', '/index.csr.html'];
 
+/**
+ * Record why a render failed.
+ *
+ * This Worker deliberately degrades instead of throwing, which until now meant
+ * every SSR failure was invisible: the catch blocks below swallowed the error, so
+ * Cloudflare's retained logs held only its own `GET <url>` request line with no
+ * exception attached. Reading those logs for the 2026-07-30 05:30Z incident
+ * showed the isolate-poisoning signature (one expensive failure, then a stuck
+ * isolate failing in a flat 10 ms of CPU) but could not name the first error,
+ * because our own code had already discarded it.
+ *
+ * Kept cheap and total on purpose. A poisoned isolate is killed within ~10 ms of
+ * CPU, so this must not do real work; and it must never throw, or the diagnostic
+ * would replace the very failure it exists to explain.
+ */
+function logRenderFailure(stage: string, url: string, error: unknown): void {
+  try {
+    const err = error as { name?: string; message?: string; stack?: string } | undefined;
+    console.error(
+      JSON.stringify({
+        ssrFailure: stage,
+        url,
+        name: err?.name ?? typeof error,
+        message: err?.message ?? String(error),
+        stack: err?.stack?.slice(0, 2000),
+      }),
+    );
+  } catch {
+    // Diagnostics must never mask the original failure.
+  }
+}
+
 /** Fetch the CSR shell asset, trying each candidate path. Null if none served one. */
 async function fetchCsrShell(request: Request, env: WorkerEnv): Promise<Response | null> {
   for (const path of CSR_SHELL_PATHS) {
@@ -114,7 +146,8 @@ async function fetchCsrShell(request: Request, env: WorkerEnv): Promise<Response
       if (shell.ok) {
         return shell;
       }
-    } catch {
+    } catch (error) {
+      logRenderFailure('csr-shell', shellUrl.href, error);
       // Try the next candidate.
     }
   }
@@ -137,10 +170,13 @@ async function renderOnce(request: Request): Promise<Response | null> {
   try {
     const response = await angularApp.handle(request);
     if (!response || response.status >= 500) {
+      const outcome = response ? `HTTP ${response.status}` : 'nothing';
+      logRenderFailure('render-status', request.url, `angularApp.handle() returned ${outcome}`);
       return null;
     }
     return new Response(await response.arrayBuffer(), response);
-  } catch {
+  } catch (error) {
+    logRenderFailure('render-throw', request.url, error);
     return null;
   }
 }
