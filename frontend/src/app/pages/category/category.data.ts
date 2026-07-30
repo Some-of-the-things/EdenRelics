@@ -169,19 +169,27 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     metaTitle: 'Vintage Boho & Paisley Dresses',
     metaDescription:
       'Original vintage boho and paisley pieces — swirling paisley prints, 1970s folk maxis and free-spirited dresses. Genuine one-of-a-kind vintage, hand-inspected, with UK shipping.',
-    tagline: 'Seventies folk, swirling paisley and a free-spirited print.',
+    tagline:
+      'Free-spirited prints and flowing silhouettes: vintage pieces with unmistakable bohemian character.',
     intro:
-      'Boho draws on the 1970s at its most romantic and well-travelled — paisley and folk prints, soft maxi shapes, lace and velvet trim, the odd bishop or bell sleeve. These are the originals: genuine vintage pieces, many of them paisley, that carry the easy, layered spirit the look is named for.',
+      'Looking for a genuine vintage boho dress? This collection brings together original paisley dresses, folk-inspired prints, flowing maxis and relaxed vintage styles from the 1970s through to the 1990s. Every piece is genuine vintage, chosen because it captures the look that modern boho fashion continues to borrow from.',
     body: [
-      'Paisley is the thread that runs through most of it — the teardrop motif turns up on Liberty prints, on fluid rayon robe-style maxis, on skirts and blouses, and it reads as boho almost wherever it lands. Around it sit folk and peasant influences, animal and botanical prints, and the relaxed drape that lets a piece be layered rather than structured.',
-      'The look leans 1970s in origin but isn’t bound to it: a 1990s rayon paisley maxi belongs to it as readily as a 1970s folk one. What unites them is print and ease over polish and tailoring.',
-      'Everything here is one-of-a-kind vintage, so the rail moves — paisley and boho pieces come and go as they are found.',
+      "The word boho may be modern, but the clothes themselves aren't. The romantic, layered style most people associate with bohemian dressing emerged during the late 1960s and 1970s, when designers drew inspiration from traditional folk costume, Victorian romanticism and textiles from around the world. Those influences never really disappeared.",
+      "Paisley appears again and again throughout the collection. The motif has a much longer history than boho itself, travelling from Persian and Indian textiles into European fashion long before it became one of the defining prints of the 1970s. Alongside it you'll find floral and border prints, embroidered details, peasant styling and easy silhouettes that skim the body instead of closely following it.",
+      "That's why you'll find dresses from more than one decade here. The look returned in the 1990s, so later vintage pieces often sit comfortably alongside their 1970s counterparts. They're different interpretations of the same enduring style rather than copies of a particular trend.",
+      "Every piece here is genuine vintage and one of a kind. The collection changes constantly as dresses are found and sold, so what you see today is simply what's currently available.",
     ],
     lookFor: [
-      'Paisley and folk prints — the swirling teardrop motif is the surest boho signal, on dresses, skirts and blouses alike.',
-      'Soft, layerable shaping — fluid maxis, robe styles and relaxed waists rather than sharp tailoring.',
-      'Natural drape fabrics, especially rayon and lightweight blends, and romantic trim like lace, velvet and bishop sleeves.',
-      'One-of-one in a single size: read the measurements rather than the label, as relaxed vintage cuts vary widely.',
+      'Paisley, folk-inspired florals, border prints and other richly patterned fabrics.',
+      'Flowing maxi dresses, relaxed waists, robe styles and easy silhouettes with movement.',
+      'Lace trims, velvet details, embroidery, bishop sleeves, peasant styling and decorative yokes.',
+      {
+        text: 'Shop by the measurements rather than the label size — vintage sizing varies widely.',
+        link: {
+          label: 'Compare vintage and modern sizing',
+          path: '/blog/vintage-dress-sizing-uk-why-your-modern-size-doesnt-apply',
+        },
+      },
     ],
     include: ['paisley', 'boho'],
     relatedLinks: [
