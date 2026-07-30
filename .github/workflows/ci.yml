@@ -82,6 +82,32 @@ jobs:
           name: frontend-dist
           path: frontend/dist/eden-relics
 
+  # ── Frontend: unit tests ─────────────────────────────────────────────
+  # These existed but were never run by CI, which is how app.routes.spec.ts sat
+  # failing unnoticed: /style, /dresses, /seller and /seller-tool were missing
+  # from sitemap-routes.json, so the category hub pages were never submitted to
+  # Google at all. The spec is the guard against that recurring — it has to run.
+  frontend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test -- --watch=false
+
   # ── Frontend: e2e tests ──────────────────────────────────────────────
   frontend-e2e:
     runs-on: ubuntu-latest
@@ -199,7 +225,7 @@ jobs:
   # ── Deploy frontend to Cloudflare Workers (production) ───────────────
   deploy-frontend:
     runs-on: ubuntu-latest
-    needs: [frontend-build, frontend-e2e]
+    needs: [frontend-build, frontend-test, frontend-e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     # Shared with the scheduled isolate recycle (recycle-ssr-worker.yml) so a
     # recycle can never overwrite a real deploy, or vice versa.
@@ -326,7 +352,7 @@ jobs:
   # ── Deploy frontend to Cloudflare Workers (staging) ──────────────────
   deploy-frontend-staging:
     runs-on: ubuntu-latest
-    needs: [backend-test, frontend-e2e]
+    needs: [backend-test, frontend-test, frontend-e2e]
     if: github.ref == 'refs/heads/integration' && github.event_name == 'push'
     defaults:
       run:
