@@ -2909,10 +2909,15 @@ export class AdminPageComponent implements OnInit {
     }
   }
 
+  /**
+   * Text content of an HTML fragment. Uses DOMParser rather than assigning
+   * innerHTML to a detached div: scripts never run either way, but a detached
+   * element still kicks off resource loads, so markup like `<img src=x
+   * onerror=…>` could fire. DOMParser builds an inert document that fetches
+   * nothing.
+   */
   stripHtml(html: string): string {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    return div.textContent ?? '';
+    return new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '';
   }
 
   private savedRange: Range | null = null;
