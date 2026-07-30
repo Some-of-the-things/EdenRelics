@@ -24,11 +24,16 @@
 #
 # CADENCE
 # -------
-# Every 3 hours, from the observed decay curve on 2026-07-29. After the 09:14Z
-# deploy the uptime monitor's homepage check was 0/12 failing in the 09:00 hour,
-# 2/12 in the 10:00 hour, and 12/12 by the 11:00 hour — partial degradation at
-# ~1-2 h, total by ~3 h. A nightly job would leave the site poisoned for most of
-# the day.
+# Every 2 hours. Originally 3h, from the decay curve on 2026-07-29: after the
+# 09:14Z deploy the uptime monitor's homepage check was 0/12 failing in the 09:00
+# hour, 2/12 in the 10:00 hour, and 12/12 by the 11:00 hour — partial degradation
+# at ~1-2 h, total by ~3 h.
+#
+# Tightened to 2h on 2026-07-30 after the retained Worker logs showed 3h is not
+# enough. Every failure in the preceding 12 h landed 2h39m-2h49m after a recycle
+# (eyeball 503s at 19:01-19:15Z, monitor 503s at 05:25-05:35Z). GitHub's scheduler
+# also drifts badly — actual runs were 16:25, 19:24, 22:04, 02:46, 05:47, leaving
+# one gap of 4h42m — so the configured interval must undershoot the target.
 #
 # THIS IS A STOPGAP. Delete this workflow once the poisoning trigger is fixed.
 # Ruled out so far: platform-injector reuse (Angular nulls it under ngServerMode),
@@ -39,7 +44,7 @@ name: Recycle SSR Worker
 
 on:
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 # Never let two recycles overlap, and never race a real deploy from CI.
