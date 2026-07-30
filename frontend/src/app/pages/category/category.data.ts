@@ -67,7 +67,7 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       'Much of what we now call cottagecore has its roots in vintage clothing. Prairie dresses that enjoyed a revival during the 1970s, handmade folk dresses, cotton smocks, pinafores, gingham and tiny floral prints all predate the trend itself. Modern brands continue to reinterpret these styles; the dresses here are original vintage examples.',
       'Today, cottagecore is generally used to describe romantic clothing inspired by rural life, historical dress and vintage fashion. Long before the term existed, designers such as Laura Ashley were drawing inspiration from Victorian and Edwardian country clothing, while the handmade folk movement of the 1970s embraced many of the same ideas. The modern look has inherited that visual language rather than inventing it.',
       "That means cottagecore isn't tied to one decade or one label. A handmade folk maxi from the 1970s, an 1980s Laura Ashley prairie dress and a loose cotton smock from the 1990s can all belong here. They're linked not by age, but by shared design traditions: prairie-inspired silhouettes, folk influences, small floral prints, gathered skirts, smocking, pintucks, lace trims and details that echo romantic country dress.",
-      "Every piece here is genuine vintage and one of a kind. The collection changes constantly as dresses are found and sold, so what you see is simply what's on the rail today.",
+      'Every dress here has been chosen because it belongs naturally within the aesthetic. As new pieces are found, the collection evolves, so there is always something different to discover.',
     ],
     lookFor: [
       'Prairie silhouettes with bibbed or yoked bodices, high or ruffled necklines, and gathered or tiered skirts.',
@@ -177,7 +177,7 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       "The word boho may be modern, but the clothes themselves aren't. The romantic, layered style most people associate with bohemian dressing emerged during the late 1960s and 1970s, when designers drew inspiration from traditional folk costume, Victorian romanticism and textiles from around the world. Those influences never really disappeared.",
       "Paisley appears again and again throughout the collection. The motif has a much longer history than boho itself, travelling from Persian and Indian textiles into European fashion long before it became one of the defining prints of the 1970s. Alongside it you'll find floral and border prints, embroidered details, peasant styling and easy silhouettes that skim the body instead of closely following it.",
       "That's why you'll find dresses from more than one decade here. The look returned in the 1990s, so later vintage pieces often sit comfortably alongside their 1970s counterparts. They're different interpretations of the same enduring style rather than copies of a particular trend.",
-      "Every piece here is genuine vintage and one of a kind. The collection changes constantly as dresses are found and sold, so what you see today is simply what's currently available.",
+      "Boho isn't a label you'll often find on vintage clothing, which makes sourcing these pieces part of the fun. The collection grows slowly, one find at a time, and no two rails are ever quite alike.",
     ],
     lookFor: [
       'Paisley, folk-inspired florals, border prints and other richly patterned fabrics.',
