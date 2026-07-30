@@ -1,9 +1,15 @@
 // Generates public/sitemap-routes.json — the single source of truth for the
 // static URLs the backend SitemapController advertises.
 //
-// Designer routes are derived from designers.data.ts so the sitemap can never
-// fall out of sync with the actual designer pages (add a designer there and it
-// shows up here automatically on the next build). Runs as the `prebuild` hook.
+// Designer, collection and category-hub routes are derived from their data
+// files so the sitemap can never fall out of sync with the actual pages (add a
+// designer/collection/hub there and it shows up here automatically on the next
+// build). Runs as the `prebuild` hook.
+//
+// The category hubs were missing from this generator until 2026-07-30, so
+// /style, /dresses and every hub beneath them had never been submitted to
+// Google despite existing to rank. app.routes.spec.ts guards against that
+// recurring.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +18,7 @@ import { dirname, resolve } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const designersPath = resolve(here, '../src/app/pages/designers/designers.data.ts');
 const collectionsPath = resolve(here, '../src/app/pages/collections/collections.data.ts');
+const categoriesPath = resolve(here, '../src/app/pages/category/category.data.ts');
 const outPath = resolve(here, '../public/sitemap-routes.json');
 
 // Pull every designer slug, in file order, from the DESIGNERS data. Match only
@@ -29,6 +36,23 @@ const collectionsSrc = readFileSync(collectionsPath, 'utf8');
 const collectionSlugs = [...collectionsSrc.matchAll(/slug:\s*'([^']+)',\s*name:/g)].map((m) => m[1]);
 if (collectionSlugs.length === 0) {
   throw new Error('generate-sitemap-routes: no collection slugs found in collections.data.ts');
+}
+
+// Category hubs. `kind` decides the URL prefix — 'style' hubs live at /style/:slug
+// and 'garment' hubs at /dresses/:slug — so capture the pair, again anchored on a
+// following `name:` so only real CategoryHub entries match.
+const categoriesSrc = readFileSync(categoriesPath, 'utf8');
+const hubs = [...categoriesSrc.matchAll(/kind:\s*'([^']+)',\s*slug:\s*'([^']+)',\s*name:/g)].map(
+  (m) => ({ kind: m[1], slug: m[2] }),
+);
+if (hubs.length === 0) {
+  throw new Error('generate-sitemap-routes: no category hubs found in category.data.ts');
+}
+const unknownKind = hubs.find((h) => h.kind !== 'style' && h.kind !== 'garment');
+if (unknownKind) {
+  throw new Error(
+    `generate-sitemap-routes: unknown hub kind '${unknownKind.kind}' for slug '${unknownKind.slug}'`,
+  );
 }
 
 const before = [
@@ -55,6 +79,24 @@ const collectionRoutes = collectionSlugs.map((slug) => ({
   changefreq: 'weekly',
   priority: '0.7',
 }));
+// Hub indexes plus one entry per hub. Same weighting as /designers and its pages.
+const categoryRoutes = [
+  { path: '/style', changefreq: 'weekly', priority: '0.8' },
+  { path: '/dresses', changefreq: 'weekly', priority: '0.8' },
+  ...hubs.map((h) => ({
+    path: `/${h.kind === 'style' ? 'style' : 'dresses'}/${h.slug}`,
+    changefreq: 'weekly',
+    priority: '0.7',
+  })),
+];
+// Marketplace-facing static pages. /top-picks is deliberately absent: it is gated
+// behind TopPicks:Enabled and currently 302s, so submitting it would advertise a
+// redirect. Add it here when the flag goes on (and drop it from
+// SITEMAP_EXCLUDED_PATHS in app.routes.spec.ts).
+const sellerRoutes = [
+  { path: '/seller', changefreq: 'monthly', priority: '0.5' },
+  { path: '/seller-tool', changefreq: 'monthly', priority: '0.5' },
+];
 const after = [
   { path: '/privacy-policy', changefreq: 'yearly', priority: '0.3' },
   { path: '/modern-slavery-policy', changefreq: 'yearly', priority: '0.3' },
@@ -67,7 +109,14 @@ const after = [
   { path: '/compliance-report', changefreq: 'yearly', priority: '0.3' },
 ];
 
-const routes = [...before, ...designerRoutes, ...collectionRoutes, ...after];
+const routes = [
+  ...before,
+  ...designerRoutes,
+  ...collectionRoutes,
+  ...categoryRoutes,
+  ...sellerRoutes,
+  ...after,
+];
 
 // Match the existing one-object-per-line formatting so diffs stay readable.
 const body = routes
@@ -75,4 +124,4 @@ const body = routes
   .join(',\n');
 writeFileSync(outPath, `[\n${body}\n]\n`, 'utf8');
 
-console.log(`generate-sitemap-routes: wrote ${routes.length} routes (${slugs.length} designers, ${collectionSlugs.length} collections) to public/sitemap-routes.json`);
+console.log(`generate-sitemap-routes: wrote ${routes.length} routes (${slugs.length} designers, ${collectionSlugs.length} collections, ${hubs.length} category hubs) to public/sitemap-routes.json`);

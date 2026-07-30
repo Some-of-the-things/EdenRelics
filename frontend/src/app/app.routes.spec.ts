@@ -23,6 +23,11 @@ const SITEMAP_EXCLUDED_PATHS: ReadonlySet<string> = new Set([
   'verify-email',
   'admin',
   'admin/login',
+  'admin/sellers',
+  // Flag-gated behind TopPicks:Enabled and currently redirecting (302 in prod),
+  // so submitting it would hand Google a redirect. Move it into
+  // sitemap-routes.json when the flag goes on and the page returns 200.
+  'top-picks',
 ]);
 
 function isDynamic(path: string): boolean {
