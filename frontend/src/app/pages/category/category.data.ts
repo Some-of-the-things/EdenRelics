@@ -9,6 +9,12 @@ import { Product } from '../../models/product.model';
  * (matchers + editorial prose + graceful empty state), just keyed on style or
  * silhouette instead of a brand.
  */
+/** A "what to look for" bullet that carries an internal link. */
+export interface LookForPoint {
+  text: string;
+  link: { label: string; path: string };
+}
+
 export interface CategoryHub {
   /** Which taxonomy this hub belongs to — drives the URL prefix and index. */
   kind: 'style' | 'garment';
@@ -26,8 +32,13 @@ export interface CategoryHub {
   intro: string;
   /** A few short editorial paragraphs — the unique content that lets the page rank. */
   body: string[];
-  /** "What to look for" bullets — practical buying notes for this category. */
-  lookFor: string[];
+  /**
+   * "What to look for" bullets — practical buying notes for this category.
+   * A plain string is a bullet on its own; the object form appends an inline
+   * internal link, so a bullet can point at the guide that explains it. Keep the
+   * link label descriptive — it is anchor text, not a "read more".
+   */
+  lookFor: (string | LookForPoint)[];
   /**
    * Lowercased keywords matched against a product's NAME (not description, to
    * stay precise). A product joins the hub if ANY include keyword appears and NO
@@ -49,12 +60,12 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     metaDescription:
       'Original vintage cottagecore and prairie dresses — floral smocks, folk prints, ditsy florals, pinafores and gingham. Genuine one-of-a-kind pieces, hand-inspected, with UK shipping.',
     tagline:
-      'Romantic, rural and nostalgic. Vintage clothing that inspired the modern cottagecore aesthetic.',
+      'Romantic, rural and nostalgic. The vintage clothing that inspired the modern cottagecore look.',
     intro:
       "Looking for a genuine vintage cottagecore dress? This collection brings together original prairie dresses, Laura Ashley pieces, handmade folk dresses and romantic country styles from the 1970s to the 1990s, all chosen for the silhouettes and details that inspired today's cottagecore aesthetic.",
     body: [
-      'Much of what we now call the cottagecore aesthetic has its roots in vintage clothing. Prairie dresses that enjoyed a revival during the 1970s, handmade folk dresses, cotton smocks, pinafores, gingham and tiny floral prints all predate the trend itself. Modern brands continue to reinterpret these styles; the dresses here are original vintage examples.',
-      "Today, cottagecore is generally used to describe romantic clothing inspired by rural life, historical dress and vintage fashion. Long before the term existed, designers such as Laura Ashley were drawing inspiration from Victorian and Edwardian country clothing, while the handmade folk movement of the 1970s embraced many of the same ideas. Today's aesthetic has inherited that visual language rather than inventing it.",
+      'Much of what we now call cottagecore has its roots in vintage clothing. Prairie dresses that enjoyed a revival during the 1970s, handmade folk dresses, cotton smocks, pinafores, gingham and tiny floral prints all predate the trend itself. Modern brands continue to reinterpret these styles; the dresses here are original vintage examples.',
+      'Today, cottagecore is generally used to describe romantic clothing inspired by rural life, historical dress and vintage fashion. Long before the term existed, designers such as Laura Ashley were drawing inspiration from Victorian and Edwardian country clothing, while the handmade folk movement of the 1970s embraced many of the same ideas. The modern look has inherited that visual language rather than inventing it.',
       "That means cottagecore isn't tied to one decade or one label. A handmade folk maxi from the 1970s, an 1980s Laura Ashley prairie dress and a loose cotton smock from the 1990s can all belong here. They're linked not by age, but by shared design traditions: prairie-inspired silhouettes, folk influences, small floral prints, gathered skirts, smocking, pintucks, lace trims and details that echo romantic country dress.",
       "Every piece here is genuine vintage and one of a kind. The collection changes constantly as dresses are found and sold, so what you see is simply what's on the rail today.",
     ],
@@ -62,7 +73,13 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       'Prairie silhouettes with bibbed or yoked bodices, high or ruffled necklines, and gathered or tiered skirts.',
       'Small floral prints, gingham, calico-style florals and folk-inspired patterns rather than bold graphic prints.',
       'Details such as pintucks, lace trims, eyelet embroidery, smocking, self-covered buttons and generous hems.',
-      'Shop by the measurements rather than the label size. Vintage sizing varies considerably, and our Vintage Size Converter can help you compare vintage measurements with modern sizing.',
+      {
+        text: 'Shop by the measurements rather than the label size — vintage sizing varies considerably.',
+        link: {
+          label: 'Compare vintage and modern sizing',
+          path: '/blog/vintage-dress-sizing-uk-why-your-modern-size-doesnt-apply',
+        },
+      },
     ],
     include: [
       'prairie',
