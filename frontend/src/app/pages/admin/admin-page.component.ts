@@ -440,7 +440,7 @@ export class AdminPageComponent implements OnInit {
     <td valign="top" style="padding-right:16px;">
       <table cellpadding="0" cellspacing="0" border="0" role="presentation">
         <tr>
-          <td bgcolor="#9b4a1e" width="60" height="60" align="center" valign="middle" style="background-color:#9b4a1e; width:60px; height:60px; color:#f5f0e8; font-family:Georgia,'Times New Roman',serif; font-size:24px; font-weight:bold; letter-spacing:1px; text-align:center;">ER</td>
+          <td width="60" align="center" valign="middle" style="width:60px;"><img src="https://edenrelics.co.uk/favicon.png" alt="Eden Relics" width="60" height="60" style="display:block; width:60px; height:60px; border:0;" /></td>
         </tr>
       </table>
     </td>
@@ -2909,10 +2909,15 @@ export class AdminPageComponent implements OnInit {
     }
   }
 
+  /**
+   * Text content of an HTML fragment. Uses DOMParser rather than assigning
+   * innerHTML to a detached div: scripts never run either way, but a detached
+   * element still kicks off resource loads, so markup like `<img src=x
+   * onerror=…>` could fire. DOMParser builds an inert document that fetches
+   * nothing.
+   */
   stripHtml(html: string): string {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    return div.textContent ?? '';
+    return new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '';
   }
 
   private savedRange: Range | null = null;

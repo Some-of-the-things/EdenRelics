@@ -14,7 +14,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { SeoService } from '../../services/seo.service';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
-import { CategoryHub, findHub, hubPath, matchProductsToHub } from './category.data';
+import { CategoryHub, LookForPoint, findHub, hubPath, matchProductsToHub } from './category.data';
 
 @Component({
   selector: 'app-category-hub',
@@ -48,6 +48,16 @@ export class CategoryHubComponent {
     const h = this.hub();
     return h ? matchProductsToHub(this.productStore.liveProducts(), h) : [];
   });
+
+  /**
+   * "What to look for" bullets normalised to one shape, so the template does not
+   * have to branch on the string-or-object union in `CategoryHub.lookFor`.
+   */
+  readonly lookForPoints = computed<(LookForPoint | { text: string; link?: undefined })[]>(() =>
+    (this.hub()?.lookFor ?? []).map((point) =>
+      typeof point === 'string' ? { text: point } : point,
+    ),
+  );
 
   /** Index path for the "back" link and breadcrumb — /style or /dresses. */
   readonly indexPath = this.kind === 'style' ? '/style' : '/dresses';

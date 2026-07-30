@@ -9,6 +9,12 @@ import { Product } from '../../models/product.model';
  * (matchers + editorial prose + graceful empty state), just keyed on style or
  * silhouette instead of a brand.
  */
+/** A "what to look for" bullet that carries an internal link. */
+export interface LookForPoint {
+  text: string;
+  link: { label: string; path: string };
+}
+
 export interface CategoryHub {
   /** Which taxonomy this hub belongs to — drives the URL prefix and index. */
   kind: 'style' | 'garment';
@@ -26,8 +32,13 @@ export interface CategoryHub {
   intro: string;
   /** A few short editorial paragraphs — the unique content that lets the page rank. */
   body: string[];
-  /** "What to look for" bullets — practical buying notes for this category. */
-  lookFor: string[];
+  /**
+   * "What to look for" bullets — practical buying notes for this category.
+   * A plain string is a bullet on its own; the object form appends an inline
+   * internal link, so a bullet can point at the guide that explains it. Keep the
+   * link label descriptive — it is anchor text, not a "read more".
+   */
+  lookFor: (string | LookForPoint)[];
   /**
    * Lowercased keywords matched against a product's NAME (not description, to
    * stay precise). A product joins the hub if ANY include keyword appears and NO
@@ -48,19 +59,27 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     metaTitle: 'Vintage Cottagecore & Prairie Dresses',
     metaDescription:
       'Original vintage cottagecore and prairie dresses — floral smocks, folk prints, ditsy florals, pinafores and gingham. Genuine one-of-a-kind pieces, hand-inspected, with UK shipping.',
-    tagline: 'Romantic, rural and softly nostalgic — the vintage roots of the cottagecore look.',
+    tagline:
+      'Romantic, rural and nostalgic. The vintage clothing that inspired the modern cottagecore look.',
     intro:
-      'Cottagecore borrows almost everything from the real vintage wardrobe: the prairie dresses of the 1970s revival, the folk prints and smocks, the ditsy florals and the soft, unhurried silhouettes. These are the originals rather than the reproductions — genuine period pieces chosen for the same qualities the look is built on: natural cloth, gentle shaping and prints that feel picked from a garden rather than a trend board.',
+      "Looking for a genuine vintage cottagecore dress? This collection brings together original prairie dresses, Laura Ashley pieces, handmade folk dresses and romantic country styles from the 1970s to the 1990s, all chosen for the silhouettes and details that inspired today's cottagecore aesthetic.",
     body: [
-      'The aesthetic leans on a handful of recurring signals. Prairie dresses — often with a yoked or bibbed bodice, a high neck and a tiered or gathered skirt — sit at its centre, a style that had its own strong revival in the mid-to-late 1970s before the current one. Around them gather folk and peasant influences, smock and pinafore shapes, gingham checks and the small repeating "ditsy" florals that read as cottage-garden rather than bold statement.',
-      'Because cottagecore is a mood more than a maker, it cuts across eras and labels. A 1970s handmade folk maxi, an 1980s Laura Ashley prairie midi and a 1990s cotton smock can all belong to it. What ties them together is feeling: soft structure, natural or naturally-drawn fabrics, and a quiet, lived-in romance rather than polish.',
-      'Everything here is one-of-a-kind vintage, so the rail moves — pieces that fit the look come and go as they are found, and what you see is what currently remains.',
+      'Much of what we now call cottagecore has its roots in vintage clothing. Prairie dresses that enjoyed a revival during the 1970s, handmade folk dresses, cotton smocks, pinafores, gingham and tiny floral prints all predate the trend itself. Modern brands continue to reinterpret these styles; the dresses here are original vintage examples.',
+      'Today, cottagecore is generally used to describe romantic clothing inspired by rural life, historical dress and vintage fashion. Long before the term existed, designers such as Laura Ashley were drawing inspiration from Victorian and Edwardian country clothing, while the handmade folk movement of the 1970s embraced many of the same ideas. The modern look has inherited that visual language rather than inventing it.',
+      "That means cottagecore isn't tied to one decade or one label. A handmade folk maxi from the 1970s, an 1980s Laura Ashley prairie dress and a loose cotton smock from the 1990s can all belong here. They're linked not by age, but by shared design traditions: prairie-inspired silhouettes, folk influences, small floral prints, gathered skirts, smocking, pintucks, lace trims and details that echo romantic country dress.",
+      'Every dress here has been chosen because it belongs naturally within the aesthetic. As new pieces are found, the collection evolves, so there is always something different to discover.',
     ],
     lookFor: [
-      'Prairie and pinafore shaping — yoked or bibbed bodices, high or ruffled necklines, gathered and tiered skirts.',
-      'Small, dense "ditsy" florals and folk or peasant prints rather than large graphic ones.',
-      'Natural cloth — cotton, cotton-blend and soft lightweight weaves — and cottage details like eyelet, lace trim, smocking and self-covered buttons.',
-      'Because these are one-of-one pieces in a single size, always read the measurements rather than the label size — the vintage size converter on our journal posts helps translate them.',
+      'Prairie silhouettes with bibbed or yoked bodices, high or ruffled necklines, and gathered or tiered skirts.',
+      'Small floral prints, gingham, calico-style florals and folk-inspired patterns rather than bold graphic prints.',
+      'Details such as pintucks, lace trims, eyelet embroidery, smocking, self-covered buttons and generous hems.',
+      {
+        text: 'Shop by the measurements rather than the label size — vintage sizing varies considerably.',
+        link: {
+          label: 'Compare vintage and modern sizing',
+          path: '/blog/vintage-dress-sizing-uk-why-your-modern-size-doesnt-apply',
+        },
+      },
     ],
     include: [
       'prairie',
@@ -74,7 +93,10 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       'eyelet',
     ],
     relatedLinks: [
-      { label: 'Guide: What Is a Vintage Prairie Dress?', path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1' },
+      {
+        label: 'Guide: What Is a Vintage Prairie Dress?',
+        path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
+      },
       { label: '1970s Vintage Dresses', path: '/shop/1970s' },
       { label: 'Vintage Laura Ashley', path: '/designers/laura-ashley' },
       { label: 'Maxi Dresses', path: '/dresses/maxi' },
@@ -103,7 +125,10 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     ],
     include: ['maxi'],
     relatedLinks: [
-      { label: 'Guide: What Is a Vintage Prairie Dress?', path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1' },
+      {
+        label: 'Guide: What Is a Vintage Prairie Dress?',
+        path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
+      },
       { label: '1970s Vintage Dresses', path: '/shop/1970s' },
       { label: 'Cottagecore & Prairie', path: '/style/cottagecore' },
       { label: 'Midi Dresses', path: '/dresses/midi' },
@@ -144,19 +169,27 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     metaTitle: 'Vintage Boho & Paisley Dresses',
     metaDescription:
       'Original vintage boho and paisley pieces — swirling paisley prints, 1970s folk maxis and free-spirited dresses. Genuine one-of-a-kind vintage, hand-inspected, with UK shipping.',
-    tagline: 'Seventies folk, swirling paisley and a free-spirited print.',
+    tagline:
+      'Free-spirited prints and flowing silhouettes: vintage pieces with unmistakable bohemian character.',
     intro:
-      'Boho draws on the 1970s at its most romantic and well-travelled — paisley and folk prints, soft maxi shapes, lace and velvet trim, the odd bishop or bell sleeve. These are the originals: genuine vintage pieces, many of them paisley, that carry the easy, layered spirit the look is named for.',
+      'Looking for a genuine vintage boho dress? This collection brings together original paisley dresses, folk-inspired prints, flowing maxis and relaxed vintage styles from the 1970s through to the 1990s. Every piece is genuine vintage, chosen because it captures the look that modern boho fashion continues to borrow from.',
     body: [
-      'Paisley is the thread that runs through most of it — the teardrop motif turns up on Liberty prints, on fluid rayon robe-style maxis, on skirts and blouses, and it reads as boho almost wherever it lands. Around it sit folk and peasant influences, animal and botanical prints, and the relaxed drape that lets a piece be layered rather than structured.',
-      'The look leans 1970s in origin but isn’t bound to it: a 1990s rayon paisley maxi belongs to it as readily as a 1970s folk one. What unites them is print and ease over polish and tailoring.',
-      'Everything here is one-of-a-kind vintage, so the rail moves — paisley and boho pieces come and go as they are found.',
+      "The word boho may be modern, but the clothes themselves aren't. The romantic, layered style most people associate with bohemian dressing emerged during the late 1960s and 1970s, when designers drew inspiration from traditional folk costume, Victorian romanticism and textiles from around the world. Those influences never really disappeared.",
+      "Paisley appears again and again throughout the collection. The motif has a much longer history than boho itself, travelling from Persian and Indian textiles into European fashion long before it became one of the defining prints of the 1970s. Alongside it you'll find floral and border prints, embroidered details, peasant styling and easy silhouettes that skim the body instead of closely following it.",
+      "That's why you'll find dresses from more than one decade here. The look returned in the 1990s, so later vintage pieces often sit comfortably alongside their 1970s counterparts. They're different interpretations of the same enduring style rather than copies of a particular trend.",
+      "Boho isn't a label you'll often find on vintage clothing, which makes sourcing these pieces part of the fun. The collection grows slowly, one find at a time, and no two rails are ever quite alike.",
     ],
     lookFor: [
-      'Paisley and folk prints — the swirling teardrop motif is the surest boho signal, on dresses, skirts and blouses alike.',
-      'Soft, layerable shaping — fluid maxis, robe styles and relaxed waists rather than sharp tailoring.',
-      'Natural drape fabrics, especially rayon and lightweight blends, and romantic trim like lace, velvet and bishop sleeves.',
-      'One-of-one in a single size: read the measurements rather than the label, as relaxed vintage cuts vary widely.',
+      'Paisley, folk-inspired florals, border prints and other richly patterned fabrics.',
+      'Flowing maxi dresses, relaxed waists, robe styles and easy silhouettes with movement.',
+      'Lace trims, velvet details, embroidery, bishop sleeves, peasant styling and decorative yokes.',
+      {
+        text: 'Shop by the measurements rather than the label size — vintage sizing varies widely.',
+        link: {
+          label: 'Compare vintage and modern sizing',
+          path: '/blog/vintage-dress-sizing-uk-why-your-modern-size-doesnt-apply',
+        },
+      },
     ],
     include: ['paisley', 'boho'],
     relatedLinks: [

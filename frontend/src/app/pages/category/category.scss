@@ -45,7 +45,10 @@
   border: 1px solid var(--border-color);
   border-top: 3px solid var(--gold);
   border-radius: 6px;
-  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
 
   &:hover {
     transform: translateY(-2px);
@@ -193,6 +196,19 @@
     }
   }
 
+  // Inline guide link on a "what to look for" bullet. Underlined rather than
+  // colour-only so it is distinguishable without relying on hue (WCAG 1.4.1).
+  &__lookfor-link {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--text-primary);
+    }
+  }
+
   &__related {
     font-family: var(--font-body);
     line-height: 1.65;
@@ -263,7 +279,9 @@
   border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
-  transition: transform 150ms ease, box-shadow 150ms ease;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
 
   &:hover {
     transform: translateY(-2px);
