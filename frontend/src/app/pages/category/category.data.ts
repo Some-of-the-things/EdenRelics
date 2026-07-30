@@ -76,7 +76,7 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       {
         text: 'Shop by the measurements rather than the label size — vintage sizing varies considerably.',
         link: {
-          label: 'Compare vintage and modern sizing',
+          label: 'Use our Vintage Size Converter',
           path: '/blog/vintage-dress-sizing-uk-why-your-modern-size-doesnt-apply',
         },
       },
@@ -186,7 +186,7 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       {
         text: 'Shop by the measurements rather than the label size — vintage sizing varies widely.',
         link: {
-          label: 'Compare vintage and modern sizing',
+          label: 'Use our Vintage Size Converter',
           path: '/blog/vintage-dress-sizing-uk-why-your-modern-size-doesnt-apply',
         },
       },
