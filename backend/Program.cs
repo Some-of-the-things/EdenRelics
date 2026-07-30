@@ -211,6 +211,10 @@ builder.Services.AddScoped<IAnalyticsIngestService, AnalyticsIngestService>();
 builder.Services.AddScoped<ICareDraftService, CareDraftService>();
 builder.Services.AddScoped<ICareService, CareService>();
 
+// Seller tool: deterministic dating validation over the garment evidence archive
+builder.Services.Configure<DatingOptions>(builder.Configuration.GetSection("Dating"));
+builder.Services.AddScoped<IDatingRulesEngine, DatingRulesEngine>();
+
 // Monzo bank integration
 builder.Services.AddHttpClient<MonzoApiClient>();
 builder.Services.AddScoped<IMonzoService, MonzoService>();
@@ -372,6 +376,10 @@ using (IServiceScope scope = app.Services.CreateScope())
 
     // Seed the launch vintage-care entries (idempotent — skips any slug that already exists)
     Eden_Relics_BE.Data.CareSeed.EnsureSeedDataAsync(db).GetAwaiter().GetResult();
+
+    // Seed the dating rules (idempotent — skips any Code that already exists, never
+    // overwrites an edited rule). Unverified seeds are inert until researched.
+    Eden_Relics_BE.Data.DatingRulesSeed.EnsureSeedRulesAsync(db).GetAwaiter().GetResult();
 }
 
 app.UseResponseCompression();
