@@ -3,6 +3,7 @@ using System;
 using Eden_Relics_BE.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Eden_Relics_BE.Migrations
 {
     [DbContext(typeof(EdenRelicsDbContext))]
-    partial class EdenRelicsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260730184529_AddGarmentDatingArchive")]
+    partial class AddGarmentDatingArchive
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -766,79 +769,10 @@ namespace Eden_Relics_BE.Migrations
                     b.ToTable("Garments");
                 });
 
-            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.GarmentCapture", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("ArchiveRightsGranted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("ArchiveTermsVersion")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("ArchiveUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<long>("ByteSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CapturedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DisplayUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<Guid>("GarmentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Height")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<int>("Slot")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Width")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GarmentId", "Slot");
-
-                    b.ToTable("GarmentCaptures");
-                });
-
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.GarmentEvidence", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("CaptureId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Confirmation")
@@ -881,8 +815,6 @@ namespace Eden_Relics_BE.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CaptureId");
 
                     b.HasIndex("GarmentId", "Type");
 
@@ -2883,31 +2815,13 @@ namespace Eden_Relics_BE.Migrations
                     b.Navigation("Seller");
                 });
 
-            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.GarmentCapture", b =>
-                {
-                    b.HasOne("Eden_Relics_BE.Data.Entities.Garment", "Garment")
-                        .WithMany("Captures")
-                        .HasForeignKey("GarmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Garment");
-                });
-
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.GarmentEvidence", b =>
                 {
-                    b.HasOne("Eden_Relics_BE.Data.Entities.GarmentCapture", "Capture")
-                        .WithMany("Evidence")
-                        .HasForeignKey("CaptureId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("Eden_Relics_BE.Data.Entities.Garment", "Garment")
                         .WithMany("Evidence")
                         .HasForeignKey("GarmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Capture");
 
                     b.Navigation("Garment");
                 });
@@ -3055,13 +2969,6 @@ namespace Eden_Relics_BE.Migrations
                 {
                     b.Navigation("Assessments");
 
-                    b.Navigation("Captures");
-
-                    b.Navigation("Evidence");
-                });
-
-            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.GarmentCapture", b =>
-                {
                     b.Navigation("Evidence");
                 });
 
