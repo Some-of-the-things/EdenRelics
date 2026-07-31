@@ -104,6 +104,11 @@ must individually get through Vinted's allowlist**, and Vinted can decline.
 This is the single biggest unknown left, and it cannot be resolved by reading. See open
 questions.
 
+**Partly de-risked already: Teodora has a Vinted Pro account.** So the Pro-registration step
+— the slower and more consequential of the two gates — is done for beta tester zero. What
+remains is whether that account is on the Integrations allowlist, which the portal answers
+immediately.
+
 ## Fees
 
 Reporting varies and it needs first-hand confirmation. Vinted's own Pro page states
@@ -153,37 +158,120 @@ place, and they are outside our control in a way DOM breakage was not. Overall t
 significant improvement, but "dead on arrival without Vinted" is now more likely to be
 caused by allowlist refusal or seller unwillingness to go Pro than by broken automation.
 
-## Open questions — none answerable by reading, all cheap to answer
+## The contract is public — we can design against it today
 
-1. **Can Eden Relics get allowlisted, and how long does it take?** Teodora registering the
-   shop as Vinted Pro and applying is the fastest possible test, and it doubles as beta
-   tester zero (brief §6). **Do this first — nothing else should be built until the answer
-   is known.**
-2. **Is there a vendor/partner route** so sellers are not each individually gated? Ask
-   Vinted Pro support directly.
-3. **Do Pro sellers pay commission in the UK?** Vinted's page says free; third-party sources
-   disagree. Confirm from the account itself.
-4. **Will real vintage sellers accept Pro status and a mandatory 14-day returns window?**
-   The single most important commercial question here. Ask 5 sellers before designing
-   anything.
-5. **What does the Items API actually accept?** Photos, measurements, condition, brand, size
-   — the endpoint reference needs reading once allowlisted; the sub-pages were not publicly
-   reachable during this spike.
-6. **Rate limits** are not documented. Establish empirically before designing sync.
+**Correcting an earlier conclusion in this spike:** the full OpenAPI spec is downloadable
+without any credential, at <https://pro-docs.svc.vinted.com/downloads/api.yml> (v0.337.0,
+88 KB). Allowlisting gates *calling* the API, not *reading* it. So the integration can be
+designed and largely built before access arrives, which removes the schedule risk that the
+first draft of this document assumed.
+
+### Endpoints
+
+```
+/api/v1/items                     GET POST PUT DELETE   (batch: up to 100 per request)
+/api/v1/items/validate            POST                  (dry-run before publishing)
+/api/v1/items/{id}/status         GET
+/api/v1/items/imported            GET                   (items created outside VPI)
+/api/v1/items/item-references     PUT                   (attach our IDs to existing items)
+/api/v1/ontologies                GET                   (catalog tree, sizes, colours, statuses)
+/api/v2/item-price-suggestions    GET
+/api/v1/orders …                  GET, cancel, shipment, shipment-label, relist
+/api/v1/webhooks …                GET POST PUT DELETE, delivery-results
+/dev/v1/triggers/item-sold/{id}   POST                  (dev mode: fake a sale)
+```
+
+That dev-mode trigger matters more than it looks: **the whole sold → auto-delist path can be
+built and tested without making a real sale.**
+
+### Item creation — required fields
+
+```
+title            5–100 chars
+description      5–2000 chars
+photo_urls       ≥1, publicly accessible, max 5 MB each
+price            ≥ 1
+currency
+catalog_id       must be a LEAF catalog (from /ontologies)
+status_id        condition (from /ontologies)
+brand            ≤ 256 chars
+package_size_id  (from /ontologies)
+```
+
+Optional but relevant to us: `size_id` (required wherever the catalog has a size group),
+`color_ids` (max 2), `measurement_length`, `measurement_width`, `item_attributes`,
+`is_unisex`.
+
+### Three findings that touch our own design
+
+**1. `brand` is REQUIRED — and that is in direct tension with our core architecture.**
+Brief §3.1 and our `Garment` entity are deliberately built so a cut-label garment with no
+known maker is a first-class citizen, because that is a large share of real stock and the
+part nobody else can date. Vinted will not accept an item without a brand string. We will
+have to map "maker unknown" onto whatever Vinted's unbranded/other value is, and confirm
+from the ontologies endpoint that one exists and is acceptable for our catalogs. **This is
+the most important interop question in the whole integration** — if it forces a guessed
+brand onto a listing, it corrupts exactly the honesty the product is selling. Resolve before
+building the listing mapper.
+
+**2. Vinted takes measurements natively** (`measurement_length`, `measurement_width`, as
+integers). That strengthens the case for brief §4.7 — measurements are not just our internal
+data, they flow straight through to the listing.
+
+**3. Photos must be publicly accessible and ≤5 MB.** Our capture pipeline already produces a
+public WebP display derivative (1600px long edge, q78) alongside the verbatim archive
+original. **Send `DisplayUrl`, never `ArchiveUrl`** — archive originals are accepted up to
+25 MB by our own standard and would breach Vinted's limit. Worth a code comment at the
+integration point, since it is an easy mistake with a non-obvious failure.
+
+### Webhook events
+
+`ITEM_SOLD`, `ITEM_DELETED` and `ITEM_UPDATED` (both meaning "changed outside our tool"),
+`ORDER_CREATED`, `ORDER_CANCELLED`, `SHIPMENT_LABEL_CREATED`, `ITEM_PUBLISHED`, the
+create/update/delete success and failure pairs, and `VINTED_AUTHENTICATION_ERROR`.
+
+`ITEM_SOLD` is the auto-delist trigger. `ITEM_DELETED` / `ITEM_UPDATED` matter almost as
+much: they are how we stay correct when the seller edits on Vinted directly, which is the
+failure mode that makes crosslisting tools untrustworthy.
+
+## Open questions
+
+Answerable only by having the account:
+
+1. **Is Teodora's existing Pro account already allowlisted for Integrations?** She has Vinted
+   Pro. Opening <https://pro-portal.svc.vinted.com/> answers this in seconds — if the portal
+   opens, we are unblocked now; if not, request access through Pro support.
+2. **Is there a vendor/partner route** so future sellers are not each individually gated? The
+   per-business token model suggests not, which would make allowlisting a per-seller
+   onboarding step and a real friction point at scale. Ask Pro support.
+3. **Do Pro sellers pay commission in the UK?** Vinted's own page says Pro is free;
+   third-party blogs disagree. Confirm from the account, not from blogs.
+4. **Rate limits** are not in the spec. Establish empirically before designing sync.
+
+Answerable only by talking to sellers:
+
+5. **Will real vintage sellers accept Pro status and a mandatory 14-day returns window?** The
+   single most important commercial question here, and it gates adoption whatever the API
+   does. Ask five sellers before designing around it.
+
+Answerable from the ontologies endpoint, once callable:
+
+6. **Is there an acceptable "unbranded" value** for our catalogs? See finding 1 above.
 
 ## Recommendation
 
-1. **Register Eden Relics as Vinted Pro and apply for Integrations access this week.** It is
-   free, it is the gate on everything else, and the elapsed time is the schedule risk.
-2. **Do not write any Vinted code until allowlisted.** The endpoint contract cannot be read
-   without access, and building against assumptions is how this spike's value gets thrown
-   away.
-3. **Ask the 14-day returns question of real sellers in parallel.** It gates adoption
-   regardless of what the API does.
-4. **Drop the browser extension from v1 scope**, and revisit only if allowlisting proves
+1. **Check the Pro Integrations Portal now.** Teodora already has Vinted Pro, so this is a
+   30-second test, not an application. It is the only thing standing between us and a live
+   integration.
+2. **Design and build against the published spec in parallel** — it is public, versioned and
+   complete. The earlier advice to wait for allowlisting was wrong and is superseded.
+3. **Settle the unbranded-item question before writing the listing mapper.** It is the one
+   place where Vinted's contract and our architecture actually conflict.
+4. **Ask the 14-day returns question of real sellers**, in parallel with everything else.
+5. **Drop the browser extension from v1 scope**, and revisit only if allowlisting proves
    unobtainable.
-5. Keep the second brief §4.1 spike — measurement accuracy — as the next one to run, since
-   it is independent of all of the above and can proceed immediately.
+6. Run the second brief §4.1 spike — measurement accuracy — next; it is independent of all of
+   the above.
 
 ## Sources
 
