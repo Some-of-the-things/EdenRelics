@@ -166,7 +166,76 @@ async function fetchCsrShell(request: Request, env: WorkerEnv): Promise<Response
  * failure that a bare `new Response(response.body, …)` lets escape as an
  * uncaught 500. Awaiting the buffer here pulls any such error into the catch.
  */
+/**
+ * Start times of SSR renders that have not settled, one entry per in-flight
+ * render. Module scope, so it is per-isolate and survives between requests —
+ * which is the whole point.
+ */
+const inFlightRenders = new Set<number>();
+
+/**
+ * Longer than any legitimate render can be. The Workers runtime caps wall time
+ * well below this, so an entry older than it cannot be a slow render — it is a
+ * render whose invocation was destroyed before it could finish.
+ */
+const ABANDONED_RENDER_MS = 30_000;
+
+/** Set once this isolate is known to have lost a render mid-flight. */
+let isolatePoisoned = false;
+
+/**
+ * True when this isolate has had a render killed mid-flight, and should stop
+ * attempting SSR.
+ *
+ * WHY THIS SHAPE. Angular guards module-global state with try/finally. When the
+ * runtime destroys an invocation mid-render the finally never runs, and whatever
+ * it was going to restore stays corrupted for the life of the isolate — which is
+ * shared by every later request. Three such globals are known:
+ *
+ *   - `activeConsumer` (signals)            leaks -> NG0600 on the next signal write
+ *   - `inNotificationPhase` (signals)       no exported setter
+ *   - `NodeInjectorFactory.resolving`       lives on `tView.blueprint`, cached on
+ *                                           the ComponentDef, so it leaks -> NG0200
+ *                                           on every later render of that directive
+ *
+ * Resetting them one by one is whack-a-mole: only the first has a public setter,
+ * and there is no reason to believe the list is complete. So this detects the
+ * CAUSE they share — a render that started and never settled — instead of any
+ * particular symptom. It stays correct if Angular adds a fourth.
+ *
+ * Detection has to happen at request start, because that is the only code we
+ * know still runs: prod logs show our own render-failure handler never fires
+ * once during poisoning, so the invocation dies before any catch of ours.
+ */
+function isolateIsPoisoned(): boolean {
+  if (isolatePoisoned) {
+    return true;
+  }
+  const now = Date.now();
+  for (const startedAt of inFlightRenders) {
+    if (now - startedAt > ABANDONED_RENDER_MS) {
+      isolatePoisoned = true;
+      inFlightRenders.clear();
+      try {
+        console.error(
+          JSON.stringify({
+            ssrFailure: 'isolate-poisoned',
+            detail: 'a render was destroyed mid-flight; serving the CSR shell from now on',
+            abandonedForMs: now - startedAt,
+          }),
+        );
+      } catch {
+        // Diagnostics must never mask the mitigation.
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 async function renderOnce(request: Request): Promise<Response | null> {
+  const startedAt = Date.now();
+  inFlightRenders.add(startedAt);
   try {
     const response = await angularApp.handle(request);
     if (!response || response.status >= 500) {
@@ -178,6 +247,10 @@ async function renderOnce(request: Request): Promise<Response | null> {
   } catch (error) {
     logRenderFailure('render-throw', request.url, error);
     return null;
+  } finally {
+    // A render that reaches here settled, however it ended. Only one destroyed
+    // mid-flight leaves its entry behind, which is exactly the signal we want.
+    inFlightRenders.delete(startedAt);
   }
 }
 
@@ -501,8 +574,13 @@ export default {
     // attempt in a few ms, and healthy renders never reach this path at all.
     // It needs a FRESH request because `angularApp.handle()` consumes the one it
     // is given.
-    let rendered = await renderOnce(request);
-    if (!rendered && request.method === 'GET') {
+    // On a poisoned isolate every SSR attempt fails in a few ms and the runtime
+    // then kills the invocation, so the visitor gets a 503 instead of our
+    // fallback. Skipping straight to the CSR shell turns that into a working
+    // client-rendered page: worse for SEO on this isolate, but a page rather
+    // than an error, and it holds until the recycle replaces the isolate.
+    let rendered = isolateIsPoisoned() ? null : await renderOnce(request);
+    if (!rendered && request.method === 'GET' && !isolatePoisoned) {
       rendered = await renderOnce(
         new Request(request.url, { method: 'GET', headers: new Headers(request.headers) }),
       );
