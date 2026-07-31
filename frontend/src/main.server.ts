@@ -1,7 +1,55 @@
 import { BootstrapContext, bootstrapApplication } from '@angular/platform-browser';
-import { getActiveConsumer, setActiveConsumer } from '@angular/core/primitives/signals';
+import {
+  getActiveConsumer,
+  isInNotificationPhase,
+  setActiveConsumer,
+} from '@angular/core/primitives/signals';
 import { App } from './app/app';
 import { config } from './app/app.config.server';
+
+/**
+ * Reports this isolate's shared Angular state, so a poisoned one can be asked
+ * what is actually wrong with it instead of us guessing.
+ *
+ * We are guessing at the moment, and the guesses have been wrong twice. The
+ * NG0600 leak was real but fixing it changed nothing; the "a render was
+ * destroyed mid-flight" theory does not survive the 2026-07-31 10:40Z event,
+ * where the three checks before the first failure all succeeded normally and
+ * nothing was killed. Until we can read the state of an isolate that is ACTUALLY
+ * broken, any further fix is another guess.
+ *
+ * Published on `globalThis` because the build emits the Worker entry and the
+ * application as separate module graphs — an import cannot cross between them
+ * (it silently binds a duplicate), but the global object is genuinely shared.
+ * `worker.ts` exposes this over a probe route.
+ *
+ * Reads only. Nothing here changes behaviour.
+ */
+export interface IsolateDiagnostics {
+  /** Non-null means a reactive computation never restored the global consumer. */
+  activeConsumerLeaked: boolean;
+  /** True means a producer notification never finished; there is no setter to undo it. */
+  notificationPhaseLeaked: boolean;
+  /** Renders this isolate has started and finished since it booted. */
+  rendersStarted: number;
+  rendersSettled: number;
+  /** Wall-clock ms since the app bundle was first evaluated in this isolate. */
+  isolateAgeMs: number;
+}
+
+const bootedAt = Date.now();
+let rendersStarted = 0;
+let rendersSettled = 0;
+
+(globalThis as { __erIsolate?: { diagnostics: () => IsolateDiagnostics } }).__erIsolate = {
+  diagnostics: (): IsolateDiagnostics => ({
+    activeConsumerLeaked: getActiveConsumer() !== null,
+    notificationPhaseLeaked: isInNotificationPhase(),
+    rendersStarted,
+    rendersSettled,
+    isolateAgeMs: Date.now() - bootedAt,
+  }),
+};
 
 /**
  * Clears a leaked reactive context before bootstrapping — the cure for SSR
@@ -48,7 +96,13 @@ function clearPoisonedReactiveContext(): void {
 
 const bootstrap = (context: BootstrapContext) => {
   clearPoisonedReactiveContext();
-  return bootstrapApplication(App, config, context);
+  rendersStarted++;
+  // Counted here rather than in worker.ts because this is the app graph — the
+  // same one that owns the leaked state — so a gap between the two counters is
+  // evidence about THIS module's globals, not about the Worker's.
+  return bootstrapApplication(App, config, context).finally(() => {
+    rendersSettled++;
+  });
 };
 
 export default bootstrap;
