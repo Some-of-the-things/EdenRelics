@@ -183,6 +183,89 @@ public static class DatingRulesSeed
         },
         new DatingRule
         {
+            Code = "CARE_WHITE_ON_COLOURED_WASH_SYMBOL_FLOOR",
+            SpecId = "CARE-02",
+            Description =
+                "A wash symbol printed white on a coloured or black background, with all other instructions in "
+                + "text, is the first-generation HLCC layout.",
+            EvidenceType = EvidenceType.CareLabel,
+            TestKind = EvidenceTestKind.ValueContains,
+            TestValue = "white_on_coloured_wash_symbol",
+            BoundType = DateBoundType.NotBefore,
+            BoundDate = new DateOnly(1966, 1, 1),
+            Strength = RuleStrength.Soft,
+            SourceCitation =
+                "First-generation HLCC layout, 1966. Monochrome printing arrived at the 1976 revision. "
+                + "Oxfordshire Museums / Dress & Textile Specialists fact sheet.",
+            Provenance = ProvenanceClass.SecondaryScholarly,
+            Status = RuleStatus.Active,
+            ResearchNotes = "An era signal, not a lock — hence Soft at both ends. Paired with the _CAP rule.",
+        },
+        new DatingRule
+        {
+            Code = "CARE_WHITE_ON_COLOURED_WASH_SYMBOL_CAP",
+            SpecId = "CARE-02",
+            Description =
+                "The white-on-coloured wash symbol layout gave way to monochrome symbols at the 1976 HLCC revision.",
+            EvidenceType = EvidenceType.CareLabel,
+            TestKind = EvidenceTestKind.ValueContains,
+            TestValue = "white_on_coloured_wash_symbol",
+            BoundType = DateBoundType.NotAfter,
+            BoundDate = new DateOnly(1976, 12, 31),
+            Strength = RuleStrength.Soft,
+            SourceCitation =
+                "The fact sheet dates the monochrome shift to 1976 specifically. Oxfordshire Museums / Dress & "
+                + "Textile Specialists.",
+            Provenance = ProvenanceClass.SecondaryScholarly,
+            Status = RuleStatus.Active,
+        },
+        new DatingRule
+        {
+            Code = "CARE_NUMBERED_TUB_WITHOUT_TEMPERATURES",
+            SpecId = "CARE-02b",
+            Description =
+                "A numbered wash tub with no temperature shown characterises the 1966 and 1976/77 generations, "
+                + "before temperatures were added.",
+            EvidenceType = EvidenceType.CareLabel,
+            TestKind = EvidenceTestKind.ValueContains,
+            TestValue = "numbered_wash_tub_no_temperature",
+            BoundType = DateBoundType.NotAfter,
+            BoundDate = new DateOnly(1980, 12, 31),
+            Strength = RuleStrength.Soft,
+            SourceCitation =
+                "Numbered-only tubs characterise the 1966 and 1976/77 generations. Oxfordshire Museums / Dress & "
+                + "Textile Specialists six-column table.",
+            Provenance = ProvenanceClass.SecondaryScholarly,
+            Status = RuleStatus.Active,
+            ResearchNotes =
+                "Numbers ALONE lean early, but the number system itself persisted to 1986 — that is CARE-05's "
+                + "job, and this rule must not be confused with it. Deliberately NOT a CARE-1986 member: the "
+                + "absence of temperatures is what dates this, and it is the opposite of a co-occurrence.",
+        },
+        new DatingRule
+        {
+            Code = "CARE_HLCC_1982_INTERIM",
+            SpecId = "CARE-06b",
+            Description =
+                "The HLCC 1982 interim code sits between BS 2747:1980 and :1986, with numbered tubs returning "
+                + "alongside temperatures and refined dry-clean and iron symbols.",
+            EvidenceType = EvidenceType.CareLabel,
+            TestKind = EvidenceTestKind.ValueContains,
+            TestValue = "hlcc_1982_features",
+            BoundType = DateBoundType.NotBefore,
+            BoundDate = new DateOnly(1982, 1, 1),
+            Strength = RuleStrength.Soft,
+            SourceCitation =
+                "PENDING — HLCC 1982 'International Textile Care Labelling Code: What it Means to You'. The fact "
+                + "sheet lists 1982 as a distinct generation, but what it changed vs 1980 is not established.",
+            Provenance = ProvenanceClass.SecondaryScholarly,
+            Status = RuleStatus.Unverified,
+            ResearchNotes =
+                "A genuine but minor generation, and low priority. Inert until someone establishes exactly what "
+                + "1982 altered — without that the test value cannot be defined precisely enough to fire correctly.",
+        },
+        new DatingRule
+        {
             Code = "CARE_IRON_DRYCLEAN_BLEACH_SYMBOLS_UK",
             SpecId = "CARE-03a",
             Description =
@@ -923,7 +1006,38 @@ public static class DatingRulesSeed
             SourceCitation = "Breakup of Yugoslavia, 1991-92.",
             Provenance = ProvenanceClass.PrimaryRegistry,
             Status = RuleStatus.Active,
-            ResearchNotes = "'Serbia and Montenegro' indicates 2003-2006 specifically and deserves its own rule.",
+        },
+        new DatingRule
+        {
+            Code = "ORIGIN_SERBIA_AND_MONTENEGRO",
+            SpecId = "GEO-04",
+            Description =
+                "'Serbia and Montenegro' names the state union that existed only between 2003 and 2006.",
+            EvidenceType = EvidenceType.OriginText,
+            TestKind = EvidenceTestKind.ValueMatchesRegex,
+            TestValue = @"serbia\s+(and|&|/)\s*montenegro",
+            BoundType = DateBoundType.NotBefore,
+            BoundDate = new DateOnly(2003, 2, 4),
+            Strength = RuleStrength.Hard,
+            SourceCitation = "The State Union of Serbia and Montenegro existed 4 February 2003 to 5 June 2006.",
+            Provenance = ProvenanceClass.PrimaryRegistry,
+            Status = RuleStatus.Active,
+            ResearchNotes = "A three-year window, and a definitive 'not vintage' signal.",
+        },
+        new DatingRule
+        {
+            Code = "ORIGIN_SERBIA_AND_MONTENEGRO_CAP",
+            SpecId = "GEO-04",
+            Description = "The Serbia and Montenegro state union dissolved in June 2006.",
+            EvidenceType = EvidenceType.OriginText,
+            TestKind = EvidenceTestKind.ValueMatchesRegex,
+            TestValue = @"serbia\s+(and|&|/)\s*montenegro",
+            BoundType = DateBoundType.NotAfter,
+            BoundDate = new DateOnly(2006, 6, 5),
+            Strength = RuleStrength.Hard,
+            SourceCitation = "Montenegro declared independence 3 June 2006; the union dissolved 5 June 2006.",
+            Provenance = ProvenanceClass.PrimaryRegistry,
+            Status = RuleStatus.Active,
         },
         new DatingRule
         {
@@ -1119,6 +1233,26 @@ public static class DatingRulesSeed
                 "Common on British labels and unused by competitors, so worth the research. Note postal and "
                 + "administrative dates differ: Middlesex ceased administratively in 1965 but survived as a postal "
                 + "county for decades.",
+        },
+
+        new DatingRule
+        {
+            Code = "ADDR_TELEX_OR_TELEGRAPHIC",
+            SpecId = "ADDR-04",
+            Description =
+                "A telex or telegraphic address is a strong marker of a 1960s-80s trade-facing label.",
+            EvidenceType = EvidenceType.Other,
+            TestKind = EvidenceTestKind.ValueMatchesRegex,
+            TestValue = @"\b(telex|telegrams?|telegraphic\s+address)\b",
+            BoundType = DateBoundType.NotAfter,
+            BoundDate = new DateOnly(1989, 12, 31),
+            Strength = RuleStrength.Soft,
+            SourceCitation = "PENDING — no dated source for UK telex decline on garment labels.",
+            Provenance = ProvenanceClass.CommunityConsensus,
+            Status = RuleStatus.Unverified,
+            ResearchNotes =
+                "Investigate alongside the fax rule (TEL-08); the two bracket the same period from opposite ends. "
+                + "'PO Box' on its own carries no date and is deliberately not encoded.",
         },
 
         // ── §7 Web and email addresses ───────────────────────────────────────
