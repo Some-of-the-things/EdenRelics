@@ -44,21 +44,12 @@ name: Recycle SSR Worker
 
 on:
   schedule:
-    # TEMPORARY — set 2026-07-30, REVERT to '0 */2 * * *' on 2026-07-31.
-    #
-    # Runs 07:00-23:00Z only, leaving a deliberate 8h gap overnight so an isolate
-    # DOES poison while `logRenderFailure` (added the same day) is live to capture
-    # the first error. The 2h cadence would otherwise prevent the very event we
-    # need to observe: every recorded failure landed 2h39m-2h49m after a recycle.
-    #
-    # Not recycling is the only lever that accelerates this. Poisoning tracks time
-    # since deploy, not traffic volume — failures cluster at the same ~2h40m mark
-    # regardless of load, which is why every load-based repro has failed (300
-    # Angular 404s, 25 mid-render aborts).
-    #
-    # Expected: poisoned ~01:40Z, cleared by the 07:00Z run. Cost is a handful of
-    # 503s at the quietest point of the day, mostly to crawlers.
-    - cron: '0 7-23/2 * * *'
+    # Restored 2026-07-31 after the overnight-gap experiment (cron was temporarily
+    # '0 7-23/2 * * *' on 2026-07-30 to let an isolate poison under observation).
+    # That experiment succeeded and identified the cause — see the leaked
+    # `activeConsumer` note in worker.ts. Keep recycling until the fix is proven
+    # in prod; this workflow is the safety net, not the cure.
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 # Never let two recycles overlap, and never race a real deploy from CI.

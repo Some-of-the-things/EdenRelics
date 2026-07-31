@@ -19,6 +19,7 @@ public class DatingRulesEngineTests
             garments: null!,
             evidenceRepo: null!,
             rules: null!,
+            transitionGroups: null!,
             assessments: null!,
             Options.Create(options ?? new DatingOptions()),
             NullLogger<DatingRulesEngine>.Instance);
@@ -371,5 +372,308 @@ public class DatingRulesEngineTests
         // yet, so it must ship inert.
         Assert.Equal(RuleStatus.Unverified, SeedRule("ORIGIN_BRITISH_EMPIRE_MADE").Status);
         Assert.Equal(RuleStatus.Active, SeedRule("PHONE_UK_BARE_01_LONDON").Status);
+    }
+
+    // ── Transition groups (rules doc §0.4) ───────────────────────────────────
+
+    private static DatingTransitionGroup Group(
+        string code,
+        DateOnly start,
+        DateOnly end,
+        RuleStatus status = RuleStatus.Active,
+        int? tolerance = 0) =>
+        new()
+        {
+            Id = Guid.CreateVersion7(),
+            Code = code,
+            Description = code,
+            PeriodStart = start,
+            PeriodEnd = end,
+            Status = status,
+            TrailingToleranceMonths = tolerance,
+        };
+
+    /// <summary>
+    /// The case the group exists for. A numbered wash tub caps at 1986 and an agitation
+    /// underline floors at 1986, so intersecting them collapses the answer onto the
+    /// changeover itself. Both conventions are documented as coexisting across 1980-1986,
+    /// so the honest answer is the whole transition, not the instant the standard changed.
+    /// </summary>
+    [Fact]
+    public void TransitionGroup_CoOccurringRules_WidenToThePeriodInsteadOfCollapsing()
+    {
+        List<GarmentEvidence> evidence =
+        [
+            Ev(EvidenceType.CareLabel, "numbered_wash_tub"),
+            Ev(EvidenceType.CareLabel, "wash_tub_underline"),
+        ];
+
+        List<DatingRule> rules =
+        [
+            Rule("TUB", EvidenceType.CareLabel, "numbered_wash_tub",
+                DateBoundType.NotAfter, new DateOnly(1986, 12, 31)),
+            Rule("UNDERLINE", EvidenceType.CareLabel, "wash_tub_underline",
+                DateBoundType.NotBefore, new DateOnly(1986, 1, 1)),
+        ];
+        rules[0].TransitionGroupCode = "CARE-1986";
+        rules[1].TransitionGroupCode = "CARE-1986";
+
+        DatingAssessment result = Engine().Assess(
+            evidence, rules, transitionGroups: [Group("CARE-1986", new DateOnly(1980, 1, 1), new DateOnly(1986, 12, 31))]);
+
+        Assert.Equal(DatingOutcome.Bounded, result.Outcome);
+        Assert.Equal(new DateOnly(1980, 1, 1), result.Earliest);
+        Assert.Equal(new DateOnly(1986, 12, 31), result.Latest);
+        Assert.False(result.HasHardContradiction);
+
+        // The member rules stay in the chain, set aside with a reason naming the group —
+        // "we saw this and widened because of it" is the audit trail.
+        DatingAssessmentStep tub = result.Steps.Single(s => s.RuleCode == "TUB");
+        Assert.False(tub.AppliedToInterval);
+        Assert.Contains("CARE-1986", tub.ExclusionReason);
+        Assert.Equal(2, result.Steps.Count(s => s.TransitionGroupCode == "CARE-1986" && s.AppliedToInterval));
+    }
+
+    /// <summary>
+    /// One convention on its own is not a co-occurrence, so it must still bound normally.
+    /// If a lone member rule triggered the group, every numbered tub would widen to the
+    /// whole transition and the rule would stop being worth anything.
+    /// </summary>
+    [Fact]
+    public void TransitionGroup_SingleMemberRule_BoundsNormally()
+    {
+        List<DatingRule> rules =
+        [
+            Rule("TUB", EvidenceType.CareLabel, "numbered_wash_tub",
+                DateBoundType.NotAfter, new DateOnly(1986, 12, 31)),
+        ];
+        rules[0].TransitionGroupCode = "CARE-1986";
+
+        DatingAssessment result = Engine().Assess(
+            [Ev(EvidenceType.CareLabel, "numbered_wash_tub")],
+            rules,
+            transitionGroups: [Group("CARE-1986", new DateOnly(1980, 1, 1), new DateOnly(1986, 12, 31))]);
+
+        Assert.Equal(new DateOnly(1986, 12, 31), result.Latest);
+        // Not floored at the group's 1980 start: nothing here says the garment is post-1980.
+        Assert.Null(result.Earliest);
+        Assert.True(result.Steps.Single().AppliedToInterval);
+    }
+
+    [Fact]
+    public void TransitionGroup_Unverified_IsInertLikeAnUnverifiedRule()
+    {
+        List<DatingRule> rules =
+        [
+            Rule("TUB", EvidenceType.CareLabel, "numbered_wash_tub",
+                DateBoundType.NotAfter, new DateOnly(1986, 12, 31)),
+            Rule("UNDERLINE", EvidenceType.CareLabel, "wash_tub_underline",
+                DateBoundType.NotBefore, new DateOnly(1986, 1, 1)),
+        ];
+        rules[0].TransitionGroupCode = "CARE-1986";
+        rules[1].TransitionGroupCode = "CARE-1986";
+
+        DatingAssessment result = Engine().Assess(
+            [Ev(EvidenceType.CareLabel, "numbered_wash_tub"), Ev(EvidenceType.CareLabel, "wash_tub_underline")],
+            rules,
+            transitionGroups:
+            [
+                Group("CARE-1986", new DateOnly(1980, 1, 1), new DateOnly(1986, 12, 31), RuleStatus.Unverified),
+            ]);
+
+        // Falls back to plain intersection: the changeover instant, not the transition.
+        Assert.Equal(new DateOnly(1986, 1, 1), result.Earliest);
+        Assert.Equal(new DateOnly(1986, 12, 31), result.Latest);
+    }
+
+    /// <summary>
+    /// The widened bound can be no stronger than the evidence that triggered it, or a group
+    /// reached through soft rules would launder them into a hard window.
+    /// </summary>
+    [Fact]
+    public void TransitionGroup_TriggeredBySoftRules_ProducesASoftWindow()
+    {
+        List<DatingRule> rules =
+        [
+            Rule("A", EvidenceType.CareLabel, "a", DateBoundType.NotAfter, new DateOnly(1986, 12, 31),
+                strength: RuleStrength.Soft),
+            Rule("B", EvidenceType.CareLabel, "b", DateBoundType.NotBefore, new DateOnly(1986, 1, 1),
+                strength: RuleStrength.Hard),
+        ];
+        rules[0].TransitionGroupCode = "G";
+        rules[1].TransitionGroupCode = "G";
+
+        DatingAssessment result = Engine().Assess(
+            [Ev(EvidenceType.CareLabel, "a"), Ev(EvidenceType.CareLabel, "b")],
+            rules,
+            transitionGroups: [Group("G", new DateOnly(1980, 1, 1), new DateOnly(1986, 12, 31))]);
+
+        Assert.All(
+            result.Steps.Where(s => s.TransitionGroupCode == "G"),
+            s => Assert.Equal(RuleStrength.Soft, s.Strength));
+        Assert.Equal(new DateOnly(1980, 1, 1), result.Earliest);
+    }
+
+    [Fact]
+    public void TransitionGroup_AppliesTrailingToleranceToItsPeriodEnd()
+    {
+        List<DatingRule> rules =
+        [
+            Rule("A", EvidenceType.CareLabel, "a", DateBoundType.NotAfter, new DateOnly(1986, 12, 31)),
+            Rule("B", EvidenceType.CareLabel, "b", DateBoundType.NotBefore, new DateOnly(1986, 1, 1)),
+        ];
+        rules[0].TransitionGroupCode = "G";
+        rules[1].TransitionGroupCode = "G";
+
+        DatingAssessment result = Engine().Assess(
+            [Ev(EvidenceType.CareLabel, "a"), Ev(EvidenceType.CareLabel, "b")],
+            rules,
+            transitionGroups: [Group("G", new DateOnly(1980, 1, 1), new DateOnly(1986, 12, 31), tolerance: 12)]);
+
+        // Leading edge untouched, trailing edge widened — the same asymmetry as a rule.
+        Assert.Equal(new DateOnly(1980, 1, 1), result.Earliest);
+        Assert.Equal(new DateOnly(1987, 12, 31), result.Latest);
+    }
+
+    // ── Provenance (rules doc §0.3) ──────────────────────────────────────────
+
+    /// <summary>
+    /// Provenance is copied onto the step, not looked up from the live rule. An assessment
+    /// that said "post-1980 on primary legislation" must not silently become "on community
+    /// consensus" because the rule was re-sourced afterwards.
+    /// </summary>
+    [Fact]
+    public void Provenance_IsCopiedIntoTheEvidenceChain()
+    {
+        DatingRule rule = Rule("R", EvidenceType.Fabric, "lyocell",
+            DateBoundType.NotBefore, new DateOnly(1998, 1, 1));
+        rule.Provenance = ProvenanceClass.PrimaryLegislation;
+
+        DatingAssessment result = Engine().Assess([Ev(EvidenceType.Fabric, "lyocell")], [rule]);
+
+        Assert.Equal(ProvenanceClass.PrimaryLegislation, result.Steps.Single().Provenance);
+    }
+
+    [Fact]
+    public void Seed_EveryRuleCarriesItsSpecIdAndAProvenance()
+    {
+        List<DatingRule> seed = DatingRulesSeed.BuildSeed();
+
+        Assert.NotEmpty(seed);
+        Assert.All(seed, r => Assert.False(string.IsNullOrWhiteSpace(r.SpecId)));
+        // Codes must stay unique — the seeder reconciles on Code, so a duplicate would make
+        // one of the pair unreachable and silently un-updatable.
+        Assert.Equal(seed.Count, seed.Select(r => r.Code).Distinct(StringComparer.Ordinal).Count());
+    }
+
+    /// <summary>
+    /// The standing warning from §12 of the rules document, enforced. Anything still
+    /// awaiting a source must be inert, and "PENDING" in a citation is how the seed marks
+    /// that. An active rule with an unresolved source is the exact failure mode that flags
+    /// correct listings as wrong.
+    /// </summary>
+    [Fact]
+    public void Seed_NoActiveRuleHasAPendingCitation()
+    {
+        List<string> offenders = DatingRulesSeed.BuildSeed()
+            .Where(r => r.Status == RuleStatus.Active
+                && r.SourceCitation.Contains("PENDING", StringComparison.OrdinalIgnoreCase))
+            .Select(r => r.Code)
+            .ToList();
+
+        Assert.Empty(offenders);
+    }
+
+    /// <summary>
+    /// Rule content is authored separately from the code that runs it, and the engine
+    /// deliberately fails a bad regex CLOSED — it logs and treats it as no match. That is
+    /// right at runtime and useless as feedback, so an unparseable pattern would ship as a
+    /// rule that silently never fires. Catch it here instead.
+    /// </summary>
+    [Fact]
+    public void Seed_EveryRegexRuleHasAValidPattern()
+    {
+        foreach (DatingRule rule in DatingRulesSeed.BuildSeed()
+            .Where(r => r.TestKind == EvidenceTestKind.ValueMatchesRegex))
+        {
+            Assert.False(string.IsNullOrWhiteSpace(rule.TestValue), $"{rule.Code} has no pattern.");
+            Exception? failure = Record.Exception(() =>
+                System.Text.RegularExpressions.Regex.IsMatch("probe", rule.TestValue!));
+            Assert.True(failure is null, $"{rule.Code} has an invalid regex: {failure?.Message}");
+        }
+    }
+
+    [Fact]
+    public void Seed_TransitionGroupMembersAllReferToAGroupThatExists()
+    {
+        HashSet<string> groups = DatingRulesSeed.BuildTransitionGroups()
+            .Select(g => g.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        List<string> dangling = DatingRulesSeed.BuildSeed()
+            .Where(r => r.TransitionGroupCode is not null && !groups.Contains(r.TransitionGroupCode))
+            .Select(r => r.Code)
+            .ToList();
+
+        Assert.Empty(dangling);
+    }
+
+    /// <summary>
+    /// A group needs at least two members to ever fire, so a group with fewer is dead
+    /// content that would quietly never run.
+    /// </summary>
+    [Fact]
+    public void Seed_EveryTransitionGroupHasAtLeastTwoMemberRules()
+    {
+        List<DatingRule> seed = DatingRulesSeed.BuildSeed();
+
+        foreach (DatingTransitionGroup group in DatingRulesSeed.BuildTransitionGroups())
+        {
+            int members = seed.Count(r =>
+                string.Equals(r.TransitionGroupCode, group.Code, StringComparison.OrdinalIgnoreCase));
+            Assert.True(members >= 2, $"Transition group {group.Code} has {members} member rule(s); needs 2+.");
+        }
+    }
+
+    /// <summary>
+    /// The rules document's own worked example (§9), run against the SHIPPED seed rather
+    /// than test fixtures: a cut-label dress with a dryer symbol, a numbered wash tub and a
+    /// bare 01 London number lands on "early-to-mid 1980s".
+    ///
+    /// Note the numbered tub is a CARE-1986 member but the underline is not present, so
+    /// this is a single-member case and bounds normally — the transition path is not
+    /// involved. With the default 12-month trailing tolerance the answer is 1980-1987,
+    /// which is what the document states ("1980 - 1986/87").
+    /// </summary>
+    [Fact]
+    public void SeedWorkedExample_FromTheRulesDocument_DatesToTheEarlyMid1980s()
+    {
+        List<GarmentEvidence> evidence =
+        [
+            Ev(EvidenceType.CareLabel, "tumble_dry_symbol"),
+            Ev(EvidenceType.CareLabel, "numbered_wash_tub"),
+            Ev(EvidenceType.PhoneNumber, "01-629 1234"),
+        ];
+
+        List<DatingRule> rules =
+        [
+            SeedRule("CARE_TUMBLE_DRY_SYMBOL"),
+            SeedRule("CARE_NUMBERED_WASH_TUB"),
+            SeedRule("PHONE_UK_BARE_01_LONDON"),
+        ];
+
+        DatingAssessment result = Engine().Assess(
+            evidence, rules, transitionGroups: DatingRulesSeed.BuildTransitionGroups());
+
+        Assert.Equal(DatingOutcome.Bounded, result.Outcome);
+        Assert.Equal(new DateOnly(1980, 1, 1), result.Earliest);
+        Assert.Equal(new DateOnly(1987, 12, 31), result.Latest);
+        Assert.False(result.HasHardContradiction);
+        Assert.Contains("maker unknown", result.Summary);
+
+        // Every firing rule must be able to say why, and on whose authority.
+        Assert.All(
+            result.Steps.Where(s => s.AppliedToInterval),
+            s => Assert.False(string.IsNullOrWhiteSpace(s.SourceCitation)));
     }
 }

@@ -16,11 +16,18 @@ public interface IDatingRulesEngine
     /// window, without persisting anything. Pure over its inputs, so it is safe to call
     /// speculatively while a seller is still editing a listing.
     /// </summary>
+    /// <param name="transitionGroups">
+    /// Documented coexistence periods. Where two or more rules sharing a group fire
+    /// together, the group's period replaces their individual bounds — the one case in
+    /// which more evidence widens the window rather than narrowing it. Omit to intersect
+    /// everything, which is the correct behaviour when no groups are defined.
+    /// </param>
     DatingAssessment Assess(
         IReadOnlyCollection<GarmentEvidence> evidence,
         IReadOnlyCollection<DatingRule> rules,
         DateOnly? claimedEraStart = null,
-        DateOnly? claimedEraEnd = null);
+        DateOnly? claimedEraEnd = null,
+        IReadOnlyCollection<DatingTransitionGroup>? transitionGroups = null);
 
     /// <summary>
     /// Loads the garment's evidence and the active rule set, assesses, persists the result

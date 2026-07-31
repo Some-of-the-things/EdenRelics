@@ -17,6 +17,15 @@ public class DatingRule : BaseEntity
     public required string Code { get; set; }
 
     /// <summary>
+    /// The rule's identifier in the research document, e.g. "CARE-04". The document is the
+    /// source of truth for content and is revised independently of the code, so a stable
+    /// two-way reference is what makes a review of one against the other possible at all.
+    /// Several rows may share a SpecId where one documented rule bounds both ends of a
+    /// range — a rule row carries exactly one bound.
+    /// </summary>
+    public string SpecId { get; set; } = "";
+
+    /// <summary>
     /// Plain-English statement of what the rule asserts, shown to the seller when the rule
     /// fires. Write it as the reason, not the mechanism.
     /// </summary>
@@ -51,6 +60,26 @@ public class DatingRule : BaseEntity
     /// archive. An assessment must be able to say *why*, and this is the "why".
     /// </summary>
     public string SourceCitation { get; set; } = "";
+
+    /// <summary>
+    /// The QUALITY of that source, as a class the engine can compare — orthogonal to
+    /// <see cref="Strength"/>. Only hard bounds with primary provenance are safely
+    /// insurable, so the guarantee needs this recorded per rule, not just in the research
+    /// document. Defaults to the weakest class so an unclassified rule can never be
+    /// mistaken for a well-sourced one.
+    /// </summary>
+    public ProvenanceClass Provenance { get; set; } = ProvenanceClass.CommunityConsensus;
+
+    /// <summary>
+    /// Optional membership of a named transition group, e.g. "CARE-1986".
+    ///
+    /// Where one rule sets a not-after and an adjacent rule sets a not-before at the same
+    /// change, naive intersection produces absurd precision or a false contradiction — in
+    /// reality the conventions coexisted while artwork was updated. When two or more rules
+    /// from the same group fire, the engine widens to the group's documented period
+    /// instead of intersecting them. See <see cref="DatingTransitionGroup"/>.
+    /// </summary>
+    public string? TransitionGroupCode { get; set; }
 
     /// <summary>Unverified rules exist so research can be staged; they never affect output.</summary>
     public RuleStatus Status { get; set; } = RuleStatus.Unverified;
