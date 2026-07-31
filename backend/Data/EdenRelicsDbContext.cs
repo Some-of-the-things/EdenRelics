@@ -55,6 +55,7 @@ public class EdenRelicsDbContext : DbContext
 
     // Seller-tool dating archive. Evidence set -> bounded range; see DatingRulesEngine.
     public DbSet<DatingRule> DatingRules => Set<DatingRule>();
+    public DbSet<DatingTransitionGroup> DatingTransitionGroups => Set<DatingTransitionGroup>();
     public DbSet<Garment> Garments => Set<Garment>();
     public DbSet<GarmentEvidence> GarmentEvidence => Set<GarmentEvidence>();
     public DbSet<GarmentCapture> GarmentCaptures => Set<GarmentCapture>();
@@ -412,8 +413,18 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(r => r.Description).HasMaxLength(500);
             entity.Property(r => r.TestValue).HasMaxLength(500);
             entity.Property(r => r.SourceCitation).HasMaxLength(500);
+            entity.Property(r => r.TransitionGroupCode).HasMaxLength(80);
             // The engine's hot path is "every active rule for this evidence type".
             entity.HasIndex(r => new { r.Status, r.EvidenceType });
+        });
+
+        modelBuilder.Entity<DatingTransitionGroup>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(g => g.Code).HasMaxLength(80);
+            entity.HasIndex(g => g.Code).IsUnique();
+            entity.Property(g => g.Description).HasMaxLength(500);
+            entity.Property(g => g.SourceCitation).HasMaxLength(500);
         });
 
         modelBuilder.Entity<Garment>(entity =>

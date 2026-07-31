@@ -54,6 +54,39 @@ public enum RuleStrength
 }
 
 /// <summary>
+/// WHY we believe a rule — the quality of the evidence behind it.
+///
+/// Deliberately orthogonal to <see cref="RuleStrength"/>, and both are needed. Strength
+/// governs what the engine DOES; provenance records what the claim RESTS ON. A rule can
+/// be hard-from-legislation or hard-from-observed-corpus: identical engine behaviour,
+/// very different credibility, and only the first is safely insurable.
+///
+/// Ordered strongest first, so a numeric comparison ranks credibility.
+/// </summary>
+public enum ProvenanceClass
+{
+    /// <summary>A statutory instrument, directive or Act, read directly.</summary>
+    PrimaryLegislation = 0,
+    /// <summary>A British or ISO standard document, read directly.</summary>
+    PrimaryStandard = 1,
+    /// <summary>A manufacturer or institutional archive holding.</summary>
+    PrimaryArchive = 2,
+    /// <summary>Trademark, Companies House or patent filings.</summary>
+    PrimaryRegistry = 3,
+    /// <summary>Academic work, museum publication, dissertation-based fact sheet.</summary>
+    SecondaryScholarly = 4,
+    /// <summary>Trade press, label-printer guides, established specialist blogs.</summary>
+    SecondaryTrade = 5,
+    /// <summary>
+    /// Derived from our own dated garments. Strengthens as the archive grows, and is the
+    /// one class competitors cannot replicate.
+    /// </summary>
+    ObservedCorpus = 6,
+    /// <summary>Widely repeated, no traceable source. A research lead, never a rule.</summary>
+    CommunityConsensus = 7,
+}
+
+/// <summary>
 /// Editorial state of a rule. Research is staged, so unverified rules live in the store
 /// alongside verified ones — but they must never affect output.
 /// </summary>

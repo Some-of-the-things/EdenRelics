@@ -29,6 +29,7 @@ public class DatingRulesEngine(
     IRepository<Garment> garments,
     IRepository<GarmentEvidence> evidenceRepo,
     IRepository<DatingRule> rules,
+    IRepository<DatingTransitionGroup> transitionGroups,
     IRepository<DatingAssessment> assessments,
     IOptions<DatingOptions> options,
     ILogger<DatingRulesEngine> logger) : IDatingRulesEngine
@@ -39,7 +40,8 @@ public class DatingRulesEngine(
         IReadOnlyCollection<GarmentEvidence> evidence,
         IReadOnlyCollection<DatingRule> ruleSet,
         DateOnly? claimedEraStart = null,
-        DateOnly? claimedEraEnd = null)
+        DateOnly? claimedEraEnd = null,
+        IReadOnlyCollection<DatingTransitionGroup>? transitionGroups = null)
     {
         // Rejected observations are struck from the record entirely; unverified rules exist
         // only so the research can be staged and must never influence an answer.
@@ -51,6 +53,7 @@ public class DatingRulesEngine(
             .ToList();
 
         List<DatingAssessmentStep> steps = [];
+        List<(DatingRule Rule, DatingAssessmentStep Step)> fired = [];
         foreach (DatingRule rule in active)
         {
             foreach (GarmentEvidence observation in usable.Where(e => e.Type == rule.EvidenceType))
@@ -59,9 +62,16 @@ public class DatingRulesEngine(
                 {
                     continue;
                 }
-                steps.Add(BuildStep(rule, observation));
+                DatingAssessmentStep step = BuildStep(rule, observation);
+                steps.Add(step);
+                fired.Add((rule, step));
             }
         }
+
+        // Widen before intersecting: a co-occurrence that a transition group explains is not
+        // evidence of a precise date, so its member bounds must be out of the way before the
+        // intersection runs.
+        ApplyTransitionGroups(steps, fired, transitionGroups);
 
         DatingAssessment assessment = new()
         {
@@ -80,7 +90,10 @@ public class DatingRulesEngine(
         // Presence is hard, absence is soft, so the hard bounds establish the window and the
         // soft ones may only narrow it further. Applying them separately is what lets a soft
         // contradiction lower confidence instead of blocking a listing.
-        (DateOnly? hardStart, DateOnly? hardEnd) = Intersect(steps.Where(s => s.Strength == RuleStrength.Hard));
+        // AppliedToInterval is already false for any member rule a transition group
+        // superseded, so those bounds must not be intersected back in here.
+        (DateOnly? hardStart, DateOnly? hardEnd) = Intersect(
+            steps.Where(s => s.AppliedToInterval && s.Strength == RuleStrength.Hard));
 
         if (IsEmpty(hardStart, hardEnd))
         {
@@ -102,7 +115,7 @@ public class DatingRulesEngine(
         // depend on the order rules came back from the database. Any soft bound that would
         // empty the window is set aside rather than allowed to force a contradiction.
         foreach (DatingAssessmentStep step in steps
-            .Where(s => s.Strength == RuleStrength.Soft)
+            .Where(s => s.AppliedToInterval && s.Strength == RuleStrength.Soft)
             .OrderBy(s => s.EffectiveBoundDate)
             .ThenBy(s => s.RuleCode, StringComparer.Ordinal))
         {
@@ -154,7 +167,12 @@ public class DatingRulesEngine(
             .Where(r => r.Status == RuleStatus.Active)
             .ToListAsync(ct);
 
-        DatingAssessment assessment = Assess(evidence, active, garment.ClaimedEraStart, garment.ClaimedEraEnd);
+        List<DatingTransitionGroup> groups = await transitionGroups.Query()
+            .Where(g => g.Status == RuleStatus.Active)
+            .ToListAsync(ct);
+
+        DatingAssessment assessment = Assess(
+            evidence, active, garment.ClaimedEraStart, garment.ClaimedEraEnd, groups);
         assessment.GarmentId = garmentId;
 
         await assessments.AddAsync(assessment);
@@ -166,6 +184,99 @@ public class DatingRulesEngine(
 
         return assessment;
     }
+
+    /// <summary>
+    /// Replaces the bounds of co-occurring transition-group rules with the group's
+    /// documented period.
+    ///
+    /// Every other part of the engine narrows. This is the one place that widens, because
+    /// the fact being represented is different: two conventions genuinely overlapped, so
+    /// finding both says "this garment is from the changeover", not "this garment is from
+    /// the instant the standard changed". Intersecting them instead would manufacture false
+    /// precision, or a contradiction, out of an authentic label.
+    ///
+    /// Only fires on two or more DISTINCT rules — a single member rule still bounds
+    /// normally, since one convention on its own is not a co-occurrence.
+    /// </summary>
+    private void ApplyTransitionGroups(
+        List<DatingAssessmentStep> steps,
+        List<(DatingRule Rule, DatingAssessmentStep Step)> fired,
+        IReadOnlyCollection<DatingTransitionGroup>? groups)
+    {
+        if (groups is null || groups.Count == 0)
+        {
+            return;
+        }
+
+        foreach (DatingTransitionGroup group in groups
+            .Where(g => g.Status == RuleStatus.Active)
+            .OrderBy(g => g.Code, StringComparer.Ordinal))
+        {
+            List<(DatingRule Rule, DatingAssessmentStep Step)> members = fired
+                .Where(f => string.Equals(f.Rule.TransitionGroupCode, group.Code, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (members.Select(m => m.Rule.Code).Distinct(StringComparer.OrdinalIgnoreCase).Count() < 2)
+            {
+                continue;
+            }
+
+            foreach ((DatingRule _, DatingAssessmentStep step) in members)
+            {
+                step.AppliedToInterval = false;
+                step.ExclusionReason =
+                    $"Superseded by transition group {group.Code}: this convention is documented as coexisting "
+                    + "with the others found here, so the co-occurrence widens the window rather than narrowing it.";
+            }
+
+            // The widened bound can be no stronger than the weakest evidence that triggered
+            // it — a group reached via soft rules must not harden the answer.
+            RuleStrength strength = members.Any(m => m.Step.Strength == RuleStrength.Soft)
+                ? RuleStrength.Soft
+                : RuleStrength.Hard;
+
+            int tolerance = group.TrailingToleranceMonths ?? _options.DefaultTrailingToleranceMonths;
+            string codes = string.Join(", ", members
+                .Select(m => m.Rule.Code)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => c, StringComparer.Ordinal));
+
+            steps.Add(BuildTransitionStep(group, members[0].Step, strength, DateBoundType.NotBefore, group.PeriodStart, 0, codes));
+            steps.Add(BuildTransitionStep(group, members[0].Step, strength, DateBoundType.NotAfter, group.PeriodEnd, tolerance, codes));
+
+            logger.LogInformation(
+                "Transition group {Group} widened the window to {Start}..{End} from co-occurring rules {Codes}",
+                group.Code, group.PeriodStart, group.PeriodEnd, codes);
+        }
+    }
+
+    private static DatingAssessmentStep BuildTransitionStep(
+        DatingTransitionGroup group,
+        DatingAssessmentStep origin,
+        RuleStrength strength,
+        DateBoundType boundType,
+        DateOnly bound,
+        int toleranceMonths,
+        string memberCodes) => new()
+        {
+            RuleId = group.Id,
+            RuleCode = group.Code,
+            RuleDescription = $"{group.Description} (triggered by {memberCodes})",
+            SourceCitation = group.SourceCitation,
+            Provenance = group.Provenance,
+            TransitionGroupCode = group.Code,
+            // Attributed to one of the triggering observations so the chain still links back
+            // to something physical on the garment.
+            EvidenceId = origin.EvidenceId,
+            EvidenceType = origin.EvidenceType,
+            EvidenceValue = origin.EvidenceValue,
+            BoundType = boundType,
+            Strength = strength,
+            BoundDate = bound,
+            EffectiveBoundDate = bound.AddMonths(toleranceMonths),
+            ToleranceMonthsApplied = toleranceMonths,
+            AppliedToInterval = true,
+        };
 
     /// <summary>Whether a rule's test is satisfied by an observation.</summary>
     private bool Matches(DatingRule rule, GarmentEvidence observation)
@@ -228,6 +339,7 @@ public class DatingRulesEngine(
             RuleCode = rule.Code,
             RuleDescription = rule.Description,
             SourceCitation = rule.SourceCitation,
+            Provenance = rule.Provenance,
             EvidenceId = observation.Id,
             EvidenceType = observation.Type,
             EvidenceValue = observation.Value,

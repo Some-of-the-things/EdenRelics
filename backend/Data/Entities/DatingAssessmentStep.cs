@@ -19,6 +19,20 @@ public class DatingAssessmentStep : BaseEntity
     public required string RuleDescription { get; set; }
     public string SourceCitation { get; set; } = "";
 
+    /// <summary>
+    /// The rule's provenance as it stood when this ran. Copied for the same reason as the
+    /// citation: an assessment that says "post-1980" must be able to say on what authority,
+    /// and that authority must not change retroactively when a rule is re-sourced.
+    /// </summary>
+    public ProvenanceClass Provenance { get; set; } = ProvenanceClass.CommunityConsensus;
+
+    /// <summary>
+    /// Set when this step is the widened bound contributed by a transition group rather
+    /// than by a single rule. The member rules that triggered it are still recorded as
+    /// their own steps, set aside with an exclusion reason naming the group.
+    /// </summary>
+    public string? TransitionGroupCode { get; set; }
+
     /// <summary>The observation that satisfied the rule's test.</summary>
     public Guid EvidenceId { get; set; }
     public EvidenceType EvidenceType { get; set; }
