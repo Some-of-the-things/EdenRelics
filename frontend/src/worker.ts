@@ -475,6 +475,45 @@ export default {
     const url = new URL(request.url);
 
 
+    // Isolate health probe. Answers from THIS isolate without touching Angular,
+    // so it still works on a poisoned one — which is the entire point: hit it
+    // over a keep-alive connection that is already returning 503s and it will
+    // report what is actually wrong, instead of us inferring it from stacks.
+    //
+    // Deliberately not linked, noindex, and it exposes nothing but counters.
+    if (url.pathname === '/__isolate-health') {
+      const app = (globalThis as { __erIsolate?: { diagnostics: () => unknown } }).__erIsolate;
+      return withSecurityHeaders(
+        new Response(
+          JSON.stringify(
+            {
+              // Absent means this isolate has never evaluated the app bundle —
+              // itself a useful answer, since it distinguishes "poisoned" from
+              // "never successfully started".
+              app: app ? app.diagnostics() : null,
+              worker: {
+                poisonedFlag: isolatePoisoned,
+                inFlightRenders: inFlightRenders.size,
+                oldestInFlightMs: inFlightRenders.size
+                  ? Date.now() - Math.min(...inFlightRenders)
+                  : null,
+              },
+            },
+            null,
+            1,
+          ),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store',
+              'X-Robots-Tag': 'noindex, nofollow',
+            },
+          },
+        ),
+      );
+    }
+
     // Owner analytics opt-out toggle. Visiting /?mute-analytics sets a durable
     // cookie so the owner's own browsing stops inflating the first-party human
     // counts; /?mute-analytics=off clears it. Redirect to a clean URL and never
