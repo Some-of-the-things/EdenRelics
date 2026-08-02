@@ -44,12 +44,23 @@ name: Recycle SSR Worker
 
 on:
   schedule:
-    # Restored 2026-07-31 after the overnight-gap experiment (cron was temporarily
-    # '0 7-23/2 * * *' on 2026-07-30 to let an isolate poison under observation).
-    # That experiment succeeded and identified the cause — see the leaked
-    # `activeConsumer` note in worker.ts. Keep recycling until the fix is proven
-    # in prod; this workflow is the safety net, not the cure.
-    - cron: '0 */2 * * *'
+    # TEMPORARY — set 2026-08-02, REVERT to '0 */2 * * *' on 2026-08-03.
+    #
+    # Second deliberate overnight gap. The first one (2026-07-30) produced Angular
+    # stack traces that identified a leaked `activeConsumer`; resetting it changed
+    # nothing, and the failure mode has since gone completely silent — over 12.5h
+    # on 2026-08-01/02 there were 23 killed invocations and ZERO log lines from
+    # our handlers, the abandoned-render detector, or Angular itself.
+    #
+    # So nothing that runs inside a failing invocation can observe this. The only
+    # instrument left is /__isolate-health, which answers without touching Angular
+    # and therefore still works on a broken isolate. This gap exists to give the
+    # uptime monitor a poisoned isolate to find, so it can capture that probe.
+    #
+    # Cost is far lower than the first experiment: worker.ts now falls back to the
+    # CSR shell, so a poisoned isolate serves a working client-rendered page
+    # rather than a 503.
+    - cron: '0 7-23/2 * * *'
   workflow_dispatch:
 
 # Never let two recycles overlap, and never race a real deploy from CI.
