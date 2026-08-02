@@ -162,10 +162,24 @@ async function checkTarget(t) {
   const passed = attempts.filter((a) => a.ok).length;
   const last = attempts[attempts.length - 1];
 
+  // When SSR fails outright, ask that isolate what is wrong with it while we
+  // still have it. This monitor is the only thing that reliably FINDS a poisoned
+  // isolate — its subrequests keep landing on the same one — and as of
+  // 2026-08-02 nothing inside a failing invocation can report anything: 23 killed
+  // invocations produced zero log lines from our handlers, the abandoned-render
+  // detector, or Angular. /__isolate-health answers without touching Angular, so
+  // it still works on a broken isolate. Capturing it here means the evidence
+  // arrives by email instead of depending on someone hunting at the right moment.
+  let diagnostics = null;
+  if (t.kind === 'ssr' && passed === 0) {
+    diagnostics = await probeIsolateHealth(t.url);
+  }
+
   return {
     name: t.name,
     url: t.url,
     kind: t.kind,
+    diagnostics,
     // Any success proves the target is serving; the failures are still reported.
     ok: passed > 0,
     down: passed === 0,
@@ -177,6 +191,31 @@ async function checkTarget(t) {
     error: attempts.find((a) => a.error)?.error,
     statuses: attempts.map((a) => a.status),
   };
+}
+
+/**
+ * Fetches the SSR Worker's self-report. Best-effort: a failure here must never
+ * turn a degradation into a missed alert, so everything is swallowed and the
+ * reason is returned as data.
+ */
+async function probeIsolateHealth(baseUrl) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const origin = new URL(baseUrl).origin;
+    const res = await fetch(`${origin}/__isolate-health`, {
+      signal: controller.signal,
+      headers: { 'cache-control': 'no-cache', 'user-agent': 'EdenRelics-UptimeMonitor/1.0' },
+      cf: { cacheTtl: 0, cacheEverything: false },
+    });
+    const body = await res.text();
+    console.log(JSON.stringify({ isolateHealthProbe: body.slice(0, 2000) }));
+    return body.slice(0, 2000);
+  } catch (e) {
+    return `probe failed: ${String(e)}`;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function attemptOnce(t) {
@@ -262,7 +301,30 @@ function downHtml(results, failures) {
       <tr><th align="left">Target</th><th>Attempts</th><th>Time</th></tr>
       ${resultRows(results)}
     </table>
+    ${diagnosticsBlock(results)}
     <p style="color:#666">Sent by the Eden Relics uptime monitor.</p>`;
+}
+
+/** The captured isolate self-report, when there is one. This is the evidence. */
+function diagnosticsBlock(results) {
+  const withDiag = results.filter((r) => r.diagnostics);
+  if (withDiag.length === 0) {
+    return '';
+  }
+  return withDiag
+    .map(
+      (r) => `<p><strong>Isolate self-report (${r.name})</strong> — captured from the
+      failing isolate. <code>activeConsumerLeaked</code> or
+      <code>notificationPhaseLeaked</code> being true names the corrupted global;
+      <code>rendersStarted</code> exceeding <code>rendersSettled</code> means renders
+      are being destroyed mid-flight.</p>
+      <pre style="background:#f6f6f6;padding:10px;overflow:auto">${escapeHtml(r.diagnostics)}</pre>`,
+    )
+    .join('');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 }
 
 function degradedHtml(results, runs) {
@@ -277,6 +339,7 @@ function degradedHtml(results, runs) {
       <tr><th align="left">Target</th><th>Attempts</th><th>Time</th></tr>
       ${resultRows(results)}
     </table>
+    ${diagnosticsBlock(results)}
     <p style="color:#666">Sent by the Eden Relics uptime monitor.</p>`;
 }
 
