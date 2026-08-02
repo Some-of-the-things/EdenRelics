@@ -7,12 +7,22 @@ public interface IRuleStore
 {
     /// <summary>Only verified rules — unverified rules must never affect output (brief §3.4).</summary>
     IReadOnlyList<DatingRule> VerifiedRules();
+
+    /// <summary>Documented coexistence periods. An unverified group is as inert as an unverified rule.</summary>
+    IReadOnlyList<TransitionGroup> TransitionGroups();
 }
 
-public sealed class InMemoryRuleStore(IEnumerable<DatingRule> rules) : IRuleStore
+public sealed class InMemoryRuleStore(
+    IEnumerable<DatingRule> rules,
+    IEnumerable<TransitionGroup>? groups = null) : IRuleStore
 {
     private readonly IReadOnlyList<DatingRule> _verified =
         rules.Where(r => r.Status == RuleStatus.Verified).ToList();
 
+    private readonly IReadOnlyList<TransitionGroup> _groups =
+        (groups ?? []).Where(g => g.Status == RuleStatus.Verified).ToList();
+
     public IReadOnlyList<DatingRule> VerifiedRules() => _verified;
+
+    public IReadOnlyList<TransitionGroup> TransitionGroups() => _groups;
 }

@@ -13,4 +13,11 @@ public sealed class DbRuleStore(ToolDbContext db) : IRuleStore
             .AsEnumerable()
             .Select(r => r.ToDomain())
             .ToList();
+
+    public IReadOnlyList<TransitionGroup> TransitionGroups() =>
+        db.StoredTransitionGroups
+            .Where(g => g.Status == RuleStatus.Verified)
+            .AsEnumerable()
+            .Select(g => g.ToDomain())
+            .ToList();
 }

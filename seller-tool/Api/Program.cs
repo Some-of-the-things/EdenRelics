@@ -73,6 +73,9 @@ using (IServiceScope scope = app.Services.CreateScope())
     if (db.Database.IsRelational())
     {
         db.Database.Migrate();
+        // Rules are data, and the research document that defines them is a living file — so the
+        // shipped set is reconciled on every start. Rows a researcher has edited are left alone.
+        DatingRulesSeed.EnsureSeededAsync(db).GetAwaiter().GetResult();
     }
 }
 

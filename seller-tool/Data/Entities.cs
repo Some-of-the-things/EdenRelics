@@ -91,25 +91,76 @@ public class DateEstimate : ToolBaseEntity
 public class StoredRule
 {
     public string Id { get; set; } = "";
+
+    /// <summary>The rule's id in Teodora's research document, e.g. "CARE-04".</summary>
+    public string SpecId { get; set; } = "";
+
     public string Feature { get; set; } = "";
+
+    /// <summary>How the rule matches: on the feature code, or against the observation's raw value.</summary>
+    public MatchKind Match { get; set; } = MatchKind.Feature;
+
+    /// <summary>Operand for the value-matching kinds. Ignored for feature matching.</summary>
+    public string? Pattern { get; set; }
+
     public EvidenceType Type { get; set; }
     public int? NotBefore { get; set; }
     public int? NotAfter { get; set; }
     public BoundStrength Strength { get; set; }
     public int TransitionLagMonths { get; set; }
     public string? SourceCitation { get; set; }
+
+    /// <summary>What the claim rests on — orthogonal to Strength. See <see cref="ProvenanceClass"/>.</summary>
+    public ProvenanceClass Provenance { get; set; } = ProvenanceClass.CommunityConsensus;
+
+    /// <summary>Optional transition-group membership, e.g. "CARE-1986".</summary>
+    public string? TransitionGroup { get; set; }
+
     public RuleStatus Status { get; set; } = RuleStatus.Unverified;
+
+    /// <summary>Open questions, conflicting sources — for the researcher, never used by the engine.</summary>
+    public string? ResearchNotes { get; set; }
 
     public DatingRule ToDomain() => new()
     {
         Id = Id,
+        SpecId = SpecId,
         Feature = Feature,
+        Match = Match,
+        Pattern = Pattern,
         Type = Type,
         NotBefore = NotBefore,
         NotAfter = NotAfter,
         Strength = Strength,
         TransitionLagMonths = TransitionLagMonths,
         SourceCitation = SourceCitation,
+        Provenance = Provenance,
+        TransitionGroup = TransitionGroup,
+        Status = Status,
+    };
+}
+
+/// <summary>Persisted <see cref="TransitionGroup"/> (rules doc §0.4).</summary>
+public class StoredTransitionGroup
+{
+    public string Code { get; set; } = "";
+    public string Description { get; set; } = "";
+    public int PeriodStart { get; set; }
+    public int PeriodEnd { get; set; }
+    public int TransitionLagMonths { get; set; }
+    public string? SourceCitation { get; set; }
+    public ProvenanceClass Provenance { get; set; } = ProvenanceClass.CommunityConsensus;
+    public RuleStatus Status { get; set; } = RuleStatus.Unverified;
+
+    public TransitionGroup ToDomain() => new()
+    {
+        Code = Code,
+        Description = Description,
+        PeriodStart = PeriodStart,
+        PeriodEnd = PeriodEnd,
+        TransitionLagMonths = TransitionLagMonths,
+        SourceCitation = SourceCitation,
+        Provenance = Provenance,
         Status = Status,
     };
 }
