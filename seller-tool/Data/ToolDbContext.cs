@@ -36,6 +36,10 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
             e.Property(r => r.Feature).HasMaxLength(120);
             e.Property(r => r.RawValue).HasMaxLength(1000);
             e.Property(r => r.ImageKey).HasMaxLength(512);
+            e.Property(r => r.DisplayImageKey).HasMaxLength(512);
+            e.Property(r => r.Slot).HasConversion<string>().HasMaxLength(32);
+            e.Property(r => r.CaptureStandardVersion).HasMaxLength(64);
+            e.Property(r => r.ContentType).HasMaxLength(100);
             e.Property(r => r.Origin).HasMaxLength(20);
             e.Property(r => r.Confirmation).HasConversion<string>().HasMaxLength(20);
             e.Property(r => r.ConfirmedBy).HasMaxLength(200);

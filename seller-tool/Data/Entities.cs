@@ -18,6 +18,22 @@ public enum ConfirmationState
     Rejected,
 }
 
+/// <summary>
+/// Which shot a captured photo is. Slots exist so the archive is consistent: a pile of
+/// inconsistently-framed photos is not a moat, it is a folder.
+/// </summary>
+public enum CaptureSlot
+{
+    /// <summary>Not captured against the standard (e.g. an ad-hoc upload).</summary>
+    Unspecified,
+    BrandLabel,
+    CareLabel,
+    FlatLayFront,
+    FlatLayBack,
+    Zip,
+    ConstructionDetail,
+}
+
 /// <summary>A garment in the archive. Its date comes from its evidence set, not from any single
 /// label (brief §3.1), so the brand may be unknown and the piece still fully dated.</summary>
 public class Garment : ToolBaseEntity
@@ -54,8 +70,33 @@ public class EvidenceRecord : ToolBaseEntity
     /// <summary>Optional raw captured value (the phone number, the origin text, …).</summary>
     public string? RawValue { get; set; }
 
-    /// <summary>Storage key for the captured label/photo (e.g. an R2 object key). The archive asset.</summary>
+    /// <summary>Storage key for the captured label/photo (e.g. an R2 object key). The archive asset,
+    /// stored VERBATIM — the original bytes are the thing with long-term value.</summary>
     public string? ImageKey { get; set; }
+
+    /// <summary>
+    /// Storage key for the generated web-sized derivative. Disposable: it can be rebuilt from the
+    /// archive original at any time, which is why the original is never resized in place.
+    /// </summary>
+    public string? DisplayImageKey { get; set; }
+
+    /// <summary>Which shot this is, when captured against the standard.</summary>
+    public CaptureSlot Slot { get; set; } = CaptureSlot.Unspecified;
+
+    /// <summary>
+    /// Whether the seller granted archive rights AT CAPTURE TIME. Recorded per capture, not per
+    /// account, so the archive's provenance survives a seller leaving or the terms changing — the
+    /// one asset that has to be unencumbered cannot rest on a flag that might be revoked wholesale.
+    /// </summary>
+    public bool ArchiveRightsGranted { get; set; }
+
+    /// <summary>The capture standard in force when this was taken, so a later revision stays legible.</summary>
+    public string? CaptureStandardVersion { get; set; }
+
+    public int? Width { get; set; }
+    public int? Height { get; set; }
+    public long? ByteSize { get; set; }
+    public string? ContentType { get; set; }
 
     /// <summary>How it was captured — "machine" (proposed) or "human".</summary>
     public string Origin { get; set; } = "machine";

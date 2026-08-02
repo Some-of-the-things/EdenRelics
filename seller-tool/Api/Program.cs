@@ -63,6 +63,7 @@ builder.Services.AddScoped<IDatingEngine, DatingEngine>();
 // Captured label/flat-lay images -> Cloudflare R2 (the archive/moat). Tests replace the store.
 builder.Services.Configure<R2Options>(builder.Configuration.GetSection(R2Options.SectionName));
 builder.Services.AddScoped<IImageStore, R2ImageStore>();
+builder.Services.AddScoped<ICaptureService, CaptureService>();
 
 WebApplication app = builder.Build();
 

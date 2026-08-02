@@ -166,22 +166,75 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
         HttpClient client = SellerClient(Guid.NewGuid());
         Guid id = await CreateGarmentAsync(client, "Labelled dress");
 
+        // A real decodable image at or above the care-label floor: the capture standard validates
+        // before storing, so four arbitrary bytes are now (correctly) refused as unreadable.
         using MultipartFormDataContent content = new();
-        ByteArrayContent file = new([1, 2, 3, 4]);
+        ByteArrayContent file = new(TestImage(1400, 1400));
         file.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
         content.Add(file, "file", "care-label.jpg");
         content.Add(new StringContent("CareLabel"), "type");
         content.Add(new StringContent("care.tumble-dry-symbol"), "feature");
+        content.Add(new StringContent("CareLabel"), "slot");
+        content.Add(new StringContent("true"), "archiveRights");
 
         HttpResponseMessage res = await client.PostAsync($"/garments/{id}/capture", content);
         res.EnsureSuccessStatusCode();
         JsonElement body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
         Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("imageKey").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("displayImageKey").GetString()));
 
         JsonElement g = JsonDocument.Parse(await (await client.GetAsync($"/garments/{id}")).Content.ReadAsStringAsync()).RootElement;
         JsonElement ev = g.GetProperty("evidence")[0];
         Assert.False(string.IsNullOrWhiteSpace(ev.GetProperty("imageKey").GetString()));
         Assert.Equal("Proposed", ev.GetProperty("confirmation").GetString());
+    }
+
+    /// <summary>The upload must be refused without a per-capture rights grant.</summary>
+    [Fact]
+    public async Task Capture_WithoutArchiveRights_IsRefused()
+    {
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Labelled dress");
+
+        using MultipartFormDataContent content = new();
+        ByteArrayContent file = new(TestImage(1400, 1400));
+        file.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        content.Add(file, "file", "care-label.jpg");
+        content.Add(new StringContent("CareLabel"), "type");
+        content.Add(new StringContent("care.tumble-dry-symbol"), "feature");
+        content.Add(new StringContent("CareLabel"), "slot");
+
+        HttpResponseMessage res = await client.PostAsync($"/garments/{id}/capture", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        JsonElement body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal("rights_not_granted", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task CaptureStandard_IsServedSoTheClientDoesNotDuplicateIt()
+    {
+        HttpClient client = SellerClient(Guid.NewGuid());
+
+        JsonElement body = JsonDocument.Parse(
+            await (await client.GetAsync("/capture-standard")).Content.ReadAsStringAsync()).RootElement;
+
+        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("version").GetString()));
+        JsonElement slots = body.GetProperty("slots");
+        Assert.True(slots.GetArrayLength() > 0);
+        // Required slots come first and carry their own resolution floor and guidance.
+        Assert.Equal("CareLabel", slots[0].GetProperty("slot").GetString());
+        Assert.True(slots[0].GetProperty("required").GetBoolean());
+        Assert.Equal(1200, slots[0].GetProperty("minimumLongEdge").GetInt32());
+    }
+
+    /// <summary>A decodable JPEG of the requested size, for tests that must clear the standard.</summary>
+    private static byte[] TestImage(int width, int height)
+    {
+        using SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32> img = new(width, height);
+        using MemoryStream ms = new();
+        img.Save(ms, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder());
+        return ms.ToArray();
     }
 
     [Fact]

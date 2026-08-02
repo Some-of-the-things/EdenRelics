@@ -86,7 +86,24 @@ public static class ToolEndpoints
 
         // --- Capture pipeline: upload a label/flat-lay photo -> R2 -> evidence record (the archive) ---
 
-        app.MapPost("/garments/{id:guid}/capture", async (Guid id, HttpRequest request, ClaimsPrincipal user, ToolDbContext db, IImageStore images) =>
+        // The capture standard itself, so the client renders slots and guidance from ONE definition
+        // rather than duplicating it and drifting.
+        app.MapGet("/capture-standard", () => Results.Ok(new
+        {
+            version = CaptureStandard.Version,
+            maxBytes = CaptureStandard.MaxBytes,
+            acceptedContentTypes = CaptureStandard.AcceptedContentTypes,
+            slots = CaptureStandard.AllSlotsInOrder().Select(s => new
+            {
+                slot = s.ToString(),
+                required = CaptureStandard.RequiredSlots.Contains(s),
+                minimumLongEdge = CaptureStandard.MinimumLongEdge(s),
+                guidance = CaptureStandard.Guidance(s),
+            }),
+        })).RequireAuthorization();
+
+        app.MapPost("/garments/{id:guid}/capture", async (
+            Guid id, HttpRequest request, ClaimsPrincipal user, ToolDbContext db, ICaptureService capture) =>
         {
             Garment? garment = await db.Garments.FindAsync(id);
             if (garment is null || !CanAccess(garment, user))
@@ -108,22 +125,55 @@ public static class ToolEndpoints
             {
                 return Results.BadRequest(new { error = $"Unknown evidence type '{form["type"]}'." });
             }
+            // Unspecified is a legitimate slot (an ad-hoc extra shot), so an absent or unparseable
+            // value falls back to it rather than failing the upload.
+            if (!Enum.TryParse(form["slot"].ToString(), ignoreCase: true, out CaptureSlot slot))
+            {
+                slot = CaptureSlot.Unspecified;
+            }
+            bool archiveRights = form["archiveRights"].ToString() is "true" or "True" or "1";
 
             await using Stream stream = file.OpenReadStream();
-            string imageKey = await images.PutAsync(stream, file.ContentType ?? "application/octet-stream", $"garments/{id}");
+            CaptureOutcome outcome = await capture.CaptureAsync(
+                id, slot, type, form["feature"].ToString(),
+                stream, file.ContentType ?? "application/octet-stream", file.Length, archiveRights);
 
-            EvidenceRecord evidence = new()
+            if (!outcome.Succeeded)
             {
-                GarmentId = id,
-                Type = type,
-                Feature = form["feature"].ToString(),
-                ImageKey = imageKey,
-                Origin = "capture",
-                Confirmation = ConfirmationState.Proposed,
-            };
-            db.EvidenceRecords.Add(evidence);
-            await db.SaveChangesAsync();
-            return Results.Created($"/garments/{id}", new { id = evidence.Id, imageKey });
+                // A rejection is an expected outcome — a blurry or undersized label is the normal
+                // case the standard exists to catch — so it returns a reason the UI can show.
+                return Results.BadRequest(new { code = outcome.Rejection!.Code, error = outcome.Rejection.Message });
+            }
+
+            EvidenceRecord evidence = outcome.Evidence!;
+            return Results.Created($"/garments/{id}", new
+            {
+                id = evidence.Id,
+                imageKey = evidence.ImageKey,
+                displayImageKey = evidence.DisplayImageKey,
+                slot = evidence.Slot.ToString(),
+                width = evidence.Width,
+                height = evidence.Height,
+            });
+        }).RequireAuthorization();
+
+        // What is still missing before this garment meets the standard.
+        app.MapGet("/garments/{id:guid}/captures/completeness", async (
+            Guid id, ClaimsPrincipal user, ToolDbContext db, ICaptureService capture) =>
+        {
+            Garment? garment = await db.Garments.FindAsync(id);
+            if (garment is null || !CanAccess(garment, user))
+            {
+                return Results.NotFound();
+            }
+            CaptureCompleteness c = await capture.GetCompletenessAsync(id);
+            return Results.Ok(new
+            {
+                isComplete = c.IsComplete,
+                captureCount = c.CaptureCount,
+                missingRequired = c.MissingRequired.Select(s => s.ToString()),
+                missingRequested = c.MissingRequested.Select(s => s.ToString()),
+            });
         }).RequireAuthorization();
 
         // --- Dating: run the engine over the garment's evidence, store a proposed estimate ---

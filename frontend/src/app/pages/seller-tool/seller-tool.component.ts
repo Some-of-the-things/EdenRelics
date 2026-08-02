@@ -23,6 +23,21 @@ export class SellerToolComponent implements OnInit {
 
   readonly evidenceTypes = EVIDENCE_TYPES;
 
+  /**
+   * Capture slots, required ones first. Mirrors the server's standard; the authoritative version
+   * (with per-slot resolution floors and guidance) is served from /capture-standard, which this
+   * list should be replaced by once the capture UI grows past a single dropdown.
+   */
+  readonly captureSlots = [
+    'CareLabel',
+    'FlatLayFront',
+    'BrandLabel',
+    'FlatLayBack',
+    'Zip',
+    'ConstructionDetail',
+    'Unspecified',
+  ];
+
   readonly loading = signal(true);
   readonly garments = signal<GarmentSummary[]>([]);
   readonly selected = signal<GarmentDetail | null>(null);
@@ -39,6 +54,14 @@ export class SellerToolComponent implements OnInit {
   capType = 'CareLabel';
   capFeature = '';
   captureFile: File | null = null;
+  /** Which shot this is — drives the server's resolution floor for the slot. */
+  capSlot = 'CareLabel';
+  /**
+   * Archive rights for THIS capture. Deliberately not remembered between uploads: the grant is
+   * recorded per image so the archive's provenance survives a seller leaving or the terms changing,
+   * and a sticky checkbox would quietly turn that into a per-account flag.
+   */
+  capArchiveRights = false;
   claimEarliest?: number;
   claimLatest?: number;
 
@@ -108,12 +131,30 @@ export class SellerToolComponent implements OnInit {
   capture(): void {
     const g = this.selected();
     if (!g || !this.captureFile) { return; }
+    if (!this.capArchiveRights) {
+      this.error.set('Confirm archive rights before uploading — the grant is recorded against each image.');
+      return;
+    }
     this.error.set('');
     this.busy.set(true);
-    this.tool.capture(g.id, this.captureFile, this.capType, this.capFeature.trim()).subscribe({
-      next: () => { this.captureFile = null; this.capFeature = ''; this.busy.set(false); this.refresh(g.id); },
-      error: () => { this.error.set('Upload failed — the tool’s image storage may not be configured yet.'); this.busy.set(false); },
-    });
+    this.tool
+      .capture(g.id, this.captureFile, this.capType, this.capFeature.trim(), this.capSlot, this.capArchiveRights)
+      .subscribe({
+        next: () => {
+          this.captureFile = null;
+          this.capFeature = '';
+          this.capArchiveRights = false;
+          this.busy.set(false);
+          this.refresh(g.id);
+        },
+        error: (err: unknown) => {
+          // A rejection here is usually the capture standard doing its job — an undersized or
+          // unreadable label — so show the server's reason rather than a generic failure.
+          const detail = (err as { error?: { error?: string } })?.error?.error;
+          this.error.set(detail ?? 'Upload failed — the tool’s image storage may not be configured yet.');
+          this.busy.set(false);
+        },
+      });
   }
 
   runDating(): void {

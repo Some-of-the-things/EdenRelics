@@ -107,8 +107,19 @@
             Uploads the photo to the evidence archive and records it. Requires the tool’s image
             storage (R2) to be configured — otherwise the upload will fail.
           </p>
+          <p class="tool__muted tool__muted--small">
+            Photos are checked against the capture standard before they are stored. Labels need at
+            least 1200px on the long edge — fill the frame rather than cropping afterwards, because
+            these images have to stay readable long after the listing has gone.
+          </p>
           <form class="form form--inline" (ngSubmit)="capture()">
-            <input class="tool__file" type="file" accept="image/*" (change)="onFile($event)" />
+            <input class="tool__file" type="file" accept="image/jpeg,image/png,image/webp" (change)="onFile($event)" />
+            <label class="field field--type">
+              <span class="field__label">Slot</span>
+              <select class="field__input" name="cs" [(ngModel)]="capSlot">
+                @for (s of captureSlots; track s) { <option [value]="s">{{ s }}</option> }
+              </select>
+            </label>
             <label class="field field--type">
               <span class="field__label">Type</span>
               <select class="field__input" name="ct" [(ngModel)]="capType">
@@ -119,7 +130,15 @@
               <span class="field__label">Feature code</span>
               <input class="field__input" name="cf" [(ngModel)]="capFeature" placeholder="care.wash-symbol" />
             </label>
-            <button class="btn btn--primary" type="submit" [disabled]="!captureFile || busy()">Upload</button>
+            <label class="field field--check">
+              <input type="checkbox" name="car" [(ngModel)]="capArchiveRights" />
+              <span class="field__label">
+                I have the right to include this image in the Eden Relics reference archive
+              </span>
+            </label>
+            <button class="btn btn--primary" type="submit" [disabled]="!captureFile || !capArchiveRights || busy()">
+              Upload
+            </button>
           </form>
         </details>
 
