@@ -59,6 +59,30 @@ export interface MfaSetupResponse {
 
 export type LoginResponse = AuthResponse | MfaRequiredResponse;
 
+/**
+ * How long past expiry the server will still renew a token — mirrors the 30-day window in
+ * AuthController.Refresh. Past this there is nothing to recover, so the session is cleared.
+ */
+const REFRESH_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Reads `exp` (seconds since epoch) out of a JWT payload, as milliseconds. Null when the token is
+ * absent or unreadable — treated the same as gone, since an unparseable token cannot be renewed.
+ * This only reads the claim; it does not verify the signature, which is the server's job.
+ */
+function tokenExpiry(token: string | null): number | null {
+  if (!token) {
+    return null;
+  }
+  try {
+    const payload: unknown = JSON.parse(atob(token.split('.')[1]));
+    const exp = (payload as { exp?: unknown }).exp;
+    return typeof exp === 'number' ? exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
@@ -72,11 +96,56 @@ export class AuthService {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      const stored = localStorage.getItem('eden_user');
-      if (stored) {
-        this.currentUser.set(JSON.parse(stored));
-      }
+      this.restoreSession();
     }
+  }
+
+  /**
+   * Restores the stored session, but only if the token can still be turned into a working one.
+   *
+   * The signed-in state used to be restored from `eden_user` alone, without ever looking at the
+   * token. Renewal is purely reactive — the interceptor refreshes on a 401 — so a session that
+   * makes no authenticated calls (browsing public pages) is never renewed and never reaped. One
+   * was found on 2026-08-03 that had been expired since 8 July: the UI showed signed in for
+   * nearly four weeks, and four days later it would have crossed the server's 30-day refresh
+   * cliff and started failing outright with no explanation.
+   */
+  private restoreSession(): void {
+    const stored = localStorage.getItem('eden_user');
+    if (!stored) {
+      return;
+    }
+
+    const expiry = tokenExpiry(localStorage.getItem('eden_token'));
+    if (expiry === null || Date.now() > expiry + REFRESH_GRACE_MS) {
+      // Missing, unreadable, or past the point the server will renew it. Nothing here is
+      // recoverable, so clear it rather than present a signed-in UI that cannot call the API.
+      this.logout();
+      return;
+    }
+
+    this.currentUser.set(JSON.parse(stored));
+
+    if (Date.now() > expiry) {
+      // Still renewable. Do it now rather than waiting for a request to fail — deferred out of
+      // the constructor because the interceptor injects this service, and calling HttpClient
+      // mid-construction is a dependency cycle.
+      setTimeout(() => this.renewExpiredSession());
+    }
+  }
+
+  /** Trades an expired-but-renewable token for a fresh one; signs out if the server refuses. */
+  private renewExpiredSession(): void {
+    const token = localStorage.getItem('eden_token');
+    if (!token) {
+      return;
+    }
+    this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, {}, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).subscribe({
+      next: (res) => this.setSession(res),
+      error: () => this.logout(),
+    });
   }
 
   register(email: string, password: string, firstName: string, lastName: string): Observable<AuthResponse> {
@@ -109,10 +178,17 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem('eden_token');
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
     }
-    return null;
+    const token = localStorage.getItem('eden_token');
+    const expiry = tokenExpiry(token);
+    // An expired token is still worth sending — the interceptor will renew it off the 401. One
+    // past the renewal window is not: it can only ever fail, so treat it as no token at all.
+    if (expiry === null || Date.now() > expiry + REFRESH_GRACE_MS) {
+      return null;
+    }
+    return token;
   }
 
   forgotPassword(email: string): Observable<{ message: string }> {
