@@ -38,6 +38,8 @@ public class IndexNowService(
     /// <summary>The protocol's per-request ceiling.</summary>
     private const int MaxUrlsPerBatch = 10_000;
 
+    private static readonly TimeSpan SubmitTimeout = TimeSpan.FromSeconds(5);
+
     private readonly IndexNowOptions _options = options.Value;
 
     public bool IsConfigured => _options.Enabled && !string.IsNullOrWhiteSpace(_options.Key);
@@ -66,6 +68,9 @@ public class IndexNowService(
         }
 
         HttpClient client = httpClientFactory.CreateClient();
+        // Publish paths await this inline, so it has to be bounded. A slow search engine may not
+        // hold up an admin saving a blog post; the submission is a nicety, the publish is not.
+        client.Timeout = SubmitTimeout;
         List<int> statuses = [];
         int batches = 0;
 
@@ -97,9 +102,12 @@ public class IndexNowService(
                         (int)response.StatusCode);
                 }
             }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            catch (Exception ex)
             {
-                // A search-engine ping must never take a publish down with it.
+                // Deliberately catches everything. Publish paths await this inline, so any escaping
+                // exception fails an editor's save because a search engine had a bad day. Narrowing
+                // this to HttpRequestException/TaskCanceledException would leave DNS, TLS and
+                // serialisation faults able to do exactly that.
                 logger.LogWarning(ex, "IndexNow submission failed for a batch of {Count} URLs.", batch.Count);
                 statuses.Add(0);
             }
@@ -119,5 +127,22 @@ public class IndexNowService(
     {
         IReadOnlyList<string> urls = await sitemap.GetIndexableUrlsAsync();
         return await SubmitAsync(urls, ct);
+    }
+
+    public Task<IndexNowResult> SubmitPathsAsync(IReadOnlyCollection<string> paths, CancellationToken ct = default)
+    {
+        // Checked before composing anything: when this is switched off a publish should cost
+        // nothing at all, not a wasted allocation and a call that no-ops at the far end.
+        if (!IsConfigured)
+        {
+            return Task.FromResult(new IndexNowResult(false, 0, 0, "IndexNow is not configured.", []));
+        }
+
+        List<string> urls = paths
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Select(p => $"https://{_options.Host}/{p.TrimStart('/')}")
+            .ToList();
+
+        return SubmitAsync(urls, ct);
     }
 }

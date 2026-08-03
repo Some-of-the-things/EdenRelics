@@ -14,7 +14,8 @@ public class CareService(
     IRepository<CareIssue> issues,
     IRepository<CareGuidance> guidances,
     IRepository<Product> products,
-    ICareDraftService draftService) : ICareService
+    ICareDraftService draftService,
+    IIndexNowService indexNow) : ICareService
 {
     public bool AiDraftingAvailable => draftService.IsConfigured;
 
@@ -95,6 +96,10 @@ public class CareService(
         }
 
         await fabrics.UpdateAsync(f);
+        if (f.IsPublished)
+        {
+            await indexNow.SubmitPathsAsync([$"/care/fabric/{f.Slug}"]);
+        }
         return ToDto(f);
     }
 
@@ -191,6 +196,10 @@ public class CareService(
         }
 
         await issues.UpdateAsync(i);
+        if (i.IsPublished)
+        {
+            await indexNow.SubmitPathsAsync([$"/care/problem/{i.Slug}"]);
+        }
         return ToDto(i);
     }
 
