@@ -44,23 +44,22 @@ name: Recycle SSR Worker
 
 on:
   schedule:
-    # TEMPORARY — set 2026-08-02, REVERT to '0 */2 * * *' on 2026-08-03.
+    # Every two hours. Twice now this has been narrowed temporarily to open an
+    # overnight gap and let a poisoned isolate accumulate:
     #
-    # Second deliberate overnight gap. The first one (2026-07-30) produced Angular
-    # stack traces that identified a leaked `activeConsumer`; resetting it changed
-    # nothing, and the failure mode has since gone completely silent — over 12.5h
-    # on 2026-08-01/02 there were 23 killed invocations and ZERO log lines from
-    # our handlers, the abandoned-render detector, or Angular itself.
+    #   2026-07-30  produced Angular stack traces naming a leaked `activeConsumer`.
+    #               Resetting it changed nothing.
+    #   2026-08-02  ran 23:00Z–07:00Z. 568 invocations, 5 killed, every one of them
+    #               the uptime monitor's own probe — no visitor request failed. The
+    #               isolate self-report was NOT captured, because the monitor only
+    #               probed on a total wipeout and each burst had a passing attempt
+    #               (fixed since: it now probes on any failed SSR attempt).
     #
-    # So nothing that runs inside a failing invocation can observe this. The only
-    # instrument left is /__isolate-health, which answers without touching Angular
-    # and therefore still works on a broken isolate. This gap exists to give the
-    # uptime monitor a poisoned isolate to find, so it can capture that probe.
-    #
-    # Cost is far lower than the first experiment: worker.ts now falls back to the
-    # CSR shell, so a poisoned isolate serves a working client-rendered page
-    # rather than a 503.
-    - cron: '0 7-23/2 * * *'
+    # Anything inside a failing invocation is blind — across both windows, zero of
+    # the killed invocations logged a line from our handlers, the abandoned-render
+    # detector, or Angular. /__isolate-health is the only instrument left, since it
+    # answers without touching Angular.
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 # Never let two recycles overlap, and never race a real deploy from CI.

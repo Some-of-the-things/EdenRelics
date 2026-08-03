@@ -18,6 +18,22 @@ public enum ConfirmationState
     Rejected,
 }
 
+/// <summary>
+/// Which shot a captured photo is. Slots exist so the archive is consistent: a pile of
+/// inconsistently-framed photos is not a moat, it is a folder.
+/// </summary>
+public enum CaptureSlot
+{
+    /// <summary>Not captured against the standard (e.g. an ad-hoc upload).</summary>
+    Unspecified,
+    BrandLabel,
+    CareLabel,
+    FlatLayFront,
+    FlatLayBack,
+    Zip,
+    ConstructionDetail,
+}
+
 /// <summary>A garment in the archive. Its date comes from its evidence set, not from any single
 /// label (brief §3.1), so the brand may be unknown and the piece still fully dated.</summary>
 public class Garment : ToolBaseEntity
@@ -54,8 +70,33 @@ public class EvidenceRecord : ToolBaseEntity
     /// <summary>Optional raw captured value (the phone number, the origin text, …).</summary>
     public string? RawValue { get; set; }
 
-    /// <summary>Storage key for the captured label/photo (e.g. an R2 object key). The archive asset.</summary>
+    /// <summary>Storage key for the captured label/photo (e.g. an R2 object key). The archive asset,
+    /// stored VERBATIM — the original bytes are the thing with long-term value.</summary>
     public string? ImageKey { get; set; }
+
+    /// <summary>
+    /// Storage key for the generated web-sized derivative. Disposable: it can be rebuilt from the
+    /// archive original at any time, which is why the original is never resized in place.
+    /// </summary>
+    public string? DisplayImageKey { get; set; }
+
+    /// <summary>Which shot this is, when captured against the standard.</summary>
+    public CaptureSlot Slot { get; set; } = CaptureSlot.Unspecified;
+
+    /// <summary>
+    /// Whether the seller granted archive rights AT CAPTURE TIME. Recorded per capture, not per
+    /// account, so the archive's provenance survives a seller leaving or the terms changing — the
+    /// one asset that has to be unencumbered cannot rest on a flag that might be revoked wholesale.
+    /// </summary>
+    public bool ArchiveRightsGranted { get; set; }
+
+    /// <summary>The capture standard in force when this was taken, so a later revision stays legible.</summary>
+    public string? CaptureStandardVersion { get; set; }
+
+    public int? Width { get; set; }
+    public int? Height { get; set; }
+    public long? ByteSize { get; set; }
+    public string? ContentType { get; set; }
 
     /// <summary>How it was captured — "machine" (proposed) or "human".</summary>
     public string Origin { get; set; } = "machine";
@@ -91,25 +132,76 @@ public class DateEstimate : ToolBaseEntity
 public class StoredRule
 {
     public string Id { get; set; } = "";
+
+    /// <summary>The rule's id in Teodora's research document, e.g. "CARE-04".</summary>
+    public string SpecId { get; set; } = "";
+
     public string Feature { get; set; } = "";
+
+    /// <summary>How the rule matches: on the feature code, or against the observation's raw value.</summary>
+    public MatchKind Match { get; set; } = MatchKind.Feature;
+
+    /// <summary>Operand for the value-matching kinds. Ignored for feature matching.</summary>
+    public string? Pattern { get; set; }
+
     public EvidenceType Type { get; set; }
     public int? NotBefore { get; set; }
     public int? NotAfter { get; set; }
     public BoundStrength Strength { get; set; }
     public int TransitionLagMonths { get; set; }
     public string? SourceCitation { get; set; }
+
+    /// <summary>What the claim rests on — orthogonal to Strength. See <see cref="ProvenanceClass"/>.</summary>
+    public ProvenanceClass Provenance { get; set; } = ProvenanceClass.CommunityConsensus;
+
+    /// <summary>Optional transition-group membership, e.g. "CARE-1986".</summary>
+    public string? TransitionGroup { get; set; }
+
     public RuleStatus Status { get; set; } = RuleStatus.Unverified;
+
+    /// <summary>Open questions, conflicting sources — for the researcher, never used by the engine.</summary>
+    public string? ResearchNotes { get; set; }
 
     public DatingRule ToDomain() => new()
     {
         Id = Id,
+        SpecId = SpecId,
         Feature = Feature,
+        Match = Match,
+        Pattern = Pattern,
         Type = Type,
         NotBefore = NotBefore,
         NotAfter = NotAfter,
         Strength = Strength,
         TransitionLagMonths = TransitionLagMonths,
         SourceCitation = SourceCitation,
+        Provenance = Provenance,
+        TransitionGroup = TransitionGroup,
+        Status = Status,
+    };
+}
+
+/// <summary>Persisted <see cref="TransitionGroup"/> (rules doc §0.4).</summary>
+public class StoredTransitionGroup
+{
+    public string Code { get; set; } = "";
+    public string Description { get; set; } = "";
+    public int PeriodStart { get; set; }
+    public int PeriodEnd { get; set; }
+    public int TransitionLagMonths { get; set; }
+    public string? SourceCitation { get; set; }
+    public ProvenanceClass Provenance { get; set; } = ProvenanceClass.CommunityConsensus;
+    public RuleStatus Status { get; set; } = RuleStatus.Unverified;
+
+    public TransitionGroup ToDomain() => new()
+    {
+        Code = Code,
+        Description = Description,
+        PeriodStart = PeriodStart,
+        PeriodEnd = PeriodEnd,
+        TransitionLagMonths = TransitionLagMonths,
+        SourceCitation = SourceCitation,
+        Provenance = Provenance,
         Status = Status,
     };
 }

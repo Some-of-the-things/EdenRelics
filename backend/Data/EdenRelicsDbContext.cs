@@ -53,14 +53,6 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<OperatorReminder> OperatorReminders => Set<OperatorReminder>();
     public DbSet<TopPick> TopPicks => Set<TopPick>();
 
-    // Seller-tool dating archive. Evidence set -> bounded range; see DatingRulesEngine.
-    public DbSet<DatingRule> DatingRules => Set<DatingRule>();
-    public DbSet<DatingTransitionGroup> DatingTransitionGroups => Set<DatingTransitionGroup>();
-    public DbSet<Garment> Garments => Set<Garment>();
-    public DbSet<GarmentEvidence> GarmentEvidence => Set<GarmentEvidence>();
-    public DbSet<GarmentCapture> GarmentCaptures => Set<GarmentCapture>();
-    public DbSet<DatingAssessment> DatingAssessments => Set<DatingAssessment>();
-    public DbSet<DatingAssessmentStep> DatingAssessmentSteps => Set<DatingAssessmentStep>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -403,98 +395,6 @@ public class EdenRelicsDbContext : DbContext
         {
             entity.HasQueryFilter(e => !e.IsDeleted);
             entity.HasIndex(p => p.Position);
-        });
-
-        modelBuilder.Entity<DatingRule>(entity =>
-        {
-            entity.HasQueryFilter(e => !e.IsDeleted);
-            entity.Property(r => r.Code).HasMaxLength(80);
-            entity.HasIndex(r => r.Code).IsUnique();
-            entity.Property(r => r.Description).HasMaxLength(500);
-            entity.Property(r => r.TestValue).HasMaxLength(500);
-            entity.Property(r => r.SourceCitation).HasMaxLength(500);
-            entity.Property(r => r.TransitionGroupCode).HasMaxLength(80);
-            // The engine's hot path is "every active rule for this evidence type".
-            entity.HasIndex(r => new { r.Status, r.EvidenceType });
-        });
-
-        modelBuilder.Entity<DatingTransitionGroup>(entity =>
-        {
-            entity.HasQueryFilter(e => !e.IsDeleted);
-            entity.Property(g => g.Code).HasMaxLength(80);
-            entity.HasIndex(g => g.Code).IsUnique();
-            entity.Property(g => g.Description).HasMaxLength(500);
-            entity.Property(g => g.SourceCitation).HasMaxLength(500);
-        });
-
-        modelBuilder.Entity<Garment>(entity =>
-        {
-            entity.HasQueryFilter(e => !e.IsDeleted);
-            entity.Property(g => g.Reference).HasMaxLength(100);
-            entity.Property(g => g.Description).HasMaxLength(500);
-            entity.HasIndex(g => g.SellerId);
-            entity.HasOne(g => g.Seller).WithMany().HasForeignKey(g => g.SellerId).OnDelete(DeleteBehavior.SetNull);
-        });
-
-        modelBuilder.Entity<GarmentEvidence>(entity =>
-        {
-            entity.HasQueryFilter(e => !e.IsDeleted);
-            entity.Property(e => e.Value).HasMaxLength(500);
-            entity.Property(e => e.Notes).HasMaxLength(1000);
-            entity.Property(e => e.ImageUrl).HasMaxLength(500);
-            entity.Property(e => e.ConfirmedBy).HasMaxLength(256);
-            entity.HasIndex(e => new { e.GarmentId, e.Type });
-            entity.HasOne(e => e.Garment)
-                .WithMany(g => g.Evidence)
-                .HasForeignKey(e => e.GarmentId)
-                .OnDelete(DeleteBehavior.Cascade);
-            // Deleting a capture must not delete the observation read from it: the reading
-            // may still be correct, and losing it would silently change a past assessment.
-            entity.HasOne(e => e.Capture)
-                .WithMany(c => c.Evidence)
-                .HasForeignKey(e => e.CaptureId)
-                .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        modelBuilder.Entity<GarmentCapture>(entity =>
-        {
-            entity.HasQueryFilter(e => !e.IsDeleted);
-            entity.Property(c => c.ArchiveUrl).HasMaxLength(500);
-            entity.Property(c => c.DisplayUrl).HasMaxLength(500);
-            entity.Property(c => c.ContentType).HasMaxLength(100);
-            entity.Property(c => c.ArchiveTermsVersion).HasMaxLength(50);
-            entity.Property(c => c.Notes).HasMaxLength(1000);
-            entity.HasIndex(c => new { c.GarmentId, c.Slot });
-            entity.HasOne(c => c.Garment)
-                .WithMany(g => g.Captures)
-                .HasForeignKey(c => c.GarmentId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<DatingAssessment>(entity =>
-        {
-            entity.HasQueryFilter(e => !e.IsDeleted);
-            entity.Property(a => a.Summary).HasMaxLength(1000);
-            entity.HasIndex(a => a.GarmentId);
-            entity.HasOne(a => a.Garment)
-                .WithMany(g => g.Assessments)
-                .HasForeignKey(a => a.GarmentId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<DatingAssessmentStep>(entity =>
-        {
-            entity.HasQueryFilter(e => !e.IsDeleted);
-            entity.Property(s => s.RuleCode).HasMaxLength(80);
-            entity.Property(s => s.RuleDescription).HasMaxLength(500);
-            entity.Property(s => s.SourceCitation).HasMaxLength(500);
-            entity.Property(s => s.EvidenceValue).HasMaxLength(500);
-            entity.Property(s => s.ExclusionReason).HasMaxLength(500);
-            entity.HasIndex(s => s.AssessmentId);
-            entity.HasOne(s => s.Assessment)
-                .WithMany(a => a.Steps)
-                .HasForeignKey(s => s.AssessmentId)
-                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<MonzoToken>(entity =>

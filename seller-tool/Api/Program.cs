@@ -63,6 +63,7 @@ builder.Services.AddScoped<IDatingEngine, DatingEngine>();
 // Captured label/flat-lay images -> Cloudflare R2 (the archive/moat). Tests replace the store.
 builder.Services.Configure<R2Options>(builder.Configuration.GetSection(R2Options.SectionName));
 builder.Services.AddScoped<IImageStore, R2ImageStore>();
+builder.Services.AddScoped<ICaptureService, CaptureService>();
 
 WebApplication app = builder.Build();
 
@@ -73,6 +74,9 @@ using (IServiceScope scope = app.Services.CreateScope())
     if (db.Database.IsRelational())
     {
         db.Database.Migrate();
+        // Rules are data, and the research document that defines them is a living file — so the
+        // shipped set is reconciled on every start. Rows a researcher has edited are left alone.
+        DatingRulesSeed.EnsureSeededAsync(db).GetAwaiter().GetResult();
     }
 }
 

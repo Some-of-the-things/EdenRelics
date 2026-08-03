@@ -14,6 +14,7 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
     public DbSet<EvidenceRecord> EvidenceRecords => Set<EvidenceRecord>();
     public DbSet<DateEstimate> DateEstimates => Set<DateEstimate>();
     public DbSet<StoredRule> StoredRules => Set<StoredRule>();
+    public DbSet<StoredTransitionGroup> StoredTransitionGroups => Set<StoredTransitionGroup>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -35,6 +36,10 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
             e.Property(r => r.Feature).HasMaxLength(120);
             e.Property(r => r.RawValue).HasMaxLength(1000);
             e.Property(r => r.ImageKey).HasMaxLength(512);
+            e.Property(r => r.DisplayImageKey).HasMaxLength(512);
+            e.Property(r => r.Slot).HasConversion<string>().HasMaxLength(32);
+            e.Property(r => r.CaptureStandardVersion).HasMaxLength(64);
+            e.Property(r => r.ContentType).HasMaxLength(100);
             e.Property(r => r.Origin).HasMaxLength(20);
             e.Property(r => r.Confirmation).HasConversion<string>().HasMaxLength(20);
             e.Property(r => r.ConfirmedBy).HasMaxLength(200);
@@ -58,7 +63,23 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
             e.Property(r => r.Strength).HasConversion<string>().HasMaxLength(8);
             e.Property(r => r.Status).HasConversion<string>().HasMaxLength(16);
             e.Property(r => r.SourceCitation).HasMaxLength(1000);
+            e.Property(r => r.SpecId).HasMaxLength(32);
+            e.Property(r => r.Match).HasConversion<string>().HasMaxLength(20);
+            e.Property(r => r.Pattern).HasMaxLength(500);
+            e.Property(r => r.Provenance).HasConversion<string>().HasMaxLength(24);
+            e.Property(r => r.TransitionGroup).HasMaxLength(64);
+            e.Property(r => r.ResearchNotes).HasMaxLength(2000);
             e.HasIndex(r => new { r.Status, r.Feature });
+        });
+
+        b.Entity<StoredTransitionGroup>(e =>
+        {
+            e.HasKey(g => g.Code);
+            e.Property(g => g.Code).HasMaxLength(64);
+            e.Property(g => g.Description).HasMaxLength(1000);
+            e.Property(g => g.SourceCitation).HasMaxLength(1000);
+            e.Property(g => g.Provenance).HasConversion<string>().HasMaxLength(24);
+            e.Property(g => g.Status).HasConversion<string>().HasMaxLength(16);
         });
     }
 

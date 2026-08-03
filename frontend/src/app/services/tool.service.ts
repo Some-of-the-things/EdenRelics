@@ -66,6 +66,13 @@ export interface DateResultChain {
   bound: string;
   strength: string;
   source?: string;
+  /** What the claim rests on (PrimaryLegislation … CommunityConsensus) — not how hard it is. */
+  provenance?: string;
+  /** The rule's id in the research document, e.g. "CARE-04". */
+  specId?: string;
+  /** False when a transition group superseded this bound; the reason says which. */
+  applied?: boolean;
+  exclusionReason?: string;
 }
 
 export interface DateResult {
@@ -74,6 +81,36 @@ export interface DateResult {
   outcome: string;
   claimFlag?: { strength: string; message: string };
   evidence: DateResultChain[];
+}
+
+export interface CaptureResult {
+  id: string;
+  imageKey: string;
+  displayImageKey?: string;
+  slot: string;
+  width?: number;
+  height?: number;
+}
+
+export interface CaptureStandardSlot {
+  slot: string;
+  required: boolean;
+  minimumLongEdge: number;
+  guidance: string;
+}
+
+export interface CaptureStandard {
+  version: string;
+  maxBytes: number;
+  acceptedContentTypes: string[];
+  slots: CaptureStandardSlot[];
+}
+
+export interface CaptureCompleteness {
+  isComplete: boolean;
+  captureCount: number;
+  missingRequired: string[];
+  missingRequested: string[];
 }
 
 /**
@@ -108,14 +145,42 @@ export class ToolService {
     return this.http.post<{ id: string }>(`${this.base}/garments/${garmentId}/evidence`, dto, { headers: this.authHeaders() });
   }
 
-  /** Upload a label/flat-lay photo (multipart). Requires the tool's R2 storage to be configured. */
-  capture(garmentId: string, file: File, type: string, feature: string): Observable<{ id: string; imageKey: string }> {
+  /**
+   * Upload a label/flat-lay photo (multipart). Requires the tool's R2 storage to be configured.
+   *
+   * `slot` names which shot this is, so the server can apply the right resolution floor — a care
+   * label needs more pixels than a flat-lay, because it is the part something has to still be able
+   * to read years later. `archiveRights` is recorded per capture rather than per account, so the
+   * archive's provenance survives a seller leaving or the terms changing; the server refuses the
+   * upload without it.
+   */
+  capture(
+    garmentId: string,
+    file: File,
+    type: string,
+    feature: string,
+    slot: string,
+    archiveRights: boolean,
+  ): Observable<CaptureResult> {
     const form = new FormData();
     form.append('file', file);
     form.append('type', type);
     form.append('feature', feature);
+    form.append('slot', slot);
+    form.append('archiveRights', String(archiveRights));
     // Don't set Content-Type — the browser adds the multipart boundary.
-    return this.http.post<{ id: string; imageKey: string }>(`${this.base}/garments/${garmentId}/capture`, form, { headers: this.authHeaders() });
+    return this.http.post<CaptureResult>(`${this.base}/garments/${garmentId}/capture`, form, { headers: this.authHeaders() });
+  }
+
+  /** The capture standard, so the UI renders slots and guidance from the server's definition. */
+  captureStandard(): Observable<CaptureStandard> {
+    return this.http.get<CaptureStandard>(`${this.base}/capture-standard`, { headers: this.authHeaders() });
+  }
+
+  /** What is still missing before this garment meets the standard. */
+  captureCompleteness(garmentId: string): Observable<CaptureCompleteness> {
+    return this.http.get<CaptureCompleteness>(
+      `${this.base}/garments/${garmentId}/captures/completeness`, { headers: this.authHeaders() });
   }
 
   runDating(garmentId: string, claim?: { earliest?: number; latest?: number }): Observable<DateResult> {

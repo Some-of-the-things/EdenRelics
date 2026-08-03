@@ -3,6 +3,7 @@ using System;
 using EdenRelics.SellerTool.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EdenRelics.SellerTool.Data.Migrations
 {
     [DbContext(typeof(ToolDbContext))]
-    partial class ToolDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260802180757_AddProvenanceMatchingAndTransitionGroups")]
+    partial class AddProvenanceMatchingAndTransitionGroups
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -73,16 +76,6 @@ namespace EdenRelics.SellerTool.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("ArchiveRightsGranted")
-                        .HasColumnType("boolean");
-
-                    b.Property<long?>("ByteSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("CaptureStandardVersion")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
                     b.Property<string>("Confirmation")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -95,16 +88,8 @@ namespace EdenRelics.SellerTool.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("ContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DisplayImageKey")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
 
                     b.Property<string>("Feature")
                         .IsRequired()
@@ -113,9 +98,6 @@ namespace EdenRelics.SellerTool.Data.Migrations
 
                     b.Property<Guid>("GarmentId")
                         .HasColumnType("uuid");
-
-                    b.Property<int?>("Height")
-                        .HasColumnType("integer");
 
                     b.Property<string>("ImageKey")
                         .HasMaxLength(512)
@@ -130,11 +112,6 @@ namespace EdenRelics.SellerTool.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<string>("Slot")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -142,9 +119,6 @@ namespace EdenRelics.SellerTool.Data.Migrations
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("Width")
-                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

@@ -212,9 +212,6 @@ builder.Services.AddScoped<ICareDraftService, CareDraftService>();
 builder.Services.AddScoped<ICareService, CareService>();
 
 // Seller tool: deterministic dating validation over the garment evidence archive
-builder.Services.Configure<DatingOptions>(builder.Configuration.GetSection("Dating"));
-builder.Services.AddScoped<IDatingRulesEngine, DatingRulesEngine>();
-builder.Services.AddScoped<IGarmentCaptureService, GarmentCaptureService>();
 
 // Monzo bank integration
 builder.Services.AddHttpClient<MonzoApiClient>();
@@ -228,6 +225,8 @@ if (runScheduledJobs)
 builder.Services.Configure<LiabilityOptions>(builder.Configuration.GetSection(LiabilityOptions.SectionName));
 builder.Services.Configure<MarketplaceOptions>(builder.Configuration.GetSection(MarketplaceOptions.SectionName));
 builder.Services.Configure<TopPicksOptions>(builder.Configuration.GetSection(TopPicksOptions.SectionName));
+builder.Services.Configure<IndexNowOptions>(builder.Configuration.GetSection(IndexNowOptions.SectionName));
+builder.Services.AddScoped<IIndexNowService, IndexNowService>();
 builder.Services.AddScoped<ILiabilityScheduleService, LiabilityScheduleService>();
 builder.Services.AddScoped<IObligationReminderSync, ObligationReminderSync>();
 if (runScheduledJobs)
@@ -380,7 +379,6 @@ using (IServiceScope scope = app.Services.CreateScope())
 
     // Seed the dating rules (idempotent — skips any Code that already exists, never
     // overwrites an edited rule). Unverified seeds are inert until researched.
-    Eden_Relics_BE.Data.DatingRulesSeed.EnsureSeedRulesAsync(db).GetAwaiter().GetResult();
 }
 
 app.UseResponseCompression();

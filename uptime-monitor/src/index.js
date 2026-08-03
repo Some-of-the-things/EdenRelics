@@ -162,16 +162,22 @@ async function checkTarget(t) {
   const passed = attempts.filter((a) => a.ok).length;
   const last = attempts[attempts.length - 1];
 
-  // When SSR fails outright, ask that isolate what is wrong with it while we
+  // When an SSR attempt fails, ask that isolate what is wrong with it while we
   // still have it. This monitor is the only thing that reliably FINDS a poisoned
   // isolate — its subrequests keep landing on the same one — and as of
-  // 2026-08-02 nothing inside a failing invocation can report anything: 23 killed
+  // 2026-08-02 nothing inside a failing invocation can report anything: 33 killed
   // invocations produced zero log lines from our handlers, the abandoned-render
   // detector, or Angular. /__isolate-health answers without touching Angular, so
   // it still works on a broken isolate. Capturing it here means the evidence
   // arrives by email instead of depending on someone hunting at the right moment.
+  //
+  // Deliberately ANY failure, not all of them. Gating this on a total wipeout
+  // (passed === 0) was a mistake: a poisoned isolate fails some requests and not
+  // others — that partial failure IS the signature. Overnight 2026-08-02 the
+  // three failure bursts were 2-of-3, 2-of-3 and 1-of-3, so the probe never ran
+  // and a whole diagnostic window produced nothing.
   let diagnostics = null;
-  if (t.kind === 'ssr' && passed === 0) {
+  if (t.kind === 'ssr' && passed < attempts.length) {
     diagnostics = await probeIsolateHealth(t.url);
   }
 
