@@ -24,6 +24,13 @@ const SITEMAP_EXCLUDED_PATHS: ReadonlySet<string> = new Set([
   'admin',
   'admin/login',
   'admin/sellers',
+  // Gated app pages, not content. 'seller' is authGuard'd and 'seller-tool' is
+  // admin-only during the beta; both client-render, so a crawler gets an empty
+  // shell. They were in the sitemap until 2026-08-03, which meant the first
+  // IndexNow run actively submitted the beta tool to Bing, Yandex, Seznam and
+  // Naver. Note the PUBLIC 'sellers/:slug' profile is dynamic and unaffected.
+  'seller',
+  'seller-tool',
   // Flag-gated behind TopPicks:Enabled and currently redirecting (302 in prod),
   // so submitting it would hand Google a redirect. Move it into
   // sitemap-routes.json when the flag goes on and the page returns 200.

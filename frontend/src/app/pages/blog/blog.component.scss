@@ -214,8 +214,21 @@
   margin: 2.5rem 0;
 }
 
-/* Article body (rendered from stored HTML) */
-.blog-post__content {
+/* Article body (rendered from stored HTML).
+ *
+ * `:host ::ng-deep` is load-bearing, not decoration. Post HTML is injected with
+ * [innerHTML], so Angular never stamps it with the component's _ngcontent
+ * attribute — every rule below compiled to `.blog-post__content[_ngcontent] h2[_ngcontent]`
+ * and matched nothing. The whole block, including the drop cap, the pull quote and
+ * the .product-callout and .timeline classes written FOR post authors, was inert
+ * from the day it was written.
+ *
+ * Angular's sanitiser also strips `style` attributes and `<style>` blocks out of
+ * innerHTML, so inline styling in stored posts does nothing either. Between the two,
+ * classes styled here are the ONLY way to format a post. Keep it that way: anything
+ * an author needs must exist as a class in this block.
+ */
+:host ::ng-deep .blog-post__content {
   font-family: var(--font-body);
   font-size: 1.2rem;
   line-height: 1.85;
@@ -399,6 +412,212 @@
         margin-bottom: 0.15rem;
       }
     }
+  }
+
+  /* ── Journal kit ──────────────────────────────────────────────────────────
+   * The classes long-form Journal pieces are authored against. Colours come from
+   * the site palette rather than the hex values in the design mock-up, so posts
+   * follow the rebrand instead of drifting from it.
+   */
+
+  /* Standfirst paragraph — add class="intro" to the opening <p>. */
+  .intro {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+  }
+
+  /* Closes the opening section with a rule — add to the last intro paragraph. */
+  .lead-close {
+    margin-bottom: 3rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  /* Short gold rule under an <h2>. */
+  .section-divider {
+    width: 40px;
+    height: 2px;
+    background: var(--gold);
+    margin: 0 0 1.4rem;
+  }
+
+  /* Centred pull quote. Distinct from <blockquote>, which stays left-ruled. */
+  .pull-quote {
+    margin: 2.5rem 0;
+    padding: 1.75rem 2.25rem;
+    background: var(--bg-secondary);
+    text-align: center;
+
+    p {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 1.2rem;
+      line-height: 1.55;
+      color: var(--text-primary);
+      margin: 0;
+    }
+  }
+
+  /* Aside for a practical note. */
+  .tip-box {
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--gold);
+    padding: 1.1rem 1.4rem;
+    margin: 1.75rem 0;
+
+    p {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.65;
+    }
+  }
+
+  /* Arrow-marked list — add class="checklist" to a <ul>. */
+  .checklist {
+    list-style: none;
+    margin: 1.2rem 0 1.75rem;
+    padding-left: 0;
+
+    li {
+      position: relative;
+      font-size: 1.05rem;
+      padding: 0.6rem 0 0.6rem 1.75rem;
+      border-bottom: 1px solid var(--border-color);
+      line-height: 1.6;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &::before {
+        content: '→';
+        position: absolute;
+        left: 0;
+        color: var(--gold);
+      }
+    }
+  }
+
+  /* Two-up cards — a .style-grid wrapping .style-card blocks. */
+  .style-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.75rem 0 2.5rem;
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .style-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 1.25rem 1.4rem;
+
+    .style-card-label {
+      font-family: var(--font-decorative);
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    h4 {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 400;
+      color: var(--text-primary);
+      margin: 0 0 0.5rem;
+    }
+
+    p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.6;
+    }
+  }
+
+  /* Closing call to action. */
+  .cta-block {
+    background: var(--bg-dark);
+    padding: 2.5rem 2.75rem;
+    margin-top: 3.25rem;
+    text-align: center;
+
+    h3 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-style: normal;
+      color: var(--text-inverse);
+      margin: 0 0 0.6rem;
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 1.4rem;
+    }
+
+    @media (max-width: 640px) {
+      padding: 1.75rem 1.25rem;
+    }
+  }
+
+  .cta-btn {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--bg-dark);
+    font-family: var(--font-decorative);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 0.85rem 1.9rem;
+  }
+
+  /* Sources / further reading — add class="sources" to a <ul>. */
+  .sources {
+    list-style: none;
+    margin: 1.2rem 0 0.5rem;
+    padding-left: 0;
+
+    li {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--border-color);
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+
+  /* Topic tags at the foot of a piece. */
+  .tags-row {
+    margin-top: 2.75rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-family: var(--font-decorative);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 0.3rem 0.75rem;
   }
 }
 

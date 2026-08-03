@@ -10,5 +10,11 @@ Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /order-confirmation/
 Disallow: /cart
+Disallow: /seller-tool
+# Anchored: /seller is the gated seller dashboard, but /sellers/:slug is the PUBLIC
+# seller profile — the SEO/backlink asset. An unanchored "Disallow: /seller" would
+# match those by prefix and block the pages the multi-seller hub exists to rank.
+Disallow: /seller$
+Allow: /sellers/
 
 Sitemap: https://edenrelics.co.uk/sitemap.xml
