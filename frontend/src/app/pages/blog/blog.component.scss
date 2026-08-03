@@ -485,8 +485,19 @@
     }
   }
 
+  /* A nested cell is usually just a layout wrapper inside an already-padded
+   * panel, so it must not double the inset. */
   td[bgcolor] td[bgcolor] {
     padding: 0;
+  }
+
+  /* Except a gold cell, which is the button itself and needs its own padding —
+   * the reset above was cancelling the markup's cellpadding and leaving the
+   * label hard against the edge. Same specificity as that reset, so this has to
+   * come after it. */
+  td[bgcolor='#b8903c' i],
+  td[bgcolor] td[bgcolor='#b8903c' i] {
+    padding: 0.85rem 1.9rem;
   }
 
   /* Pull quote */
