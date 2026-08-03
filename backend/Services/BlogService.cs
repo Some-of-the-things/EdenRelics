@@ -9,7 +9,7 @@ namespace Eden_Relics_BE.Services;
 /// all persistence goes through <see cref="IRepository{T}"/>, whose DeleteAsync is a
 /// soft delete (and is further guarded by the global SoftDeleteInterceptor).
 /// </summary>
-public partial class BlogService(IRepository<BlogPost> repository) : IBlogService
+public partial class BlogService(IRepository<BlogPost> repository, IIndexNowService indexNow) : IBlogService
 {
     public async Task<List<BlogPostSummaryDto>> GetPublishedAsync()
     {
@@ -68,6 +68,7 @@ public partial class BlogService(IRepository<BlogPost> repository) : IBlogServic
         };
 
         await repository.AddAsync(post);
+        await PingIfPublishedAsync(post);
         return ToDto(post);
     }
 
@@ -95,7 +96,23 @@ public partial class BlogService(IRepository<BlogPost> repository) : IBlogServic
         }
 
         await repository.UpdateAsync(post);
+        await PingIfPublishedAsync(post);
         return ToDto(post);
+    }
+
+    /// <summary>
+    /// Tells the IndexNow engines a published post changed. Deliberately fires on every edit of a
+    /// live post, not only the moment it goes live — a rewritten post is a changed URL, which is
+    /// exactly what the protocol is for. No-ops when IndexNow is switched off.
+    /// </summary>
+    private async Task PingIfPublishedAsync(BlogPost post)
+    {
+        if (!post.Published || string.IsNullOrWhiteSpace(post.Slug))
+        {
+            return;
+        }
+
+        await indexNow.SubmitPathsAsync([$"/blog/{post.Slug}"]);
     }
 
     public async Task<bool> DeleteAsync(Guid id)

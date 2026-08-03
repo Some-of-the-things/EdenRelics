@@ -1,6 +1,7 @@
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
 using Eden_Relics_BE.Repositories;
+using Eden_Relics_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,6 +21,7 @@ namespace Eden_Relics_BE.Controllers;
 [Authorize(Roles = "Admin")]
 public class CollectionsController(
     IRepository<Product> products,
+    IIndexNowService indexNow,
     ILogger<CollectionsController> logger) : ControllerBase
 {
     /// <summary>Preview data for the given SKUs, including products still held as Stock.</summary>
@@ -76,6 +78,9 @@ public class CollectionsController(
         int published = 0;
         int alreadyLive = 0;
         List<string> notFound = [];
+        // Collected and submitted once at the end rather than per product: publishing a whole
+        // collection is one event, and IndexNow takes up to 10,000 URLs in a single call.
+        List<string> newlyLive = [];
 
         foreach (CollectionPublishItem item in items)
         {
@@ -104,6 +109,10 @@ public class CollectionsController(
                 product.Status = ProductStatus.Live;
                 published++;
                 changed = true;
+                if (!string.IsNullOrWhiteSpace(product.Slug))
+                {
+                    newlyLive.Add($"/product/{product.Slug}");
+                }
             }
             else if (product.Status == ProductStatus.Live)
             {
@@ -115,6 +124,11 @@ public class CollectionsController(
             {
                 await products.UpdateAsync(product);
             }
+        }
+
+        if (newlyLive.Count > 0)
+        {
+            await indexNow.SubmitPathsAsync(newlyLive);
         }
 
         logger.LogInformation(

@@ -8,7 +8,8 @@ namespace Eden_Relics_BE.Services;
 
 public partial class SellerListingService(
     IRepository<Product> products,
-    IRepository<Seller> sellers) : ISellerListingService
+    IRepository<Seller> sellers,
+    IIndexNowService indexNow) : ISellerListingService
 {
     public async Task<SellerListingDto?> CreateAsync(Guid userId, SellerListingCreateDto dto)
     {
@@ -89,6 +90,10 @@ public partial class SellerListingService(
         product.ModerationStatus = ProductModerationStatus.Approved;
         product.ModerationNote = null;
         await products.UpdateAsync(product);
+        if (!string.IsNullOrWhiteSpace(product.Slug))
+        {
+            await indexNow.SubmitPathsAsync([$"/product/{product.Slug}"]);
+        }
         return Map(product);
     }
 
