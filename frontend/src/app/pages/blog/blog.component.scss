@@ -307,9 +307,11 @@
 
   /* <b>/<i> come from pasted and legacy markup; keep them identical to strong/em
    * so the same emphasis never renders two different ways across posts. */
+  /* Weight only — deliberately no colour. Setting one here lands on the element
+   * itself and so beats any colour inherited from a coloured panel, which made
+   * bold headings inside the dark CTA render dark-on-dark. */
   strong, b {
     font-weight: 600;
-    color: var(--text-primary);
   }
 
   em, i {
@@ -422,15 +424,21 @@
     background-color: var(--bg-card);
   }
 
-  /* Gold panels are buttons/banners. Keeping the gold but darkening the text
-   * takes them from 2.96:1 (white on gold) to 6.09:1. */
-  [bgcolor='#b8903c' i] {
-    background-color: var(--gold);
-    color: var(--bg-dark);
+  /* Legacy <font size> carried the heading hierarchy. font-size is normalised to
+   * inherit above, so restore the scale here rather than flattening a CTA
+   * heading to body size. */
+  font[size='5'] {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    line-height: 1.3;
+  }
 
-    a {
-      color: var(--bg-dark);
-    }
+  font[size='4'] {
+    font-size: 1.15rem;
+  }
+
+  font[size='2'] {
+    font-size: 0.95rem;
   }
 
   /* Dark panels must invert, or forcing the palette's dark text onto them
@@ -441,6 +449,23 @@
 
     a {
       color: var(--gold); /* 6.09:1 on the dark panel */
+    }
+  }
+
+  /* Gold panels are buttons/banners: keep the gold, darken the text — 6.09:1,
+   * up from 2.96:1 for the white-on-gold this replaces.
+   *
+   * Declared AFTER the dark panel on purpose. These CTAs are a gold button
+   * nested INSIDE a dark panel, so both `[bgcolor] a` rules match the same link
+   * with identical specificity and source order is what decides. With the dark
+   * rule last, the button rendered gold text on a gold background. */
+  [bgcolor='#b8903c' i] {
+    background-color: var(--gold);
+    color: var(--bg-dark);
+
+    a {
+      color: var(--bg-dark);
+      text-decoration: none;
     }
   }
 

@@ -389,6 +389,34 @@ const SECURITY_HEADERS: Record<string, string> = {
     "frame-ancestors 'none'",
 };
 
+/**
+ * Assets that other systems READ AS CONFIGURATION, not as page furniture, and so must never be
+ * served stale.
+ *
+ * `sitemap-routes.json` is the frontend's declaration of which static URLs exist; the backend
+ * fetches this exact URL to build sitemap.xml. Cloudflare cached it at the edge and kept serving
+ * the old copy after a deploy — `CF-Cache-Status: HIT` even for a request with a unique query
+ * string — so on 2026-08-03 the sitemap went on advertising two routes that had been removed from
+ * the file hours earlier, and no amount of waiting on the backend's own one-hour cache would have
+ * fixed it. A deploy has to be able to change this file's meaning immediately.
+ *
+ * Hashed build output is the opposite case and is left alone: it is immutable by construction and
+ * should be cached as hard as possible.
+ */
+const NEVER_CACHE_ASSETS: ReadonlySet<string> = new Set([
+  '/sitemap-routes.json',
+  '/robots.txt',
+]);
+
+function withAssetCaching(pathname: string, response: Response): Response {
+  if (!NEVER_CACHE_ASSETS.has(pathname)) {
+    return response;
+  }
+  const fresh = new Response(response.body, response);
+  fresh.headers.set('Cache-Control', 'no-store, must-revalidate');
+  return fresh;
+}
+
 function withSecurityHeaders(response: Response): Response {
   const secured = new Response(response.body, response);
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
@@ -557,12 +585,38 @@ export default {
       }
     }
 
+    // The backend reads this to build sitemap.xml. It is deliberately extensionless: a path with a
+    // dot is served through the static-asset branch below, and Cloudflare caches those at the edge
+    // IN FRONT OF this Worker — on 2026-08-03 /sitemap-routes.json kept returning the pre-deploy
+    // copy (CF-Cache-Status: HIT even for a unique query string), so the sitemap advertised two
+    // routes that had already been removed from the file, and no header this Worker set could
+    // change that because the Worker was never invoked. Routing the backend's read through the
+    // dynamic path means a deploy takes effect immediately.
+    if (url.pathname === '/__sitemap-routes') {
+      try {
+        const assetUrl = new URL('/sitemap-routes.json', url.origin);
+        const assetResponse = await env.ASSETS.fetch(new Request(assetUrl, { method: 'GET' }));
+        if (!assetResponse.ok) {
+          return withSecurityHeaders(new Response('Not Found', { status: 404 }));
+        }
+        return withSecurityHeaders(new Response(assetResponse.body, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store, must-revalidate',
+          },
+        }));
+      } catch {
+        return withSecurityHeaders(new Response('Route list unavailable', { status: 503 }));
+      }
+    }
+
     // Serve static assets (files with extensions) via ASSETS binding
     if (url.pathname.includes('.')) {
       try {
         const assetResponse = await env.ASSETS.fetch(request);
         if (assetResponse.ok) {
-          return withSecurityHeaders(assetResponse);
+          return withSecurityHeaders(withAssetCaching(url.pathname, assetResponse));
         }
       } catch {
         // Asset not found — return 404 instead of crashing
