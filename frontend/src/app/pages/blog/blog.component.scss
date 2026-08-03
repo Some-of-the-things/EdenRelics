@@ -297,6 +297,173 @@
     }
   }
 
+  h4 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 1.6em 0 0.4em;
+  }
+
+  /* <b>/<i> come from pasted and legacy markup; keep them identical to strong/em
+   * so the same emphasis never renders two different ways across posts. */
+  strong, b {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  em, i {
+    font-style: italic;
+  }
+
+  /* Section rule. Older posts separate sections with <hr>, newer ones with
+   * <div class="section-divider">; both render as the same short gold rule. */
+  hr,
+  .section-divider {
+    border: 0;
+    width: 40px;
+    height: 2px;
+    background: var(--gold);
+    margin: 2.5rem 0 1.4rem;
+  }
+
+  figure {
+    margin: 2rem 0;
+
+    img {
+      margin: 0;
+    }
+  }
+
+  figcaption {
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: 0.6rem;
+  }
+
+  details {
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--gold);
+    padding: 1rem 1.35rem;
+    margin: 1.75rem 0;
+
+    summary {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+
+    > *:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  /* ── Data tables ──────────────────────────────────────────────────────────
+   * A table with a <th> is a real table. Layout tables (see below) have none.
+   */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+  }
+
+  table table {
+    margin: 0;
+  }
+
+  th, td {
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border-dark);
+  }
+
+  th ~ th,
+  thead ~ tbody td {
+    border: 1px solid var(--border-dark);
+    padding: 0.7rem 0.9rem;
+  }
+
+  /* ── Legacy presentational markup ─────────────────────────────────────────
+   * Several posts are authored as email-style HTML: layout <table>s with
+   * bgcolor, and <font face|color|size>. Those attributes survive Angular's
+   * sanitiser (unlike style attributes, which do not), so the colours were
+   * baked into the copy and drifted from the palette — and some badly failed
+   * contrast. Measured 2026-08-03: #b8903c as body text is 2.49:1 on the cream
+   * panel and 2.96:1 on white, against a 4.5:1 requirement, across 44 uses.
+   *
+   * These attributes are presentational hints, so ordinary author CSS beats
+   * them with no !important needed. Mapping them onto the palette fixes the
+   * contrast and makes every post render the same way, whatever markup it
+   * happens to be written in.
+   */
+  font {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  [bgcolor] {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+
+  [bgcolor='#ffffff' i] {
+    background-color: var(--bg-card);
+  }
+
+  /* Gold panels are buttons/banners. Keeping the gold but darkening the text
+   * takes them from 2.96:1 (white on gold) to 6.09:1. */
+  [bgcolor='#b8903c' i] {
+    background-color: var(--gold);
+    color: var(--bg-dark);
+
+    a {
+      color: var(--bg-dark);
+    }
+  }
+
+  /* Dark panels must invert, or forcing the palette's dark text onto them
+   * would render the copy invisible rather than merely off-brand. */
+  [bgcolor='#1c1510' i] {
+    background-color: var(--bg-dark);
+    color: var(--text-inverse);
+
+    a {
+      color: var(--gold); /* 6.09:1 on the dark panel */
+    }
+  }
+
+  /* Layout-table callouts: the cell carries the panel colour and the quote is
+   * an <i>/<em> inside it. Render it as the pull quote it was meant to be. */
+  td[bgcolor] {
+    padding: 1.4rem 1.75rem;
+
+    > font > i,
+    > font > em,
+    > i,
+    > em {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      line-height: 1.55;
+    }
+  }
+
+  td[bgcolor] td[bgcolor] {
+    padding: 0;
+  }
+
   /* Pull quote */
   blockquote {
     position: relative;
@@ -433,14 +600,6 @@
     border-bottom: 1px solid var(--border-color);
   }
 
-  /* Short gold rule under an <h2>. */
-  .section-divider {
-    width: 40px;
-    height: 2px;
-    background: var(--gold);
-    margin: 0 0 1.4rem;
-  }
-
   /* Centred pull quote. Distinct from <blockquote>, which stays left-ruled. */
   .pull-quote {
     margin: 2.5rem 0;
@@ -494,7 +653,9 @@
         content: '→';
         position: absolute;
         left: 0;
-        color: var(--gold);
+        /* Not --gold: it is 2.61:1 on cream. --gold-text only reaches 4.44:1,
+         * still short of 4.5, so the marker uses the accent (5.45:1). */
+        color: var(--accent);
       }
     }
   }
@@ -557,7 +718,9 @@
     }
 
     p {
-      color: var(--text-muted);
+      /* --text-muted is tuned for cream and manages only 2.29:1 on the dark
+       * panel. Weight is carried by size here, not by dimming the colour. */
+      color: var(--text-inverse);
       font-size: 1rem;
       margin-bottom: 1.4rem;
     }
@@ -726,11 +889,33 @@
 }
 
 @media (max-width: 600px) {
-  .blog-post__content {
+  /* ::ng-deep for the same reason as the main block — the nested rule targets
+   * innerHTML content, which never carries the component's scoping attribute. */
+  :host ::ng-deep .blog-post__content {
     font-size: 1.1rem;
 
     blockquote p {
       font-size: 1.2rem;
+    }
+
+    /* Legacy layout tables are fixed-width for email clients; let them reflow
+     * rather than push the article into a horizontal scroll on a phone. */
+    table, tbody, tr, td {
+      display: block;
+      width: auto;
+    }
+
+    /* Real tables keep their structure and scroll inside their own box. */
+    table:has(th) {
+      display: table;
+
+      tbody { display: table-row-group; }
+      tr    { display: table-row; }
+      td, th { display: table-cell; }
+    }
+
+    td[bgcolor] {
+      padding: 1.1rem 1.25rem;
     }
   }
 }
