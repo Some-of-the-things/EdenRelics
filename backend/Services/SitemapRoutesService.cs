@@ -71,7 +71,11 @@ public class SitemapRoutesService
     private async Task RefreshAsync()
     {
         string frontendUrl = _config["Sitemap:FrontendUrl"] ?? "https://edenrelics.co.uk";
-        string sourceUrl = $"{frontendUrl.TrimEnd('/')}/sitemap-routes.json";
+        // Extensionless on purpose. The SSR Worker serves the same file here with no-store, whereas
+        // /sitemap-routes.json goes through the static-asset path and is cached by Cloudflare in
+        // front of the Worker. On 2026-08-03 that cache kept serving a pre-deploy copy for hours,
+        // so the sitemap advertised two routes that had already been removed from the file.
+        string sourceUrl = $"{frontendUrl.TrimEnd('/')}/__sitemap-routes";
 
         try
         {
