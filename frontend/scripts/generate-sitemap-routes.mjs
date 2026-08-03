@@ -89,14 +89,25 @@ const categoryRoutes = [
     priority: '0.7',
   })),
 ];
-// Marketplace-facing static pages. /top-picks is deliberately absent: it is gated
-// behind TopPicks:Enabled and currently 302s, so submitting it would advertise a
-// redirect. Add it here when the flag goes on (and drop it from
-// SITEMAP_EXCLUDED_PATHS in app.routes.spec.ts).
-const sellerRoutes = [
-  { path: '/seller', changefreq: 'monthly', priority: '0.5' },
-  { path: '/seller-tool', changefreq: 'monthly', priority: '0.5' },
-];
+// Marketplace-facing static pages. Three are deliberately absent:
+//
+//   /top-picks   gated behind TopPicks:Enabled and currently 302s, so submitting
+//                it would advertise a redirect.
+//   /seller      authGuard'd dashboard.
+//   /seller-tool admin-only during the beta.
+//
+// The last two were listed here until 2026-08-03, which put them in sitemap.xml
+// and meant the first IndexNow run asked Bing, Yandex, Seznam and Naver to crawl
+// the gated beta tool. Both client-render behind a guard, so a crawler only ever
+// got an empty shell — but they should not be discoverable at all, and removing
+// them from the JSON by hand achieved nothing because this generator runs on
+// `prebuild` and put them straight back.
+//
+// The PUBLIC /sellers/:slug profile is dynamic and unaffected.
+//
+// Anything added here must also come out of SITEMAP_EXCLUDED_PATHS in
+// app.routes.spec.ts, which fails the build if the two lists disagree.
+const sellerRoutes = [];
 const after = [
   { path: '/privacy-policy', changefreq: 'yearly', priority: '0.3' },
   { path: '/modern-slavery-policy', changefreq: 'yearly', priority: '0.3' },
