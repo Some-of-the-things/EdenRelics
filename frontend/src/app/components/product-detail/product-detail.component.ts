@@ -310,6 +310,7 @@ export class ProductDetailComponent {
           product.showReduction && product.salePrice ? product.salePrice : product.price;
         const productUrl = `https://edenrelics.co.uk${canonicalPath}`;
         const description = stripHtml(product.description);
+        const designer = findDesignerForProduct(product.name);
         const uploadDate = product.createdAtUtc ?? new Date().toISOString();
         const videos = (product.videoUrls ?? []).map((url, idx) => ({
           '@type': 'VideoObject',
@@ -336,13 +337,19 @@ export class ProductDetailComponent {
             image: [product.imageUrl, ...(product.additionalImageUrls ?? [])].filter(Boolean),
             sku: product.id,
             url: productUrl,
-            // Prefer the garment's actual maker/label as the brand (a genuine
-            // global identifier); fall back to the shop name when unknown.
-            brand: {
-              '@type': 'Brand',
-              name: findDesignerForProduct(product.name)?.name ?? 'Eden Relics',
-            },
+            // brand is the garment's maker, and it is omitted when we don't know
+            // it. It used to fall back to the shop name, which fired on 57 of 72
+            // live products (2026-08-04): Eden Relics is the seller — already
+            // stated on the offer — not the manufacturer of a 1970s Van Allan
+            // maxi dress, and claiming otherwise attaches 57 unrelated garments
+            // to the brand entity. Only the ten curated designers have matchers;
+            // the maker is often in the product name but as free text, with no
+            // reliable way to tell "Pacific Legend" from "Handmade".
+            ...(designer ? { brand: { '@type': 'Brand', name: designer.name } } : {}),
             category: product.era,
+            // Apparel attributes Google reads when they are present.
+            ...(product.size ? { size: product.size } : {}),
+            ...(product.material ? { material: product.material } : {}),
             itemCondition: schemaCondition(product.condition),
             ...(videos.length > 0 ? { video: videos.length === 1 ? videos[0] : videos } : {}),
             offers: {
