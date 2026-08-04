@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { SeoService } from './seo.service';
+import { COLLECTIONS } from '../pages/collections/collections.data';
+import { DESIGNERS } from '../pages/designers/designers.data';
 
 describe('SeoService', () => {
   let service: SeoService;
@@ -108,6 +110,27 @@ describe('SeoService', () => {
 
       service.updateTags({ url: '/blog' });
       expect(hreflangs().length).toBe(0);
+    });
+  });
+
+  describe('title suffix', () => {
+    it('appends the brand exactly once', () => {
+      service.updateTags({ title: 'Vintage Tartan Dresses & Skirts' });
+      expect(document.title).toBe('Vintage Tartan Dresses & Skirts | Eden Relics');
+    });
+
+    // updateTags appends "| Eden Relics" itself. collections.data.ts also baked
+    // it into every metaTitle, so all three collection pages shipped a doubled
+    // suffix — "The Wildflower Edit — Vintage Floral Dresses | Eden Relics |
+    // Eden Relics", 72 chars and truncated in the SERP. designers.data.ts got
+    // it right, which is why it went unnoticed.
+    it('no page data file pre-baked the suffix', () => {
+      const offenders = [
+        ...COLLECTIONS.map((c) => ({ where: `collections/${c.slug}`, title: c.metaTitle })),
+        ...DESIGNERS.map((d) => ({ where: `designers/${d.slug}`, title: d.metaTitle })),
+      ].filter((e) => /\|\s*Eden Relics\s*$/i.test(e.title));
+
+      expect(offenders).toEqual([]);
     });
   });
 });
