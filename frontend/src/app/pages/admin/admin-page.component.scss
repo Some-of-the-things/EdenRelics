@@ -1903,6 +1903,19 @@
   flex-wrap: wrap;
 }
 
+/* States what the KPIs beneath are counting. The filters sit below them, so
+   without this the scope of the headline figures is not obvious. */
+.fin__scope {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+
+  strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+}
+
 .fin__filter {
   display: flex;
   align-items: center;

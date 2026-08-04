@@ -17,6 +17,11 @@ import { firstValueFrom, forkJoin } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
 import { Product, ProductStatus, PRODUCT_SIZES } from '../../models/product.model';
 import {
+  filterFinanceRows,
+  financeScopeLabel,
+  summariseFinanceRows,
+} from '../../utils/finance-summary';
+import {
   filterAdminProducts,
   productStatusLabel,
   resolveProductStatus,
@@ -1103,6 +1108,27 @@ export class AdminPageComponent implements OnInit {
   readonly financeMonthFilter = signal<string>('all');
   readonly financeSourceFilter = signal<'all' | 'site' | 'external'>('all');
   readonly backfillingSales = signal(false);
+
+  /**
+   * The Finance KPIs, scoped to whatever the month and source filters are set to.
+   *
+   * They used to render straight from the server's all-time summary while the
+   * ledger beneath them was filtered, so narrowing to a month or to site sales
+   * moved the table and left the headline untouched — showing "94 Transactions"
+   * above a single row. Derived from the same filtered list the table uses, so
+   * the two cannot disagree.
+   *
+   * Rounded per figure because summing floats drifts: 0.1 + 0.2 is not 0.3, and
+   * these are pounds and pence on screen.
+   */
+  readonly filteredFinanceSummary = computed(() =>
+    summariseFinanceRows(this.filteredFinanceTransactions),
+  );
+
+  /** What the KPIs above are counting, so the numbers are never ambiguous. */
+  readonly financeScopeLabel = computed(() =>
+    financeScopeLabel(this.financeMonthFilter(), this.financeSourceFilter()),
+  );
   financeForm = {
     date: '',
     description: '',
@@ -2481,22 +2507,14 @@ export class AdminPageComponent implements OnInit {
       });
   }
 
+  /** The ledger rows the table shows — and, via filteredFinanceSummary, exactly
+   *  the rows the KPIs above it total. See utils/finance-summary.ts. */
   get filteredFinanceTransactions(): FinanceTransaction[] {
-    const monthFilter = this.financeMonthFilter();
-    const sourceFilter = this.financeSourceFilter();
-    let result = this.financeTransactions();
-    if (monthFilter !== 'all') {
-      result = result.filter((t) => t.date.startsWith(monthFilter));
-    }
-    if (sourceFilter === 'site') {
-      result = result.filter((t) => t.platform === 'Website');
-    } else if (sourceFilter === 'external') {
-      // External = a known non-Website platform (Etsy, Depop, Vinted, eBay, etc.).
-      // Transactions with no platform set are considered Unspecified and excluded
-      // from both Site and External filters so the buckets don't overlap.
-      result = result.filter((t) => !!t.platform && t.platform !== 'Website');
-    }
-    return result;
+    return filterFinanceRows(
+      this.financeTransactions(),
+      this.financeMonthFilter(),
+      this.financeSourceFilter(),
+    );
   }
 
   get selectedMonthSummary(): FinanceSummary['byMonth'][0] | null {

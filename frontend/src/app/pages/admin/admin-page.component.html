@@ -1114,21 +1114,25 @@
     } @else {
       <!-- Summary KPIs -->
       @if (financeSummary(); as summary) {
+        <!-- Scoped to the month/source filters below, via filteredFinanceSummary.
+             Reading the server's all-time summary here left the headline frozen
+             while the ledger filtered underneath it. -->
+        <p class="fin__scope">Showing: <strong>{{ financeScopeLabel() }}</strong></p>
         <div class="acct__kpis">
           <div class="acct__kpi">
-            <span class="acct__kpi-value fin__amount--positive">{{ summary.totalIncome | currency:'GBP' }}</span>
+            <span class="acct__kpi-value fin__amount--positive">{{ filteredFinanceSummary().income | currency:'GBP' }}</span>
             <span class="acct__kpi-label">Total Income</span>
           </div>
           <div class="acct__kpi">
-            <span class="acct__kpi-value fin__amount--negative">{{ summary.totalExpenses | currency:'GBP' }}</span>
+            <span class="acct__kpi-value fin__amount--negative">{{ filteredFinanceSummary().expenses | currency:'GBP' }}</span>
             <span class="acct__kpi-label">Total Expenses</span>
           </div>
           <div class="acct__kpi acct__kpi--accent">
-            <span class="acct__kpi-value">{{ summary.totalProfit | currency:'GBP' }}</span>
+            <span class="acct__kpi-value">{{ filteredFinanceSummary().profit | currency:'GBP' }}</span>
             <span class="acct__kpi-label">Net Profit</span>
           </div>
           <div class="acct__kpi">
-            <span class="acct__kpi-value">{{ summary.transactionCount }}</span>
+            <span class="acct__kpi-value">{{ filteredFinanceSummary().count }}</span>
             <span class="acct__kpi-label">Transactions</span>
           </div>
         </div>
