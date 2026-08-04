@@ -196,6 +196,12 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       { label: '1970s Vintage Dresses', path: '/shop/1970s' },
       { label: 'Maxi Dresses', path: '/dresses/maxi' },
       { label: 'Cottagecore & Prairie', path: '/style/cottagecore' },
+      // The 1970s folk revival is the shared ancestor of both looks, so the
+      // guide is genuinely relevant here and not just a link for a link's sake.
+      {
+        label: 'What is a prairie dress?',
+        path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
+      },
     ],
   },
 ];
