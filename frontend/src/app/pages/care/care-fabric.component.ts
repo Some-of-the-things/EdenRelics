@@ -76,7 +76,6 @@ export class CareFabricComponent implements OnInit {
           description,
           url,
           type: 'article',
-          hreflang: true,
         });
         // FAQ schema mirrors the visible care sections so answer text matches
         // the on-page content (Google's requirement for FAQPage).

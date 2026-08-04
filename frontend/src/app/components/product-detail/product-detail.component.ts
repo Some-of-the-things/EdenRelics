@@ -290,7 +290,6 @@ export class ProductDetailComponent {
           url: canonicalPath,
           image: product.imageUrl,
           type: 'product',
-          hreflang: true,
         });
         this.analytics.viewProduct(product.id, product.name, product.price);
         if (this.isBrowser) {

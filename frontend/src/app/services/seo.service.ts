@@ -2,7 +2,11 @@ import { Injectable, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/common';
 
-/** Locales the backend can translate content into. Mirrors backend SupportedLocales. */
+/**
+ * Locales the backend can translate product name and description into.
+ * Mirrors backend TranslationService.SupportedLocales. Used by the locale
+ * switcher; deliberately NOT advertised via hreflang — see clearHreflang().
+ */
 export const SUPPORTED_LOCALES = [
   'en', 'fr', 'de', 'es', 'it', 'nl', 'pt', 'sv', 'da', 'nb', 'ja', 'ko',
 ] as const;
@@ -30,8 +34,6 @@ export class SeoService {
     image?: string;
     type?: string;
     noIndex?: boolean;
-    /** Emit hreflang alternates pointing to ?locale=X variants for this path. */
-    hreflang?: boolean;
   }): void {
     const pageTitle = config.title
       ? `${config.title} | Eden Relics`
@@ -73,12 +75,9 @@ export class SeoService {
       this.meta.removeTag('name="robots"');
     }
 
-    // hreflang alternates
-    if (config.hreflang && config.url !== undefined) {
-      this.updateHreflang(config.url);
-    } else {
-      this.clearHreflang();
-    }
+    // No hreflang. See clearHreflang() for why; the call also strips stale
+    // alternates out of SSR HTML still sitting in the CDN from before removal.
+    this.clearHreflang();
   }
 
   setJsonLd(schema: object): void {
@@ -122,41 +121,29 @@ export class SeoService {
     }
   }
 
-  private updateHreflang(path: string): void {
-    // Strip any existing locale query so we build clean variant URLs.
-    const [pathOnly, query] = path.split('?');
-    const params = new URLSearchParams(query ?? '');
-    params.delete('locale');
-    const cleanQuery = params.toString();
-    const basePath = cleanQuery ? `${pathOnly}?${cleanQuery}` : pathOnly;
-    const baseUrl = `${this.siteUrl}${basePath}`;
-
-    this.clearHreflang();
-
-    // English / canonical: the bare URL.
-    this.appendHreflang('en-GB', baseUrl);
-    this.appendHreflang('x-default', baseUrl);
-
-    for (const locale of SUPPORTED_LOCALES) {
-      if (locale === 'en') {
-        continue;
-      }
-      const sep = baseUrl.includes('?') ? '&' : '?';
-      this.appendHreflang(locale, `${baseUrl}${sep}locale=${locale}`);
-    }
-  }
-
+  /**
+   * We emit no hreflang alternates, and this removes any that are still around.
+   *
+   * We used to advertise eleven `?locale=X` variants per page. The translations
+   * behind them are real — TranslationService renders product name and
+   * description into all eleven, and the API returns them — but LocaleService
+   * only runs in the browser, so the SSR HTML a crawler receives at
+   * `?locale=de` is English, with an English <title> and <h1>, and it
+   * canonicalises back to the bare URL. An alternate that canonicalises
+   * elsewhere is a conflicting signal: Google discards the annotation, having
+   * first crawled ~1,300 duplicate URLs to find that out. Two of them were
+   * already in Bing's index.
+   *
+   * Re-adding this needs more than a flag. SSR would have to honour ?locale,
+   * set <html lang>, translate <title>/description and self-canonicalise — and
+   * only product name and description are translated today, so the rest of the
+   * page (nav, headings, category and blog copy) would still be English. Mixed-
+   * language pages are a poor ranking asset, so the translation coverage is the
+   * real prerequisite, not the tags.
+   */
   private clearHreflang(): void {
     this.document.head
       .querySelectorAll('link[rel="alternate"][hreflang]')
       .forEach((el) => el.remove());
-  }
-
-  private appendHreflang(hreflang: string, href: string): void {
-    const link = this.document.createElement('link');
-    link.rel = 'alternate';
-    link.setAttribute('hreflang', hreflang);
-    link.href = href;
-    this.document.head.appendChild(link);
   }
 }

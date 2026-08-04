@@ -101,7 +101,6 @@ export class CategoryHubComponent {
       title: hub.metaTitle,
       description: hub.metaDescription,
       url: path,
-      hreflang: true,
     });
 
     const products = matchProductsToHub(this.productStore.liveProducts(), hub);

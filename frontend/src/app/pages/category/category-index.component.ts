@@ -64,7 +64,6 @@ export class CategoryIndexComponent implements OnInit {
       title: this.copy.metaTitle,
       description: this.copy.metaDescription,
       url: this.copy.url,
-      hreflang: true,
     });
     this.seo.setJsonLd({
       '@context': 'https://schema.org',

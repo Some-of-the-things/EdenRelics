@@ -44,7 +44,6 @@ export class BlogListComponent implements OnInit {
       title: 'Blog',
       description: 'Vintage fashion tips, styling guides and stories from Eden Relics.',
       url: '/blog',
-      hreflang: true,
     });
     this.http.get<BlogSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
       next: (posts) => this.posts.set(posts),

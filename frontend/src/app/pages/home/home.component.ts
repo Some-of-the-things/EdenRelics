@@ -82,7 +82,6 @@ export class HomeComponent implements OnInit {
     this.topPicks.load();
     this.seo.updateTags({
       url: '/',
-      hreflang: true,
     });
     this.emitJsonLd();
     this.http.get<BlogPostSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({

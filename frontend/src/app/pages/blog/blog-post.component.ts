@@ -115,7 +115,6 @@ export class BlogPostComponent implements OnInit {
           url: `/blog/${post.slug}`,
           image: post.featuredImageUrl ?? undefined,
           type: 'article',
-          hreflang: !this.preview(),
           noIndex: this.preview(),
         });
 
