@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
+const excludedPath = resolve(here, '../src/app/sitemap-excluded-paths.json');
 const designersPath = resolve(here, '../src/app/pages/designers/designers.data.ts');
 const collectionsPath = resolve(here, '../src/app/pages/collections/collections.data.ts');
 const categoriesPath = resolve(here, '../src/app/pages/category/category.data.ts');
@@ -128,6 +129,21 @@ const routes = [
   ...sellerRoutes,
   ...after,
 ];
+
+// Fail the build rather than emit a gated page. app.routes.spec.ts checks the
+// committed JSON, but this script overwrites it on every `npm run build`, so
+// that spec cannot catch a regression here — which is exactly how /seller and
+// /seller-tool survived being deleted from the JSON by hand on 2026-08-03 and
+// went out in the first IndexNow submission. Same list both sides read.
+const excluded = JSON.parse(readFileSync(excludedPath, 'utf8')).paths;
+const leaked = routes.filter((r) => excluded.includes(r.path.replace(/^\//, '')));
+if (leaked.length > 0) {
+  throw new Error(
+    `generate-sitemap-routes: refusing to emit ${leaked
+      .map((r) => r.path)
+      .join(', ')} — listed in src/app/sitemap-excluded-paths.json. Remove it from this generator, or from that list if it is genuinely meant to be indexed.`,
+  );
+}
 
 // Match the existing one-object-per-line formatting so diffs stay readable.
 const body = routes

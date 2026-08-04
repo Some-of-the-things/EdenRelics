@@ -1,6 +1,7 @@
 import { Route } from '@angular/router';
 import { routes } from './app.routes';
 import sitemapRoutes from '../../public/sitemap-routes.json';
+import excluded from './sitemap-excluded-paths.json';
 
 interface SitemapEntry {
   path: string;
@@ -10,32 +11,25 @@ interface SitemapEntry {
 
 /**
  * Routes intentionally excluded from the sitemap. Auth flows, transactional
- * pages, and admin shouldn't be in Google's index. Keep this list narrow.
+ * pages, and admin shouldn't be in any search index. Keep this list narrow.
+ *
+ * The list itself lives in sitemap-excluded-paths.json because the prebuild
+ * generator has to read it too. This spec validates the *committed*
+ * sitemap-routes.json, which the generator overwrites on every `npm run build` —
+ * so the guard that matters for the gated pages is the one inside the generator.
+ * Notable members:
+ *
+ *   seller       authGuard'd dashboard, client-rendered.
+ *   seller-tool  admin-only during the beta, client-rendered.
+ *                Both were in the sitemap until 2026-08-03, which meant the
+ *                first IndexNow run submitted the beta tool to Bing, Yandex,
+ *                Seznam and Naver. The PUBLIC 'sellers/:slug' profile is
+ *                dynamic and unaffected.
+ *   top-picks    Flag-gated behind TopPicks:Enabled and currently 302ing, so
+ *                submitting it would hand Google a redirect. Move it into
+ *                sitemap-routes.json when the flag goes on and it returns 200.
  */
-const SITEMAP_EXCLUDED_PATHS: ReadonlySet<string> = new Set([
-  'cart',
-  'login',
-  'register',
-  'account',
-  'settings',
-  'forgot-password',
-  'reset-password',
-  'verify-email',
-  'admin',
-  'admin/login',
-  'admin/sellers',
-  // Gated app pages, not content. 'seller' is authGuard'd and 'seller-tool' is
-  // admin-only during the beta; both client-render, so a crawler gets an empty
-  // shell. They were in the sitemap until 2026-08-03, which meant the first
-  // IndexNow run actively submitted the beta tool to Bing, Yandex, Seznam and
-  // Naver. Note the PUBLIC 'sellers/:slug' profile is dynamic and unaffected.
-  'seller',
-  'seller-tool',
-  // Flag-gated behind TopPicks:Enabled and currently redirecting (302 in prod),
-  // so submitting it would hand Google a redirect. Move it into
-  // sitemap-routes.json when the flag goes on and the page returns 200.
-  'top-picks',
-]);
+const SITEMAP_EXCLUDED_PATHS: ReadonlySet<string> = new Set(excluded.paths);
 
 function isDynamic(path: string): boolean {
   return path.includes(':');
