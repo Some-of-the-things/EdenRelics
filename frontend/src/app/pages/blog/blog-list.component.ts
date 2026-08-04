@@ -41,8 +41,14 @@ export class BlogListComponent implements OnInit {
 
   ngOnInit(): void {
     this.seo.updateTags({
-      title: 'Blog',
-      description: 'Vintage fashion tips, styling guides and stories from Eden Relics.',
+      // SeoService appends "| Eden Relics", so don't repeat the brand here —
+      // "The Eden Relics Journal" would have made a 71-character title.
+      title: 'Vintage Clothing Guides & Identification',
+      // Was 66 characters, the shortest on the site, on the page type that draws
+      // 41% of the site's search impressions. Names what the guides actually
+      // cover so the terms people search for are in the snippet.
+      description:
+        'Guides to buying, identifying and caring for vintage clothing — how to date a label, tell an original from a reproduction, read vintage sizing, and look after old fabrics.',
       url: '/blog',
     });
     this.http.get<BlogSummary[]>(`${environment.apiUrl}/api/blog`).subscribe({
