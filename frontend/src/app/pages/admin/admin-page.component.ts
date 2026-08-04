@@ -15,7 +15,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
-import { Product, ProductStatus } from '../../models/product.model';
+import { Product, ProductStatus, PRODUCT_SIZES } from '../../models/product.model';
 import {
   filterAdminProducts,
   productStatusLabel,
@@ -401,6 +401,9 @@ export class AdminPageComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly orderService = inject(OrderAdminService);
   readonly store = inject(ProductStore);
+
+  /** Size options for the product form — the same list the shop filter uses. */
+  readonly sizes = PRODUCT_SIZES;
 
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);

@@ -284,18 +284,12 @@
             </label>
             <label class="admin__field">
               <span>Size</span>
+              <!-- Bound to PRODUCT_SIZES so this can't drift from the shop's
+                   size filter, which is what left 14/16 unselectable there. -->
               <select [(ngModel)]="form.size" name="size" required>
-                <option value="6">6</option>
-                <option value="6/8">6/8</option>
-                <option value="8">8</option>
-                <option value="8/10">8/10</option>
-                <option value="10">10</option>
-                <option value="10/12">10/12</option>
-                <option value="12">12</option>
-                <option value="12/14">12/14</option>
-                <option value="14">14</option>
-                <option value="14/16">14/16</option>
-                <option value="16">16</option>
+                @for (size of sizes; track size) {
+                  <option [value]="size">{{ size }}</option>
+                }
               </select>
             </label>
           </div>

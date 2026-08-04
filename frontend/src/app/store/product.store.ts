@@ -10,7 +10,7 @@ import {
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap } from 'rxjs';
-import { Product } from '../models/product.model';
+import { Product, PRODUCT_SIZES } from '../models/product.model';
 import { ProductService } from '../services/product.service';
 import { resolveProductStatus } from '../utils/product-status';
 
@@ -111,21 +111,10 @@ export const ProductStore = signalStore(
       ];
       return cats;
     }),
-    sizes: computed(() => {
-      const sizes: Product['size'][] = [
-        '6',
-        '6/8',
-        '8',
-        '8/10',
-        '10',
-        '10/12',
-        '12',
-        '12/14',
-        '14',
-        '16',
-      ];
-      return sizes;
-    }),
+    // Straight from PRODUCT_SIZES. This used to be a hand-written copy that had
+    // silently dropped 14/16, so a dress listed at that size in admin could
+    // never be found through the shop's size filter.
+    sizes: computed<readonly Product['size'][]>(() => PRODUCT_SIZES),
   })),
   withComputed((store) => ({
     totalPages: computed(() =>
