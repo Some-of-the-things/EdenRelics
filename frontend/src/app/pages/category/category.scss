@@ -168,6 +168,13 @@
       color: var(--border-dark);
       margin: 0 0.4rem;
     }
+
+    /* The › separators are aria-hidden and purely decorative, so --border-dark
+       is fine for them. The current-page item is real text and was inheriting
+       the same colour — 1.92:1 on the page background, well under AA. */
+    [aria-current='page'] {
+      color: var(--text-secondary);
+    }
   }
 
   &__header {

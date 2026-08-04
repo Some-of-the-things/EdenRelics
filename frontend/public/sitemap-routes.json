@@ -26,6 +26,7 @@
   { "path": "/style", "changefreq": "weekly", "priority": "0.8" },
   { "path": "/dresses", "changefreq": "weekly", "priority": "0.8" },
   { "path": "/style/cottagecore", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/style/prairie", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/dresses/maxi", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/dresses/midi", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/style/boho", "changefreq": "weekly", "priority": "0.7" },

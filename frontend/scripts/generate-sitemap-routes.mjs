@@ -49,6 +49,20 @@ const hubs = [...categoriesSrc.matchAll(/kind:\s*'([^']+)',\s*slug:\s*'([^']+)',
 if (hubs.length === 0) {
   throw new Error('generate-sitemap-routes: no category hubs found in category.data.ts');
 }
+// The pattern above needs kind/slug/name adjacent, so a comment inserted between
+// them makes a hub vanish from the sitemap with no error — which is how
+// /style/cottagecore silently dropped out on 2026-08-04. Count the `kind:` keys
+// independently and insist every one of them produced a hub.
+// Trailing comma required, so the CategoryHub interface's own
+// `kind: 'style' | 'garment';` union is not counted as a hub.
+const declaredHubs = (categoriesSrc.match(/^\s*kind:\s*'[^']+',/gm) ?? []).length;
+if (declaredHubs !== hubs.length) {
+  throw new Error(
+    `generate-sitemap-routes: category.data.ts declares ${declaredHubs} hubs but only ${hubs.length} matched ` +
+      `(${hubs.map((h) => h.slug).join(', ')}). The matcher needs kind/slug/name on consecutive lines — ` +
+      'check for a comment or reordered key in the entries that are missing.',
+  );
+}
 const unknownKind = hubs.find((h) => h.kind !== 'style' && h.kind !== 'garment');
 if (unknownKind) {
   throw new Error(

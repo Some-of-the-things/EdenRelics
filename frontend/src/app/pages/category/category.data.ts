@@ -20,7 +20,7 @@ export interface CategoryHub {
   kind: 'style' | 'garment';
   /** URL slug, e.g. 'cottagecore' → /style/cottagecore, 'maxi' → /dresses/maxi. */
   slug: string;
-  /** Display name / H1 stem, e.g. 'Cottagecore & Prairie', 'Maxi Dresses'. */
+  /** Display name / H1 stem, e.g. 'Prairie Dresses', 'Maxi Dresses'. */
   name: string;
   /** SEO <title> (without the ' | Eden Relics' suffix). */
   metaTitle: string;
@@ -53,12 +53,21 @@ export interface CategoryHub {
 
 export const CATEGORY_HUBS: CategoryHub[] = [
   {
+    // Narrowed from "Cottagecore & Prairie" when /style/prairie was added, so the
+    // two pages don't compete for the same term. GSC 2026-08-04: "prairie dress"
+    // sits at position 17.9 and "vintage prairie dress" at 10.4, and splitting a
+    // term across two titles is what keeps both on page two. Prairie pieces still
+    // match this hub — a prairie dress is cottagecore — it just isn't the name.
+    //
+    // NB: keep kind/slug/name adjacent. scripts/generate-sitemap-routes.mjs
+    // matches that exact run of three keys, and a comment between them drops the
+    // hub from the sitemap silently.
     kind: 'style',
     slug: 'cottagecore',
-    name: 'Cottagecore & Prairie',
-    metaTitle: 'Vintage Cottagecore & Prairie Dresses',
+    name: 'Cottagecore',
+    metaTitle: 'Vintage Cottagecore Dresses',
     metaDescription:
-      'Original vintage cottagecore and prairie dresses — floral smocks, folk prints, ditsy florals, pinafores and gingham. Genuine one-of-a-kind pieces, hand-inspected, with UK shipping.',
+      'Original vintage cottagecore dresses — floral smocks, folk prints, ditsy florals, pinafores and gingham. Genuine one-of-a-kind pieces, hand-inspected, with UK shipping.',
     tagline:
       'Romantic, rural and nostalgic. The vintage clothing that inspired the modern cottagecore look.',
     intro:
@@ -93,12 +102,66 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       'eyelet',
     ],
     relatedLinks: [
+      { label: 'Vintage Prairie Dresses', path: '/style/prairie' },
       {
         label: 'Guide: What Is a Vintage Prairie Dress?',
         path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
       },
       { label: '1970s Vintage Dresses', path: '/shop/1970s' },
       { label: 'Vintage Laura Ashley', path: '/designers/laura-ashley' },
+      { label: 'Maxi Dresses', path: '/dresses/maxi' },
+    ],
+  },
+  {
+    // The commercial counterpart to the prairie guide. The guide answers "what is
+    // a prairie dress" and cannot also serve "vintage prairie dress" — Google
+    // routes definitional and shopping intent to different page types, and until
+    // now only the guide existed. Keywords are deliberately tighter than
+    // cottagecore's: 'folk' and 'patchwork' pull in geometric-stripe and paisley
+    // pieces that are not prairie, so this matches on the silhouette's own tells.
+    kind: 'style',
+    slug: 'prairie',
+    name: 'Prairie Dresses',
+    metaTitle: 'Vintage Prairie Dresses — Original 1970s & 1980s',
+    metaDescription:
+      'Original vintage prairie dresses — bib fronts, high necklines, gathered skirts and lace trim, mostly 1970s and 80s. One-of-a-kind pieces, measured and inspected, with UK shipping.',
+    tagline: 'High necks, bib fronts and gathered skirts — originals, not the revival.',
+    intro:
+      'Genuine vintage prairie dresses, most of them from the 1970s and 80s when the style had its defining revival. Every piece here is an original rather than a modern reproduction: bibbed or yoked bodices, high or ruffled necklines, full gathered skirts, and the lace, pintuck and eyelet detailing the look is built on.',
+    body: [
+      'The prairie dress borrows from 19th-century American frontier and English rural dress — pioneer and Victorian country clothing, reinterpreted through a romantic lens. It is worth being clear that the garment itself is a 20th-century invention: the aesthetic looks back to the 1800s, but the dresses were made much later, and the ones most collectors mean date from the late 1960s onwards.',
+      'That revival is where most surviving originals come from. A number of labels are closely associated with it, Gunne Sax and Laura Ashley among the best known, though a great many prairie dresses carry no label at all. Home dressmaking was widespread through the 1970s, and an unlabelled dress is not a lesser one — some of the most charming examples were made at home, and construction is often a better guide to age than any tag.',
+      'The style has never really gone away. It resurfaces every decade or so under a new name — prairie, cottagecore, romantic, folk — which is why modern reproductions are easy to confuse with originals in a photograph. The pieces here are vintage, and where we are not confident of that, we do not list them as such.',
+      'Stock changes constantly because every piece is one of a kind. When something sells it is gone, so this page reflects what is genuinely available now rather than a fixed range.',
+    ],
+    lookFor: [
+      'A bibbed or yoked bodice with a high, ruffled or stand collar, and a full gathered or tiered skirt — the combination is what separates a prairie dress from a general floral maxi.',
+      'Natural fibres, most often cotton or a cotton blend, in small florals, calico-style prints, checks or plain grounds rather than bold graphic patterns.',
+      'Period detailing: pintucks, eyelet or broderie anglaise, lace trims at the cuff and yoke, self-covered buttons and a generous hem allowance.',
+      {
+        text: 'Construction tends to date a piece more reliably than the label, particularly since so many prairie dresses are unlabelled or handmade.',
+        link: {
+          label: 'Read the full identification guide',
+          path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
+        },
+      },
+      {
+        text: 'Go by the measurements rather than the label size — vintage sizing runs small and inconsistently.',
+        link: {
+          label: 'Use our Vintage Size Converter',
+          path: '/blog/vintage-dress-sizing-uk-why-your-modern-size-doesnt-apply',
+        },
+      },
+    ],
+    include: ['prairie', 'bib', 'smock', 'pinafore', 'calico', 'milkmaid'],
+    relatedLinks: [
+      {
+        label: 'Guide: What Is a Prairie Dress?',
+        path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
+      },
+      { label: 'Vintage Cottagecore', path: '/style/cottagecore' },
+      { label: 'Vintage Laura Ashley', path: '/designers/laura-ashley' },
+      { label: '1970s Vintage Dresses', path: '/shop/1970s' },
       { label: 'Maxi Dresses', path: '/dresses/maxi' },
     ],
   },
@@ -130,7 +193,8 @@ export const CATEGORY_HUBS: CategoryHub[] = [
         path: '/blog/the-complete-guide-to-vintage-prairie-dresses-1',
       },
       { label: '1970s Vintage Dresses', path: '/shop/1970s' },
-      { label: 'Cottagecore & Prairie', path: '/style/cottagecore' },
+      { label: 'Cottagecore', path: '/style/cottagecore' },
+      { label: 'Prairie Dresses', path: '/style/prairie' },
       { label: 'Midi Dresses', path: '/dresses/midi' },
     ],
   },
@@ -159,7 +223,8 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     relatedLinks: [
       { label: '1980s Vintage Dresses', path: '/shop/1980s' },
       { label: 'Maxi Dresses', path: '/dresses/maxi' },
-      { label: 'Cottagecore & Prairie', path: '/style/cottagecore' },
+      { label: 'Cottagecore', path: '/style/cottagecore' },
+      { label: 'Prairie Dresses', path: '/style/prairie' },
     ],
   },
   {
@@ -195,7 +260,8 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     relatedLinks: [
       { label: '1970s Vintage Dresses', path: '/shop/1970s' },
       { label: 'Maxi Dresses', path: '/dresses/maxi' },
-      { label: 'Cottagecore & Prairie', path: '/style/cottagecore' },
+      { label: 'Cottagecore', path: '/style/cottagecore' },
+      { label: 'Prairie Dresses', path: '/style/prairie' },
       // The 1970s folk revival is the shared ancestor of both looks, so the
       // guide is genuinely relevant here and not just a link for a link's sake.
       {
