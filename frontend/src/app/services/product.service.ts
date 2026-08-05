@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, catchError } from 'rxjs';
-import { Product } from '../models/product.model';
+import { BulkSaleResult, Product } from '../models/product.model';
 import { environment } from '../../environments/environment';
 import { LocaleService } from './locale.service';
 
@@ -50,6 +50,26 @@ export class ProductService {
 
   remove(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  /**
+   * Applies one percentage discount across many products at once. The backend derives each
+   * sale price from that product's own full price, so re-running a sale never compounds.
+   */
+  bulkSetSalePrice(
+    productIds: string[],
+    discountPercent: number,
+    notifyFavourites: boolean,
+  ): Observable<BulkSaleResult> {
+    return this.http.post<BulkSaleResult>(`${this.apiUrl}/bulk-sale`, {
+      productIds,
+      discountPercent,
+      notifyFavourites,
+    });
+  }
+
+  bulkClearSalePrice(productIds: string[]): Observable<BulkSaleResult> {
+    return this.http.post<BulkSaleResult>(`${this.apiUrl}/bulk-sale/clear`, { productIds });
   }
 
   recordView(id: string, meta?: { referrer?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string; screenResolution?: string }): Observable<void> {

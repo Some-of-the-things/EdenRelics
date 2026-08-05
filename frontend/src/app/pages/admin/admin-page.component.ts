@@ -28,6 +28,12 @@ import {
   sortAdminProducts,
   ProductSort,
 } from '../../utils/product-status';
+import {
+  bulkSaleTotals,
+  normaliseDiscountPercent,
+  MAX_BULK_DISCOUNT_PERCENT,
+  MIN_BULK_DISCOUNT_PERCENT,
+} from '../../utils/bulk-pricing';
 import { SeoService } from '../../services/seo.service';
 import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
@@ -575,6 +581,149 @@ export class AdminPageComponent implements OnInit {
       this.productSort(),
     ),
   );
+
+  // Bulk sale pricing: tick a set of products, apply one percentage off. The discount always
+  // comes off each product's full Price (never off an existing sale price), so re-running a
+  // sale can't compound, and Price itself is left alone so the 28-day reduction history holds.
+  readonly selectedProductIds = signal<ReadonlySet<string>>(new Set());
+  readonly bulkApplying = signal(false);
+  readonly bulkMessage = signal('');
+  readonly bulkError = signal('');
+  // A signal rather than a plain ngModel field because bulkPreview() has to react to typing.
+  readonly bulkDiscountPercent = signal<number | null>(null);
+  bulkNotifyFavourites = false;
+
+  readonly selectedProducts = computed(() => {
+    const ids = this.selectedProductIds();
+    return this.store.products().filter((p) => ids.has(p.id));
+  });
+
+  readonly allFilteredSelected = computed(() => {
+    const filtered = this.filteredProducts();
+    const ids = this.selectedProductIds();
+    return filtered.length > 0 && filtered.every((p) => ids.has(p.id));
+  });
+
+  /** Full-price vs discounted totals for the current selection, so the effect is visible before applying. */
+  readonly bulkPreview = computed(() => {
+    const percent = normaliseDiscountPercent(this.bulkDiscountPercent());
+    const selected = this.selectedProducts();
+    if (percent === null || selected.length === 0) {
+      return null;
+    }
+    return bulkSaleTotals(selected, percent);
+  });
+
+  isProductSelected(id: string): boolean {
+    return this.selectedProductIds().has(id);
+  }
+
+  toggleProductSelection(id: string): void {
+    this.selectedProductIds.update((ids) => {
+      const next = new Set(ids);
+      if (!next.delete(id)) {
+        next.add(id);
+      }
+      return next;
+    });
+    this.clearBulkFeedback();
+  }
+
+  /** Selects every product currently passing the filters, or clears them if they're all already ticked. */
+  toggleSelectAllFiltered(): void {
+    const filtered = this.filteredProducts();
+    const allSelected = this.allFilteredSelected();
+    this.selectedProductIds.update((ids) => {
+      const next = new Set(ids);
+      for (const product of filtered) {
+        if (allSelected) {
+          next.delete(product.id);
+        } else {
+          next.add(product.id);
+        }
+      }
+      return next;
+    });
+    this.clearBulkFeedback();
+  }
+
+  clearProductSelection(): void {
+    this.selectedProductIds.set(new Set());
+    this.clearBulkFeedback();
+  }
+
+  applyBulkDiscount(): void {
+    const percent = normaliseDiscountPercent(this.bulkDiscountPercent());
+    const ids = [...this.selectedProductIds()];
+    this.clearBulkFeedback();
+    if (percent === null) {
+      this.bulkError.set(
+        `Enter a discount between ${MIN_BULK_DISCOUNT_PERCENT}% and ${MAX_BULK_DISCOUNT_PERCENT}%.`,
+      );
+      return;
+    }
+    if (ids.length === 0) {
+      this.bulkError.set('Select at least one product.');
+      return;
+    }
+
+    const emailWarning = this.bulkNotifyFavourites
+      ? '\n\nThis WILL email everyone who favourited these pieces and asked to hear about sales.'
+      : '';
+    if (!confirm(`Put ${ids.length} product(s) on sale at ${percent}% off?${emailWarning}`)) {
+      return;
+    }
+
+    this.bulkApplying.set(true);
+    this.productService.bulkSetSalePrice(ids, percent, this.bulkNotifyFavourites).subscribe({
+      next: (result) => {
+        this.store.mergeProducts(result.products);
+        this.bulkApplying.set(false);
+        if (result.updated === 0 && result.skipped === 0) {
+          this.bulkMessage.set(`Nothing to change — those products are already at ${percent}% off.`);
+          return;
+        }
+        const skipped = result.skipped > 0 ? `, ${result.skipped} skipped` : '';
+        const notified =
+          result.notified > 0 ? `, favourite alerts queued for ${result.notified}` : '';
+        this.bulkMessage.set(`${percent}% off applied to ${result.updated} product(s)${skipped}${notified}.`);
+      },
+      error: (err) => {
+        this.bulkApplying.set(false);
+        this.bulkError.set(err.error?.error ?? 'Failed to apply the bulk discount.');
+      },
+    });
+  }
+
+  clearBulkSale(): void {
+    const ids = [...this.selectedProductIds()];
+    this.clearBulkFeedback();
+    if (ids.length === 0) {
+      this.bulkError.set('Select at least one product.');
+      return;
+    }
+    if (!confirm(`End the sale on ${ids.length} product(s) and restore full price?`)) {
+      return;
+    }
+
+    this.bulkApplying.set(true);
+    this.productService.bulkClearSalePrice(ids).subscribe({
+      next: (result) => {
+        this.store.mergeProducts(result.products);
+        this.bulkApplying.set(false);
+        this.bulkMessage.set(`Sale ended on ${result.updated} product(s).`);
+      },
+      error: (err) => {
+        this.bulkApplying.set(false);
+        this.bulkError.set(err.error?.error ?? 'Failed to clear the sale prices.');
+      },
+    });
+  }
+
+  private clearBulkFeedback(): void {
+    this.bulkMessage.set('');
+    this.bulkError.set('');
+  }
 
   resolveStatus(product: Product): ProductStatus {
     return resolveProductStatus(product);
@@ -2248,6 +2397,12 @@ export class AdminPageComponent implements OnInit {
   remove(id: string): void {
     if (confirm('Delete this product?')) {
       this.store.removeProduct(id);
+      // Don't leave a deleted product ticked in the bulk-sale selection.
+      this.selectedProductIds.update((ids) => {
+        const next = new Set(ids);
+        next.delete(id);
+        return next;
+      });
     }
   }
 

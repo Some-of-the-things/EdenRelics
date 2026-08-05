@@ -599,12 +599,80 @@
         </select>
       </label>
       <span class="admin__order-count">{{ filteredProducts().length }} of {{ store.products().length }}</span>
+      <button
+        type="button"
+        class="admin__link-btn"
+        (click)="toggleSelectAllFiltered()"
+        [disabled]="filteredProducts().length === 0"
+      >
+        {{ allFilteredSelected() ? 'Deselect' : 'Select' }} all {{ filteredProducts().length }} shown
+      </button>
     </div>
+
+    <div class="admin__bulk-bar" [class.admin__bulk-bar--active]="selectedProductIds().size > 0">
+      <span class="admin__bulk-count">{{ selectedProductIds().size }} selected</span>
+      <label class="admin__filter-label">
+        <span>% off</span>
+        <input
+          type="number"
+          class="admin__bulk-percent"
+          [ngModel]="bulkDiscountPercent()"
+          (ngModelChange)="bulkDiscountPercent.set($event)"
+          name="bulkDiscountPercent"
+          min="1"
+          max="90"
+          step="1"
+          placeholder="20"
+        />
+      </label>
+      <label class="admin__bulk-check">
+        <input type="checkbox" [(ngModel)]="bulkNotifyFavourites" name="bulkNotifyFavourites" />
+        <span>Email favourites</span>
+      </label>
+      <button
+        type="button"
+        class="admin__save-btn"
+        (click)="applyBulkDiscount()"
+        [disabled]="bulkApplying() || selectedProductIds().size === 0"
+      >
+        {{ bulkApplying() ? 'Applying…' : 'Apply discount' }}
+      </button>
+      <button
+        type="button"
+        class="admin__cancel-btn"
+        (click)="clearBulkSale()"
+        [disabled]="bulkApplying() || selectedProductIds().size === 0"
+      >
+        End sale
+      </button>
+      @if (selectedProductIds().size > 0) {
+        <button type="button" class="admin__link-btn" (click)="clearProductSelection()">Clear selection</button>
+      }
+      @if (bulkPreview(); as preview) {
+        <span class="admin__bulk-preview">
+          {{ preview.before | currency:'GBP' }} → {{ preview.after | currency:'GBP' }}
+          (saves {{ preview.saving | currency:'GBP' }})
+        </span>
+      }
+    </div>
+    @if (bulkError()) {
+      <p class="admin__error" role="alert">{{ bulkError() }}</p>
+    }
+    @if (bulkMessage()) {
+      <p class="admin__success" role="status">{{ bulkMessage() }}</p>
+    }
 
     <div>
       @for (product of filteredProducts(); track product.id) {
-        <div class="admin__card">
+        <div class="admin__card" [class.admin__card--selected]="isProductSelected(product.id)">
           <div class="admin__card-header">
+            <input
+              type="checkbox"
+              class="admin__card-check"
+              [checked]="isProductSelected(product.id)"
+              (change)="toggleProductSelection(product.id)"
+              [attr.aria-label]="'Select ' + product.name + ' for bulk pricing'"
+            />
             <img [src]="product.imageUrl" [alt]="product.name" class="admin__card-thumb" />
             <div class="admin__card-title">
               <strong>{{ product.name }}</strong>

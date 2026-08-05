@@ -46,6 +46,14 @@ export interface Product {
   createdAtUtc?: string;
 }
 
+/** Result of a bulk sale-price change: what moved, what was left alone, what got emailed. */
+export interface BulkSaleResult {
+  updated: number;
+  skipped: number;
+  notified: number;
+  products: Product[];
+}
+
 export interface CartItem {
   product: Product;
   quantity: number;

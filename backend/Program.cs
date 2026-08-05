@@ -178,6 +178,10 @@ bool runScheduledJobs = builder.Configuration.GetValue("BackgroundJobs:Enabled",
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddHostedService<TranslationBackgroundService>();
 
+// Sale notifications to favouriters. Ungated for the same reason as translation: it drains a
+// per-process in-memory queue fed by requests handled on this instance.
+builder.Services.AddHostedService<SaleNotificationBackgroundService>();
+
 // SEO rank checking (now backed by GSC position data instead of Custom Search API)
 builder.Services.AddScoped<RankCheckerService>();
 if (runScheduledJobs)

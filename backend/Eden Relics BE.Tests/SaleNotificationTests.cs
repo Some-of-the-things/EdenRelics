@@ -5,6 +5,7 @@ using static Eden_Relics_BE.Tests.Helpers;
 
 namespace Eden_Relics_BE.Tests;
 
+[Collection(SaleNotificationCollection.Name)]
 public class SaleNotificationTests : IClassFixture<ApiFactory>
 {
     private readonly ApiFactory _factory;

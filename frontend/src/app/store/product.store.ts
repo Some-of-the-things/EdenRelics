@@ -192,6 +192,19 @@ export const ProductStore = signalStore(
         },
       });
     },
+    /**
+     * Replaces the given products in place, leaving everything else alone. Used by the admin
+     * bulk actions, which update many rows in one request and get them all back.
+     */
+    mergeProducts(updated: Product[]): void {
+      if (updated.length === 0) {
+        return;
+      }
+      const byId = new Map(updated.map((p) => [p.id, p]));
+      patchState(store, {
+        products: store.products().map((p) => byId.get(p.id) ?? p),
+      });
+    },
     removeProduct(id: string): void {
       patchState(store, { error: '' });
       productService.remove(id).subscribe({
