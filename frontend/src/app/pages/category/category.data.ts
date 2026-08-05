@@ -13,6 +13,11 @@ import { Product } from '../../models/product.model';
 export interface LookForPoint {
   text: string;
   link: { label: string; path: string };
+  /**
+   * Copy that follows the link, for when the anchor sits mid-sentence rather than at
+   * the end of the bullet. Omit it and the link closes the bullet as usual.
+   */
+  textAfter?: string;
 }
 
 export interface CategoryHub {
@@ -239,21 +244,22 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     intro:
       'Looking for a genuine vintage boho dress? This collection brings together original paisley dresses, folk-inspired prints, flowing maxis and relaxed vintage styles from the 1970s through to the 1990s. Every piece is genuine vintage, chosen because it captures the look that modern boho fashion continues to borrow from.',
     body: [
-      "The word boho may be modern, but the clothes themselves aren't. The romantic, layered style most people associate with bohemian dressing emerged during the late 1960s and 1970s, when designers drew inspiration from traditional folk costume, Victorian romanticism and textiles from around the world. Those influences never really disappeared.",
+      "The word boho may be modern, but the clothes themselves aren't. The romantic, layered style most people associate with bohemian dressing emerged during the late 1960s and 1970s, when designers drew inspiration from traditional folk costume, Victorian romanticism and textiles from around the world. Those influences never really disappeared. They returned again in the 1990s, which is why dresses from both decades can sit comfortably alongside one another today.",
       "Paisley appears again and again throughout the collection. The motif has a much longer history than boho itself, travelling from Persian and Indian textiles into European fashion long before it became one of the defining prints of the 1970s. Alongside it you'll find floral and border prints, embroidered details, peasant styling and easy silhouettes that skim the body instead of closely following it.",
       "That's why you'll find dresses from more than one decade here. The look returned in the 1990s, so later vintage pieces often sit comfortably alongside their 1970s counterparts. They're different interpretations of the same enduring style rather than copies of a particular trend.",
-      "Boho isn't a label you'll often find on vintage clothing, which makes sourcing these pieces part of the fun. The collection grows slowly, one find at a time, and no two rails are ever quite alike.",
+      "Every piece here is genuine vintage and one of a kind. The collection changes constantly as dresses are found and sold, so what you see today is simply what's currently available.",
     ],
     lookFor: [
       'Paisley, folk-inspired florals, border prints and other richly patterned fabrics.',
       'Flowing maxi dresses, relaxed waists, robe styles and easy silhouettes with movement.',
       'Lace trims, velvet details, embroidery, bishop sleeves, peasant styling and decorative yokes.',
       {
-        text: 'Shop by the measurements rather than the label size — vintage sizing varies widely.',
+        text: 'Shop by the measurements rather than the label size. Vintage sizing varies widely, and our',
         link: {
-          label: 'Use our Vintage Size Converter',
+          label: 'Vintage Size Converter',
           path: '/blog/vintage-dress-sizing-uk-why-your-modern-size-doesnt-apply',
         },
+        textAfter: 'can help you compare vintage measurements with modern sizing.',
       },
     ],
     include: ['paisley', 'boho'],

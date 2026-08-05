@@ -53,7 +53,9 @@ export class CategoryHubComponent {
    * "What to look for" bullets normalised to one shape, so the template does not
    * have to branch on the string-or-object union in `CategoryHub.lookFor`.
    */
-  readonly lookForPoints = computed<(LookForPoint | { text: string; link?: undefined })[]>(() =>
+  readonly lookForPoints = computed<
+    (LookForPoint | { text: string; link?: undefined; textAfter?: undefined })[]
+  >(() =>
     (this.hub()?.lookFor ?? []).map((point) =>
       typeof point === 'string' ? { text: point } : point,
     ),
