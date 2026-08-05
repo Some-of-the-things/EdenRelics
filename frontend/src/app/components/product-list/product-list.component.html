@@ -118,7 +118,16 @@
         </div>
       </article>
     } @empty {
-      <p class="products__empty">No relics found matching your search.</p>
+      @if (productStore.error()) {
+        <!-- A failed fetch is not an empty rail. Saying "no relics found" when the API is
+             down reads as "this shop has nothing", which is the worst possible lie here. -->
+        <div class="products__error" role="alert">
+          <p>{{ productStore.error() }}</p>
+          <button type="button" class="products__retry" (click)="retryLoad()">Try again</button>
+        </div>
+      } @else if (!productStore.isLoading()) {
+        <p class="products__empty">No relics found matching your search.</p>
+      }
     }
   </div>
 

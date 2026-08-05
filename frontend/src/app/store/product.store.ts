@@ -9,7 +9,7 @@ import {
   withState,
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap } from 'rxjs';
+import { catchError, EMPTY, pipe, switchMap, tap } from 'rxjs';
 import { Product, PRODUCT_SIZES } from '../models/product.model';
 import { ProductService } from '../services/product.service';
 import { resolveProductStatus } from '../utils/product-status';
@@ -132,10 +132,20 @@ export const ProductStore = signalStore(
   withMethods((store, productService = inject(ProductService)) => ({
     loadProducts: rxMethod<void>(
       pipe(
-        tap(() => patchState(store, { isLoading: true })),
+        tap(() => patchState(store, { isLoading: true, error: '' })),
         switchMap(() =>
           productService.getAll().pipe(
-            tap((products) => patchState(store, { products, isLoading: false }))
+            tap((products) => patchState(store, { products, isLoading: false })),
+            // Caught INSIDE the switchMap on purpose: letting the error reach the outer
+            // pipe would kill this rxMethod's subscription, so every later
+            // loadProducts() call would silently do nothing.
+            catchError(() => {
+              patchState(store, {
+                isLoading: false,
+                error: "We couldn't load the collection just now. Please try again.",
+              });
+              return EMPTY;
+            })
           )
         )
       )

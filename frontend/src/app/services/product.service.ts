@@ -16,13 +16,13 @@ export class ProductService {
     return lang && lang !== 'en' ? `?locale=${lang}` : '';
   }
 
+  /**
+   * The catalogue. Errors deliberately propagate: swallowing them into `of([])` made a
+   * dead API indistinguishable from an empty shop, so a 500 rendered as "no relics found"
+   * with no message and no retry. The store turns a failure into an error state.
+   */
   getAll(): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.apiUrl}${this.localeParam}`).pipe(
-      catchError((err) => {
-        console.error('Failed to load products from API:', err);
-        return of([]);
-      })
-    );
+    return this.http.get<Product[]>(`${this.apiUrl}${this.localeParam}`);
   }
 
   getById(id: string): Observable<Product | undefined> {
