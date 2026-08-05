@@ -31,11 +31,18 @@
  *  - `api`     the Fly origin
  * The combination is what separates "the site is down" from "SSR is degraded".
  */
+/**
+ * `scope` decides whether a failure can declare the SITE down. Only production targets can:
+ * staging used to sit in here as a plain `api` target, so a staging-only failure satisfied
+ * `edgeOrApiDown` and emailed "🔴 Eden Relics is DOWN (Staging API)" while production was
+ * serving perfectly. That is exactly the sort of false red alert that teaches you to ignore
+ * these emails. Staging failures still get reported — as degradation, named for what they are.
+ */
 const TARGETS = [
-  { name: 'Website (SSR)', url: 'https://edenrelics.co.uk/', kind: 'ssr', bustCache: true, attempts: 3 },
-  { name: 'Edge assets', url: 'https://edenrelics.co.uk/robots.txt', kind: 'edge', bustCache: true, attempts: 2 },
-  { name: 'API (/readyz)', url: 'https://api.edenrelics.co.uk/readyz', kind: 'api', bustCache: true, attempts: 2 },
-  { name: 'Staging API (/readyz)', url: 'https://api-staging.edenrelics.co.uk/readyz', kind: 'api', bustCache: true, attempts: 2 },
+  { name: 'Website (SSR)', url: 'https://edenrelics.co.uk/', kind: 'ssr', scope: 'production', bustCache: true, attempts: 3 },
+  { name: 'Edge assets', url: 'https://edenrelics.co.uk/robots.txt', kind: 'edge', scope: 'production', bustCache: true, attempts: 2 },
+  { name: 'API (/readyz)', url: 'https://api.edenrelics.co.uk/readyz', kind: 'api', scope: 'production', bustCache: true, attempts: 2 },
+  { name: 'Staging API (/readyz)', url: 'https://api-staging.edenrelics.co.uk/readyz', kind: 'api', scope: 'staging', bustCache: true, attempts: 2 },
 ];
 
 const FAILURE_THRESHOLD = 2; // consecutive failing runs before we alert (avoids single-blip noise)
@@ -56,16 +63,46 @@ export default {
     ctx.waitUntil(runChecks(env));
   },
 
-  // Manual endpoints for convenience: GET /run forces a check now; GET / shows current state.
+  /**
+   * Manual endpoints for convenience: GET /run forces a check now; GET / shows current state.
+   *
+   * Token-gated, and 404 when no token is configured (fail-closed, same shape as the
+   * analytics ingest endpoint). These are not read-only conveniences: /run WRITES the alert
+   * state, so an unauthenticated caller could reset `failures` to 0 on a loop and suppress a
+   * genuine DOWN alert — or drive up the counter during a blip. The cron path is unaffected.
+   *
+   * Set it with: wrangler secret put MONITOR_TOKEN
+   * Then call: /run?token=… (or send it as X-Monitor-Token)
+   */
   async fetch(request, env) {
-    const path = new URL(request.url).pathname;
-    if (path === '/run') {
+    if (!env.MONITOR_TOKEN) {
+      return new Response('Not found', { status: 404 });
+    }
+    const url = new URL(request.url);
+    const supplied = url.searchParams.get('token') ?? request.headers.get('X-Monitor-Token') ?? '';
+    if (!constantTimeEquals(supplied, env.MONITOR_TOKEN)) {
+      return new Response('Not found', { status: 404 });
+    }
+
+    if (url.pathname === '/run') {
       const summary = await runChecks(env);
       return Response.json(summary);
     }
     return Response.json(await getState(env));
   },
 };
+
+/** Compares without leaking the answer through timing. Length is not secret. */
+function constantTimeEquals(a, b) {
+  if (a.length !== b.length) {
+    return false;
+  }
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
 
 async function runChecks(env) {
   const results = await Promise.all(TARGETS.map(checkTarget));
@@ -74,14 +111,20 @@ async function runChecks(env) {
   const down = results.filter((r) => r.down);
   const degraded = results.filter((r) => r.degraded);
 
+  // Outage is judged on PRODUCTION targets only — see the note on TARGETS.
+  const production = results.filter((r) => r.scope === 'production');
+  const productionDown = production.filter((r) => r.down);
+
   // An SSR failure while the edge and the API are both healthy is degradation,
   // not an outage: static assets still serve, the backend is fine, and most
   // visitors are landing on healthy isolates. Calling that "DOWN" is precisely
   // what taught us to ignore these emails.
-  const edgeOrApiDown = down.some((r) => r.kind === 'edge' || r.kind === 'api');
-  const ssrDown = down.some((r) => r.kind === 'ssr');
-  const isOutage = edgeOrApiDown || (ssrDown && down.length === results.length);
-  const isDegraded = !isOutage && (degraded.length > 0 || ssrDown);
+  const edgeOrApiDown = productionDown.some((r) => r.kind === 'edge' || r.kind === 'api');
+  const ssrDown = productionDown.some((r) => r.kind === 'ssr');
+  const isOutage = edgeOrApiDown || (ssrDown && productionDown.length === production.length);
+  // Anything still failing that isn't a production outage — including a wholly-down
+  // staging target — is reported as degradation rather than swallowed.
+  const isDegraded = !isOutage && (degraded.length > 0 || down.length > 0);
 
   if (!isOutage && !isDegraded) {
     if (state.down || state.degraded) {
@@ -185,6 +228,9 @@ async function checkTarget(t) {
     name: t.name,
     url: t.url,
     kind: t.kind,
+    // Default to production: a target added without a scope must not silently become
+    // unable to raise an outage.
+    scope: t.scope ?? 'production',
     diagnostics,
     // Any success proves the target is serving; the failures are still reported.
     ok: passed > 0,
@@ -334,11 +380,20 @@ function escapeHtml(s) {
 }
 
 function degradedHtml(results, runs) {
+  // Name the actual cause. A staging-only failure is not a poisoned production isolate,
+  // and describing it as one sends you looking in the wrong place.
+  const nonProdDown = results.filter((r) => r.scope !== 'production' && r.down);
+  const cause = nonProdDown.length > 0
+    ? `<p>Production is healthy. What is failing is non-production:
+       <strong>${nonProdDown.map((r) => r.name).join(', ')}</strong>. No visitor is affected —
+       this is here so a broken staging environment doesn't go unnoticed, not because the
+       shop is in trouble.</p>`
+    : `<p>Static assets and the API are responding, but some requests are failing. In
+       practice this usually means one SSR isolate has become poisoned: visitors routed
+       to it get an error, everyone else is unaffected.</p>`;
   return `
     <p><strong>Eden Relics is DEGRADED — not down.</strong></p>
-    <p>Static assets and the API are responding, but some requests are failing. In
-    practice this usually means one SSR isolate has become poisoned: visitors routed
-    to it get an error, everyone else is unaffected.</p>
+    ${cause}
     <p>${runs} consecutive degraded checks (checking every 5 minutes). The 2-hourly
     recycle workflow should clear it; if these keep arriving, run it manually.</p>
     <table border="1" cellpadding="6" cellspacing="0">

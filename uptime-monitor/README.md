@@ -30,7 +30,11 @@ npx wrangler kv namespace create MONITOR_STATE
 # 3. Set the Resend API key as a secret (same key as the backend, Email__ResendApiKey):
 npx wrangler secret put RESEND_API_KEY
 
-# 4. Deploy:
+# 4. Set a token for the manual HTTP endpoints. Until this exists, GET / and GET /run
+#    return 404 — the cron trigger still runs regardless. Any long random string:
+npx wrangler secret put MONITOR_TOKEN
+
+# 5. Deploy:
 npx wrangler deploy
 ```
 
@@ -41,12 +45,17 @@ npx wrangler deploy
 | `ALERT_TO`       | Recipient(s), comma-separated. Default: peter.carter@dcp-net.com |
 | `ALERT_FROM`     | Sender — **must** be a Resend-verified domain                |
 | `RESEND_API_KEY` | Secret (`wrangler secret put`), not in the file              |
+| `MONITOR_TOKEN`  | Secret. Gates `GET /` and `GET /run`; without it both 404    |
 | cron             | `*/5 * * * *` (every 5 min) in `[triggers]`                  |
+
+Targets carry a `scope` of `production` or `staging`. Only production failures can raise a
+red DOWN alert; a staging failure is reported as degradation, so a broken staging environment
+can never claim the shop is down.
 
 ## Testing
 
-- `npx wrangler dev` then hit `GET /run` to force a check, or `GET /` to see the
-  current state JSON.
+- `npx wrangler dev` then hit `GET /run?token=$MONITOR_TOKEN` to force a check, or
+  `GET /?token=…` to see the current state JSON. Without the token both return 404.
 - To verify alerting, temporarily point a target at a bad URL and confirm the
   email after 2 runs.
 
