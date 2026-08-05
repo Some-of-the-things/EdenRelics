@@ -18,7 +18,7 @@ public interface IMarketplaceService
     Task<GeneratedListingDto?> GenerateListingTextAsync(Guid productId, string platform);
 }
 
-public enum CreateEtsyListingOutcome { Success, NotConnected, ProductNotFound, EtsyError }
+public enum CreateEtsyListingOutcome { Success, NotConnected, ProductNotFound, EtsyError, UnmappableEra }
 
 public record EtsyConnectDto(string Url, string State, string CodeVerifier);
 public record EtsyCallbackResult(bool Ok, string Message, string? ShopId);
