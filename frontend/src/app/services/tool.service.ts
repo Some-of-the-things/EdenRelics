@@ -106,6 +106,41 @@ export interface CaptureStandard {
   slots: CaptureStandardSlot[];
 }
 
+/** One bound the engine derived, with the reasoning attached — the point of the whole design. */
+export interface DatingChainLink {
+  ruleId: string;
+  specId: string;
+  feature: string;
+  bound: string;
+  strength: 'Hard' | 'Soft';
+  provenance: string;
+  /** False when the bound was computed but set aside (currently: superseded by a transition group). */
+  applied: boolean;
+  exclusionReason: string | null;
+  source: string | null;
+}
+
+export interface DatingPreview {
+  earliest: number | null;
+  latest: number | null;
+  outcome: 'Estimated' | 'HardContradiction' | 'SoftContradiction';
+  range: string;
+  claimFlag: { strength: 'Hard' | 'Soft'; message: string } | null;
+  evidence: DatingChainLink[];
+}
+
+export interface DatingFeature {
+  feature: string;
+  type: string;
+  matchKind: string;
+  specIds: string[];
+  notBefore: number | null;
+  notAfter: number | null;
+  strength: 'Hard' | 'Soft';
+  /** Value-matching rules do nothing without the label text they match against. */
+  needsValue: boolean;
+}
+
 export interface CaptureCompleteness {
   isComplete: boolean;
   captureCount: number;
@@ -186,5 +221,28 @@ export class ToolService {
   runDating(garmentId: string, claim?: { earliest?: number; latest?: number }): Observable<DateResult> {
     const body = { claimEarliest: claim?.earliest ?? null, claimLatest: claim?.latest ?? null };
     return this.http.post<DateResult>(`${this.base}/garments/${garmentId}/date`, body, { headers: this.authHeaders() });
+  }
+
+  /**
+   * Runs the engine on ad-hoc observations and returns the full reasoning, without creating a
+   * garment or storing an estimate. Admin only. This is what the admin dating bench uses: dating
+   * through {@link runDating} would seed throwaway garments into the archive, and the archive is
+   * the asset.
+   */
+  datingPreview(
+    evidence: { feature: string; type?: string; rawValue?: string | null }[],
+    claim?: { earliest?: number | null; latest?: number | null },
+  ): Observable<DatingPreview> {
+    const body = {
+      evidence,
+      claimEarliest: claim?.earliest ?? null,
+      claimLatest: claim?.latest ?? null,
+    };
+    return this.http.post<DatingPreview>(`${this.base}/dating/preview`, body, { headers: this.authHeaders() });
+  }
+
+  /** The features the live rule set can act on, so the UI never offers one no rule matches. */
+  datingFeatures(): Observable<DatingFeature[]> {
+    return this.http.get<DatingFeature[]>(`${this.base}/dating/features`, { headers: this.authHeaders() });
   }
 }
