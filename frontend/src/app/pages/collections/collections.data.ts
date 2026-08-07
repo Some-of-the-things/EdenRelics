@@ -37,7 +37,7 @@ export const COLLECTIONS: CollectionProfile[] = [
   {
     slug: 'wildflower-edit',
     name: 'The Wildflower Edit',
-    metaTitle: 'The Wildflower Edit — Vintage Floral Dresses | Eden Relics',
+    metaTitle: 'The Wildflower Edit — Vintage Floral Dresses',
     metaDescription:
       'Hand-picked vintage cottagecore and prairie dresses — soft florals, graceful silhouettes and true originals from Laura Ashley, Angela Gore, Van Allan and more.',
     intro:
@@ -62,7 +62,7 @@ export const COLLECTIONS: CollectionProfile[] = [
   {
     slug: 'vintage-tartan',
     name: 'Vintage Tartan',
-    metaTitle: 'Vintage Tartan Dresses & Skirts | Eden Relics',
+    metaTitle: 'Vintage Tartan Dresses & Skirts',
     metaDescription:
       'Original vintage tartan and plaid — green tartan shirt dresses, plaid midis, wool tartan skirts and Viyella checks. Each a genuine one-of-a-kind piece, hand-inspected.',
     intro:
@@ -83,7 +83,7 @@ export const COLLECTIONS: CollectionProfile[] = [
     slug: 'top-picks',
     dynamicMembership: true,
     name: 'Our Top Picks',
-    metaTitle: 'Our Top Picks — Curated Vintage Highlights | Eden Relics',
+    metaTitle: 'Our Top Picks — Curated Vintage Highlights',
     metaDescription:
       "Our Top Picks — a rotating, hand-chosen selection of standout vintage pieces from across the shop. Each one inspected, dated and measured.",
     intro:

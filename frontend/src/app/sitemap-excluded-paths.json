@@ -1,0 +1,19 @@
+{
+  "comment": "Routes deliberately kept out of sitemap.xml and IndexNow. Single source of truth: app.routes.spec.ts asserts routes against it, and scripts/generate-sitemap-routes.mjs fails the build if it ever emits one. Both used to keep their own copy, which is how /seller and /seller-tool were removed from the committed JSON on 2026-08-03 and put straight back by the generator on the next build.",
+  "paths": [
+    "cart",
+    "login",
+    "register",
+    "account",
+    "settings",
+    "forgot-password",
+    "reset-password",
+    "verify-email",
+    "admin",
+    "admin/login",
+    "admin/sellers",
+    "seller",
+    "seller-tool",
+    "top-picks"
+  ]
+}

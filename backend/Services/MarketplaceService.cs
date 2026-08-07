@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -263,6 +264,15 @@ public class MarketplaceService(
             return new CreateEtsyListingResult(CreateEtsyListingOutcome.ProductNotFound, null, "Product not found.");
         }
 
+        // Refuse rather than mis-declare the decade: Etsy's when_made is a public claim about
+        // the garment's age, and the vintage category depends on it.
+        if (!TryMapEraToEtsyWhenMade(product.Era, out string whenMade))
+        {
+            return new CreateEtsyListingResult(CreateEtsyListingOutcome.UnmappableEra, null,
+                $"Era '{product.Era}' doesn't map to an Etsy decade. Set the product's era to a "
+                + "decade Etsy recognises (e.g. '1960s') before listing.");
+        }
+
         HttpClient client = httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.Add("x-api-key", apiKey);
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
@@ -274,7 +284,7 @@ public class MarketplaceService(
             ["description"] = dto.Description ?? product.Description,
             ["price"] = product.Price.ToString("F2"),
             ["who_made"] = "someone_else",
-            ["when_made"] = MapEraToEtsyWhenMade(product.Era),
+            ["when_made"] = whenMade,
             ["taxonomy_id"] = "1759",
             ["is_supply"] = "false",
             ["type"] = "physical",
@@ -430,15 +440,62 @@ public class MarketplaceService(
         catch { /* Best effort */ }
     }
 
-    private static string MapEraToEtsyWhenMade(string era) => era switch
+    /// <summary>
+    /// Maps a product's era to Etsy's <c>when_made</c> decade token, or returns false when the
+    /// era can't be read as a decade.
+    ///
+    /// Era is a free-text admin field, so this must not guess. It used to fall back to
+    /// "2000_2009" for anything it didn't recognise — which silently declared every 1950s and
+    /// 1960s piece (both are live catalogue categories) as made 2000–2009, along with any
+    /// typo like "60s" or "Late 1970s". That is wrong on a live listing and puts the piece
+    /// outside Etsy's 20-years-plus vintage rule.
+    /// </summary>
+    public static bool TryMapEraToEtsyWhenMade(string? era, out string whenMade)
     {
-        "1970s" => "1970_1979",
-        "1980s" => "1980_1989",
-        "1990s" => "1990_1999",
-        "2000s" => "2000_2009",
-        "2020s" => "2020_2025",
-        _ => "2000_2009"
-    };
+        whenMade = string.Empty;
+        if (string.IsNullOrWhiteSpace(era))
+        {
+            return false;
+        }
+
+        // A full year anywhere in the text ("1970s", "circa 1972", "1960s/70s" → first wins).
+        // Trailing (?!\d) rather than \b: "1950s" has no word boundary between "0" and "s",
+        // so \b would reject the single most common way an era is written here.
+        Match year = Regex.Match(era, @"\b(1[89]\d{2}|20[0-2]\d)(?!\d)");
+        int decade;
+        if (year.Success)
+        {
+            decade = int.Parse(year.Groups[1].Value) / 10 * 10;
+        }
+        else
+        {
+            // The site's own short decade tokens, which an admin may type instead ('70s, y2k).
+            Match shortForm = Regex.Match(era.Trim(), @"^'?(\d{2})s$");
+            if (shortForm.Success)
+            {
+                int twoDigit = int.Parse(shortForm.Groups[1].Value);
+                // 30s–90s read as last century; 00s–20s as this one. Nothing here is older.
+                decade = twoDigit >= 30 ? 1900 + twoDigit : 2000 + twoDigit;
+            }
+            else if (era.Trim().Equals("y2k", StringComparison.OrdinalIgnoreCase))
+            {
+                decade = 2000;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        // Etsy has no decade token below 1900, and its newest bucket stops at 2025.
+        if (decade < 1900 || decade > 2020)
+        {
+            return false;
+        }
+
+        whenMade = decade == 2020 ? "2020_2025" : $"{decade}_{decade + 9}";
+        return true;
+    }
 
     private static string TryExtractError(string json)
     {

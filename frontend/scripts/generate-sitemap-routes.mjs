@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
+const excludedPath = resolve(here, '../src/app/sitemap-excluded-paths.json');
 const designersPath = resolve(here, '../src/app/pages/designers/designers.data.ts');
 const collectionsPath = resolve(here, '../src/app/pages/collections/collections.data.ts');
 const categoriesPath = resolve(here, '../src/app/pages/category/category.data.ts');
@@ -47,6 +48,20 @@ const hubs = [...categoriesSrc.matchAll(/kind:\s*'([^']+)',\s*slug:\s*'([^']+)',
 );
 if (hubs.length === 0) {
   throw new Error('generate-sitemap-routes: no category hubs found in category.data.ts');
+}
+// The pattern above needs kind/slug/name adjacent, so a comment inserted between
+// them makes a hub vanish from the sitemap with no error — which is how
+// /style/cottagecore silently dropped out on 2026-08-04. Count the `kind:` keys
+// independently and insist every one of them produced a hub.
+// Trailing comma required, so the CategoryHub interface's own
+// `kind: 'style' | 'garment';` union is not counted as a hub.
+const declaredHubs = (categoriesSrc.match(/^\s*kind:\s*'[^']+',/gm) ?? []).length;
+if (declaredHubs !== hubs.length) {
+  throw new Error(
+    `generate-sitemap-routes: category.data.ts declares ${declaredHubs} hubs but only ${hubs.length} matched ` +
+      `(${hubs.map((h) => h.slug).join(', ')}). The matcher needs kind/slug/name on consecutive lines — ` +
+      'check for a comment or reordered key in the entries that are missing.',
+  );
 }
 const unknownKind = hubs.find((h) => h.kind !== 'style' && h.kind !== 'garment');
 if (unknownKind) {
@@ -128,6 +143,21 @@ const routes = [
   ...sellerRoutes,
   ...after,
 ];
+
+// Fail the build rather than emit a gated page. app.routes.spec.ts checks the
+// committed JSON, but this script overwrites it on every `npm run build`, so
+// that spec cannot catch a regression here — which is exactly how /seller and
+// /seller-tool survived being deleted from the JSON by hand on 2026-08-03 and
+// went out in the first IndexNow submission. Same list both sides read.
+const excluded = JSON.parse(readFileSync(excludedPath, 'utf8')).paths;
+const leaked = routes.filter((r) => excluded.includes(r.path.replace(/^\//, '')));
+if (leaked.length > 0) {
+  throw new Error(
+    `generate-sitemap-routes: refusing to emit ${leaked
+      .map((r) => r.path)
+      .join(', ')} — listed in src/app/sitemap-excluded-paths.json. Remove it from this generator, or from that list if it is genuinely meant to be indexed.`,
+  );
+}
 
 // Match the existing one-object-per-line formatting so diffs stay readable.
 const body = routes

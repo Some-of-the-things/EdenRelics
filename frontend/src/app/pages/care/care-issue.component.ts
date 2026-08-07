@@ -50,7 +50,7 @@ export class CareIssueComponent implements OnInit {
         const description =
           issue.metaDescription || this.snippet(issue.causes || issue.generalMethod);
         const url = `/care/problem/${issue.slug}`;
-        this.seo.updateTags({ title, description, url, type: 'article', hreflang: true });
+        this.seo.updateTags({ title, description, url, type: 'article' });
         // FAQ schema mirrors the visible Q&A sections one-for-one, so the answer
         // text always matches on-page content (Google's requirement for FAQPage).
         const noun = issue.name.toLowerCase();

@@ -22,4 +22,16 @@
       </li>
     }
   </ul>
+
+  <section class="catindex__journal">
+    <h2 class="catindex__journal-title">From the Journal</h2>
+    <ul class="catindex__journal-list">
+      @for (entry of copy.journal; track entry.path) {
+        <li class="catindex__journal-item">
+          <a [routerLink]="entry.path" class="catindex__journal-link">{{ entry.label }}</a>
+          <p class="catindex__journal-note">{{ entry.note }}</p>
+        </li>
+      }
+    </ul>
+  </section>
 </article>

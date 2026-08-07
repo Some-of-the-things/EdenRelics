@@ -9,8 +9,8 @@ import {
   withState,
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap } from 'rxjs';
-import { Product } from '../models/product.model';
+import { catchError, EMPTY, pipe, switchMap, tap } from 'rxjs';
+import { Product, PRODUCT_SIZES } from '../models/product.model';
 import { ProductService } from '../services/product.service';
 import { resolveProductStatus } from '../utils/product-status';
 
@@ -111,21 +111,10 @@ export const ProductStore = signalStore(
       ];
       return cats;
     }),
-    sizes: computed(() => {
-      const sizes: Product['size'][] = [
-        '6',
-        '6/8',
-        '8',
-        '8/10',
-        '10',
-        '10/12',
-        '12',
-        '12/14',
-        '14',
-        '16',
-      ];
-      return sizes;
-    }),
+    // Straight from PRODUCT_SIZES. This used to be a hand-written copy that had
+    // silently dropped 14/16, so a dress listed at that size in admin could
+    // never be found through the shop's size filter.
+    sizes: computed<readonly Product['size'][]>(() => PRODUCT_SIZES),
   })),
   withComputed((store) => ({
     totalPages: computed(() =>
@@ -143,10 +132,20 @@ export const ProductStore = signalStore(
   withMethods((store, productService = inject(ProductService)) => ({
     loadProducts: rxMethod<void>(
       pipe(
-        tap(() => patchState(store, { isLoading: true })),
+        tap(() => patchState(store, { isLoading: true, error: '' })),
         switchMap(() =>
           productService.getAll().pipe(
-            tap((products) => patchState(store, { products, isLoading: false }))
+            tap((products) => patchState(store, { products, isLoading: false })),
+            // Caught INSIDE the switchMap on purpose: letting the error reach the outer
+            // pipe would kill this rxMethod's subscription, so every later
+            // loadProducts() call would silently do nothing.
+            catchError(() => {
+              patchState(store, {
+                isLoading: false,
+                error: "We couldn't load the collection just now. Please try again.",
+              });
+              return EMPTY;
+            })
           )
         )
       )
@@ -191,6 +190,19 @@ export const ProductStore = signalStore(
             : err.error?.message ?? 'Failed to update product.';
           patchState(store, { error: msg });
         },
+      });
+    },
+    /**
+     * Replaces the given products in place, leaving everything else alone. Used by the admin
+     * bulk actions, which update many rows in one request and get them all back.
+     */
+    mergeProducts(updated: Product[]): void {
+      if (updated.length === 0) {
+        return;
+      }
+      const byId = new Map(updated.map((p) => [p.id, p]));
+      patchState(store, {
+        products: store.products().map((p) => byId.get(p.id) ?? p),
       });
     },
     removeProduct(id: string): void {

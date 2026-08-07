@@ -127,7 +127,6 @@ export class ShopPageComponent implements OnInit {
         title: view.title,
         description: view.description,
         url: view.path,
-        hreflang: true,
       });
     });
 

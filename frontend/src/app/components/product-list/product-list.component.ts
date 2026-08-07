@@ -44,6 +44,11 @@ export class ProductListComponent {
     }
   }
 
+  /** Retry after a failed catalogue load. */
+  retryLoad(): void {
+    this.productStore.loadProducts();
+  }
+
   goToPage(page: number): void {
     const target = Math.min(Math.max(1, page), this.productStore.totalPages());
     if (target === this.productStore.currentPage()) {

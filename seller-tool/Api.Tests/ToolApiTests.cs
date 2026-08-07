@@ -143,6 +143,122 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
         Assert.Equal(3, r.GetProperty("evidence").GetArrayLength());
     }
 
+    // --- /dating/preview: the admin-facing "try the engine" path. Same engine, same rules, but it
+    // must never write to the archive, because the archive is the asset.
+
+    [Fact]
+    public async Task DatingPreview_RunsTheEngine_AndReturnsTheFullEvidenceChain()
+    {
+        HttpClient client = AdminClient();
+        await SeedVerifiedRuleAsync(client, new { id = "P-TD", feature = "preview.chain.dryer", notBefore = 1980, strength = "Hard", transitionLagMonths = 0, sourceCitation = "BS 2747:1980" }, "P-TD");
+        await SeedVerifiedRuleAsync(client, new { id = "P-WT", feature = "preview.chain.tub", notAfter = 1986, strength = "Hard", transitionLagMonths = 0 }, "P-WT");
+
+        HttpResponseMessage res = await client.PostAsJsonAsync("/dating/preview", new
+        {
+            evidence = new[]
+            {
+                new { feature = "preview.chain.dryer", type = "CareLabel", rawValue = (string?)null },
+                new { feature = "preview.chain.tub", type = "CareLabel", rawValue = (string?)null },
+            },
+            claimEarliest = 1970,
+            claimLatest = 1979,
+        });
+        res.EnsureSuccessStatusCode();
+        JsonElement r = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal(1980, r.GetProperty("earliest").GetInt32());
+        Assert.Equal(1986, r.GetProperty("latest").GetInt32());
+        Assert.Equal("Estimated", r.GetProperty("outcome").GetString());
+        Assert.Equal("Hard", r.GetProperty("claimFlag").GetProperty("strength").GetString());
+
+        JsonElement chain = r.GetProperty("evidence");
+        Assert.Equal(2, chain.GetArrayLength());
+        // The preview carries the reasoning, not just the answer.
+        JsonElement first = chain[0];
+        Assert.True(first.GetProperty("applied").GetBoolean());
+        Assert.False(string.IsNullOrEmpty(first.GetProperty("provenance").GetString()));
+        Assert.False(string.IsNullOrEmpty(first.GetProperty("bound").GetString()));
+    }
+
+    [Fact]
+    public async Task DatingPreview_SurfacesAHardContradiction_RatherThanAveragingIt()
+    {
+        HttpClient client = AdminClient();
+        await SeedVerifiedRuleAsync(client, new { id = "C-TD", feature = "preview.contra.dryer", notBefore = 1980, strength = "Hard", transitionLagMonths = 0 }, "C-TD");
+        await SeedVerifiedRuleAsync(client, new { id = "C-CEY", feature = "preview.contra.ceylon", notAfter = 1972, strength = "Hard", transitionLagMonths = 0 }, "C-CEY");
+
+        HttpResponseMessage res = await client.PostAsJsonAsync("/dating/preview", new
+        {
+            evidence = new[]
+            {
+                new { feature = "preview.contra.dryer", type = "CareLabel" },
+                new { feature = "preview.contra.ceylon", type = "OriginText" },
+            },
+        });
+        res.EnsureSuccessStatusCode();
+        JsonElement r = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal("HardContradiction", r.GetProperty("outcome").GetString());
+    }
+
+    [Fact]
+    public async Task DatingPreview_WritesNothing_NoGarmentsNoEstimates()
+    {
+        HttpClient client = AdminClient();
+        await SeedVerifiedRuleAsync(client, new { id = "S-TD", feature = "preview.stateless.dryer", notBefore = 1980, strength = "Hard", transitionLagMonths = 0 }, "S-TD");
+
+        int garmentsBefore = JsonDocument.Parse(
+            await (await client.GetAsync("/garments")).Content.ReadAsStringAsync()).RootElement.GetArrayLength();
+
+        for (int i = 0; i < 3; i++)
+        {
+            (await client.PostAsJsonAsync("/dating/preview", new
+            {
+                evidence = new[] { new { feature = "care.tumble-dry-symbol", type = "CareLabel" } },
+            })).EnsureSuccessStatusCode();
+        }
+
+        int garmentsAfter = JsonDocument.Parse(
+            await (await client.GetAsync("/garments")).Content.ReadAsStringAsync()).RootElement.GetArrayLength();
+        Assert.Equal(garmentsBefore, garmentsAfter);
+    }
+
+    [Fact]
+    public async Task DatingPreview_WithNoObservations_IsRejected()
+    {
+        HttpClient client = AdminClient();
+        HttpResponseMessage res = await client.PostAsJsonAsync("/dating/preview", new { evidence = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task DatingPreview_AndFeatures_AreAdminOnly()
+    {
+        HttpClient seller = SellerClient(Guid.NewGuid());
+        HttpResponseMessage preview = await seller.PostAsJsonAsync("/dating/preview", new
+        {
+            evidence = new[] { new { feature = "care.tumble-dry-symbol", type = "CareLabel" } },
+        });
+        Assert.Equal(HttpStatusCode.Forbidden, preview.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await seller.GetAsync("/dating/features")).StatusCode);
+    }
+
+    [Fact]
+    public async Task DatingFeatures_ListsOnlyWhatTheLiveRulesCanActOn()
+    {
+        HttpClient client = AdminClient();
+        await SeedVerifiedRuleAsync(client, new { id = "F-TD", feature = "preview.features.live", notBefore = 1980, strength = "Hard", transitionLagMonths = 0 }, "F-TD");
+        // Unverified: must not be offered, or the picker would suggest a feature that does nothing.
+        (await client.PostAsJsonAsync("/rules", new { id = "F-INERT", feature = "preview.features.inert", notBefore = 1990, strength = "Hard", transitionLagMonths = 0 })).EnsureSuccessStatusCode();
+
+        JsonElement features = JsonDocument.Parse(
+            await (await client.GetAsync("/dating/features")).Content.ReadAsStringAsync()).RootElement;
+
+        List<string> codes = [.. features.EnumerateArray().Select(f => f.GetProperty("feature").GetString()!)];
+        Assert.Contains("preview.features.live", codes);
+        Assert.DoesNotContain("preview.features.inert", codes);
+    }
+
     [Fact]
     public async Task UnverifiedRule_DoesNotAffectDating_UntilVerified()
     {

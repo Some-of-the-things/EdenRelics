@@ -102,10 +102,37 @@ public class FakeStripeConnectService : IStripeConnectService
 
 public class FakeEmailService : IEmailService
 {
+    /// <summary>
+    /// Sale notifications actually sent, newest last. Static because the service is transient:
+    /// the instance that sends is not the one a test could hold a reference to. Tests that
+    /// assert on this must call <see cref="ClearSentSaleNotifications"/> first.
+    /// </summary>
+    private static readonly List<SentSaleNotification> SentSales = [];
+
+    public record SentSaleNotification(string ToEmail, string ProductName, decimal OriginalPrice, decimal SalePrice);
+
+    public static void ClearSentSaleNotifications()
+    {
+        lock (SentSales) { SentSales.Clear(); }
+    }
+
+    public static List<SentSaleNotification> SentSaleNotifications()
+    {
+        lock (SentSales) { return [.. SentSales]; }
+    }
+
     public Task SendVerificationEmailAsync(string toEmail, string firstName, string token) => Task.CompletedTask;
     public Task SendPasswordResetEmailAsync(string toEmail, string firstName, string token) => Task.CompletedTask;
     public Task SendContactEmailAsync(string fromName, string fromEmail, string subject, string message) => Task.CompletedTask;
-    public Task SendSaleNotificationAsync(string toEmail, string firstName, string productName, decimal originalPrice, decimal salePrice) => Task.CompletedTask;
+
+    public Task SendSaleNotificationAsync(string toEmail, string firstName, string productName, decimal originalPrice, decimal salePrice)
+    {
+        lock (SentSales)
+        {
+            SentSales.Add(new SentSaleNotification(toEmail, productName, originalPrice, salePrice));
+        }
+        return Task.CompletedTask;
+    }
     public Task SendReviewRequestEmailAsync(string toEmail, string firstName, Guid orderId) => Task.CompletedTask;
     public Task SendDiscountWelcomeEmailAsync(string toEmail, string code) => Task.CompletedTask;
     public Task SendOwnerSaleNotificationAsync(Eden_Relics_BE.Data.Entities.Order order) => Task.CompletedTask;

@@ -154,7 +154,7 @@ export class CareHubComponent implements OnInit {
     const description =
       'How to wash, restore and store vintage clothing — fabric-by-fabric care and fixes for ' +
       'common problems like age yellowing, musty smells and moth holes, from the team at Eden Relics.';
-    this.seo.updateTags({ title, description, url: '/care', type: 'website', hreflang: true });
+    this.seo.updateTags({ title, description, url: '/care', type: 'website' });
     this.seo.setJsonLd({
       '@context': 'https://schema.org',
       '@graph': [

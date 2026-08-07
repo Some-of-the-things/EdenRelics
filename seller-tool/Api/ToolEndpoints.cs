@@ -213,6 +213,81 @@ public static class ToolEndpoints
                 result.Evidence.Select(e => new EvidenceChainDto(e.RuleId, e.Feature, e.Bound, e.Strength.ToString(), e.Source)).ToList()));
         }).RequireAuthorization();
 
+        // --- Dating preview (admin only): run the engine on ad-hoc evidence, persist nothing ---
+        //
+        // The garment endpoint above is the real workflow, but it needs a garment and it writes a
+        // proposed estimate. Inspecting or demonstrating the engine through it would mean seeding
+        // throwaway garments into the archive, and the archive is the asset — it must not fill up
+        // with test rows. This runs the same engine over the same rules and stores nothing.
+
+        app.MapPost("/dating/preview", (DatingPreviewRequest req, IDatingEngine engine) =>
+        {
+            if (req.Evidence is null || req.Evidence.Count == 0)
+            {
+                return Results.BadRequest(new { error = "Supply at least one observation." });
+            }
+            if (req.Evidence.Count > 40)
+            {
+                return Results.BadRequest(new { error = "Too many observations for one preview." });
+            }
+
+            List<Evidence> observed = [];
+            foreach (PreviewEvidenceRequest e in req.Evidence)
+            {
+                if (string.IsNullOrWhiteSpace(e.Feature))
+                {
+                    return Results.BadRequest(new { error = "Every observation needs a feature code." });
+                }
+                EvidenceType type = Enum.TryParse(e.Type, ignoreCase: true, out EvidenceType t)
+                    ? t
+                    : EvidenceType.Other;
+                observed.Add(new Evidence(e.Feature.Trim(), type,
+                    string.IsNullOrWhiteSpace(e.RawValue) ? null : e.RawValue.Trim()));
+            }
+
+            DateInterval? claim = req.ClaimEarliest is not null || req.ClaimLatest is not null
+                ? new DateInterval(req.ClaimEarliest, req.ClaimLatest)
+                : null;
+
+            DatingResult result = engine.Estimate(observed, claim);
+
+            return Results.Ok(new DatingPreviewDto(
+                result.Range.Earliest,
+                result.Range.Latest,
+                result.Outcome.ToString(),
+                result.Range.ToString(),
+                result.ClaimFlag is null
+                    ? null
+                    : new ClaimFlagDto(result.ClaimFlag.Strength.ToString(), result.ClaimFlag.Message),
+                result.Evidence.Select(e => new PreviewChainDto(
+                    e.RuleId, e.SpecId, e.Feature, e.Bound, e.Strength.ToString(),
+                    e.Provenance.ToString(), e.Applied, e.ExclusionReason, e.Source)).ToList()));
+        }).RequireAuthorization(p => p.RequireRole("Admin"));
+
+        // The features the LIVE rule set can act on, so a UI offers exactly those and no others.
+        app.MapGet("/dating/features", (IRuleStore store) =>
+        {
+            List<DatingFeatureDto> features = store.VerifiedRules()
+                .GroupBy(r => r.Feature, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.Key, StringComparer.Ordinal)
+                .Select(g =>
+                {
+                    DatingRule first = g.First();
+                    return new DatingFeatureDto(
+                        g.Key,
+                        first.Type.ToString(),
+                        first.Match.ToString(),
+                        [.. g.Select(r => r.SpecId).Where(s => !string.IsNullOrEmpty(s)).Distinct().OrderBy(s => s, StringComparer.Ordinal)],
+                        g.Min(r => r.NotBefore),
+                        g.Max(r => r.NotAfter),
+                        g.Any(r => r.Strength == BoundStrength.Hard) ? "Hard" : "Soft",
+                        // Value-matching rules do nothing without the text they match against.
+                        NeedsValue: g.All(r => r.Match != MatchKind.Feature));
+                })
+                .ToList();
+            return Results.Ok(features);
+        }).RequireAuthorization(p => p.RequireRole("Admin"));
+
         // --- Rules store (admin only) ---
 
         app.MapGet("/rules", async (ToolDbContext db) => Results.Ok(await db.StoredRules.ToListAsync()))
