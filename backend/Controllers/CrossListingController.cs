@@ -22,8 +22,13 @@ public class CrossListingController(ICrossListingService crossListing) : Control
     }
 
     /// <summary>
-    /// Pieces old enough to consider relisting. Decision support, not automation: the response is a
-    /// list to choose from one at a time, and never includes anything under the 60-day floor.
+    /// Pieces old enough to consider relisting, when someone asks. Decision support, not automation:
+    /// a list to choose from one at a time, never anything under the 60-day floor.
+    ///
+    /// Pull-only by design. Do not drive a notification, badge, banner or digest from this — the
+    /// prompt was cut deliberately (see CrossListingService), because a tool that keeps suggesting
+    /// relisting trains the seller into the machine-timed bumping pattern Vinted penalises, and the
+    /// penalty lands on their account.
     /// </summary>
     [HttpGet("relist-candidates")]
     public async Task<ActionResult<IReadOnlyList<RelistCandidate>>> RelistCandidates()

@@ -8,7 +8,10 @@ public interface ICrossListingService
     /// <summary>Every platform's readiness for one piece: what would go, what blocks it, what to paste.</summary>
     Task<CrossListingPreview?> PreviewAsync(Guid productId);
 
-    /// <summary>Pieces a seller may be offered for relist, oldest first. Never anything under the floor.</summary>
+    /// <summary>
+    /// Relist-eligible pieces, oldest first, in answer to someone asking. Never anything under the
+    /// floor, and never used to prompt — see the note on <see cref="CrossListingService"/>.
+    /// </summary>
     Task<IReadOnlyList<RelistCandidate>> RelistCandidatesAsync();
 }
 
@@ -24,6 +27,14 @@ public sealed record RelistCandidate(
 /// Adapters stay pure mappings; the judgement lives here. Nothing publishes on a blocking problem,
 /// and extension platforms always carry pasteable content so an extension failure can never leave
 /// the seller with nothing (brief §3).
+///
+/// RELIST IS PULL-ONLY, AND DELIBERATELY NOT A PROMPT. The brief sketched the tool surfacing "these
+/// 12 items have been listed 90+ days — relist any?"; Peter's call (2026-08-07) is that the nudge
+/// goes and the capability stays. So <see cref="RelistCandidatesAsync"/> only ever answers a question
+/// someone asked. Do not build a notification, badge, banner, digest email or dashboard count on top
+/// of it: a tool that repeatedly suggests relisting is one that trains a seller into exactly the
+/// machine-timed bumping pattern Vinted's rule against pushing items up search is aimed at, and the
+/// consequence lands on their account, not ours.
 /// </summary>
 public sealed class CrossListingService(
     IRepository<Product> products,
@@ -32,17 +43,17 @@ public sealed class CrossListingService(
     ILogger<CrossListingService> logger) : ICrossListingService
 {
     /// <summary>
-    /// Vinted's terms ban relisting to push items up search results, and their enforcement is
-    /// automated and effectively unappealable. Legitimate reseller practice — relisting stock that
-    /// genuinely hasn't sold in months — is supported, but as decision support: the seller is offered
-    /// candidates and picks them one at a time (brief §4.3).
+    /// How long a piece must have sat before it appears in an answer at all. Teodora's own cadence is
+    /// roughly three months, and relisting stock that genuinely hasn't sold in months is legitimate
+    /// reseller practice — the thing to avoid is doing it on a machine's schedule rather than a
+    /// person's judgement, which is why nothing here prompts.
     /// </summary>
-    private const int RelistOfferDays = 90;
+    private const int RelistEligibleDays = 90;
 
     /// <summary>
-    /// The hard floor. Nothing younger than this can be offered for relist at all, so the feature
-    /// cannot be turned into a bump machine by a user who doesn't know the rule. Deliberately lower
-    /// than the offer threshold: the offer is the normal cadence, this is the line.
+    /// The hard floor. Nothing younger than this is ever returned, so the feature cannot be turned
+    /// into a bump machine by a user who doesn't know the rule. Deliberately lower than
+    /// <see cref="RelistEligibleDays"/>: that one is the normal cadence, this one is the line.
     /// </summary>
     internal const int RelistFloorDays = 60;
 
@@ -90,7 +101,7 @@ public sealed class CrossListingService(
         foreach (ProductListing listing in active)
         {
             int days = (int)(now - listing.CreatedAtUtc).TotalDays;
-            if (days < RelistOfferDays)
+            if (days < RelistEligibleDays)
             {
                 continue;
             }
@@ -104,8 +115,8 @@ public sealed class CrossListingService(
             candidates.Add(new RelistCandidate(product.Id, product.Sku, product.Name, listing.Platform, days));
         }
 
-        // Belt and braces on the floor. The offer threshold already excludes these, but this is the
-        // rule that keeps a seller's account safe, so it does not depend on one comparison above.
+        // Belt and braces on the floor. The eligibility threshold already excludes these, but this is
+        // the rule that keeps a seller's account safe, so it does not depend on one comparison above.
         return [.. candidates.Where(c => c.DaysListed >= RelistFloorDays).OrderByDescending(c => c.DaysListed)];
     }
 }
