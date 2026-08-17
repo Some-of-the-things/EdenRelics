@@ -36,6 +36,11 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
                 ["Jwt:Key"] = TestKey,
                 ["Jwt:Issuer"] = Issuer,
                 ["Jwt:Audience"] = Audience,
+                // Open the beta gate for this suite, so the seller-facing behaviour it exists to
+                // cover — owner scoping, a seller seeing only their own garments, an admin seeing
+                // all — is exercised as a seller rather than as an admin, which would make those
+                // assertions meaningless. The closed gate is covered in ClosedBetaAccessTests.
+                ["Tool:AdminOnly"] = "false",
             }));
 
             builder.ConfigureServices(services =>

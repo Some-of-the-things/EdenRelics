@@ -14,6 +14,17 @@ namespace EdenRelics.SellerTool.Api;
 /// </summary>
 public static class ToolEndpoints
 {
+    /// <summary>
+    /// Who may reach the tool at all.
+    ///
+    /// The seller-facing endpoints are owner-scoped and built for sellers, but during the closed
+    /// beta the tool is not for customers — and an ordinary customer account carries a token this
+    /// API accepts, so gating the Angular route was never the boundary. The policy is the boundary;
+    /// see <c>Tool:AdminOnly</c> in Program.cs, which is the API mirror of adminGuard -> sellerGuard
+    /// on the /seller-tool route. Both flip when the beta opens.
+    /// </summary>
+    public const string AccessPolicy = "ToolAccess";
+
     public static void MapToolEndpoints(this WebApplication app)
     {
         // --- Garments + evidence (owner-scoped) ---
@@ -31,7 +42,7 @@ public static class ToolEndpoints
             events.Record(UserId(user), ToolEventKind.GarmentCreated, garment.Id);
             await db.SaveChangesAsync();
             return Results.Created($"/garments/{garment.Id}", new { id = garment.Id });
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         app.MapGet("/garments", async (ClaimsPrincipal user, ToolDbContext db) =>
         {
@@ -45,7 +56,7 @@ public static class ToolEndpoints
                 .OrderByDescending(g => g.CreatedAtUtc)
                 .ToListAsync();
             return Results.Ok(garments.Select(ToSummary).ToList());
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         app.MapGet("/garments/{id:guid}", async (Guid id, ClaimsPrincipal user, ToolDbContext db) =>
         {
@@ -54,7 +65,7 @@ public static class ToolEndpoints
                 .Include(g => g.Estimates)
                 .FirstOrDefaultAsync(g => g.Id == id);
             return garment is null || !CanAccess(garment, user) ? Results.NotFound() : Results.Ok(ToDto(garment));
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         app.MapPost("/garments/{id:guid}/evidence", async (Guid id, AddEvidenceRequest req, ClaimsPrincipal user, ToolDbContext db) =>
         {
@@ -83,7 +94,7 @@ public static class ToolEndpoints
             db.EvidenceRecords.Add(evidence);
             await db.SaveChangesAsync();
             return Results.Created($"/garments/{id}", new { id = evidence.Id });
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         // --- Capture pipeline: upload a label/flat-lay photo -> R2 -> evidence record (the archive) ---
 
@@ -101,7 +112,7 @@ public static class ToolEndpoints
                 minimumLongEdge = CaptureStandard.MinimumLongEdge(s),
                 guidance = CaptureStandard.Guidance(s),
             }),
-        })).RequireAuthorization();
+        })).RequireAuthorization(AccessPolicy);
 
         app.MapPost("/garments/{id:guid}/capture", async (
             Guid id, HttpRequest request, ClaimsPrincipal user, ToolDbContext db, ICaptureService capture) =>
@@ -156,7 +167,7 @@ public static class ToolEndpoints
                 width = evidence.Width,
                 height = evidence.Height,
             });
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         // What is still missing before this garment meets the standard.
         app.MapGet("/garments/{id:guid}/captures/completeness", async (
@@ -175,7 +186,7 @@ public static class ToolEndpoints
                 missingRequired = c.MissingRequired.Select(s => s.ToString()),
                 missingRequested = c.MissingRequested.Select(s => s.ToString()),
             });
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         // --- Dating: run the engine over the garment's evidence, store a proposed estimate ---
 
@@ -229,7 +240,7 @@ public static class ToolEndpoints
                 result.Outcome.ToString(),
                 result.ClaimFlag is null ? null : new ClaimFlagDto(result.ClaimFlag.Strength.ToString(), result.ClaimFlag.Message),
                 result.Evidence.Select(e => new EvidenceChainDto(e.RuleId, e.Feature, e.Bound, e.Strength.ToString(), e.Source)).ToList()));
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         // --- Dating preview (admin only): run the engine on ad-hoc evidence, persist nothing ---
         //
@@ -342,7 +353,7 @@ public static class ToolEndpoints
 
             await db.SaveChangesAsync();
             return Results.Accepted(value: new { recorded = req.Events.Count });
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         app.MapGet("/metrics/summary", async (int? days, IToolMetrics metrics) =>
             Results.Ok(await metrics.SummariseAsync(days ?? 28)))
