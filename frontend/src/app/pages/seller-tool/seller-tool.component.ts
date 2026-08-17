@@ -39,6 +39,16 @@ export class SellerToolComponent implements OnInit {
   ];
 
   readonly loading = signal(true);
+
+  /**
+   * Whether the last load actually failed, as distinct from succeeding with nothing.
+   *
+   * Without this the page rendered "No garments yet" and "Could not load your garments" at the same
+   * time, because an empty list is the initial state and a failure never replaces it. It reads as
+   * broken, and worse, it tells you the archive is empty at the exact moment you cannot see it.
+   */
+  readonly loadFailed = signal(false);
+
   readonly garments = signal<GarmentSummary[]>([]);
   readonly selected = signal<GarmentDetail | null>(null);
   readonly dating = signal<DateResult | null>(null);
@@ -90,8 +100,20 @@ export class SellerToolComponent implements OnInit {
   private loadGarments(): void {
     this.loading.set(true);
     this.tool.listGarments().subscribe({
-      next: (list) => { this.garments.set(list); this.loading.set(false); },
-      error: () => { this.error.set('Could not load your garments. Your session may have expired — try reloading.'); this.loading.set(false); },
+      next: (list) => {
+        this.garments.set(list);
+        this.loadFailed.set(false);
+        this.loading.set(false);
+      },
+      error: () => {
+        // Deliberately does not name a cause. This said "your session may have expired" for a month
+        // while the real fault was a CSP that blocked the request before it was sent — a confident
+        // wrong diagnosis on screen is worse than an honest vague one, because it sends whoever
+        // reads it looking in the wrong place.
+        this.error.set('Could not reach the dating tool. Try reloading; if it keeps happening the tool API may be unreachable from here.');
+        this.loadFailed.set(true);
+        this.loading.set(false);
+      },
     });
   }
 

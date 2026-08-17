@@ -107,6 +107,9 @@
 
       @if (loading()) {
         <p class="tool__muted">Loading…</p>
+      } @else if (loadFailed()) {
+        <!-- Say nothing here: the error below is the whole story. Showing "no garments yet" next to
+             a failure claims the archive is empty at the moment we cannot see it. -->
       } @else if (garments().length === 0) {
         <p class="tool__muted">No garments yet. Create one to start building its evidence set.</p>
       } @else {
