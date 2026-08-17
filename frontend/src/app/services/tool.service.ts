@@ -141,6 +141,46 @@ export interface DatingFeature {
   needsValue: boolean;
 }
 
+/**
+ * The brief's §10 numbers. Rates are `null`, never 0, when nothing has happened yet — "nobody has
+ * measured anything" and "every measurement was rejected" must not render the same way.
+ */
+export interface ToolMetrics {
+  fromUtc: string;
+  toUtc: string;
+  days: number;
+  /** The gate's first condition: ten or more sellers using it weekly. Always over 7 days. */
+  weeklyActiveSellers: number;
+  activeSellersInWindow: number;
+  garmentsCreated: number;
+  listingsPublished: number;
+  medianSecondsPerListing: number | null;
+  measurement: {
+    proposed: number;
+    accepted: number;
+    /** Accepted after the seller dragged a point — counts against acceptance, not as a failure. */
+    adjusted: number;
+    rejected: number;
+    acceptanceRate: number | null;
+  };
+  extension: {
+    platform: string;
+    attempted: number;
+    succeeded: number;
+    failed: number;
+    failureRate: number | null;
+    topReasons: { reason: string; count: number }[];
+  }[];
+  /** Flags raised against how often the seller was actually wrong — the thesis, as a number. */
+  datingFlags: {
+    raised: number;
+    upheld: number;
+    dismissed: number;
+    unresolved: number;
+    upheldRate: number | null;
+  };
+}
+
 export interface CaptureCompleteness {
   isComplete: boolean;
   captureCount: number;
@@ -244,5 +284,27 @@ export class ToolService {
   /** The features the live rule set can act on, so the UI never offers one no rule matches. */
   datingFeatures(): Observable<DatingFeature[]> {
     return this.http.get<DatingFeature[]>(`${this.base}/dating/features`, { headers: this.authHeaders() });
+  }
+
+  /** Usage metrics over the last `days`. Admin only. */
+  metrics(days = 28): Observable<ToolMetrics> {
+    return this.http.get<ToolMetrics>(`${this.base}/metrics/summary?days=${days}`, { headers: this.authHeaders() });
+  }
+
+  /**
+   * Report one usage event. Fire-and-forget by design: instrumentation must never be able to fail a
+   * seller's action, so callers subscribe and ignore the error rather than surfacing it. Kinds the
+   * server records itself (garment created, dating flag raised) are refused here.
+   */
+  recordEvent(event: {
+    kind: string;
+    garmentId?: string;
+    platform?: string;
+    durationMs?: number;
+    detail?: string;
+    occurredAtUtc?: string;
+  }): Observable<{ recorded: number }> {
+    return this.http.post<{ recorded: number }>(
+      `${this.base}/events`, { events: [event] }, { headers: this.authHeaders() });
   }
 }

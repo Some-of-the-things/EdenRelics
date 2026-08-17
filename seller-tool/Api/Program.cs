@@ -65,6 +65,11 @@ builder.Services.Configure<R2Options>(builder.Configuration.GetSection(R2Options
 builder.Services.AddScoped<IImageStore, R2ImageStore>();
 builder.Services.AddScoped<ICaptureService, CaptureService>();
 
+// Usage instrumentation (brief §10). Events land in the tool's own database, per-seller and joinable
+// to a garment, because the questions that decide the gate are both of those things.
+builder.Services.AddScoped<IEventRecorder, EventRecorder>();
+builder.Services.AddScoped<IToolMetrics, ToolMetrics>();
+
 WebApplication app = builder.Build();
 
 // Apply EF migrations on startup for a relational DB (skipped for the in-memory test provider).

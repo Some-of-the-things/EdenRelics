@@ -64,7 +64,9 @@ cd Data && dotnet ef database update --project . --startup-project . \
 
 ## Verify
 - `curl https://eden-relics-tool.fly.dev/healthz` → 200.
-- Tables present after step 6: Garments / EvidenceRecords / DateEstimates / StoredRules.
+- Tables present after step 6: Garments / EvidenceRecords / DateEstimates / StoredRules / ToolEvents.
+- `ToolEvents` arrived in `AddToolEvents` (Aug 2026). Because of the known issue above it will NOT
+  appear from a deploy alone — step 6 is what creates it, and `POST /events` 500s until it exists.
 - `curl -X POST https://eden-relics-tool.fly.dev/garments -d '{}'` (no token) → 401 (auth active).
 
 ## Front-end
@@ -77,6 +79,12 @@ cd Data && dotnet ef database update --project . --startup-project . \
 - **To exercise it:** log into the main site as an admin (prod *or* staging — the tool accepts both),
   visit `/seller-tool`. Requires a front-end deploy carrying the route. Capture, evidence, and dating
   all work; dating just returns no bounds until verified rules are seeded.
+
+## Clients of this API
+- The gated `/seller-tool` page (below).
+- The **crosslister browser extension** (`extension/`), which posts to `/events` only — it reads
+  listing plans from the *main* API and never touches garments here. It parks events it can't send
+  and replays them, which is why `/events` accepts backdated timestamps.
 
 ## Still to build before a real beta
 - Loosen the `/seller-tool` guard from admin-only to `sellerGuard` when the beta opens.

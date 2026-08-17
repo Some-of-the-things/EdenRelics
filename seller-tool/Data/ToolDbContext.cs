@@ -15,6 +15,7 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
     public DbSet<DateEstimate> DateEstimates => Set<DateEstimate>();
     public DbSet<StoredRule> StoredRules => Set<StoredRule>();
     public DbSet<StoredTransitionGroup> StoredTransitionGroups => Set<StoredTransitionGroup>();
+    public DbSet<ToolEvent> ToolEvents => Set<ToolEvent>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -70,6 +71,19 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
             e.Property(r => r.TransitionGroup).HasMaxLength(64);
             e.Property(r => r.ResearchNotes).HasMaxLength(2000);
             e.HasIndex(r => new { r.Status, r.Feature });
+        });
+
+        b.Entity<ToolEvent>(e =>
+        {
+            e.Property(v => v.Kind).HasConversion<string>().HasMaxLength(40);
+            e.Property(v => v.Platform).HasMaxLength(32);
+            e.Property(v => v.Detail).HasMaxLength(120);
+
+            // Every metric is "these kinds, in this window", and the gate's weekly-active count is
+            // "distinct sellers in this window" — so the window comes first in both indexes.
+            e.HasIndex(v => new { v.OccurredAtUtc, v.Kind });
+            e.HasIndex(v => new { v.OccurredAtUtc, v.SellerId });
+            e.HasIndex(v => v.GarmentId);
         });
 
         b.Entity<StoredTransitionGroup>(e =>

@@ -127,6 +127,94 @@ public class DateEstimate : ToolBaseEntity
     public DateTime ComputedAtUtc { get; set; }
 }
 
+/// <summary>
+/// Something a seller (or the tool on their behalf) did, recorded so the brief's §10 numbers can be
+/// answered: listings created, time per listing, measurement acceptance rate, extension failure rate
+/// per platform — and the one that decides whether the whole thesis holds, flags raised against how
+/// often the seller was actually wrong.
+///
+/// Deliberately a narrow enum rather than free-form event names. An open string is how an event log
+/// becomes unqueryable within a year: three spellings of the same thing and no way to know which
+/// mattered. Adding a kind is a considered change, which is the point.
+/// </summary>
+public enum ToolEventKind
+{
+    // --- Server-owned. Recorded by the API itself, never accepted from a client (see below). ---
+
+    GarmentCreated,
+
+    /// <summary>The engine contradicted the seller's own date claim. THE metric of the thesis.</summary>
+    DatingFlagRaised,
+
+    // --- Client-reported ---
+
+    ListingDrafted,
+
+    /// <summary>Carries the elapsed draft-to-publish time, which is "time per listing".</summary>
+    ListingPublished,
+
+    MeasurementProposed,
+
+    /// <summary>Taken as offered — the glance-and-accept case the measurement tool exists for.</summary>
+    MeasurementAccepted,
+
+    /// <summary>Accepted after the seller dragged a point. Counts against acceptance, not as a failure.</summary>
+    MeasurementAdjusted,
+
+    /// <summary>Thrown away and measured by hand. The failure case.</summary>
+    MeasurementRejected,
+
+    ExtensionPublishAttempted,
+    ExtensionPublishSucceeded,
+
+    /// <summary>Carries the platform and a short reason code. The honest denominator of "does the
+    /// extension actually work", which is the number a seller would most want before installing.</summary>
+    ExtensionPublishFailed,
+
+    /// <summary>The seller agreed the flag was right — they had the date wrong.</summary>
+    DatingFlagUpheld,
+
+    /// <summary>The seller says the flag was wrong. Just as important: it is how we find bad rules.</summary>
+    DatingFlagDismissed,
+}
+
+/// <summary>
+/// One recorded event. Per-seller and joinable to a garment, because the questions worth asking are
+/// per-seller ("are ten of them using it weekly?") and per-garment ("was the flagged piece actually
+/// misdated?") — a page-view-shaped counter cannot answer either.
+///
+/// Carries no seller-authored text. Everything here is an enum, an id, a duration or a short code, so
+/// the log stays free of listing content and of anything that would need redacting later.
+/// </summary>
+public class ToolEvent : ToolBaseEntity
+{
+    /// <summary>The authenticated user the event belongs to. Always taken from the caller's identity,
+    /// never from the request body — otherwise any seller could write events as any other.</summary>
+    public Guid SellerId { get; set; }
+
+    public ToolEventKind Kind { get; set; }
+
+    /// <summary>Which marketplace, for the extension and publish events. Null where it doesn't apply.</summary>
+    public string? Platform { get; set; }
+
+    /// <summary>The garment this concerns, where there is one. Not a foreign key on purpose: a garment
+    /// may be deleted, and losing the history of what the tool did would defeat the point of keeping it.</summary>
+    public Guid? GarmentId { get; set; }
+
+    /// <summary>Elapsed time, for the events that measure one (draft → publish).</summary>
+    public int? DurationMs { get; set; }
+
+    /// <summary>A short machine code — a failure reason, a rule's SpecId. Never prose.</summary>
+    public string? Detail { get; set; }
+
+    /// <summary>
+    /// When it actually happened, which is not when we heard about it. The extension buffers while the
+    /// seller is offline, so <see cref="ToolBaseEntity.CreatedAtUtc"/> (received) and this (occurred)
+    /// genuinely differ, and every rate here would be wrong if they were conflated.
+    /// </summary>
+    public DateTime OccurredAtUtc { get; set; }
+}
+
 /// <summary>Persisted dating rule (brief §3.4 — rules are data). Projects to the engine's
 /// <see cref="DatingRule"/>. Editable/addable without shipping the engine.</summary>
 public class StoredRule

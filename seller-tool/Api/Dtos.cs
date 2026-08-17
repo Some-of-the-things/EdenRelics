@@ -64,3 +64,36 @@ public record DatingPreviewDto(
 public record DatingFeatureDto(
     string Feature, string Type, string MatchKind, IReadOnlyList<string> SpecIds,
     int? NotBefore, int? NotAfter, string Strength, bool NeedsValue);
+
+// --- Instrumentation (brief §10: instrument from day one; retrofitting loses the first months) ---
+
+/// <summary>
+/// One reported event. There is no seller id: it is taken from the caller's token, so a client cannot
+/// write events as somebody else. <paramref name="OccurredAtUtc"/> is optional and exists for the
+/// extension, which buffers events while the seller is offline and reports them late.
+/// </summary>
+public record RecordEventRequest(
+    string Kind, Guid? GarmentId, string? Platform, int? DurationMs, string? Detail, DateTime? OccurredAtUtc);
+
+/// <summary>A batch, because an offline extension comes back with several at once.</summary>
+public record RecordEventsRequest(IReadOnlyList<RecordEventRequest> Events);
+
+public record FailureReasonDto(string Reason, int Count);
+
+public record PlatformMetricsDto(
+    string Platform, int Attempted, int Succeeded, int Failed, double? FailureRate,
+    IReadOnlyList<FailureReasonDto> TopReasons);
+
+public record MeasurementMetricsDto(
+    int Proposed, int Accepted, int Adjusted, int Rejected, double? AcceptanceRate);
+
+public record DatingFlagMetricsDto(
+    int Raised, int Upheld, int Dismissed, int Unresolved, double? UpheldRate);
+
+public record MetricsSummaryDto(
+    DateTime FromUtc, DateTime ToUtc, int Days,
+    int WeeklyActiveSellers, int ActiveSellersInWindow,
+    int GarmentsCreated, int ListingsPublished, int? MedianSecondsPerListing,
+    MeasurementMetricsDto Measurement,
+    IReadOnlyList<PlatformMetricsDto> Extension,
+    DatingFlagMetricsDto DatingFlags);

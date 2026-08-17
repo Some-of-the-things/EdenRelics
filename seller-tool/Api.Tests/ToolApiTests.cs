@@ -422,4 +422,106 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
         HttpResponseMessage res = await _factory.CreateClient().GetAsync("/healthz");
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
     }
+
+    // ---- Instrumentation (brief §10) ----
+
+    [Fact]
+    public async Task Events_AreRecordedForTheCaller_AndSummarisedForAdmins()
+    {
+        HttpClient seller = SellerClient(Guid.NewGuid());
+        HttpResponseMessage res = await seller.PostAsJsonAsync("/events", new
+        {
+            events = new[]
+            {
+                new { kind = "MeasurementProposed", platform = (string?)null, durationMs = (int?)null, detail = (string?)null },
+                new { kind = "MeasurementAccepted", platform = (string?)null, durationMs = (int?)null, detail = (string?)null },
+            },
+        });
+
+        Assert.Equal(HttpStatusCode.Accepted, res.StatusCode);
+
+        MetricsSummaryDto? summary = JsonSerializer.Deserialize<MetricsSummaryDto>(
+            await (await AdminClient().GetAsync("/metrics/summary?days=7")).Content.ReadAsStringAsync(), Json);
+
+        Assert.NotNull(summary);
+        Assert.True(summary!.Measurement.Accepted >= 1);
+        Assert.True(summary.WeeklyActiveSellers >= 1);
+    }
+
+    [Fact]
+    public async Task Events_RefuseServerOwnedKinds_SoTheFlagRateCannotBeInflated()
+    {
+        HttpClient seller = SellerClient(Guid.NewGuid());
+
+        HttpResponseMessage res = await seller.PostAsJsonAsync("/events", new
+        {
+            events = new[] { new { kind = "DatingFlagRaised" } },
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Events_RejectAnUnknownKind_RatherThanDroppingItSilently()
+    {
+        HttpResponseMessage res = await SellerClient(Guid.NewGuid()).PostAsJsonAsync("/events", new
+        {
+            events = new[] { new { kind = "SomethingWeNeverDefined" } },
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Events_RequireAuthentication()
+    {
+        HttpResponseMessage res = await _factory.CreateClient().PostAsJsonAsync("/events", new
+        {
+            events = new[] { new { kind = "ListingPublished" } },
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task MetricsSummary_IsAdminOnly()
+    {
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await SellerClient(Guid.NewGuid()).GetAsync("/metrics/summary")).StatusCode);
+    }
+
+    [Fact]
+    public async Task DatingAGarment_RecordsTheFlagItself_NotLeavingItToTheClient()
+    {
+        HttpClient admin = AdminClient();
+        await SeedVerifiedRuleAsync(admin, new
+        {
+            id = "flag-metric-tumble",
+            feature = "care.tumble-dry-symbol",
+            type = "CareLabel",
+            notBefore = 1980,
+            strength = "Hard",
+            transitionLagMonths = 0,
+            sourceCitation = "test",
+        }, "flag-metric-tumble");
+
+        Guid garmentId = await CreateGarmentAsync(admin, "Allegedly 1970s dress");
+        (await AddEvidenceAsync(admin, garmentId, "CareLabel", "care.tumble-dry-symbol")).EnsureSuccessStatusCode();
+
+        int raisedBefore = JsonSerializer.Deserialize<MetricsSummaryDto>(
+            await admin.GetStringAsync("/metrics/summary?days=1"), Json)!.DatingFlags.Raised;
+
+        // Claimed 1975, but the evidence cannot predate 1980.
+        HttpResponseMessage res = await admin.PostAsJsonAsync($"/garments/{garmentId}/date", new
+        {
+            claimEarliest = 1970,
+            claimLatest = 1979,
+        });
+        res.EnsureSuccessStatusCode();
+
+        MetricsSummaryDto after = JsonSerializer.Deserialize<MetricsSummaryDto>(
+            await admin.GetStringAsync("/metrics/summary?days=1"), Json)!;
+
+        Assert.Equal(raisedBefore + 1, after.DatingFlags.Raised);
+    }
 }

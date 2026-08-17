@@ -8,6 +8,79 @@
     </p>
   </header>
 
+  <!-- Usage metrics. Admin only: absent for a seller, and absent until the API answers. -->
+  @if (metrics(); as m) {
+    <section class="metrics" aria-label="Tool usage over the last 28 days">
+      <div class="metrics__head">
+        <h2 class="tool__heading">Usage · last {{ m.days }} days</h2>
+        <p class="tool__muted metrics__note">
+          A dash means nothing has happened yet, which is not the same as zero.
+        </p>
+      </div>
+
+      <div class="metrics__grid">
+        <div class="metric" [class.metric--gate]="m.weeklyActiveSellers >= 10">
+          <span class="metric__label">Sellers this week</span>
+          <span class="metric__figure">{{ m.weeklyActiveSellers }}<span class="metric__of"> / 10</span></span>
+          <span class="metric__note">The gate: ten using it weekly.</span>
+        </div>
+
+        <div class="metric">
+          <span class="metric__label">Garments created</span>
+          <span class="metric__figure">{{ m.garmentsCreated }}</span>
+          <span class="metric__note">{{ m.listingsPublished }} listings published</span>
+        </div>
+
+        <div class="metric">
+          <span class="metric__label">Median per listing</span>
+          <span class="metric__figure">{{ duration(m.medianSecondsPerListing) }}</span>
+          <span class="metric__note">Draft to published.</span>
+        </div>
+
+        <div class="metric">
+          <span class="metric__label">Measurements accepted</span>
+          <span class="metric__figure">{{ percent(m.measurement.acceptanceRate) }}</span>
+          <span class="metric__note">
+            {{ m.measurement.accepted }} clean · {{ m.measurement.adjusted }} adjusted ·
+            {{ m.measurement.rejected }} rejected
+          </span>
+        </div>
+
+        <div class="metric metric--wide">
+          <span class="metric__label">Flags the seller agreed with</span>
+          <span class="metric__figure">{{ percent(m.datingFlags.upheldRate) }}</span>
+          <span class="metric__note">
+            {{ m.datingFlags.raised }} raised · {{ m.datingFlags.upheld }} upheld ·
+            {{ m.datingFlags.dismissed }} dismissed · {{ m.datingFlags.unresolved }} unanswered.
+            This is the number that says whether the verification thesis holds.
+          </span>
+        </div>
+      </div>
+
+      @if (m.extension.length) {
+        <h3 class="tool__sub tool__sub--tight">Extension reliability</h3>
+        <table class="dtable">
+          <thead>
+            <tr><th>Platform</th><th>Attempted</th><th>Failed</th><th>Failure rate</th><th>Commonest reason</th></tr>
+          </thead>
+          <tbody>
+            @for (p of m.extension; track p.platform) {
+              <tr>
+                <td>{{ p.platform }}</td>
+                <td>{{ p.attempted }}</td>
+                <td>{{ p.failed }}</td>
+                <td>{{ percent(p.failureRate) }}</td>
+                <td class="dtable__mono">
+                  {{ p.topReasons.length ? p.topReasons[0].reason + ' (' + p.topReasons[0].count + ')' : '—' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+
   <div class="tool__grid">
     <!-- Garment list + create -->
     <aside class="tool__panel">
@@ -166,6 +239,25 @@
               <p class="result__flag result__flag--{{ d.claimFlag.strength.toLowerCase() }}">
                 ⚑ {{ d.claimFlag.strength }} conflict with the claimed date — {{ d.claimFlag.message }}
               </p>
+              <!-- Whether the flag was right is the number the whole tool is judged on, and only the
+                   seller knows the answer. Asked once, here, while the piece is in front of them. -->
+              <div class="verdict">
+                @if (flagVerdict() === null) {
+                  <span class="verdict__ask">Was the flag right?</span>
+                  <button class="btn btn--ghost" type="button" (click)="respondToFlag(true)">
+                    Yes — my date was wrong
+                  </button>
+                  <button class="btn btn--ghost" type="button" (click)="respondToFlag(false)">
+                    No — the flag is wrong
+                  </button>
+                } @else if (flagVerdict() === 'upheld') {
+                  <span class="verdict__done">Thanks — recorded as a correct flag.</span>
+                } @else {
+                  <span class="verdict__done">
+                    Recorded as a wrong flag. Rules that get dismissed often are the ones we re-check.
+                  </span>
+                }
+              </div>
             }
             @if (d.evidence.length) {
               <h4 class="tool__sub tool__sub--tight">Why</h4>

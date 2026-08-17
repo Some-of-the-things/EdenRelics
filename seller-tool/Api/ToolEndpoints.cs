@@ -18,7 +18,7 @@ public static class ToolEndpoints
     {
         // --- Garments + evidence (owner-scoped) ---
 
-        app.MapPost("/garments", async (CreateGarmentRequest req, ClaimsPrincipal user, ToolDbContext db) =>
+        app.MapPost("/garments", async (CreateGarmentRequest req, ClaimsPrincipal user, ToolDbContext db, IEventRecorder events) =>
         {
             Garment garment = new()
             {
@@ -28,6 +28,7 @@ public static class ToolEndpoints
                 Reference = req.Reference,
             };
             db.Garments.Add(garment);
+            events.Record(UserId(user), ToolEventKind.GarmentCreated, garment.Id);
             await db.SaveChangesAsync();
             return Results.Created($"/garments/{garment.Id}", new { id = garment.Id });
         }).RequireAuthorization();
@@ -178,7 +179,7 @@ public static class ToolEndpoints
 
         // --- Dating: run the engine over the garment's evidence, store a proposed estimate ---
 
-        app.MapPost("/garments/{id:guid}/date", async (Guid id, DateGarmentRequest req, ClaimsPrincipal user, ToolDbContext db, IDatingEngine engine) =>
+        app.MapPost("/garments/{id:guid}/date", async (Guid id, DateGarmentRequest req, ClaimsPrincipal user, ToolDbContext db, IDatingEngine engine, IEventRecorder events) =>
         {
             Garment? garment = await db.Garments.Include(g => g.Evidence).FirstOrDefaultAsync(g => g.Id == id);
             if (garment is null || !CanAccess(garment, user))
@@ -203,6 +204,23 @@ public static class ToolEndpoints
                 Confirmation = ConfirmationState.Proposed,   // machine-produced — proposed until confirmed
                 ComputedAtUtc = DateTime.UtcNow,
             });
+
+            // Recorded here rather than reported by the client, because this is the number that decides
+            // whether the verification thesis holds. A client that forgets to report a flag makes the
+            // headline metric look better than it is, and the headline metric is the one that must not
+            // be flattering. Detail carries the rules that fired, so a rule that flags wrongly can be
+            // traced back rather than merely suspected.
+            if (result.ClaimFlag is not null)
+            {
+                events.Record(
+                    UserId(user), ToolEventKind.DatingFlagRaised, id,
+                    detail: string.Join(',', result.Evidence
+                        .Where(e => e.Applied && !string.IsNullOrEmpty(e.SpecId))
+                        .Select(e => e.SpecId)
+                        .Distinct()
+                        .Take(6)));
+            }
+
             await db.SaveChangesAsync();
 
             return Results.Ok(new DateResultDto(
@@ -288,6 +306,48 @@ public static class ToolEndpoints
             return Results.Ok(features);
         }).RequireAuthorization(p => p.RequireRole("Admin"));
 
+        // --- Instrumentation (brief §10) ---
+        //
+        // "Instrument from day one: listings created, time per listing, measurement acceptance rate,
+        // extension failure rate per platform. Retrofitting analytics means losing the first months of
+        // data." The first months are the beta, and the beta is what the go/no-go gate is judged on, so
+        // this ships before there is anything to measure rather than after.
+
+        app.MapPost("/events", async (RecordEventsRequest req, ClaimsPrincipal user, ToolDbContext db, IEventRecorder events) =>
+        {
+            if (req.Events is null || req.Events.Count == 0)
+            {
+                return Results.BadRequest(new { error = "Send at least one event." });
+            }
+            if (req.Events.Count > MaxEventsPerBatch)
+            {
+                return Results.BadRequest(new { error = $"Send at most {MaxEventsPerBatch} events per request." });
+            }
+
+            Guid sellerId = UserId(user);
+            foreach (RecordEventRequest e in req.Events)
+            {
+                if (!Enum.TryParse(e.Kind, ignoreCase: true, out ToolEventKind kind))
+                {
+                    return Results.BadRequest(new { error = $"Unknown event kind '{e.Kind}'." });
+                }
+                // Server-owned kinds are recorded by the endpoints that cause them. Accepting them here
+                // too would double-count the flag rate — and let a client inflate it deliberately.
+                if (ServerOwnedKinds.Contains(kind))
+                {
+                    return Results.BadRequest(new { error = $"'{kind}' is recorded by the server, not reported by a client." });
+                }
+                events.Record(sellerId, kind, e.GarmentId, e.Platform, e.DurationMs, e.Detail, e.OccurredAtUtc);
+            }
+
+            await db.SaveChangesAsync();
+            return Results.Accepted(value: new { recorded = req.Events.Count });
+        }).RequireAuthorization();
+
+        app.MapGet("/metrics/summary", async (int? days, IToolMetrics metrics) =>
+            Results.Ok(await metrics.SummariseAsync(days ?? 28)))
+            .RequireAuthorization(p => p.RequireRole("Admin"));
+
         // --- Rules store (admin only) ---
 
         app.MapGet("/rules", async (ToolDbContext db) => Results.Ok(await db.StoredRules.ToListAsync()))
@@ -326,6 +386,14 @@ public static class ToolEndpoints
             return Results.Ok(new { id = rule.Id, status = rule.Status.ToString() });
         }).RequireAuthorization(p => p.RequireRole("Admin"));
     }
+
+    /// <summary>Enough for an extension that has been offline for a while, without letting one request
+    /// write an unbounded number of rows.</summary>
+    private const int MaxEventsPerBatch = 100;
+
+    /// <summary>Kinds the API records itself, from the endpoint that causes them.</summary>
+    private static readonly HashSet<ToolEventKind> ServerOwnedKinds =
+        [ToolEventKind.GarmentCreated, ToolEventKind.DatingFlagRaised];
 
     private static Guid UserId(ClaimsPrincipal user) =>
         Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? user.FindFirstValue("sub"), out Guid id)

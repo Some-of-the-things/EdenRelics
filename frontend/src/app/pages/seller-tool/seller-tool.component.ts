@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  ToolService, GarmentSummary, GarmentDetail, DateResult,
+  ToolService, GarmentSummary, GarmentDetail, DateResult, ToolMetrics,
 } from '../../services/tool.service';
 
 const EVIDENCE_TYPES = [
@@ -46,6 +46,12 @@ export class SellerToolComponent implements OnInit {
   readonly busy = signal(false);
   readonly error = signal('');
 
+  /** Usage metrics (admin only). Null while loading, or if the caller isn't an admin. */
+  readonly metrics = signal<ToolMetrics | null>(null);
+
+  /** Whether the seller has ruled on the flag currently on screen, so we ask once and only once. */
+  readonly flagVerdict = signal<'upheld' | 'dismissed' | null>(null);
+
   newTitle = '';
   newReference = '';
   evType = 'CareLabel';
@@ -68,7 +74,17 @@ export class SellerToolComponent implements OnInit {
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.loadGarments();
+      this.loadMetrics();
     }
+  }
+
+  private loadMetrics(): void {
+    // Admin-only, and this page is reachable by non-admins once the beta opens, so a 403 here is an
+    // expected answer rather than a fault: leave the panel off and say nothing.
+    this.tool.metrics(28).subscribe({
+      next: (m) => this.metrics.set(m),
+      error: () => this.metrics.set(null),
+    });
   }
 
   private loadGarments(): void {
@@ -85,6 +101,7 @@ export class SellerToolComponent implements OnInit {
 
   select(id: string): void {
     this.dating.set(null);
+    this.flagVerdict.set(null);
     this.loadDetail(id);
   }
 
@@ -163,9 +180,47 @@ export class SellerToolComponent implements OnInit {
     this.error.set('');
     this.busy.set(true);
     this.tool.runDating(g.id, { earliest: this.claimEarliest, latest: this.claimLatest }).subscribe({
-      next: (r) => { this.dating.set(r); this.busy.set(false); this.refresh(g.id); },
+      next: (r) => {
+        this.dating.set(r);
+        this.flagVerdict.set(null);
+        this.busy.set(false);
+        this.refresh(g.id);
+      },
       error: () => { this.error.set('Could not run the dating engine.'); this.busy.set(false); },
     });
+  }
+
+  /**
+   * The seller's verdict on a flag: were they actually wrong? This is the other half of the metric
+   * the whole thesis rests on — flags raised is only interesting next to how often the flag was
+   * right. It is also how a bad rule gets found, which is why dismissing one is a first-class answer
+   * and not a nuisance.
+   */
+  respondToFlag(upheld: boolean): void {
+    const g = this.selected();
+    if (!g || this.flagVerdict()) { return; }
+    this.flagVerdict.set(upheld ? 'upheld' : 'dismissed');
+    this.tool.recordEvent({
+      kind: upheld ? 'DatingFlagUpheld' : 'DatingFlagDismissed',
+      garmentId: g.id,
+      detail: this.dating()?.evidence.map((e) => e.specId).filter(Boolean).slice(0, 6).join(',') || undefined,
+    }).subscribe({
+      // Never surface an instrumentation failure to the seller: their answer is recorded on screen
+      // either way, and a metrics outage must not look like their action failing.
+      next: () => this.loadMetrics(),
+      error: () => undefined,
+    });
+  }
+
+  /** A rate as a percentage, or an em dash — never 0%, which would read as a real measurement. */
+  percent(rate: number | null | undefined): string {
+    return rate == null ? '—' : `${Math.round(rate * 100)}%`;
+  }
+
+  duration(seconds: number | null | undefined): string {
+    if (seconds == null) { return '—'; }
+    if (seconds < 90) { return `${seconds}s`; }
+    return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
   }
 
   /** Reload the open garment (evidence/estimates) and the list summaries after a mutation. */
