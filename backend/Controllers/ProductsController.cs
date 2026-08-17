@@ -292,7 +292,7 @@ public class ProductsController : ControllerBase
                     Date = product.StockPurchaseDate.Value,
                     Description = $"Stock: {product.Name}",
                     Amount = -product.CostPrice,
-                    Category = "Stock",
+                    Category = TransactionCategories.Stock,
                     Platform = product.Supplier,
                     Reference = product.Id.ToString(),
                 });
@@ -416,12 +416,20 @@ public class ProductsController : ControllerBase
         // rule as the Stripe-webhook path and the BackfillSales endpoint —
         // Reference = product.Id, skip if a matching transaction already exists.
         // Failure must not break the product update — log and move on.
+        //
+        // The check is on Reference AND Category, because a product carries TWO ledger rows
+        // keyed on its id: the stock purchase written at creation (Category "Stock") and the
+        // sale written here (Category "Sales"). Matching on Reference alone found the stock
+        // row and silently skipped the sale, so every piece bought with a cost price and a
+        // purchase date recorded its expense and never its income (found 2026-08-17: three
+        // sold pieces, £96 of income missing from the ledger).
         if (product.Status == ProductStatus.Sold && previousStatus != ProductStatus.Sold)
         {
             try
             {
                 string productRef = product.Id.ToString();
-                IEnumerable<Transaction> existing = await _transactionRepository.FindAsync(t => t.Reference == productRef);
+                IEnumerable<Transaction> existing = await _transactionRepository.FindAsync(
+                    t => t.Reference == productRef && t.Category == TransactionCategories.Sales);
                 if (!existing.Any())
                 {
                     await _transactionRepository.AddAsync(new Transaction
@@ -429,7 +437,7 @@ public class ProductsController : ControllerBase
                         Date = DateTime.UtcNow,
                         Description = $"Sale: {product.Name}",
                         Amount = product.SalePrice ?? product.Price,
-                        Category = "Sales",
+                        Category = TransactionCategories.Sales,
                         // Platform left null on the manual-flip path — admin can fill in
                         // (Website / Etsy / Depop / etc.) after the fact via the
                         // transactions table edit. The Stripe-webhook path sets it to
