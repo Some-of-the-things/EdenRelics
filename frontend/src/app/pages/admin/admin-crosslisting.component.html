@@ -7,6 +7,33 @@
     </p>
   </header>
 
+  <!--
+    Only appears if the crosslister extension is actually installed. Etsy and eBay never need it —
+    they go out from our server whether the machine is on or not — so this is scoped to the two
+    platforms that have no API at all.
+  -->
+  @if (extension.installed()) {
+    <div class="xext" [class.xext--on]="extension.paired() && !extension.sessionExpired()">
+      @if (!extension.paired()) {
+        <p class="xext__state">Crosslister extension found, but not connected.</p>
+        <p class="xext__note">
+          Connecting hands it your Eden Relics session so it can read a listing plan. It never holds
+          your Vinted or Depop password — it works inside the sessions you're already signed in to.
+        </p>
+        <button type="button" class="xext__btn" (click)="connectExtension()">Connect extension</button>
+      } @else if (extension.sessionExpired()) {
+        <p class="xext__state">Extension connected, but your Eden Relics session has expired.</p>
+        <button type="button" class="xext__btn" (click)="connectExtension()">Reconnect</button>
+      } @else {
+        <p class="xext__state">Crosslister extension connected.</p>
+        <p class="xext__note">
+          It fills Vinted and Depop forms and then stops — you review the form and press publish
+          yourself. It never presses it for you.
+        </p>
+      }
+    </div>
+  }
+
   @if (error()) {
     <p class="xlist__error" role="alert">{{ error() }}</p>
   }
@@ -53,6 +80,25 @@
           </div>
 
           <p class="xplat__transport">{{ transportLabel(plan) }}</p>
+
+          @if (usesExtension(plan) && extension.paired() && !extension.sessionExpired()) {
+            <div class="xplat__send">
+              @if (plan.validation.canPublish && plan.research !== 'unresearched') {
+                <button type="button" class="xplat__send-btn" (click)="sendToExtension(plan)">
+                  Send to extension
+                </button>
+                <span class="xplat__send-note">Opens the {{ plan.platform }} form filled in. You publish it.</span>
+              } @else {
+                <span class="xplat__send-note">
+                  Nothing to send yet — the extension refuses a platform it can't fill correctly.
+                  Paste the text below in by hand instead.
+                </span>
+              }
+              @if (sendState()[plan.platform]; as state) {
+                <span class="xplat__send-state">{{ state }}</span>
+              }
+            </div>
+          }
 
           @if (plan.validation.blocking.length > 0) {
             <h4 class="xplat__section">What stops it</h4>

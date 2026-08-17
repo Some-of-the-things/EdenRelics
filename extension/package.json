@@ -1,0 +1,10 @@
+{
+  "name": "eden-relics-crosslister",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension that fills Vinted and Depop listing forms from one Eden Relics record. No build step and no dependencies — see README.md.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

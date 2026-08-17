@@ -6,6 +6,7 @@ import {
   PlatformPlan,
   RelistCandidate,
 } from '../../services/cross-listing.service';
+import { ExtensionBridgeService } from '../../services/extension-bridge.service';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { resolveProductStatus } from '../../utils/product-status';
@@ -27,6 +28,7 @@ import { resolveProductStatus } from '../../utils/product-status';
 export class AdminCrosslistingComponent {
   private readonly crossListing = inject(CrossListingService);
   readonly store = inject(ProductStore);
+  readonly extension = inject(ExtensionBridgeService);
 
   readonly selectedId = signal<string>('');
   readonly preview = signal<CrossListingPreview | null>(null);
@@ -37,6 +39,15 @@ export class AdminCrosslistingComponent {
   readonly relistLoading = signal(false);
   readonly relistAsked = signal(false);
   readonly copiedPlatform = signal<string>('');
+
+  /** Per-platform result of the last "send to extension" press, keyed by platform name. */
+  readonly sendState = signal<Record<string, string>>({});
+
+  constructor() {
+    // Wires up the page's half of the extension conversation. Announces nothing and asks for
+    // nothing beyond "are you there" — if no extension is installed, none of its UI appears.
+    this.extension.start();
+  }
 
   /** Live stock only — there is no point asking what would publish for something already sold. */
   readonly listable = computed(() =>
@@ -117,6 +128,41 @@ export class AdminCrosslistingComponent {
     return plan.transport === 'server-api'
       ? 'Our server — works whether your machine is on or not'
       : 'Your browser — needs it open and awake';
+  }
+
+  /** Hand the extension an Eden session so it can read plans. Never a marketplace credential. */
+  async connectExtension(): Promise<void> {
+    const result = await this.extension.connect();
+    if (!result.ok) {
+      this.error.set(result.error ?? 'Could not connect the extension.');
+    }
+  }
+
+  /**
+   * Queue one piece on one platform.
+   *
+   * One press, one listing. There is deliberately no "send to all" button: the extension is paced
+   * to post like a person because bulk-looking activity is what gets a seller's Vinted account
+   * flagged, and a control that queued four at once would be inviting exactly that.
+   */
+  async sendToExtension(plan: PlatformPlan): Promise<void> {
+    const productId = this.preview()?.productId;
+    if (!productId) {
+      return;
+    }
+    this.sendState.update((state) => ({ ...state, [plan.platform]: 'Sending…' }));
+    const result = await this.extension.send(productId, plan.platform);
+    this.sendState.update((state) => ({
+      ...state,
+      [plan.platform]: result.ok
+        ? 'Queued — the extension will open the form for you to check'
+        : (result.error ?? 'The extension refused it.'),
+    }));
+  }
+
+  /** Extension platforms only; Etsy and eBay go out from our server whether your machine is on. */
+  usesExtension(plan: PlatformPlan): boolean {
+    return plan.transport === 'seller-browser-extension';
   }
 
   fieldRows(plan: PlatformPlan): { key: string; value: string }[] {

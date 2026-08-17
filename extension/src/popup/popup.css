@@ -1,0 +1,87 @@
+:root {
+  --ink: #17181c;
+  --muted: #5c5c5c;
+  --line: #d8d5cc;
+  --paper: #fdfdfb;
+  --panel: #f3f1ea;
+  --accent: #2c3f78;
+  --bad: #a33;
+  --good: #1b6327;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  width: 340px;
+  margin: 0;
+  padding: 14px 16px 12px;
+  font: 14px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+h1 { margin: 0; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
+.sub { margin: 0 0 12px; color: var(--muted); font-size: 12.5px; }
+
+.block { margin-bottom: 12px; }
+.block h2 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+p { margin: 0 0 6px; }
+.muted { color: var(--muted); font-size: 12.5px; }
+
+.item {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 3px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--panel);
+}
+.item[data-state="failed"] { border-left-color: var(--bad); }
+.item[data-state="published"],
+.item[data-state="filled"] { border-left-color: var(--good); }
+.item[data-state="paused"],
+.item[data-state="abandoned"] { border-left-color: var(--accent); }
+.item .when { color: var(--muted); font-size: 12px; }
+
+.fallback {
+  margin-top: 6px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+button {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 3px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--accent); }
+
+footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+footer a { color: var(--accent); font-size: 12.5px; }
