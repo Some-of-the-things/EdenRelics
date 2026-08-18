@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  ToolService, GarmentSummary, GarmentDetail, DateResult, ToolMetrics,
+  ToolService, GarmentSummary, GarmentDetail, DateResult, ToolMetrics, BulkUploadResult,
 } from '../../services/tool.service';
 
 const EVIDENCE_TYPES = [
@@ -78,6 +78,23 @@ export class SellerToolComponent implements OnInit {
    * and a sticky checkbox would quietly turn that into a per-account flag.
    */
   capArchiveRights = false;
+
+  /**
+   * Whether a photographed or logged zip is the garment’s own. Required by the server whenever
+   * a zip is logged: a replaced zip recorded as original dates the repair, not the garment, and
+   * quietly corrupts the corpus it feeds. “Unsure” is always offered — forcing a guess is worse.
+   */
+  evZipOriginality = '';
+  capZipOriginality = '';
+  readonly zipOriginalities = ['Original', 'Replaced', 'Unsure'];
+
+  /** Back-catalogue upload: many photos at once, from the camera roll. */
+  bulkFiles: File[] = [];
+  bulkArchiveRights = false;
+  bulkType = 'CareLabel';
+  bulkSlot = 'CareLabel';
+  bulkFeature = '';
+  readonly bulkResult = signal<BulkUploadResult | null>(null);
   claimEarliest?: number;
   claimLatest?: number;
 
@@ -155,7 +172,11 @@ export class SellerToolComponent implements OnInit {
     this.error.set('');
     this.busy.set(true);
     this.tool.addEvidence(g.id, {
-      type: this.evType, feature: this.evFeature.trim(), rawValue: this.evValue || undefined, origin: 'human',
+      type: this.evType,
+      feature: this.evFeature.trim(),
+      rawValue: this.evValue || undefined,
+      origin: 'human',
+      zipOriginality: this.needsZipOriginality(this.evType) ? this.evZipOriginality || undefined : undefined,
     }).subscribe({
       next: () => { this.evFeature = ''; this.evValue = ''; this.busy.set(false); this.refresh(g.id); },
       error: () => { this.error.set('Could not add that evidence.'); this.busy.set(false); },
@@ -177,7 +198,10 @@ export class SellerToolComponent implements OnInit {
     this.error.set('');
     this.busy.set(true);
     this.tool
-      .capture(g.id, this.captureFile, this.capType, this.capFeature.trim(), this.capSlot, this.capArchiveRights)
+      .capture(
+        g.id, this.captureFile, this.capType, this.capFeature.trim(), this.capSlot, this.capArchiveRights,
+        this.needsZipOriginality(this.capType) ? this.capZipOriginality || undefined : undefined,
+      )
       .subscribe({
         next: () => {
           this.captureFile = null;
@@ -234,6 +258,55 @@ export class SellerToolComponent implements OnInit {
     });
   }
 
+  /** True when the chosen evidence type is a zip, so the form must ask about originality. */
+  needsZipOriginality(type: string): boolean {
+    return type === 'Zip';
+  }
+
+  onBulkFiles(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.bulkFiles = input.files ? Array.from(input.files) : [];
+    this.bulkResult.set(null);
+  }
+
+  /**
+   * Seed the archive from the camera roll.
+   *
+   * These are photographs of garments that have already been and gone, so they are stored as
+   * historical rather than held to the capture standard — and the per-file results are shown
+   * rather than a single success, because a partial import is the normal outcome and the seller
+   * needs to see which ones did not make it.
+   */
+  bulkUpload(): void {
+    const g = this.selected();
+    if (!g || this.bulkFiles.length === 0) { return; }
+    if (!this.bulkArchiveRights) {
+      this.error.set('Confirm archive rights before uploading — the grant is recorded against each image.');
+      return;
+    }
+    this.error.set('');
+    this.busy.set(true);
+    this.tool
+      .bulkUpload(
+        g.id, this.bulkFiles, this.bulkType, this.bulkFeature.trim(), this.bulkSlot,
+        this.bulkArchiveRights,
+        this.needsZipOriginality(this.bulkType) ? this.capZipOriginality || undefined : undefined,
+      )
+      .subscribe({
+        next: (result) => {
+          this.bulkResult.set(result);
+          this.bulkFiles = [];
+          this.bulkArchiveRights = false;
+          this.busy.set(false);
+          this.refresh(g.id);
+        },
+        error: (err: unknown) => {
+          const detail = (err as { error?: { error?: string } })?.error?.error;
+          this.error.set(detail ?? 'Bulk upload failed.');
+          this.busy.set(false);
+        },
+      });
+  }
   /** A rate as a percentage, or an em dash — never 0%, which would read as a real measurement. */
   percent(rate: number | null | undefined): string {
     return rate == null ? '—' : `${Math.round(rate * 100)}%`;

@@ -55,6 +55,38 @@ public class Garment : ToolBaseEntity
     public List<DateEstimate> Estimates { get; set; } = [];
 }
 
+/// <summary>
+/// Where an archive image came from.
+///
+/// The distinction has to be recorded at capture time and can never be reconstructed afterwards.
+/// Historical uploads are pre-existing photos from the back catalogue: often blurry, badly lit, or
+/// missing the care label entirely. They are worth having — a partial record beats no record — but
+/// if symbol recognition is ever trained on this archive, the properly-shot set must be separable
+/// from the rough ones. An unflagged historical image silently becomes training ground truth.
+/// </summary>
+public enum ImageProvenance
+{
+    /// <summary>Shot deliberately, to the fixed capture standard.</summary>
+    LiveCapture,
+
+    /// <summary>A pre-existing photo, uploaded from the camera roll. Not held to the standard.</summary>
+    HistoricalUpload,
+}
+
+/// <summary>
+/// Whether a photographed zip is the one the garment was made with.
+///
+/// Required whenever a zip is logged, because a replaced zip logged unmarked actively mis-teaches
+/// the corpus: it dates the repair, not the garment. <see cref="Unsure"/> is a legitimate answer
+/// and must always be offered — forcing a guess is how bad data gets in.
+/// </summary>
+public enum ZipOriginality
+{
+    Original,
+    Replaced,
+    Unsure,
+}
+
 /// <summary>One typed piece of dating evidence captured for a garment — a care-label photo, a zip, a
 /// phone number on the maker's address, etc. The label images captured here ARE the archive/moat.</summary>
 public class EvidenceRecord : ToolBaseEntity
@@ -89,6 +121,34 @@ public class EvidenceRecord : ToolBaseEntity
     /// one asset that has to be unencumbered cannot rest on a flag that might be revoked wholesale.
     /// </summary>
     public bool ArchiveRightsGranted { get; set; }
+
+    /// <summary>
+    /// Whether this image was shot to the standard or came out of the back catalogue.
+    ///
+    /// Defaults to LiveCapture because that is what the capture endpoint does; the bulk-upload path
+    /// sets it explicitly. It is not nullable on purpose — 'unknown provenance' is the state this
+    /// field exists to prevent.
+    /// </summary>
+    public ImageProvenance Provenance { get; set; } = ImageProvenance.LiveCapture;
+
+    /// <summary>
+    /// When the photograph was taken, from its EXIF, as distinct from when it was uploaded
+    /// (CreatedAtUtc). For a historical upload the upload date is meaningless; the capture date
+    /// roughly locates when that garment passed through the shop and may allow matching it back to
+    /// a past listing. Cheap to store, impossible to recover once the file has been through a
+    /// re-encode or a messaging app.
+    ///
+    /// NOT UTC, and deliberately not named as if it were: EXIF carries no timezone, so this is the
+    /// camera's local wall clock. Mapped to 'timestamp without time zone' for that reason.
+    /// </summary>
+    public DateTime? PhotographedAtLocal { get; set; }
+
+    /// <summary>
+    /// For a zip: whether it is the garment's original. Required whenever a zip is logged — a
+    /// replaced zip recorded unmarked dates the repair rather than the garment, and quietly
+    /// corrupts the corpus it is supposed to feed. Null for evidence that is not a zip.
+    /// </summary>
+    public ZipOriginality? ZipOriginality { get; set; }
 
     /// <summary>The capture standard in force when this was taken, so a later revision stays legible.</summary>
     public string? CaptureStandardVersion { get; set; }

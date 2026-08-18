@@ -40,6 +40,15 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
             e.Property(r => r.DisplayImageKey).HasMaxLength(512);
             e.Property(r => r.Slot).HasConversion<string>().HasMaxLength(32);
             e.Property(r => r.CaptureStandardVersion).HasMaxLength(64);
+            e.Property(r => r.Provenance).HasConversion<string>().HasMaxLength(24);
+            e.Property(r => r.ZipOriginality).HasConversion<string>().HasMaxLength(16);
+            // EXIF carries no timezone, so this is a wall clock, not an instant. Npgsql maps a UTC
+            // DateTime to timestamptz and rejects an unspecified-kind one, which is exactly what an
+            // EXIF date is — so the column is declared without a time zone to match the truth.
+            e.Property(r => r.PhotographedAtLocal).HasColumnType("timestamp without time zone");
+            // The archive's two working questions: what has this garment got, and which images are
+            // properly shot enough to train on.
+            e.HasIndex(r => new { r.GarmentId, r.Provenance });
             e.Property(r => r.ContentType).HasMaxLength(100);
             e.Property(r => r.Origin).HasMaxLength(20);
             e.Property(r => r.Confirmation).HasConversion<string>().HasMaxLength(20);

@@ -89,6 +89,37 @@ Dismissals are a first-class answer, not a nuisance: a rule that gets dismissed 
 rule gets found, and the seller-facing UI asks the question once, while the garment is in front of
 them.
 
+## 6. Image provenance is recorded, never inferred
+
+**Decided 18 August 2026**, from Teodora's v1 reframe (`dating-tool-v1-reframe.md`).
+
+v1's only user is Teodora, logging every garment through the shop. That makes the back catalogue
+part of the archive: months of label photos already sitting in a camera roll, for garments long
+since sold. So capture had to grow three fields that cannot be reconstructed later.
+
+| Field | Why it cannot wait |
+|---|---|
+| `Provenance` (LiveCapture / HistoricalUpload) | "Do not let unflagged historical images become training ground truth." Unflagged now means the properly-shot set can never be separated from the rough one |
+| `PhotographedAtLocal` (EXIF) | The upload date is meaningless for a back-catalogue photo; the capture date locates when that garment passed through the shop. Lost the moment a file is re-encoded |
+| `ZipOriginality` (Original / Replaced / **Unsure**) | A replaced zip logged unmarked dates the repair, not the garment |
+
+Three consequences worth stating, because each is a place the obvious implementation is wrong:
+
+- **The capture standard does not apply to the back catalogue.** Those photographs already exist,
+  the garments are gone, and they cannot be retaken. Enforcing the resolution floor would reject
+  most of the archive this is meant to seed. They are kept, flagged, and excluded from anything
+  needing standard-quality input — including the completeness check, which now counts live
+  captures only.
+- **A zip is refused rather than defaulted.** Every default is wrong: Original silently dates
+  repairs as manufacture, Replaced discards good evidence. "Unsure" is always offered, which is
+  exactly why blank is not acceptable.
+- **`PhotographedAtLocal` is not UTC and is not named as if it were.** EXIF carries no timezone,
+  so it is the camera's wall clock, stored in a column without one.
+
+Bulk upload defaults to `HistoricalUpload` and single capture to `LiveCapture` — each endpoint
+defaults to what it is for, and getting that backwards would mark the back catalogue as
+standard-quality, which is the one thing the flag exists to prevent.
+
 ---
 
 ## Still open

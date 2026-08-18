@@ -529,4 +529,131 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
 
         Assert.Equal(raisedBefore + 1, after.DatingFlags.Raised);
     }
+    // --- Bulk upload from the camera roll, and the zip rule (v1 reframe) ---
+
+    private static ByteArrayContent JpegPart(int width, int height)
+    {
+        ByteArrayContent part = new(TestImage(width, height));
+        part.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        return part;
+    }
+
+    [Fact]
+    public async Task BulkUpload_StoresManyPhotosInOnePass()
+    {
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Back catalogue dress");
+
+        using MultipartFormDataContent content = new();
+        for (int i = 0; i < 3; i++)
+        {
+            content.Add(JpegPart(1400, 1400), "files", $"label-{i}.jpg");
+        }
+        content.Add(new StringContent("CareLabel"), "type");
+        content.Add(new StringContent("care.wash-symbol"), "feature");
+        content.Add(new StringContent("true"), "archiveRights");
+
+        HttpResponseMessage res = await client.PostAsync($"/garments/{id}/captures", content);
+        res.EnsureSuccessStatusCode();
+        JsonElement body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal(3, body.GetProperty("uploaded").GetInt32());
+        Assert.Equal(3, body.GetProperty("stored").GetInt32());
+    }
+
+    [Fact]
+    public async Task BulkUpload_DefaultsToHistorical_SoTheBackCatalogueIsNeverMarkedStandardQuality()
+    {
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Back catalogue dress");
+
+        using MultipartFormDataContent content = new();
+        content.Add(JpegPart(1400, 1400), "files", "old-label.jpg");
+        content.Add(new StringContent("CareLabel"), "type");
+        content.Add(new StringContent("care.wash-symbol"), "feature");
+        content.Add(new StringContent("true"), "archiveRights");
+
+        HttpResponseMessage res = await client.PostAsync($"/garments/{id}/captures", content);
+        res.EnsureSuccessStatusCode();
+        JsonElement body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal("HistoricalUpload", body.GetProperty("results")[0].GetProperty("provenance").GetString());
+    }
+
+    [Fact]
+    public async Task BulkUpload_OneBadPhotoDoesNotLoseTheRest()
+    {
+        // A hundred-photo import where the ninth is a screenshot must still store the other
+        // ninety-nine. Partial is the normal case here, not an error state.
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Mixed bag");
+
+        using MultipartFormDataContent content = new();
+        content.Add(JpegPart(1400, 1400), "files", "good.jpg");
+        ByteArrayContent junk = new([1, 2, 3, 4]);
+        junk.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        content.Add(junk, "files", "not-an-image.jpg");
+        content.Add(JpegPart(1400, 1400), "files", "also-good.jpg");
+        content.Add(new StringContent("CareLabel"), "type");
+        content.Add(new StringContent("care.wash-symbol"), "feature");
+        content.Add(new StringContent("true"), "archiveRights");
+
+        HttpResponseMessage res = await client.PostAsync($"/garments/{id}/captures", content);
+        res.EnsureSuccessStatusCode();
+        JsonElement body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal(2, body.GetProperty("stored").GetInt32());
+        Assert.Equal(1, body.GetProperty("skipped").GetInt32());
+        Assert.Contains(body.GetProperty("results").EnumerateArray(), r => !r.GetProperty("stored").GetBoolean());
+    }
+
+    [Fact]
+    public async Task AZipCannotBeLoggedWithoutSayingWhetherItIsOriginal()
+    {
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Zipped dress");
+
+        HttpResponseMessage res = await client.PostAsJsonAsync($"/garments/{id}/evidence", new
+        {
+            type = "Zip",
+            feature = "zip.maker-mark",
+            rawValue = "YKK",
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        Assert.Contains("zip_originality_required", await res.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task AZipLoggedAsUnsureIsAccepted()
+    {
+        // "Unsure" is a legitimate answer and must always be available - forcing a guess is how
+        // bad data gets into the corpus.
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Zipped dress");
+
+        HttpResponseMessage res = await client.PostAsJsonAsync($"/garments/{id}/evidence", new
+        {
+            type = "Zip",
+            feature = "zip.maker-mark",
+            zipOriginality = "Unsure",
+        });
+
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task NonZipEvidenceIsUnaffectedByTheZipRule()
+    {
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Plain dress");
+
+        HttpResponseMessage res = await client.PostAsJsonAsync($"/garments/{id}/evidence", new
+        {
+            type = "CareLabel",
+            feature = "care.wash-symbol",
+        });
+
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+    }
 }

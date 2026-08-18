@@ -174,6 +174,15 @@
             <span class="field__label">Value (optional)</span>
             <input class="field__input" name="ev" [(ngModel)]="evValue" />
           </label>
+          @if (needsZipOriginality(evType)) {
+            <label class="field field--type">
+              <span class="field__label">Zip is</span>
+              <select class="field__input" name="ez" [(ngModel)]="evZipOriginality">
+                <option value="">Choose…</option>
+                @for (z of zipOriginalities; track z) { <option [value]="z">{{ z }}</option> }
+              </select>
+            </label>
+          }
           <button class="btn btn--primary" type="submit" [disabled]="!evFeature.trim() || busy()">Add</button>
         </form>
 
@@ -206,6 +215,15 @@
               <span class="field__label">Feature code</span>
               <input class="field__input" name="cf" [(ngModel)]="capFeature" placeholder="care.wash-symbol" />
             </label>
+            @if (needsZipOriginality(capType)) {
+              <label class="field field--type">
+                <span class="field__label">Zip is</span>
+                <select class="field__input" name="cz" [(ngModel)]="capZipOriginality">
+                  <option value="">Choose…</option>
+                  @for (z of zipOriginalities; track z) { <option [value]="z">{{ z }}</option> }
+                </select>
+              </label>
+            }
             <label class="field field--check">
               <input type="checkbox" name="car" [(ngModel)]="capArchiveRights" />
               <span class="field__label">
@@ -216,6 +234,75 @@
               Upload
             </button>
           </form>
+        </details>
+
+        <details class="tool__capture">
+          <summary>Upload from the camera roll (back catalogue)</summary>
+          <p class="tool__muted tool__muted--small">
+            For garments that have already been and gone. These are stored as <strong>historical</strong>
+            rather than held to the capture standard — an old, slightly blurry photo of a label is worth
+            far more than no record at all, and it can never be retaken.
+          </p>
+          <p class="tool__muted tool__muted--small">
+            Each photo’s own date is read from it where present, so the archive knows roughly when that
+            garment passed through the shop rather than only when you uploaded it. Historical photos are
+            kept separate from properly-shot ones and never count towards meeting the capture standard.
+          </p>
+          <form class="form form--inline" (ngSubmit)="bulkUpload()">
+            <input class="tool__file" type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="onBulkFiles($event)" />
+            <label class="field field--type">
+              <span class="field__label">Slot</span>
+              <select class="field__input" name="bs" [(ngModel)]="bulkSlot">
+                @for (s of captureSlots; track s) { <option [value]="s">{{ s }}</option> }
+              </select>
+            </label>
+            <label class="field field--type">
+              <span class="field__label">Type</span>
+              <select class="field__input" name="bt" [(ngModel)]="bulkType">
+                @for (t of evidenceTypes; track t) { <option [value]="t">{{ t }}</option> }
+              </select>
+            </label>
+            <label class="field field--grow">
+              <span class="field__label">Feature code</span>
+              <input class="field__input" name="bf" [(ngModel)]="bulkFeature" placeholder="care.wash-symbol" />
+            </label>
+            @if (needsZipOriginality(bulkType)) {
+              <label class="field field--type">
+                <span class="field__label">Zip is</span>
+                <select class="field__input" name="bz" [(ngModel)]="capZipOriginality">
+                  <option value="">Choose…</option>
+                  @for (z of zipOriginalities; track z) { <option [value]="z">{{ z }}</option> }
+                </select>
+              </label>
+            }
+            <label class="field field--check">
+              <input type="checkbox" name="bar" [(ngModel)]="bulkArchiveRights" />
+              <span class="field__label">
+                I have the right to include these images in the Eden Relics reference archive
+              </span>
+            </label>
+            <button class="btn btn--primary" type="submit" [disabled]="!bulkFiles.length || !bulkArchiveRights || busy()">
+              Upload {{ bulkFiles.length || '' }} {{ bulkFiles.length === 1 ? 'photo' : 'photos' }}
+            </button>
+          </form>
+
+          <!-- Per-file results, not a single success line: a partial import is the normal outcome
+               here, and the ones that did not make it are the only part worth acting on. -->
+          @if (bulkResult(); as r) {
+            <p class="tool__muted tool__muted--small">
+              Stored {{ r.stored }} of {{ r.uploaded }}.
+              @if (r.skipped > 0) { <strong>{{ r.skipped }} skipped —</strong> }
+            </p>
+            @if (r.skipped > 0) {
+              <ul class="chain">
+                @for (item of r.results; track item.file) {
+                  @if (!item.stored) {
+                    <li><span class="dtable__mono">{{ item.file }}</span> — {{ item.error }}</li>
+                  }
+                }
+              </ul>
+            }
+          }
         </details>
 
         <h3 class="tool__sub">Dating</h3>

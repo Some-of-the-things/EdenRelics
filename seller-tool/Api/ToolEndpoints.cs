@@ -81,6 +81,15 @@ public static class ToolEndpoints
             ConfirmationState confirmation = Enum.TryParse(req.Confirmation, ignoreCase: true, out ConfirmationState c)
                 ? c : ConfirmationState.Proposed;
 
+            ZipOriginality? zipOriginality =
+                Enum.TryParse(req.ZipOriginality, ignoreCase: true, out ZipOriginality z) ? z : null;
+            // Holds here too, not just on the photo path: a zip logged without a photograph is still
+            // a zip in the corpus, and still mis-teaches it if nobody said whether it is original.
+            if (NeedsZipOriginality(type, CaptureSlot.Unspecified, zipOriginality))
+            {
+                return Results.BadRequest(new { code = "zip_originality_required", error = ZipOriginalityRequired });
+            }
+
             EvidenceRecord evidence = new()
             {
                 GarmentId = id,
@@ -89,6 +98,7 @@ public static class ToolEndpoints
                 RawValue = req.RawValue,
                 ImageKey = req.ImageKey,
                 Origin = string.IsNullOrWhiteSpace(req.Origin) ? "machine" : req.Origin,
+                ZipOriginality = zipOriginality,
                 Confirmation = confirmation,
             };
             db.EvidenceRecords.Add(evidence);
@@ -144,11 +154,19 @@ public static class ToolEndpoints
                 slot = CaptureSlot.Unspecified;
             }
             bool archiveRights = form["archiveRights"].ToString() is "true" or "True" or "1";
+            ImageProvenance provenance = ProvenanceFrom(form);
+            ZipOriginality? zipOriginality = ZipOriginalityFrom(form);
+
+            if (NeedsZipOriginality(type, slot, zipOriginality))
+            {
+                return Results.BadRequest(new { code = "zip_originality_required", error = ZipOriginalityRequired });
+            }
 
             await using Stream stream = file.OpenReadStream();
             CaptureOutcome outcome = await capture.CaptureAsync(
                 id, slot, type, form["feature"].ToString(),
-                stream, file.ContentType ?? "application/octet-stream", file.Length, archiveRights);
+                stream, file.ContentType ?? "application/octet-stream", file.Length, archiveRights,
+                provenance, zipOriginality);
 
             if (!outcome.Succeeded)
             {
@@ -167,6 +185,109 @@ public static class ToolEndpoints
                 width = evidence.Width,
                 height = evidence.Height,
             });
+        }).RequireAuthorization(AccessPolicy);
+
+// --- Bulk upload from the camera roll (the back catalogue) ---
+        //
+        // Not a convenience wrapper around /capture. It is how the archive gets seeded with every
+        // garment that has ALREADY passed through the shop, and working through months of photos
+        // one at a time is the difference between a task that gets done and one that gets
+        // abandoned.
+        //
+        // Every file is reported on individually and one rejection never fails the batch: a
+        // hundred-photo upload where the ninth is a screenshot must still store the other
+        // ninety-nine. Partial is the normal case here, not an error state.
+        app.MapPost("/garments/{id:guid}/captures", async (
+            Guid id, HttpRequest request, ClaimsPrincipal user, ToolDbContext db, ICaptureService capture) =>
+        {
+            Garment? garment = await db.Garments.FindAsync(id);
+            if (garment is null || !CanAccess(garment, user))
+            {
+                return Results.NotFound();
+            }
+            if (!request.HasFormContentType)
+            {
+                return Results.BadRequest(new { error = "Expected a multipart/form-data upload." });
+            }
+
+            IFormCollection form = await request.ReadFormAsync();
+            IReadOnlyList<IFormFile> files = form.Files.GetFiles("files");
+            if (files.Count == 0)
+            {
+                return Results.BadRequest(new { error = "No files uploaded." });
+            }
+            if (files.Count > MaxFilesPerUpload)
+            {
+                return Results.BadRequest(new { error = $"Upload at most {MaxFilesPerUpload} photos at a time." });
+            }
+            if (!Enum.TryParse(form["type"].ToString(), ignoreCase: true, out EvidenceType type))
+            {
+                return Results.BadRequest(new { error = $"Unknown evidence type '{form["type"]}'." });
+            }
+            if (!Enum.TryParse(form["slot"].ToString(), ignoreCase: true, out CaptureSlot slot))
+            {
+                slot = CaptureSlot.Unspecified;
+            }
+
+            bool archiveRights = form["archiveRights"].ToString() is "true" or "True" or "1";
+            // Bulk upload defaults to HistoricalUpload, the opposite of the single-shot endpoint,
+            // because that is what it is for. Getting this backwards would quietly mark the back
+            // catalogue as standard-quality, which is the one thing the flag exists to prevent.
+            ImageProvenance provenance =
+                Enum.TryParse(form["provenance"].ToString(), ignoreCase: true, out ImageProvenance p)
+                    ? p
+                    : ImageProvenance.HistoricalUpload;
+            ZipOriginality? zipOriginality = ZipOriginalityFrom(form);
+
+            if (NeedsZipOriginality(type, slot, zipOriginality))
+            {
+                return Results.BadRequest(new { code = "zip_originality_required", error = ZipOriginalityRequired });
+            }
+
+            List<object> results = [];
+            int stored = 0;
+            foreach (IFormFile file in files)
+            {
+                if (file.Length == 0)
+                {
+                    results.Add(new { file = file.FileName, stored = false, code = "empty", error = "Empty file." });
+                    continue;
+                }
+
+                await using Stream stream = file.OpenReadStream();
+                CaptureOutcome outcome = await capture.CaptureAsync(
+                    id, slot, type, form["feature"].ToString(),
+                    stream, file.ContentType ?? "application/octet-stream", file.Length, archiveRights,
+                    provenance, zipOriginality);
+
+                if (!outcome.Succeeded)
+                {
+                    results.Add(new
+                    {
+                        file = file.FileName,
+                        stored = false,
+                        code = outcome.Rejection!.Code,
+                        error = outcome.Rejection.Message,
+                    });
+                    continue;
+                }
+
+                stored++;
+                EvidenceRecord e = outcome.Evidence!;
+                results.Add(new
+                {
+                    file = file.FileName,
+                    stored = true,
+                    id = e.Id,
+                    // Echoed back so a bulk import can be sanity-checked at a glance: photos with no
+                    // EXIF date are the ones whose place in the shop's history is now guesswork.
+                    photographedAt = e.PhotographedAtLocal,
+                    slot = e.Slot.ToString(),
+                    provenance = e.Provenance.ToString(),
+                });
+            }
+
+            return Results.Ok(new { uploaded = files.Count, stored, skipped = files.Count - stored, results });
         }).RequireAuthorization(AccessPolicy);
 
         // What is still missing before this garment meets the standard.
@@ -400,11 +521,46 @@ public static class ToolEndpoints
 
     /// <summary>Enough for an extension that has been offline for a while, without letting one request
     /// write an unbounded number of rows.</summary>
+    /// <summary>
+    /// Photos per bulk upload. Generous enough for a real camera-roll session, bounded because each
+    /// file is fully decoded to validate it and the tool runs on a small machine.
+    /// </summary>
+    private const int MaxFilesPerUpload = 60;
+
     private const int MaxEventsPerBatch = 100;
 
     /// <summary>Kinds the API records itself, from the endpoint that causes them.</summary>
     private static readonly HashSet<ToolEventKind> ServerOwnedKinds =
         [ToolEventKind.GarmentCreated, ToolEventKind.DatingFlagRaised];
+
+/// <summary>
+    /// Read the provenance a capture form is declaring. Defaults to LiveCapture: the single-shot
+    /// endpoint is the camera path, and a caller that means 'back catalogue' says so.
+    /// </summary>
+    private static ImageProvenance ProvenanceFrom(IFormCollection form) =>
+        Enum.TryParse(form["provenance"].ToString(), ignoreCase: true, out ImageProvenance p)
+            ? p
+            : ImageProvenance.LiveCapture;
+
+    private static ZipOriginality? ZipOriginalityFrom(IFormCollection form) =>
+        Enum.TryParse(form["zipOriginality"].ToString(), ignoreCase: true, out ZipOriginality z)
+            ? z
+            : null;
+
+    /// <summary>
+    /// A zip must say whether it is the garment's own.
+    ///
+    /// Refused rather than defaulted, because every default is wrong here: assuming Original
+    /// silently dates repairs as if they were manufacture, and assuming Replaced discards good
+    /// evidence. 'Unsure' is always available and is a perfectly good answer — which is exactly why
+    /// there is no excuse for leaving it blank.
+    /// </summary>
+    private static bool NeedsZipOriginality(EvidenceType type, CaptureSlot slot, ZipOriginality? given) =>
+        (type == EvidenceType.Zip || slot == CaptureSlot.Zip) && given is null;
+
+    private const string ZipOriginalityRequired =
+        "A zip needs to say whether it is original, replaced, or unsure. A replaced zip recorded as "
+        + "original dates the repair, not the garment.";
 
     private static Guid UserId(ClaimsPrincipal user) =>
         Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? user.FindFirstValue("sub"), out Guid id)

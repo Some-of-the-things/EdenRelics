@@ -3,8 +3,13 @@ namespace EdenRelics.SellerTool.Api;
 // --- Requests ---
 public record CreateGarmentRequest(string? Title, string? SellerRef, string? Reference);
 
+/// <summary>
+/// <paramref name="ZipOriginality"/> is required when the evidence is a zip - Original, Replaced
+/// or Unsure. See the note on the endpoint: a replaced zip recorded unmarked dates the repair.
+/// </summary>
 public record AddEvidenceRequest(
-    string Type, string Feature, string? RawValue, string? ImageKey, string? Origin, string? Confirmation);
+    string Type, string Feature, string? RawValue, string? ImageKey, string? Origin, string? Confirmation,
+    string? ZipOriginality = null);
 
 public record DateGarmentRequest(int? ClaimEarliest, int? ClaimLatest);
 

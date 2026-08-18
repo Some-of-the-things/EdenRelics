@@ -58,6 +58,8 @@ export interface AddEvidence {
   feature: string;
   rawValue?: string;
   origin?: string;
+  /** Required when type is Zip: Original | Replaced | Unsure. The server refuses a zip without it. */
+  zipOriginality?: string;
 }
 
 export interface DateResultChain {
@@ -90,6 +92,26 @@ export interface CaptureResult {
   slot: string;
   width?: number;
   height?: number;
+}
+
+/** One photo in a bulk upload. `stored: false` carries the reason, never a silent drop. */
+export interface BulkUploadItem {
+  file: string;
+  stored: boolean;
+  id?: string;
+  /** The photo’s own EXIF date. Null when it has none — common for anything re-encoded. */
+  photographedAt?: string | null;
+  slot?: string;
+  provenance?: string;
+  code?: string;
+  error?: string;
+}
+
+export interface BulkUploadResult {
+  uploaded: number;
+  stored: number;
+  skipped: number;
+  results: BulkUploadItem[];
 }
 
 export interface CaptureStandardSlot {
@@ -236,6 +258,7 @@ export class ToolService {
     feature: string,
     slot: string,
     archiveRights: boolean,
+    zipOriginality?: string,
   ): Observable<CaptureResult> {
     const form = new FormData();
     form.append('file', file);
@@ -243,10 +266,48 @@ export class ToolService {
     form.append('feature', feature);
     form.append('slot', slot);
     form.append('archiveRights', String(archiveRights));
+    if (zipOriginality) {
+      form.append('zipOriginality', zipOriginality);
+    }
     // Don't set Content-Type — the browser adds the multipart boundary.
     return this.http.post<CaptureResult>(`${this.base}/garments/${garmentId}/capture`, form, { headers: this.authHeaders() });
   }
 
+
+  /**
+   * Bulk upload from the camera roll - how the archive gets seeded with everything that has
+   * ALREADY passed through the shop, rather than only what comes next.
+   *
+   * Defaults to historical provenance on the server, so these are never mistaken for photographs
+   * shot to the capture standard. Every file is reported on individually: one unreadable photo
+   * in a batch of sixty must not cost the other fifty-nine.
+   */
+  bulkUpload(
+    garmentId: string,
+    files: File[],
+    type: string,
+    feature: string,
+    slot: string,
+    archiveRights: boolean,
+    zipOriginality?: string,
+  ): Observable<BulkUploadResult> {
+    const form = new FormData();
+    for (const file of files) {
+      form.append('files', file);
+    }
+    form.append('type', type);
+    form.append('feature', feature);
+    form.append('slot', slot);
+    form.append('archiveRights', String(archiveRights));
+    if (zipOriginality) {
+      form.append('zipOriginality', zipOriginality);
+    }
+    return this.http.post<BulkUploadResult>(
+      `${this.base}/garments/${garmentId}/captures`,
+      form,
+      { headers: this.authHeaders() },
+    );
+  }
   /** The capture standard, so the UI renders slots and guidance from the server's definition. */
   captureStandard(): Observable<CaptureStandard> {
     return this.http.get<CaptureStandard>(`${this.base}/capture-standard`, { headers: this.authHeaders() });
