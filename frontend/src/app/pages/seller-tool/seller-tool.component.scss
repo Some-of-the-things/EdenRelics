@@ -285,6 +285,103 @@
   background: color-mix(in srgb, var(--gold-text) 12%, transparent);
 }
 
+.verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.verdict__ask {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.verdict__done {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* --- Usage metrics (admin) --- */
+
+.metrics {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1.25rem 1.4rem 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.metrics__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.metrics__note {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.metrics__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--border-color);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.metric {
+  background: var(--bg-secondary);
+  padding: 0.9rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* The gate condition, and the only one that changes appearance when it is met. */
+.metric--gate {
+  border-left: 3px solid var(--accent);
+}
+
+.metric--wide {
+  grid-column: 1 / -1;
+}
+
+.metric__label {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.metric__figure {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.metric__of {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.metric__note {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .chain {
   list-style: none;
   margin: 0.5rem 0 0;

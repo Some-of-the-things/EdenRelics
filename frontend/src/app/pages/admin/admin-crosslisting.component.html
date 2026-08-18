@@ -1,0 +1,192 @@
+<section class="xlist">
+  <header class="xlist__intro">
+    <h2 class="xlist__title">Cross-listing readiness</h2>
+    <p class="xlist__lede">
+      Pick a piece and see what would actually go out on each platform, and what wouldn't. Nothing
+      here publishes anything — it answers the question before you act on it.
+    </p>
+  </header>
+
+  <!--
+    Only appears if the crosslister extension is actually installed. Etsy and eBay never need it —
+    they go out from our server whether the machine is on or not — so this is scoped to the two
+    platforms that have no API at all.
+  -->
+  @if (extension.installed()) {
+    <div class="xext" [class.xext--on]="extension.paired() && !extension.sessionExpired()">
+      @if (!extension.paired()) {
+        <p class="xext__state">Crosslister extension found, but not connected.</p>
+        <p class="xext__note">
+          Connecting hands it your Eden Relics session so it can read a listing plan. It never holds
+          your Vinted or Depop password — it works inside the sessions you're already signed in to.
+        </p>
+        <button type="button" class="xext__btn" (click)="connectExtension()">Connect extension</button>
+      } @else if (extension.sessionExpired()) {
+        <p class="xext__state">Extension connected, but your Eden Relics session has expired.</p>
+        <button type="button" class="xext__btn" (click)="connectExtension()">Reconnect</button>
+      } @else {
+        <p class="xext__state">Crosslister extension connected.</p>
+        <p class="xext__note">
+          It fills Vinted and Depop forms and then stops — you review the form and press publish
+          yourself. It never presses it for you.
+        </p>
+      }
+    </div>
+  }
+
+  @if (error()) {
+    <p class="xlist__error" role="alert">{{ error() }}</p>
+  }
+
+  <label class="xlist__picker">
+    <span>Piece</span>
+    <select [ngModel]="selectedId()" (ngModelChange)="select($event)" name="product">
+      <option value="">Choose a live piece…</option>
+      @for (p of listable(); track p.id) {
+        <option [value]="p.id">{{ productLabel(p) }}</option>
+      }
+    </select>
+  </label>
+
+  @if (loading()) {
+    <p class="xlist__loading">Working out readiness…</p>
+  }
+
+  @if (preview(); as pv) {
+    <div class="xlist__summary">
+      <strong>{{ pv.title }}</strong>
+      <span class="xlist__sku">{{ pv.sku }}</span>
+      <span class="xlist__price">Would list at £{{ pv.price.toFixed(2) }}</span>
+      <span class="xlist__ready">{{ readyCount() }} of {{ pv.platforms.length }} platforms ready</span>
+    </div>
+
+    <ul class="xlist__platforms">
+      @for (plan of pv.platforms; track plan.platform) {
+        <li
+          class="xplat"
+          [class.xplat--ready]="plan.validation.canPublish"
+          [class.xplat--blocked]="!plan.validation.canPublish"
+        >
+          <div class="xplat__head">
+            <h3 class="xplat__name">{{ plan.platform }}</h3>
+            @if (plan.validation.canPublish) {
+              <span class="xplat__state xplat__state--ready">Ready</span>
+            } @else {
+              <span class="xplat__state xplat__state--blocked">Won't publish</span>
+            }
+            @if (plan.research === 'unresearched') {
+              <span class="xplat__tag" title="Field mapping not researched yet">Fields unmapped</span>
+            }
+          </div>
+
+          <p class="xplat__transport">{{ transportLabel(plan) }}</p>
+
+          @if (usesExtension(plan) && extension.paired() && !extension.sessionExpired()) {
+            <div class="xplat__send">
+              @if (plan.validation.canPublish && plan.research !== 'unresearched') {
+                <button type="button" class="xplat__send-btn" (click)="sendToExtension(plan)">
+                  Send to extension
+                </button>
+                <span class="xplat__send-note">Opens the {{ plan.platform }} form filled in. You publish it.</span>
+              } @else {
+                <span class="xplat__send-note">
+                  Nothing to send yet — the extension refuses a platform it can't fill correctly.
+                  Paste the text below in by hand instead.
+                </span>
+              }
+              @if (sendState()[plan.platform]; as state) {
+                <span class="xplat__send-state">{{ state }}</span>
+              }
+            </div>
+          }
+
+          @if (plan.validation.blocking.length > 0) {
+            <h4 class="xplat__section">What stops it</h4>
+            <ul class="xplat__problems">
+              @for (b of plan.validation.blocking; track b.field + b.problem) {
+                <li class="xplat__problem">
+                  <span class="xplat__field">{{ b.field }}</span>
+                  {{ b.problem }}
+                  @if (b.fix) {
+                    <span class="xplat__fix">{{ b.fix }}</span>
+                  }
+                </li>
+              }
+            </ul>
+          }
+
+          @if (plan.validation.warnings.length > 0) {
+            <h4 class="xplat__section">Worth knowing</h4>
+            <ul class="xplat__problems xplat__problems--warn">
+              @for (w of plan.validation.warnings; track w.field + w.problem) {
+                <li class="xplat__problem">
+                  <span class="xplat__field">{{ w.field }}</span>
+                  {{ w.problem }}
+                  @if (w.fix) {
+                    <span class="xplat__fix">{{ w.fix }}</span>
+                  }
+                </li>
+              }
+            </ul>
+          }
+
+          @if (fieldRows(plan).length > 0) {
+            <h4 class="xplat__section">What we'd send</h4>
+            <dl class="xplat__fields">
+              @for (row of fieldRows(plan); track row.key) {
+                <div class="xplat__field-row">
+                  <dt>{{ row.key }}</dt>
+                  <dd>{{ row.value }}</dd>
+                </div>
+              }
+            </dl>
+          }
+
+          @if (plan.fallback; as fb) {
+            <h4 class="xplat__section">
+              To paste in by hand
+              <button type="button" class="xplat__copy" (click)="copyFallback(plan)">
+                {{ copiedPlatform() === plan.platform ? 'Copied' : 'Copy' }}
+              </button>
+            </h4>
+            <p class="xplat__fallback-why">
+              Always available, whether or not the extension manages it — so you're never left
+              believing something went live when it didn't.
+            </p>
+            <div class="xplat__fallback">
+              <p class="xplat__fallback-title">{{ fb.title }}</p>
+              <pre class="xplat__fallback-body">{{ fb.description }}</pre>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  <section class="xlist__relist">
+    <h3 class="xlist__relist-title">Relist</h3>
+    <p class="xlist__relist-note">
+      Pieces that have sat long enough to be worth relisting. Nothing under 60 days is ever included,
+      and nothing here will chase you about it — ask when you want to know.
+    </p>
+    <button type="button" class="xlist__relist-btn" (click)="askForRelistCandidates()" [disabled]="relistLoading()">
+      {{ relistLoading() ? 'Looking…' : 'Show me' }}
+    </button>
+
+    @if (relistAsked() && !relistLoading()) {
+      @if (relistCandidates().length === 0) {
+        <p class="xlist__empty">Nothing has been listed long enough.</p>
+      } @else {
+        <ul class="xlist__candidates">
+          @for (c of relistCandidates(); track c.productId + c.platform) {
+            <li>
+              <span class="xlist__cand-days">{{ c.daysListed }} days</span>
+              <span class="xlist__cand-name">{{ c.title }}</span>
+              <span class="xlist__cand-meta">{{ c.sku }} · {{ c.platform }}</span>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </section>
+</section>

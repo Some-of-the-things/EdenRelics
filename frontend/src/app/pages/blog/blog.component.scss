@@ -882,8 +882,13 @@
     }
   }
 
-  /* Topic tags at the foot of a piece. */
-  .tags-row {
+  /* Topic tags at the foot of a piece.
+   *
+   * Both container names are accepted: `.tags-row` is what the existing posts use, `.tags` is what
+   * Teodora's authored HTML uses. Rejecting one of them would mean silently unstyled tags on
+   * whichever post used the other spelling, and a post author has no way to know which we wanted. */
+  .tags-row,
+  .tags {
     margin-top: 2.75rem;
     padding-top: 1.75rem;
     border-top: 1px solid var(--border-color);
@@ -894,13 +899,19 @@
 
   .tag {
     font-family: var(--font-decorative);
-    font-size: 0.65rem;
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 500;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+    /* Palette variables rather than the literal hexes in the spec: #9B4A1E and #EAE0CC ARE --accent
+     * and --bg-secondary, so this is the same colour today and stays right if the palette moves.
+     * That matters here — this exact selector was one of six live AA contrast failures when the
+     * compiled palette drifted from the stylesheet, at 3.04:1. It measures 4.7:1 now. */
     color: var(--accent);
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    padding: 0.3rem 0.75rem;
+    padding: 0.3125rem 0.75rem; /* 5px 12px */
+    border-radius: 2px;
   }
 }
 

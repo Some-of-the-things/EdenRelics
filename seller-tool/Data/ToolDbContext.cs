@@ -15,6 +15,7 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
     public DbSet<DateEstimate> DateEstimates => Set<DateEstimate>();
     public DbSet<StoredRule> StoredRules => Set<StoredRule>();
     public DbSet<StoredTransitionGroup> StoredTransitionGroups => Set<StoredTransitionGroup>();
+    public DbSet<ToolEvent> ToolEvents => Set<ToolEvent>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -39,6 +40,15 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
             e.Property(r => r.DisplayImageKey).HasMaxLength(512);
             e.Property(r => r.Slot).HasConversion<string>().HasMaxLength(32);
             e.Property(r => r.CaptureStandardVersion).HasMaxLength(64);
+            e.Property(r => r.Provenance).HasConversion<string>().HasMaxLength(24);
+            e.Property(r => r.ZipOriginality).HasConversion<string>().HasMaxLength(16);
+            // EXIF carries no timezone, so this is a wall clock, not an instant. Npgsql maps a UTC
+            // DateTime to timestamptz and rejects an unspecified-kind one, which is exactly what an
+            // EXIF date is — so the column is declared without a time zone to match the truth.
+            e.Property(r => r.PhotographedAtLocal).HasColumnType("timestamp without time zone");
+            // The archive's two working questions: what has this garment got, and which images are
+            // properly shot enough to train on.
+            e.HasIndex(r => new { r.GarmentId, r.Provenance });
             e.Property(r => r.ContentType).HasMaxLength(100);
             e.Property(r => r.Origin).HasMaxLength(20);
             e.Property(r => r.Confirmation).HasConversion<string>().HasMaxLength(20);
@@ -70,6 +80,19 @@ public class ToolDbContext(DbContextOptions<ToolDbContext> options) : DbContext(
             e.Property(r => r.TransitionGroup).HasMaxLength(64);
             e.Property(r => r.ResearchNotes).HasMaxLength(2000);
             e.HasIndex(r => new { r.Status, r.Feature });
+        });
+
+        b.Entity<ToolEvent>(e =>
+        {
+            e.Property(v => v.Kind).HasConversion<string>().HasMaxLength(40);
+            e.Property(v => v.Platform).HasMaxLength(32);
+            e.Property(v => v.Detail).HasMaxLength(120);
+
+            // Every metric is "these kinds, in this window", and the gate's weekly-active count is
+            // "distinct sellers in this window" — so the window comes first in both indexes.
+            e.HasIndex(v => new { v.OccurredAtUtc, v.Kind });
+            e.HasIndex(v => new { v.OccurredAtUtc, v.SellerId });
+            e.HasIndex(v => v.GarmentId);
         });
 
         b.Entity<StoredTransitionGroup>(e =>

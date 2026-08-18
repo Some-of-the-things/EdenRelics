@@ -124,6 +124,13 @@
     </button>
     <button
       class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'cross-listing'"
+      (click)="switchTab('cross-listing')"
+    >
+      Cross-listing
+    </button>
+    <button
+      class="admin__tab"
       [class.admin__tab--active]="activeTab() === 'marketplace'"
       (click)="switchTab('marketplace')"
     >
@@ -173,6 +180,10 @@
 
   @if (activeTab() === 'dating') {
     <app-admin-dating />
+  }
+
+  @if (activeTab() === 'cross-listing') {
+    <app-admin-crosslisting />
   }
 
   @if (activeTab() === 'top-picks') {

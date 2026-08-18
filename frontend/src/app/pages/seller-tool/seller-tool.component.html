@@ -8,6 +8,79 @@
     </p>
   </header>
 
+  <!-- Usage metrics. Admin only: absent for a seller, and absent until the API answers. -->
+  @if (metrics(); as m) {
+    <section class="metrics" aria-label="Tool usage over the last 28 days">
+      <div class="metrics__head">
+        <h2 class="tool__heading">Usage · last {{ m.days }} days</h2>
+        <p class="tool__muted metrics__note">
+          A dash means nothing has happened yet, which is not the same as zero.
+        </p>
+      </div>
+
+      <div class="metrics__grid">
+        <div class="metric" [class.metric--gate]="m.weeklyActiveSellers >= 10">
+          <span class="metric__label">Sellers this week</span>
+          <span class="metric__figure">{{ m.weeklyActiveSellers }}<span class="metric__of"> / 10</span></span>
+          <span class="metric__note">The gate: ten using it weekly.</span>
+        </div>
+
+        <div class="metric">
+          <span class="metric__label">Garments created</span>
+          <span class="metric__figure">{{ m.garmentsCreated }}</span>
+          <span class="metric__note">{{ m.listingsPublished }} listings published</span>
+        </div>
+
+        <div class="metric">
+          <span class="metric__label">Median per listing</span>
+          <span class="metric__figure">{{ duration(m.medianSecondsPerListing) }}</span>
+          <span class="metric__note">Draft to published.</span>
+        </div>
+
+        <div class="metric">
+          <span class="metric__label">Measurements accepted</span>
+          <span class="metric__figure">{{ percent(m.measurement.acceptanceRate) }}</span>
+          <span class="metric__note">
+            {{ m.measurement.accepted }} clean · {{ m.measurement.adjusted }} adjusted ·
+            {{ m.measurement.rejected }} rejected
+          </span>
+        </div>
+
+        <div class="metric metric--wide">
+          <span class="metric__label">Flags the seller agreed with</span>
+          <span class="metric__figure">{{ percent(m.datingFlags.upheldRate) }}</span>
+          <span class="metric__note">
+            {{ m.datingFlags.raised }} raised · {{ m.datingFlags.upheld }} upheld ·
+            {{ m.datingFlags.dismissed }} dismissed · {{ m.datingFlags.unresolved }} unanswered.
+            This is the number that says whether the verification thesis holds.
+          </span>
+        </div>
+      </div>
+
+      @if (m.extension.length) {
+        <h3 class="tool__sub tool__sub--tight">Extension reliability</h3>
+        <table class="dtable">
+          <thead>
+            <tr><th>Platform</th><th>Attempted</th><th>Failed</th><th>Failure rate</th><th>Commonest reason</th></tr>
+          </thead>
+          <tbody>
+            @for (p of m.extension; track p.platform) {
+              <tr>
+                <td>{{ p.platform }}</td>
+                <td>{{ p.attempted }}</td>
+                <td>{{ p.failed }}</td>
+                <td>{{ percent(p.failureRate) }}</td>
+                <td class="dtable__mono">
+                  {{ p.topReasons.length ? p.topReasons[0].reason + ' (' + p.topReasons[0].count + ')' : '—' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+
   <div class="tool__grid">
     <!-- Garment list + create -->
     <aside class="tool__panel">
@@ -34,6 +107,9 @@
 
       @if (loading()) {
         <p class="tool__muted">Loading…</p>
+      } @else if (loadFailed()) {
+        <!-- Say nothing here: the error below is the whole story. Showing "no garments yet" next to
+             a failure claims the archive is empty at the moment we cannot see it. -->
       } @else if (garments().length === 0) {
         <p class="tool__muted">No garments yet. Create one to start building its evidence set.</p>
       } @else {
@@ -98,6 +174,15 @@
             <span class="field__label">Value (optional)</span>
             <input class="field__input" name="ev" [(ngModel)]="evValue" />
           </label>
+          @if (needsZipOriginality(evType)) {
+            <label class="field field--type">
+              <span class="field__label">Zip is</span>
+              <select class="field__input" name="ez" [(ngModel)]="evZipOriginality">
+                <option value="">Choose…</option>
+                @for (z of zipOriginalities; track z) { <option [value]="z">{{ z }}</option> }
+              </select>
+            </label>
+          }
           <button class="btn btn--primary" type="submit" [disabled]="!evFeature.trim() || busy()">Add</button>
         </form>
 
@@ -130,6 +215,15 @@
               <span class="field__label">Feature code</span>
               <input class="field__input" name="cf" [(ngModel)]="capFeature" placeholder="care.wash-symbol" />
             </label>
+            @if (needsZipOriginality(capType)) {
+              <label class="field field--type">
+                <span class="field__label">Zip is</span>
+                <select class="field__input" name="cz" [(ngModel)]="capZipOriginality">
+                  <option value="">Choose…</option>
+                  @for (z of zipOriginalities; track z) { <option [value]="z">{{ z }}</option> }
+                </select>
+              </label>
+            }
             <label class="field field--check">
               <input type="checkbox" name="car" [(ngModel)]="capArchiveRights" />
               <span class="field__label">
@@ -140,6 +234,75 @@
               Upload
             </button>
           </form>
+        </details>
+
+        <details class="tool__capture">
+          <summary>Upload from the camera roll (back catalogue)</summary>
+          <p class="tool__muted tool__muted--small">
+            For garments that have already been and gone. These are stored as <strong>historical</strong>
+            rather than held to the capture standard — an old, slightly blurry photo of a label is worth
+            far more than no record at all, and it can never be retaken.
+          </p>
+          <p class="tool__muted tool__muted--small">
+            Each photo’s own date is read from it where present, so the archive knows roughly when that
+            garment passed through the shop rather than only when you uploaded it. Historical photos are
+            kept separate from properly-shot ones and never count towards meeting the capture standard.
+          </p>
+          <form class="form form--inline" (ngSubmit)="bulkUpload()">
+            <input class="tool__file" type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="onBulkFiles($event)" />
+            <label class="field field--type">
+              <span class="field__label">Slot</span>
+              <select class="field__input" name="bs" [(ngModel)]="bulkSlot">
+                @for (s of captureSlots; track s) { <option [value]="s">{{ s }}</option> }
+              </select>
+            </label>
+            <label class="field field--type">
+              <span class="field__label">Type</span>
+              <select class="field__input" name="bt" [(ngModel)]="bulkType">
+                @for (t of evidenceTypes; track t) { <option [value]="t">{{ t }}</option> }
+              </select>
+            </label>
+            <label class="field field--grow">
+              <span class="field__label">Feature code</span>
+              <input class="field__input" name="bf" [(ngModel)]="bulkFeature" placeholder="care.wash-symbol" />
+            </label>
+            @if (needsZipOriginality(bulkType)) {
+              <label class="field field--type">
+                <span class="field__label">Zip is</span>
+                <select class="field__input" name="bz" [(ngModel)]="capZipOriginality">
+                  <option value="">Choose…</option>
+                  @for (z of zipOriginalities; track z) { <option [value]="z">{{ z }}</option> }
+                </select>
+              </label>
+            }
+            <label class="field field--check">
+              <input type="checkbox" name="bar" [(ngModel)]="bulkArchiveRights" />
+              <span class="field__label">
+                I have the right to include these images in the Eden Relics reference archive
+              </span>
+            </label>
+            <button class="btn btn--primary" type="submit" [disabled]="!bulkFiles.length || !bulkArchiveRights || busy()">
+              Upload {{ bulkFiles.length || '' }} {{ bulkFiles.length === 1 ? 'photo' : 'photos' }}
+            </button>
+          </form>
+
+          <!-- Per-file results, not a single success line: a partial import is the normal outcome
+               here, and the ones that did not make it are the only part worth acting on. -->
+          @if (bulkResult(); as r) {
+            <p class="tool__muted tool__muted--small">
+              Stored {{ r.stored }} of {{ r.uploaded }}.
+              @if (r.skipped > 0) { <strong>{{ r.skipped }} skipped —</strong> }
+            </p>
+            @if (r.skipped > 0) {
+              <ul class="chain">
+                @for (item of r.results; track item.file) {
+                  @if (!item.stored) {
+                    <li><span class="dtable__mono">{{ item.file }}</span> — {{ item.error }}</li>
+                  }
+                }
+              </ul>
+            }
+          }
         </details>
 
         <h3 class="tool__sub">Dating</h3>
@@ -166,6 +329,25 @@
               <p class="result__flag result__flag--{{ d.claimFlag.strength.toLowerCase() }}">
                 ⚑ {{ d.claimFlag.strength }} conflict with the claimed date — {{ d.claimFlag.message }}
               </p>
+              <!-- Whether the flag was right is the number the whole tool is judged on, and only the
+                   seller knows the answer. Asked once, here, while the piece is in front of them. -->
+              <div class="verdict">
+                @if (flagVerdict() === null) {
+                  <span class="verdict__ask">Was the flag right?</span>
+                  <button class="btn btn--ghost" type="button" (click)="respondToFlag(true)">
+                    Yes — my date was wrong
+                  </button>
+                  <button class="btn btn--ghost" type="button" (click)="respondToFlag(false)">
+                    No — the flag is wrong
+                  </button>
+                } @else if (flagVerdict() === 'upheld') {
+                  <span class="verdict__done">Thanks — recorded as a correct flag.</span>
+                } @else {
+                  <span class="verdict__done">
+                    Recorded as a wrong flag. Rules that get dismissed often are the ones we re-check.
+                  </span>
+                }
+              </div>
             }
             @if (d.evidence.length) {
               <h4 class="tool__sub tool__sub--tight">Why</h4>

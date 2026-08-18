@@ -55,6 +55,38 @@ public class Garment : ToolBaseEntity
     public List<DateEstimate> Estimates { get; set; } = [];
 }
 
+/// <summary>
+/// Where an archive image came from.
+///
+/// The distinction has to be recorded at capture time and can never be reconstructed afterwards.
+/// Historical uploads are pre-existing photos from the back catalogue: often blurry, badly lit, or
+/// missing the care label entirely. They are worth having — a partial record beats no record — but
+/// if symbol recognition is ever trained on this archive, the properly-shot set must be separable
+/// from the rough ones. An unflagged historical image silently becomes training ground truth.
+/// </summary>
+public enum ImageProvenance
+{
+    /// <summary>Shot deliberately, to the fixed capture standard.</summary>
+    LiveCapture,
+
+    /// <summary>A pre-existing photo, uploaded from the camera roll. Not held to the standard.</summary>
+    HistoricalUpload,
+}
+
+/// <summary>
+/// Whether a photographed zip is the one the garment was made with.
+///
+/// Required whenever a zip is logged, because a replaced zip logged unmarked actively mis-teaches
+/// the corpus: it dates the repair, not the garment. <see cref="Unsure"/> is a legitimate answer
+/// and must always be offered — forcing a guess is how bad data gets in.
+/// </summary>
+public enum ZipOriginality
+{
+    Original,
+    Replaced,
+    Unsure,
+}
+
 /// <summary>One typed piece of dating evidence captured for a garment — a care-label photo, a zip, a
 /// phone number on the maker's address, etc. The label images captured here ARE the archive/moat.</summary>
 public class EvidenceRecord : ToolBaseEntity
@@ -89,6 +121,34 @@ public class EvidenceRecord : ToolBaseEntity
     /// one asset that has to be unencumbered cannot rest on a flag that might be revoked wholesale.
     /// </summary>
     public bool ArchiveRightsGranted { get; set; }
+
+    /// <summary>
+    /// Whether this image was shot to the standard or came out of the back catalogue.
+    ///
+    /// Defaults to LiveCapture because that is what the capture endpoint does; the bulk-upload path
+    /// sets it explicitly. It is not nullable on purpose — 'unknown provenance' is the state this
+    /// field exists to prevent.
+    /// </summary>
+    public ImageProvenance Provenance { get; set; } = ImageProvenance.LiveCapture;
+
+    /// <summary>
+    /// When the photograph was taken, from its EXIF, as distinct from when it was uploaded
+    /// (CreatedAtUtc). For a historical upload the upload date is meaningless; the capture date
+    /// roughly locates when that garment passed through the shop and may allow matching it back to
+    /// a past listing. Cheap to store, impossible to recover once the file has been through a
+    /// re-encode or a messaging app.
+    ///
+    /// NOT UTC, and deliberately not named as if it were: EXIF carries no timezone, so this is the
+    /// camera's local wall clock. Mapped to 'timestamp without time zone' for that reason.
+    /// </summary>
+    public DateTime? PhotographedAtLocal { get; set; }
+
+    /// <summary>
+    /// For a zip: whether it is the garment's original. Required whenever a zip is logged — a
+    /// replaced zip recorded unmarked dates the repair rather than the garment, and quietly
+    /// corrupts the corpus it is supposed to feed. Null for evidence that is not a zip.
+    /// </summary>
+    public ZipOriginality? ZipOriginality { get; set; }
 
     /// <summary>The capture standard in force when this was taken, so a later revision stays legible.</summary>
     public string? CaptureStandardVersion { get; set; }
@@ -125,6 +185,94 @@ public class DateEstimate : ToolBaseEntity
 
     public ConfirmationState Confirmation { get; set; } = ConfirmationState.Proposed;
     public DateTime ComputedAtUtc { get; set; }
+}
+
+/// <summary>
+/// Something a seller (or the tool on their behalf) did, recorded so the brief's §10 numbers can be
+/// answered: listings created, time per listing, measurement acceptance rate, extension failure rate
+/// per platform — and the one that decides whether the whole thesis holds, flags raised against how
+/// often the seller was actually wrong.
+///
+/// Deliberately a narrow enum rather than free-form event names. An open string is how an event log
+/// becomes unqueryable within a year: three spellings of the same thing and no way to know which
+/// mattered. Adding a kind is a considered change, which is the point.
+/// </summary>
+public enum ToolEventKind
+{
+    // --- Server-owned. Recorded by the API itself, never accepted from a client (see below). ---
+
+    GarmentCreated,
+
+    /// <summary>The engine contradicted the seller's own date claim. THE metric of the thesis.</summary>
+    DatingFlagRaised,
+
+    // --- Client-reported ---
+
+    ListingDrafted,
+
+    /// <summary>Carries the elapsed draft-to-publish time, which is "time per listing".</summary>
+    ListingPublished,
+
+    MeasurementProposed,
+
+    /// <summary>Taken as offered — the glance-and-accept case the measurement tool exists for.</summary>
+    MeasurementAccepted,
+
+    /// <summary>Accepted after the seller dragged a point. Counts against acceptance, not as a failure.</summary>
+    MeasurementAdjusted,
+
+    /// <summary>Thrown away and measured by hand. The failure case.</summary>
+    MeasurementRejected,
+
+    ExtensionPublishAttempted,
+    ExtensionPublishSucceeded,
+
+    /// <summary>Carries the platform and a short reason code. The honest denominator of "does the
+    /// extension actually work", which is the number a seller would most want before installing.</summary>
+    ExtensionPublishFailed,
+
+    /// <summary>The seller agreed the flag was right — they had the date wrong.</summary>
+    DatingFlagUpheld,
+
+    /// <summary>The seller says the flag was wrong. Just as important: it is how we find bad rules.</summary>
+    DatingFlagDismissed,
+}
+
+/// <summary>
+/// One recorded event. Per-seller and joinable to a garment, because the questions worth asking are
+/// per-seller ("are ten of them using it weekly?") and per-garment ("was the flagged piece actually
+/// misdated?") — a page-view-shaped counter cannot answer either.
+///
+/// Carries no seller-authored text. Everything here is an enum, an id, a duration or a short code, so
+/// the log stays free of listing content and of anything that would need redacting later.
+/// </summary>
+public class ToolEvent : ToolBaseEntity
+{
+    /// <summary>The authenticated user the event belongs to. Always taken from the caller's identity,
+    /// never from the request body — otherwise any seller could write events as any other.</summary>
+    public Guid SellerId { get; set; }
+
+    public ToolEventKind Kind { get; set; }
+
+    /// <summary>Which marketplace, for the extension and publish events. Null where it doesn't apply.</summary>
+    public string? Platform { get; set; }
+
+    /// <summary>The garment this concerns, where there is one. Not a foreign key on purpose: a garment
+    /// may be deleted, and losing the history of what the tool did would defeat the point of keeping it.</summary>
+    public Guid? GarmentId { get; set; }
+
+    /// <summary>Elapsed time, for the events that measure one (draft → publish).</summary>
+    public int? DurationMs { get; set; }
+
+    /// <summary>A short machine code — a failure reason, a rule's SpecId. Never prose.</summary>
+    public string? Detail { get; set; }
+
+    /// <summary>
+    /// When it actually happened, which is not when we heard about it. The extension buffers while the
+    /// seller is offline, so <see cref="ToolBaseEntity.CreatedAtUtc"/> (received) and this (occurred)
+    /// genuinely differ, and every rate here would be wrong if they were conflated.
+    /// </summary>
+    public DateTime OccurredAtUtc { get; set; }
 }
 
 /// <summary>Persisted dating rule (brief §3.4 — rules are data). Projects to the engine's

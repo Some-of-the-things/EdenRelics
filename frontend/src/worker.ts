@@ -1,6 +1,7 @@
 import { AngularAppEngine, createRequestHandler } from '@angular/ssr';
 import { findDesignerForProduct } from './app/pages/designers/designers.data';
 import { isIndexingCrawlerUa } from './app/utils/indexing-crawlers';
+import { SECURITY_HEADERS } from './security-headers';
 
 const angularApp = new AngularAppEngine();
 
@@ -372,23 +373,7 @@ function sendPageViewBeacon(
   );
 }
 
-const SECURITY_HEADERS: Record<string, string> = {
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-  'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-  'Content-Security-Policy':
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.clarity.ms https://accounts.google.com; " +
-    "style-src 'self' 'unsafe-inline' https://accounts.google.com; " +
-    "img-src 'self' data: https: blob:; " +
-    "connect-src 'self' https://api.edenrelics.co.uk https://api-staging.edenrelics.co.uk https://www.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms https://accounts.google.com; " +
-    "font-src 'self'; " +
-    "worker-src 'self' blob:; " +
-    "frame-src https://accounts.google.com; " +
-    "frame-ancestors 'none'",
-};
+
 
 /**
  * Assets that other systems READ AS CONFIGURATION, not as page furniture, and so must never be

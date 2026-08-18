@@ -58,6 +58,8 @@ export interface AddEvidence {
   feature: string;
   rawValue?: string;
   origin?: string;
+  /** Required when type is Zip: Original | Replaced | Unsure. The server refuses a zip without it. */
+  zipOriginality?: string;
 }
 
 export interface DateResultChain {
@@ -90,6 +92,26 @@ export interface CaptureResult {
   slot: string;
   width?: number;
   height?: number;
+}
+
+/** One photo in a bulk upload. `stored: false` carries the reason, never a silent drop. */
+export interface BulkUploadItem {
+  file: string;
+  stored: boolean;
+  id?: string;
+  /** The photo’s own EXIF date. Null when it has none — common for anything re-encoded. */
+  photographedAt?: string | null;
+  slot?: string;
+  provenance?: string;
+  code?: string;
+  error?: string;
+}
+
+export interface BulkUploadResult {
+  uploaded: number;
+  stored: number;
+  skipped: number;
+  results: BulkUploadItem[];
 }
 
 export interface CaptureStandardSlot {
@@ -139,6 +161,46 @@ export interface DatingFeature {
   strength: 'Hard' | 'Soft';
   /** Value-matching rules do nothing without the label text they match against. */
   needsValue: boolean;
+}
+
+/**
+ * The brief's §10 numbers. Rates are `null`, never 0, when nothing has happened yet — "nobody has
+ * measured anything" and "every measurement was rejected" must not render the same way.
+ */
+export interface ToolMetrics {
+  fromUtc: string;
+  toUtc: string;
+  days: number;
+  /** The gate's first condition: ten or more sellers using it weekly. Always over 7 days. */
+  weeklyActiveSellers: number;
+  activeSellersInWindow: number;
+  garmentsCreated: number;
+  listingsPublished: number;
+  medianSecondsPerListing: number | null;
+  measurement: {
+    proposed: number;
+    accepted: number;
+    /** Accepted after the seller dragged a point — counts against acceptance, not as a failure. */
+    adjusted: number;
+    rejected: number;
+    acceptanceRate: number | null;
+  };
+  extension: {
+    platform: string;
+    attempted: number;
+    succeeded: number;
+    failed: number;
+    failureRate: number | null;
+    topReasons: { reason: string; count: number }[];
+  }[];
+  /** Flags raised against how often the seller was actually wrong — the thesis, as a number. */
+  datingFlags: {
+    raised: number;
+    upheld: number;
+    dismissed: number;
+    unresolved: number;
+    upheldRate: number | null;
+  };
 }
 
 export interface CaptureCompleteness {
@@ -196,6 +258,7 @@ export class ToolService {
     feature: string,
     slot: string,
     archiveRights: boolean,
+    zipOriginality?: string,
   ): Observable<CaptureResult> {
     const form = new FormData();
     form.append('file', file);
@@ -203,10 +266,48 @@ export class ToolService {
     form.append('feature', feature);
     form.append('slot', slot);
     form.append('archiveRights', String(archiveRights));
+    if (zipOriginality) {
+      form.append('zipOriginality', zipOriginality);
+    }
     // Don't set Content-Type — the browser adds the multipart boundary.
     return this.http.post<CaptureResult>(`${this.base}/garments/${garmentId}/capture`, form, { headers: this.authHeaders() });
   }
 
+
+  /**
+   * Bulk upload from the camera roll - how the archive gets seeded with everything that has
+   * ALREADY passed through the shop, rather than only what comes next.
+   *
+   * Defaults to historical provenance on the server, so these are never mistaken for photographs
+   * shot to the capture standard. Every file is reported on individually: one unreadable photo
+   * in a batch of sixty must not cost the other fifty-nine.
+   */
+  bulkUpload(
+    garmentId: string,
+    files: File[],
+    type: string,
+    feature: string,
+    slot: string,
+    archiveRights: boolean,
+    zipOriginality?: string,
+  ): Observable<BulkUploadResult> {
+    const form = new FormData();
+    for (const file of files) {
+      form.append('files', file);
+    }
+    form.append('type', type);
+    form.append('feature', feature);
+    form.append('slot', slot);
+    form.append('archiveRights', String(archiveRights));
+    if (zipOriginality) {
+      form.append('zipOriginality', zipOriginality);
+    }
+    return this.http.post<BulkUploadResult>(
+      `${this.base}/garments/${garmentId}/captures`,
+      form,
+      { headers: this.authHeaders() },
+    );
+  }
   /** The capture standard, so the UI renders slots and guidance from the server's definition. */
   captureStandard(): Observable<CaptureStandard> {
     return this.http.get<CaptureStandard>(`${this.base}/capture-standard`, { headers: this.authHeaders() });
@@ -244,5 +345,27 @@ export class ToolService {
   /** The features the live rule set can act on, so the UI never offers one no rule matches. */
   datingFeatures(): Observable<DatingFeature[]> {
     return this.http.get<DatingFeature[]>(`${this.base}/dating/features`, { headers: this.authHeaders() });
+  }
+
+  /** Usage metrics over the last `days`. Admin only. */
+  metrics(days = 28): Observable<ToolMetrics> {
+    return this.http.get<ToolMetrics>(`${this.base}/metrics/summary?days=${days}`, { headers: this.authHeaders() });
+  }
+
+  /**
+   * Report one usage event. Fire-and-forget by design: instrumentation must never be able to fail a
+   * seller's action, so callers subscribe and ignore the error rather than surfacing it. Kinds the
+   * server records itself (garment created, dating flag raised) are refused here.
+   */
+  recordEvent(event: {
+    kind: string;
+    garmentId?: string;
+    platform?: string;
+    durationMs?: number;
+    detail?: string;
+    occurredAtUtc?: string;
+  }): Observable<{ recorded: number }> {
+    return this.http.post<{ recorded: number }>(
+      `${this.base}/events`, { events: [event] }, { headers: this.authHeaders() });
   }
 }

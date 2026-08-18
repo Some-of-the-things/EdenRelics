@@ -52,6 +52,7 @@ import { AdminAccountingComponent } from './admin-accounting.component';
 import { AdminCareComponent } from './admin-care.component';
 import { AdminTopPicksComponent } from './admin-top-picks.component';
 import { AdminDatingComponent } from './admin-dating.component';
+import { AdminCrosslistingComponent } from './admin-crosslisting.component';
 
 interface AdminUser {
   id: string;
@@ -400,6 +401,7 @@ interface PageViewStats {
     AdminCareComponent,
     AdminTopPicksComponent,
     AdminDatingComponent,
+    AdminCrosslistingComponent,
   ],
   templateUrl: './admin-page.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -443,6 +445,7 @@ export class AdminPageComponent implements OnInit {
     | 'care'
     | 'top-picks'
     | 'dating'
+    | 'cross-listing'
   >('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
@@ -1371,7 +1374,8 @@ export class AdminPageComponent implements OnInit {
       | 'signature'
       | 'care'
       | 'top-picks'
-      | 'dating',
+      | 'dating'
+      | 'cross-listing',
   ): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
