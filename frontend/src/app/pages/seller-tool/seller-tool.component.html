@@ -106,7 +106,10 @@
       }
 
       @if (loading()) {
-        <p class="tool__muted">Loading…</p>
+        <!-- The tool suspends when idle, so its first request of the day fails while the machine
+             resumes. Saying so beats "could not reach the tool", which is what this page showed
+             for a month when the fault was real. -->
+        <p class="tool__muted">{{ waking() ? 'Waking the tool…' : 'Loading…' }}</p>
       } @else if (loadFailed()) {
         <!-- Say nothing here: the error below is the whole story. Showing "no garments yet" next to
              a failure claims the archive is empty at the moment we cannot see it. -->
