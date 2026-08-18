@@ -1,5 +1,7 @@
 import { AngularAppEngine, createRequestHandler } from '@angular/ssr';
 import { findDesignerForProduct } from './app/pages/designers/designers.data';
+import { isIndexingCrawlerUa } from './app/utils/indexing-crawlers';
+import { SECURITY_HEADERS } from './security-headers';
 
 const angularApp = new AngularAppEngine();
 
@@ -371,23 +373,7 @@ function sendPageViewBeacon(
   );
 }
 
-const SECURITY_HEADERS: Record<string, string> = {
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-  'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-  'Content-Security-Policy':
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.clarity.ms https://accounts.google.com; " +
-    "style-src 'self' 'unsafe-inline' https://accounts.google.com; " +
-    "img-src 'self' data: https: blob:; " +
-    "connect-src 'self' https://api.edenrelics.co.uk https://api-staging.edenrelics.co.uk https://www.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms https://accounts.google.com; " +
-    "font-src 'self'; " +
-    "worker-src 'self' blob:; " +
-    "frame-src https://accounts.google.com; " +
-    "frame-ancestors 'none'",
-};
+
 
 /**
  * Assets that other systems READ AS CONFIGURATION, not as page furniture, and so must never be
@@ -700,6 +686,30 @@ export default {
     }
     // Both render attempts failed — fall through to the CSR shell below so the
     // visitor gets a working client-rendered page instead of a hard error.
+
+    // A crawler whose render FAILED gets a retryable 503 rather than the shell,
+    // so a poisoned isolate cannot get content-free pages indexed. See
+    // isIndexingCrawlerUa.
+    //
+    // Only genuine failures reach here. Verified against the deployed worker:
+    // RenderMode.Client routes (/cart, /account, …) come back from
+    // angularApp.handle() as a 200 shell, so `rendered` is truthy and they
+    // return above — a crawler still gets 200 on those, unchanged.
+    if (!rendered && isIndexingCrawlerUa(request.headers.get('User-Agent'))) {
+      return withSecurityHeaders(
+        new Response('Render temporarily unavailable — please retry.', {
+          status: 503,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'no-store',
+            // 15 minutes. A hint, not a guarantee — but Cloudflare runs many
+            // isolates per colo, so a retry is very likely to land on a healthy
+            // one long before the two-hourly recycle cron replaces this one.
+            'Retry-After': '900',
+          },
+        }),
+      );
+    }
 
     // Fallback: serve the CSR shell for client-rendered, failed, or 5xx routes.
     const shell = await fetchCsrShell(request, env);

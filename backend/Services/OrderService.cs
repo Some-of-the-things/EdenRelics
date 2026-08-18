@@ -211,10 +211,17 @@ public class OrderService(
                         .FirstOrDefaultAsync(o => o.Id == orderId);
                     if (order is not null)
                     {
+                        // Captured before we flip it: on a Stripe webhook RETRY this order is
+                        // already Paid and its products are already Sold, which must not be
+                        // mistaken for two customers buying the same piece.
+                        bool firstDelivery = order.Status != "Paid";
                         order.Status = "Paid";
 
-                        // Mark sold products and flag marketplace listings for removal
+                        // Mark sold products and flag marketplace listings for removal.
+                        // Statuses are captured BEFORE anything is mutated, so the
+                        // double-sale check sees what was true when the payment landed.
                         List<Product> soldProducts = [];
+                        List<(Product Product, ProductStatus StatusBeforePayment)> beforePayment = [];
                         foreach (OrderItem item in order.Items)
                         {
                             Product? product = await products.Query()
@@ -222,6 +229,7 @@ public class OrderService(
                                 .FirstOrDefaultAsync(p => p.Id == item.ProductId);
                             if (product is not null)
                             {
+                                beforePayment.Add((product, product.Status));
                                 product.Status = ProductStatus.Sold;
                                 foreach (ProductListing listing in product.Listings.Where(l => l.Status == "Active"))
                                 {
@@ -229,6 +237,12 @@ public class OrderService(
                                 }
                                 soldProducts.Add(product);
                             }
+                        }
+
+                        List<Product> alreadySold = DetectDoubleSales(firstDelivery, beforePayment);
+                        if (alreadySold.Count > 0)
+                        {
+                            await AlertDoubleSaleAsync(order, alreadySold);
                         }
 
                         // Mirror the sale into the finance ledger. Idempotent by order-id Reference
@@ -460,6 +474,65 @@ public class OrderService(
 
         await orders.DeleteAsync(id);
         return true;
+    }
+
+    /// <summary>
+    /// The pieces in a just-paid order that something else had already sold.
+    ///
+    /// Stock is one-of-one and nothing reserves a piece during checkout — the availability
+    /// check happens when the Stripe session is created, so two buyers can both pass it and
+    /// both pay. This spots that after the fact.
+    ///
+    /// <paramref name="firstDelivery"/> is what keeps it honest: Stripe re-delivers webhook
+    /// events, and on a retry the order is already Paid and its pieces already Sold — by this
+    /// very order. Treating that as a conflict would alert on every single retry.
+    /// </summary>
+    public static List<Product> DetectDoubleSales(
+        bool firstDelivery,
+        IReadOnlyList<(Product Product, ProductStatus StatusBeforePayment)> beforePayment)
+    {
+        if (!firstDelivery)
+        {
+            return [];
+        }
+        return beforePayment
+            .Where(p => p.StatusBeforePayment == ProductStatus.Sold)
+            .Select(p => p.Product)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Shouts about a piece that was paid for twice. There is no automatic remedy — one of the
+    /// two buyers has to be refunded by hand — so the only failure worth avoiding is nobody
+    /// noticing. Logs at Critical and emails the operator; an email failure must not break the
+    /// webhook (Stripe would retry it and re-run everything).
+    /// </summary>
+    private async Task AlertDoubleSaleAsync(Order order, List<Product> alreadySold)
+    {
+        string names = string.Join(", ", alreadySold.Select(p => $"{p.Name} ({p.Sku})"));
+        logger.LogCritical(
+            "Double sale: order {OrderId} was paid for {Count} piece(s) already marked Sold — {Names}. Manual refund required.",
+            order.Id, alreadySold.Count, names);
+
+        try
+        {
+            string? recipient = configuration["Email:SaleNotificationRecipient"];
+            if (string.IsNullOrWhiteSpace(recipient))
+            {
+                return;
+            }
+            string body =
+                $"Order {order.Id} has been paid, but {alreadySold.Count} item(s) in it were already sold:\n\n"
+                + names
+                + "\n\nStock is one-of-one, so this piece has been paid for twice and one buyer "
+                + $"needs refunding. Customer on this order: {order.User?.Email ?? order.GuestEmail ?? "unknown"}."
+                + "\n\nRefund via the Stripe dashboard, then reconcile the Sales entries on the admin Finance tab.";
+            await emailService.SendOperatorReminderEmailAsync(recipient, "Double sale needs a refund", body);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to send the double-sale alert for order {OrderId}", order.Id);
+        }
     }
 
     private static OrderDto ToDto(Order o) => new(

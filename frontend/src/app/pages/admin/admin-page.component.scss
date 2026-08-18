@@ -277,6 +277,61 @@
   padding: 0.75rem;
 }
 
+.admin__card--selected {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.admin__card-check {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+}
+
+/* Bulk sale-pricing bar above the product list */
+.admin__bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px dashed var(--border-color);
+  opacity: 0.6;
+}
+
+.admin__bulk-bar--active {
+  border-style: solid;
+  border-color: var(--accent);
+  opacity: 1;
+}
+
+.admin__bulk-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.admin__bulk-percent {
+  width: 5rem;
+}
+
+.admin__bulk-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.admin__bulk-preview {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+}
+
 .admin__card-header {
   display: flex;
   gap: 0.75rem;
@@ -1901,6 +1956,19 @@
   gap: 1rem;
   margin: 1.5rem 0 1rem;
   flex-wrap: wrap;
+}
+
+/* States what the KPIs beneath are counting. The filters sit below them, so
+   without this the scope of the headline figures is not obvious. */
+.fin__scope {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+
+  strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
 }
 
 .fin__filter {

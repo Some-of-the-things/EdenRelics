@@ -36,6 +36,11 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
                 ["Jwt:Key"] = TestKey,
                 ["Jwt:Issuer"] = Issuer,
                 ["Jwt:Audience"] = Audience,
+                // Open the beta gate for this suite, so the seller-facing behaviour it exists to
+                // cover — owner scoping, a seller seeing only their own garments, an admin seeing
+                // all — is exercised as a seller rather than as an admin, which would make those
+                // assertions meaningless. The closed gate is covered in ClosedBetaAccessTests.
+                ["Tool:AdminOnly"] = "false",
             }));
 
             builder.ConfigureServices(services =>
@@ -141,6 +146,122 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
         Assert.Equal(1986, r.GetProperty("latest").GetInt32());
         Assert.Equal("Hard", r.GetProperty("claimFlag").GetProperty("strength").GetString());
         Assert.Equal(3, r.GetProperty("evidence").GetArrayLength());
+    }
+
+    // --- /dating/preview: the admin-facing "try the engine" path. Same engine, same rules, but it
+    // must never write to the archive, because the archive is the asset.
+
+    [Fact]
+    public async Task DatingPreview_RunsTheEngine_AndReturnsTheFullEvidenceChain()
+    {
+        HttpClient client = AdminClient();
+        await SeedVerifiedRuleAsync(client, new { id = "P-TD", feature = "preview.chain.dryer", notBefore = 1980, strength = "Hard", transitionLagMonths = 0, sourceCitation = "BS 2747:1980" }, "P-TD");
+        await SeedVerifiedRuleAsync(client, new { id = "P-WT", feature = "preview.chain.tub", notAfter = 1986, strength = "Hard", transitionLagMonths = 0 }, "P-WT");
+
+        HttpResponseMessage res = await client.PostAsJsonAsync("/dating/preview", new
+        {
+            evidence = new[]
+            {
+                new { feature = "preview.chain.dryer", type = "CareLabel", rawValue = (string?)null },
+                new { feature = "preview.chain.tub", type = "CareLabel", rawValue = (string?)null },
+            },
+            claimEarliest = 1970,
+            claimLatest = 1979,
+        });
+        res.EnsureSuccessStatusCode();
+        JsonElement r = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal(1980, r.GetProperty("earliest").GetInt32());
+        Assert.Equal(1986, r.GetProperty("latest").GetInt32());
+        Assert.Equal("Estimated", r.GetProperty("outcome").GetString());
+        Assert.Equal("Hard", r.GetProperty("claimFlag").GetProperty("strength").GetString());
+
+        JsonElement chain = r.GetProperty("evidence");
+        Assert.Equal(2, chain.GetArrayLength());
+        // The preview carries the reasoning, not just the answer.
+        JsonElement first = chain[0];
+        Assert.True(first.GetProperty("applied").GetBoolean());
+        Assert.False(string.IsNullOrEmpty(first.GetProperty("provenance").GetString()));
+        Assert.False(string.IsNullOrEmpty(first.GetProperty("bound").GetString()));
+    }
+
+    [Fact]
+    public async Task DatingPreview_SurfacesAHardContradiction_RatherThanAveragingIt()
+    {
+        HttpClient client = AdminClient();
+        await SeedVerifiedRuleAsync(client, new { id = "C-TD", feature = "preview.contra.dryer", notBefore = 1980, strength = "Hard", transitionLagMonths = 0 }, "C-TD");
+        await SeedVerifiedRuleAsync(client, new { id = "C-CEY", feature = "preview.contra.ceylon", notAfter = 1972, strength = "Hard", transitionLagMonths = 0 }, "C-CEY");
+
+        HttpResponseMessage res = await client.PostAsJsonAsync("/dating/preview", new
+        {
+            evidence = new[]
+            {
+                new { feature = "preview.contra.dryer", type = "CareLabel" },
+                new { feature = "preview.contra.ceylon", type = "OriginText" },
+            },
+        });
+        res.EnsureSuccessStatusCode();
+        JsonElement r = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal("HardContradiction", r.GetProperty("outcome").GetString());
+    }
+
+    [Fact]
+    public async Task DatingPreview_WritesNothing_NoGarmentsNoEstimates()
+    {
+        HttpClient client = AdminClient();
+        await SeedVerifiedRuleAsync(client, new { id = "S-TD", feature = "preview.stateless.dryer", notBefore = 1980, strength = "Hard", transitionLagMonths = 0 }, "S-TD");
+
+        int garmentsBefore = JsonDocument.Parse(
+            await (await client.GetAsync("/garments")).Content.ReadAsStringAsync()).RootElement.GetArrayLength();
+
+        for (int i = 0; i < 3; i++)
+        {
+            (await client.PostAsJsonAsync("/dating/preview", new
+            {
+                evidence = new[] { new { feature = "care.tumble-dry-symbol", type = "CareLabel" } },
+            })).EnsureSuccessStatusCode();
+        }
+
+        int garmentsAfter = JsonDocument.Parse(
+            await (await client.GetAsync("/garments")).Content.ReadAsStringAsync()).RootElement.GetArrayLength();
+        Assert.Equal(garmentsBefore, garmentsAfter);
+    }
+
+    [Fact]
+    public async Task DatingPreview_WithNoObservations_IsRejected()
+    {
+        HttpClient client = AdminClient();
+        HttpResponseMessage res = await client.PostAsJsonAsync("/dating/preview", new { evidence = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task DatingPreview_AndFeatures_AreAdminOnly()
+    {
+        HttpClient seller = SellerClient(Guid.NewGuid());
+        HttpResponseMessage preview = await seller.PostAsJsonAsync("/dating/preview", new
+        {
+            evidence = new[] { new { feature = "care.tumble-dry-symbol", type = "CareLabel" } },
+        });
+        Assert.Equal(HttpStatusCode.Forbidden, preview.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await seller.GetAsync("/dating/features")).StatusCode);
+    }
+
+    [Fact]
+    public async Task DatingFeatures_ListsOnlyWhatTheLiveRulesCanActOn()
+    {
+        HttpClient client = AdminClient();
+        await SeedVerifiedRuleAsync(client, new { id = "F-TD", feature = "preview.features.live", notBefore = 1980, strength = "Hard", transitionLagMonths = 0 }, "F-TD");
+        // Unverified: must not be offered, or the picker would suggest a feature that does nothing.
+        (await client.PostAsJsonAsync("/rules", new { id = "F-INERT", feature = "preview.features.inert", notBefore = 1990, strength = "Hard", transitionLagMonths = 0 })).EnsureSuccessStatusCode();
+
+        JsonElement features = JsonDocument.Parse(
+            await (await client.GetAsync("/dating/features")).Content.ReadAsStringAsync()).RootElement;
+
+        List<string> codes = [.. features.EnumerateArray().Select(f => f.GetProperty("feature").GetString()!)];
+        Assert.Contains("preview.features.live", codes);
+        Assert.DoesNotContain("preview.features.inert", codes);
     }
 
     [Fact]
@@ -305,5 +426,234 @@ public class ToolApiTests : IClassFixture<ToolApiTests.Factory>
     {
         HttpResponseMessage res = await _factory.CreateClient().GetAsync("/healthz");
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+    }
+
+    // ---- Instrumentation (brief §10) ----
+
+    [Fact]
+    public async Task Events_AreRecordedForTheCaller_AndSummarisedForAdmins()
+    {
+        HttpClient seller = SellerClient(Guid.NewGuid());
+        HttpResponseMessage res = await seller.PostAsJsonAsync("/events", new
+        {
+            events = new[]
+            {
+                new { kind = "MeasurementProposed", platform = (string?)null, durationMs = (int?)null, detail = (string?)null },
+                new { kind = "MeasurementAccepted", platform = (string?)null, durationMs = (int?)null, detail = (string?)null },
+            },
+        });
+
+        Assert.Equal(HttpStatusCode.Accepted, res.StatusCode);
+
+        MetricsSummaryDto? summary = JsonSerializer.Deserialize<MetricsSummaryDto>(
+            await (await AdminClient().GetAsync("/metrics/summary?days=7")).Content.ReadAsStringAsync(), Json);
+
+        Assert.NotNull(summary);
+        Assert.True(summary!.Measurement.Accepted >= 1);
+        Assert.True(summary.WeeklyActiveSellers >= 1);
+    }
+
+    [Fact]
+    public async Task Events_RefuseServerOwnedKinds_SoTheFlagRateCannotBeInflated()
+    {
+        HttpClient seller = SellerClient(Guid.NewGuid());
+
+        HttpResponseMessage res = await seller.PostAsJsonAsync("/events", new
+        {
+            events = new[] { new { kind = "DatingFlagRaised" } },
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Events_RejectAnUnknownKind_RatherThanDroppingItSilently()
+    {
+        HttpResponseMessage res = await SellerClient(Guid.NewGuid()).PostAsJsonAsync("/events", new
+        {
+            events = new[] { new { kind = "SomethingWeNeverDefined" } },
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Events_RequireAuthentication()
+    {
+        HttpResponseMessage res = await _factory.CreateClient().PostAsJsonAsync("/events", new
+        {
+            events = new[] { new { kind = "ListingPublished" } },
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task MetricsSummary_IsAdminOnly()
+    {
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await SellerClient(Guid.NewGuid()).GetAsync("/metrics/summary")).StatusCode);
+    }
+
+    [Fact]
+    public async Task DatingAGarment_RecordsTheFlagItself_NotLeavingItToTheClient()
+    {
+        HttpClient admin = AdminClient();
+        await SeedVerifiedRuleAsync(admin, new
+        {
+            id = "flag-metric-tumble",
+            feature = "care.tumble-dry-symbol",
+            type = "CareLabel",
+            notBefore = 1980,
+            strength = "Hard",
+            transitionLagMonths = 0,
+            sourceCitation = "test",
+        }, "flag-metric-tumble");
+
+        Guid garmentId = await CreateGarmentAsync(admin, "Allegedly 1970s dress");
+        (await AddEvidenceAsync(admin, garmentId, "CareLabel", "care.tumble-dry-symbol")).EnsureSuccessStatusCode();
+
+        int raisedBefore = JsonSerializer.Deserialize<MetricsSummaryDto>(
+            await admin.GetStringAsync("/metrics/summary?days=1"), Json)!.DatingFlags.Raised;
+
+        // Claimed 1975, but the evidence cannot predate 1980.
+        HttpResponseMessage res = await admin.PostAsJsonAsync($"/garments/{garmentId}/date", new
+        {
+            claimEarliest = 1970,
+            claimLatest = 1979,
+        });
+        res.EnsureSuccessStatusCode();
+
+        MetricsSummaryDto after = JsonSerializer.Deserialize<MetricsSummaryDto>(
+            await admin.GetStringAsync("/metrics/summary?days=1"), Json)!;
+
+        Assert.Equal(raisedBefore + 1, after.DatingFlags.Raised);
+    }
+    // --- Bulk upload from the camera roll, and the zip rule (v1 reframe) ---
+
+    private static ByteArrayContent JpegPart(int width, int height)
+    {
+        ByteArrayContent part = new(TestImage(width, height));
+        part.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        return part;
+    }
+
+    [Fact]
+    public async Task BulkUpload_StoresManyPhotosInOnePass()
+    {
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Back catalogue dress");
+
+        using MultipartFormDataContent content = new();
+        for (int i = 0; i < 3; i++)
+        {
+            content.Add(JpegPart(1400, 1400), "files", $"label-{i}.jpg");
+        }
+        content.Add(new StringContent("CareLabel"), "type");
+        content.Add(new StringContent("care.wash-symbol"), "feature");
+        content.Add(new StringContent("true"), "archiveRights");
+
+        HttpResponseMessage res = await client.PostAsync($"/garments/{id}/captures", content);
+        res.EnsureSuccessStatusCode();
+        JsonElement body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal(3, body.GetProperty("uploaded").GetInt32());
+        Assert.Equal(3, body.GetProperty("stored").GetInt32());
+    }
+
+    [Fact]
+    public async Task BulkUpload_DefaultsToHistorical_SoTheBackCatalogueIsNeverMarkedStandardQuality()
+    {
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Back catalogue dress");
+
+        using MultipartFormDataContent content = new();
+        content.Add(JpegPart(1400, 1400), "files", "old-label.jpg");
+        content.Add(new StringContent("CareLabel"), "type");
+        content.Add(new StringContent("care.wash-symbol"), "feature");
+        content.Add(new StringContent("true"), "archiveRights");
+
+        HttpResponseMessage res = await client.PostAsync($"/garments/{id}/captures", content);
+        res.EnsureSuccessStatusCode();
+        JsonElement body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal("HistoricalUpload", body.GetProperty("results")[0].GetProperty("provenance").GetString());
+    }
+
+    [Fact]
+    public async Task BulkUpload_OneBadPhotoDoesNotLoseTheRest()
+    {
+        // A hundred-photo import where the ninth is a screenshot must still store the other
+        // ninety-nine. Partial is the normal case here, not an error state.
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Mixed bag");
+
+        using MultipartFormDataContent content = new();
+        content.Add(JpegPart(1400, 1400), "files", "good.jpg");
+        ByteArrayContent junk = new([1, 2, 3, 4]);
+        junk.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        content.Add(junk, "files", "not-an-image.jpg");
+        content.Add(JpegPart(1400, 1400), "files", "also-good.jpg");
+        content.Add(new StringContent("CareLabel"), "type");
+        content.Add(new StringContent("care.wash-symbol"), "feature");
+        content.Add(new StringContent("true"), "archiveRights");
+
+        HttpResponseMessage res = await client.PostAsync($"/garments/{id}/captures", content);
+        res.EnsureSuccessStatusCode();
+        JsonElement body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal(2, body.GetProperty("stored").GetInt32());
+        Assert.Equal(1, body.GetProperty("skipped").GetInt32());
+        Assert.Contains(body.GetProperty("results").EnumerateArray(), r => !r.GetProperty("stored").GetBoolean());
+    }
+
+    [Fact]
+    public async Task AZipCannotBeLoggedWithoutSayingWhetherItIsOriginal()
+    {
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Zipped dress");
+
+        HttpResponseMessage res = await client.PostAsJsonAsync($"/garments/{id}/evidence", new
+        {
+            type = "Zip",
+            feature = "zip.maker-mark",
+            rawValue = "YKK",
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        Assert.Contains("zip_originality_required", await res.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task AZipLoggedAsUnsureIsAccepted()
+    {
+        // "Unsure" is a legitimate answer and must always be available - forcing a guess is how
+        // bad data gets into the corpus.
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Zipped dress");
+
+        HttpResponseMessage res = await client.PostAsJsonAsync($"/garments/{id}/evidence", new
+        {
+            type = "Zip",
+            feature = "zip.maker-mark",
+            zipOriginality = "Unsure",
+        });
+
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task NonZipEvidenceIsUnaffectedByTheZipRule()
+    {
+        HttpClient client = SellerClient(Guid.NewGuid());
+        Guid id = await CreateGarmentAsync(client, "Plain dress");
+
+        HttpResponseMessage res = await client.PostAsJsonAsync($"/garments/{id}/evidence", new
+        {
+            type = "CareLabel",
+            feature = "care.wash-symbol",
+        });
+
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
     }
 }

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How the Eden Relics crosslister works</title>
+    <link rel="stylesheet" href="onboarding.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Eden Relics</p>
+      <h1>Before you use this</h1>
+      <p class="lead">
+        Three things worth knowing up front. None of them are buried in the terms, because you would
+        find them out eventually anyway — and finding them out the hard way is how people end up
+        distrusting a tool that was being straight with them all along.
+      </p>
+
+      <!--
+        Brief §8: the Eden Relics addition to the standard three-layer competitor structure is a
+        plain-English disclosure at onboarding, not a clause in a ToS nobody reads. The wording below
+        is the brief's own, kept close to verbatim on purpose. It costs nothing, differentiates us
+        from competitors whose trust ratings are poor, and it is the version we would want if we were
+        the seller — which, on Vinted, we are.
+      -->
+      <section class="card card--warn">
+        <h2>Vinted doesn’t officially permit automation</h2>
+        <p>
+          We keep posting human-paced to minimise the risk — one listing at a time, filled at the
+          speed a person types, with a gap in between. But your account is yours and the risk is
+          real. Vinted’s enforcement is automated and hard to appeal, and it weighs patterns rather
+          than single actions.
+        </p>
+        <p>
+          That is also why this extension <strong>never presses publish for you</strong>. It fills
+          the form. You look at it and publish it yourself. If that ever changes, we have broken our
+          own rule.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Sales on Vinted and Depop only sync while your browser is open</h2>
+        <p>
+          Neither platform gives us a way to check from our server, so the extension looks while
+          Chrome is running and not otherwise. If a piece sells on Vinted at 3am with your laptop
+          shut, we will not know until you next open it — and until then, it can still be showing as
+          available somewhere else.
+        </p>
+        <p>
+          Etsy and eBay do have proper APIs. Those we watch continuously from our own server, whether
+          your machine is on or not, and a sale there triggers delisting elsewhere.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>We never hold your marketplace passwords</h2>
+        <p>
+          The extension works inside the sessions you are already signed in to. It does not ask for,
+          send or store a Vinted or Depop password, and there is nowhere in Eden Relics that one
+          could be kept. The only credential it holds is your Eden Relics session, and you can
+          disconnect it from the extension’s menu at any time.
+        </p>
+      </section>
+
+      <h2 class="rule">How a listing actually goes out</h2>
+      <ol class="steps">
+        <li>You press <em>Send to extension</em> on a piece in Eden Relics.</li>
+        <li>The extension opens that platform’s new-listing page.</li>
+        <li>It fills the fields, one at a time, at a human pace.</li>
+        <li>It tells you it has finished and stops.</li>
+        <li><strong>You</strong> check the form and press publish.</li>
+      </ol>
+
+      <p class="note">
+        If any of that fails — a field we can’t find, a form that has been redesigned, a page that
+        won’t load — you get told exactly what didn’t happen, and the listing text to paste in
+        yourself. You should never be left thinking something went live when it didn’t.
+      </p>
+
+      <p class="note">
+        Some platforms are not ready yet. Where we haven’t finished recording what a platform’s form
+        actually asks for, the extension refuses to touch it and hands you the text instead. That is
+        deliberate: a tool that quietly fills the wrong fields is worse than one that admits it
+        can’t.
+      </p>
+    </main>
+  </body>
+</html>

@@ -43,8 +43,9 @@ export class LocaleService {
   }
 
   private init(): void {
-    // ?locale=XX in the URL overrides for this session (used for hreflang
-    // variant URLs that crawlers and language-switch links hit directly).
+    // ?locale=XX in the URL overrides for this session, for language-switch
+    // links hit directly. No longer advertised to crawlers via hreflang — see
+    // SeoService.clearHreflang for why.
     const urlLocale = this.readUrlLocale();
     if (urlLocale) {
       this._locale.set({ ...DEFAULT_LOCALE, locale: urlLocale });

@@ -1,5 +1,24 @@
 export type ProductStatus = 'stock' | 'live' | 'sold';
 
+/**
+ * Every size we sell, smallest first — the single source of truth.
+ *
+ * Slash form for the in-between sizes, matching how the labels read and how
+ * every existing product is stored. The order here is the order the shop's size
+ * filter renders in, so keep it ascending.
+ *
+ * This is a list rather than a bare union because the union alone only stops
+ * WRONG values, not MISSING ones: the shop filter kept its own hand-written copy
+ * and silently omitted 14/16, so a dress listed at that size in admin could
+ * never be found through the filter. Derive from this, don't restate it.
+ */
+export const PRODUCT_SIZES = [
+  '6', '6/8', '8', '8/10', '10', '10/12', '12', '12/14', '14',
+  '14/16', '16', '16/18', '18', '18/20',
+] as const;
+
+export type ProductSize = (typeof PRODUCT_SIZES)[number];
+
 export interface Product {
   id: string;
   name: string;
@@ -15,7 +34,7 @@ export interface Product {
   supplier?: string;
   era: string;
   category: '50s' | '60s' | '70s' | '80s' | '90s' | 'y2k';
-  size: '6' | '6/8' | '8' | '8/10' | '10' | '10/12' | '12' | '12/14' | '14' | '14/16' | '16';
+  size: ProductSize;
   condition: 'mint' | 'excellent' | 'very good' | 'good' | 'fair';
   material?: string | null;
   imageUrl: string;
@@ -25,6 +44,14 @@ export interface Product {
   status?: ProductStatus;
   viewCount?: number;
   createdAtUtc?: string;
+}
+
+/** Result of a bulk sale-price change: what moved, what was left alone, what got emailed. */
+export interface BulkSaleResult {
+  updated: number;
+  skipped: number;
+  notified: number;
+  products: Product[];
 }
 
 export interface CartItem {

@@ -14,6 +14,7 @@ import { HttpClient } from '@angular/common/http';
 import { SeoService } from '../../services/seo.service';
 import { environment } from '../../../environments/environment';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
+import { buildFaqPageFromHtml } from '../../utils/faq-schema';
 import { ShareButtonsComponent } from '../../components/share-buttons/share-buttons.component';
 import { VintageSizeConverterComponent } from '../../components/vintage-size-converter/vintage-size-converter.component';
 import { DesignerProfile, findDesignersForPost } from '../designers/designers.data';
@@ -115,7 +116,6 @@ export class BlogPostComponent implements OnInit {
           url: `/blog/${post.slug}`,
           image: post.featuredImageUrl ?? undefined,
           type: 'article',
-          hreflang: !this.preview(),
           noIndex: this.preview(),
         });
 
@@ -152,10 +152,18 @@ export class BlogPostComponent implements OnInit {
           blogPosting['description'] = post.excerpt;
         }
 
+        // Posts ask and answer questions in their own headings; labelling those
+        // pairs as FAQPage is what makes them extractable by answer engines.
+        // Derived from the same HTML the page renders, so the schema answer and
+        // the visible answer cannot drift apart. Null unless the post carries
+        // at least two genuine question headings.
+        const faqPage = buildFaqPageFromHtml(post.content);
+
         this.seo.setJsonLd({
           '@context': 'https://schema.org',
           '@graph': [
             blogPosting,
+            ...(faqPage ? [faqPage] : []),
             {
               '@type': 'BreadcrumbList',
               itemListElement: [

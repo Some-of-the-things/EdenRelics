@@ -22,27 +22,26 @@ public class ProductsController : ControllerBase
 {
     private readonly IRepository<Product> _repository;
     private readonly IRepository<Favourite> _favouriteRepository;
-    private readonly IRepository<User> _userRepository;
     private readonly IRepository<ProductView> _viewRepository;
     private readonly IRepository<Transaction> _transactionRepository;
     private readonly IWebHostEnvironment _env;
     private readonly ImageStorageService _storage;
-    private readonly IEmailService _emailService;
     private readonly GeoIpService _geoIp;
     private readonly IConfiguration _config;
     private readonly ILogger<ProductsController> _logger;
 
     private readonly CartInterestService _cartInterest;
 
+    /// <summary>Sanity ceiling on one bulk sale-price request — well above the whole catalogue.</summary>
+    private const int MaxBulkSaleProducts = 500;
+
     public ProductsController(
         IRepository<Product> repository,
         IRepository<Favourite> favouriteRepository,
-        IRepository<User> userRepository,
         IRepository<ProductView> viewRepository,
         IRepository<Transaction> transactionRepository,
         IWebHostEnvironment env,
         ImageStorageService storage,
-        IEmailService emailService,
         GeoIpService geoIp,
         CartInterestService cartInterest,
         IConfiguration config,
@@ -50,12 +49,10 @@ public class ProductsController : ControllerBase
     {
         _repository = repository;
         _favouriteRepository = favouriteRepository;
-        _userRepository = userRepository;
         _viewRepository = viewRepository;
         _transactionRepository = transactionRepository;
         _env = env;
         _storage = storage;
-        _emailService = emailService;
         _geoIp = geoIp;
         _cartInterest = cartInterest;
         _config = config;
@@ -295,7 +292,7 @@ public class ProductsController : ControllerBase
                     Date = product.StockPurchaseDate.Value,
                     Description = $"Stock: {product.Name}",
                     Amount = -product.CostPrice,
-                    Category = "Stock",
+                    Category = TransactionCategories.Stock,
                     Platform = product.Supplier,
                     Reference = product.Id.ToString(),
                 });
@@ -419,12 +416,20 @@ public class ProductsController : ControllerBase
         // rule as the Stripe-webhook path and the BackfillSales endpoint —
         // Reference = product.Id, skip if a matching transaction already exists.
         // Failure must not break the product update — log and move on.
+        //
+        // The check is on Reference AND Category, because a product carries TWO ledger rows
+        // keyed on its id: the stock purchase written at creation (Category "Stock") and the
+        // sale written here (Category "Sales"). Matching on Reference alone found the stock
+        // row and silently skipped the sale, so every piece bought with a cost price and a
+        // purchase date recorded its expense and never its income (found 2026-08-17: three
+        // sold pieces, £96 of income missing from the ledger).
         if (product.Status == ProductStatus.Sold && previousStatus != ProductStatus.Sold)
         {
             try
             {
                 string productRef = product.Id.ToString();
-                IEnumerable<Transaction> existing = await _transactionRepository.FindAsync(t => t.Reference == productRef);
+                IEnumerable<Transaction> existing = await _transactionRepository.FindAsync(
+                    t => t.Reference == productRef && t.Category == TransactionCategories.Sales);
                 if (!existing.Any())
                 {
                     await _transactionRepository.AddAsync(new Transaction
@@ -432,7 +437,7 @@ public class ProductsController : ControllerBase
                         Date = DateTime.UtcNow,
                         Description = $"Sale: {product.Name}",
                         Amount = product.SalePrice ?? product.Price,
-                        Category = "Sales",
+                        Category = TransactionCategories.Sales,
                         // Platform left null on the manual-flip path — admin can fill in
                         // (Website / Etsy / Depop / etc.) after the fact via the
                         // transactions table edit. The Stripe-webhook path sets it to
@@ -453,13 +458,155 @@ public class ProductsController : ControllerBase
             TranslationBackgroundService.EnqueueProduct(product.Id);
         }
 
-        // Notify after update completes to avoid concurrent DbContext access
+        // Handed to a background service with its own DI scope. Doing it inline as
+        // fire-and-forget lost the emails: the request scope (and its DbContext) is gone
+        // by the time the favourites query completes.
         if (shouldNotifySale)
         {
-            _ = NotifySaleFavouritesAsync(product);
+            SaleNotificationBackgroundService.Enqueue(product.Id);
         }
 
         return Ok(ToAdminDto(product));
+    }
+
+    /// <summary>
+    /// Applies one percentage discount across a hand-picked set of products. Each product's
+    /// SalePrice is derived from its own Price (never from an existing SalePrice, so repeat
+    /// runs don't compound), and Price/PriceSetAtUtc are left untouched so the 28-day
+    /// reduction-rule history stays intact.
+    /// </summary>
+    [HttpPost("bulk-sale")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<BulkSaleResultDto>> BulkSetSalePrice(BulkSalePriceDto dto)
+    {
+        if (dto.ProductIds is null || dto.ProductIds.Count == 0)
+        {
+            return BadRequest(new { error = "Select at least one product." });
+        }
+        if (dto.ProductIds.Count > MaxBulkSaleProducts)
+        {
+            return BadRequest(new { error = $"Bulk sale is limited to {MaxBulkSaleProducts} products at a time." });
+        }
+        // Upper bound guards the fat-finger case (typing 90 meaning "90% of", or 200).
+        // A 0% "discount" is a no-op, not a way to clear a sale — use bulk-sale/clear.
+        if (dto.DiscountPercent <= 0 || dto.DiscountPercent > 90)
+        {
+            return BadRequest(new { error = "Discount must be between 1% and 90%." });
+        }
+
+        List<Guid> ids = dto.ProductIds.Distinct().ToList();
+        List<Product> selected = (await _repository.FindAsync(p => ids.Contains(p.Id))).ToList();
+
+        List<Product> changed = [];
+        int skipped = 0;
+        foreach (Product product in selected)
+        {
+            decimal? newSalePrice = DiscountedPrice(product.Price, dto.DiscountPercent);
+            if (newSalePrice is null)
+            {
+                skipped++;
+                continue;
+            }
+            if (product.SalePrice == newSalePrice)
+            {
+                // Already at this price — leave SalePriceSetAtUtc alone so re-running the
+                // same sale doesn't restart the "on sale since" clock.
+                continue;
+            }
+            product.SalePrice = newSalePrice;
+            product.SalePriceSetAtUtc = DateTime.UtcNow;
+            changed.Add(product);
+        }
+
+        // Every product here came out of the same request-scoped DbContext, so one save
+        // commits the whole batch in a single transaction.
+        if (changed.Count > 0)
+        {
+            await _repository.UpdateAsync(changed[0]);
+        }
+
+        int notified = 0;
+        if (dto.NotifyFavourites)
+        {
+            // Queued for the background service, same as the single-product edit path.
+            foreach (Product product in changed)
+            {
+                SaleNotificationBackgroundService.Enqueue(product.Id);
+                notified++;
+            }
+        }
+
+        _logger.LogInformation(
+            "Bulk sale: {Percent}% off applied to {Updated} of {Selected} products (skipped {Skipped}, notify={Notify})",
+            dto.DiscountPercent, changed.Count, selected.Count, skipped, dto.NotifyFavourites);
+
+        skipped += ids.Count - selected.Count;
+        return Ok(new BulkSaleResultDto(
+            changed.Count,
+            skipped,
+            notified,
+            selected.Select(ToAdminDto).ToList()));
+    }
+
+    /// <summary>Ends a sale on a hand-picked set of products, restoring the full price.</summary>
+    [HttpPost("bulk-sale/clear")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<BulkSaleResultDto>> BulkClearSalePrice(BulkClearSaleDto dto)
+    {
+        if (dto.ProductIds is null || dto.ProductIds.Count == 0)
+        {
+            return BadRequest(new { error = "Select at least one product." });
+        }
+        if (dto.ProductIds.Count > MaxBulkSaleProducts)
+        {
+            return BadRequest(new { error = $"Bulk sale is limited to {MaxBulkSaleProducts} products at a time." });
+        }
+
+        List<Guid> ids = dto.ProductIds.Distinct().ToList();
+        List<Product> selected = (await _repository.FindAsync(p => ids.Contains(p.Id))).ToList();
+
+        List<Product> changed = [];
+        foreach (Product product in selected)
+        {
+            if (!product.SalePrice.HasValue)
+            {
+                continue;
+            }
+            product.SalePrice = null;
+            product.SalePriceSetAtUtc = null;
+            changed.Add(product);
+        }
+
+        if (changed.Count > 0)
+        {
+            await _repository.UpdateAsync(changed[0]);
+        }
+
+        _logger.LogInformation("Bulk sale cleared on {Updated} of {Selected} products", changed.Count, selected.Count);
+
+        return Ok(new BulkSaleResultDto(
+            changed.Count,
+            selected.Count - changed.Count,
+            0,
+            selected.Select(ToAdminDto).ToList()));
+    }
+
+    /// <summary>
+    /// The sale price for a percentage off, rounded to the nearest penny, or null when the
+    /// product can't sensibly go on sale (no price, or rounding leaves it at/above full price).
+    /// </summary>
+    private static decimal? DiscountedPrice(decimal price, decimal discountPercent)
+    {
+        if (price <= 0)
+        {
+            return null;
+        }
+        decimal sale = Math.Round(price * (100 - discountPercent) / 100, 2, MidpointRounding.AwayFromZero);
+        if (sale <= 0 || sale >= price)
+        {
+            return null;
+        }
+        return sale;
     }
 
     [HttpPost("upload-image")]
@@ -1119,25 +1266,4 @@ public class ProductsController : ControllerBase
         p.CreatedAtUtc, p.Material
     );
 
-    private async Task NotifySaleFavouritesAsync(Product product)
-    {
-        try
-        {
-            IEnumerable<Favourite> favourites = await _favouriteRepository.FindAsync(
-                f => f.ProductId == product.Id && f.NotifyOnSale);
-            foreach (Favourite fav in favourites)
-            {
-                User? user = await _userRepository.GetByIdAsync(fav.UserId);
-                if (user is null)
-                {
-                    continue;
-                }
-                _ = _emailService.SendSaleNotificationAsync(user.Email, user.FirstName, product.Name, product.Price, product.SalePrice!.Value);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send sale notifications for product {ProductId}", product.Id);
-        }
-    }
 }

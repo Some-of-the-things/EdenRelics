@@ -2,8 +2,15 @@
 
 The tool (dating engine + archive + capture) is built, hardened (auth + migrations), and
 **deployed to prod** (2026-07-13) at https://eden-relics-tool.fly.dev — Fly app `eden-relics-tool`
-+ Postgres `eden-relics-tool-db`, suspends when idle. R2 secrets NOT yet set (capture unused). The
-steps below are the provisioning sequence, kept as the runbook for re-provisioning / redeploy.
++ Postgres `eden-relics-tool-db`, suspends when idle. R2 is configured (step 4, 2026-07-14), so
+label capture works. The steps below are the provisioning sequence, kept as the runbook for
+re-provisioning / redeploy.
+
+**The dating rules seed themselves.** `DatingRulesSeed.EnsureSeededAsync` runs on every start and
+reconciles the shipped set into `StoredRules`, leaving rows a researcher has edited alone — so
+adding a rule is a code change plus a deploy, not a `POST /rules` call. Verified rules reaching
+prod is therefore automatic; what is *not* automatic is the research that lets an unverified rule
+become a verified one.
 
 ## What it needs
 - A **Fly app** (`eden-relics-tool`) — config in `fly.toml`.
@@ -55,16 +62,26 @@ cd Data && dotnet ef database update --project . --startup-project . \
   --connection "Host=localhost;Port=5441;Database=eden_relics_tool;Username=eden_relics_tool;Password=<from attach>;SSL Mode=Disable"
 ```
 
-> **⚠️ Known issue — migrations aren't in the published assembly.** `dotnet ef` finds the InitialCreate
-> migration, but `dotnet publish Api` produces a `Data.dll` without it ("No migrations were found in
-> assembly 'EdenRelics.SellerTool.Data'"), so the app's startup `Migrate()` is a no-op. Root cause not
-> yet pinned (a .NET-10 publish/project-reference quirk). **Workaround: apply migrations out-of-band
-> (step 6) as the deploy step** — which is the recommended prod pattern anyway (no multi-instance
-> startup races). Revisit the build fix if we want startup auto-migrate.
+> **⚠️ Startup auto-migrate DOES run now — and it raced on 2026-08-07.** This note previously said
+> migrations were missing from the published assembly, making startup `Migrate()` a no-op. That is no
+> longer true: the deployed app takes the `__EFMigrationsHistory` lock and applies migrations on boot.
+>
+> Which made step 6 *more* important, not less. `fly.toml` runs **two machines**, both boot the new
+> image at once, and on the 2026-08-07 deploy they raced: one won the migration lock and applied
+> `AddProvenanceMatchingAndTransitionGroups`, the other read a half-migrated schema, threw
+> `column s.Match does not exist` from the rule seeder, and SIGABRTed. It crash-looped for ~18 minutes
+> before a restart landed on the migrated schema and came up clean — so the outage self-healed, but it
+> was a real outage of the tool API, caused purely by deploying.
+>
+> **So: apply migrations out-of-band (step 6) BEFORE `fly deploy`, not after.** With the schema already
+> current, both machines' `Migrate()` calls are no-ops and there is nothing to race. Deploying first and
+> migrating second is what produced the incident.
 
 ## Verify
 - `curl https://eden-relics-tool.fly.dev/healthz` → 200.
-- Tables present after step 6: Garments / EvidenceRecords / DateEstimates / StoredRules.
+- Tables present after step 6: Garments / EvidenceRecords / DateEstimates / StoredRules / ToolEvents.
+- `ToolEvents` arrived in `AddToolEvents` (Aug 2026). Because of the known issue above it will NOT
+  appear from a deploy alone — step 6 is what creates it, and `POST /events` 500s until it exists.
 - `curl -X POST https://eden-relics-tool.fly.dev/garments -d '{}'` (no token) → 401 (auth active).
 
 ## Front-end
@@ -78,8 +95,19 @@ cd Data && dotnet ef database update --project . --startup-project . \
   visit `/seller-tool`. Requires a front-end deploy carrying the route. Capture, evidence, and dating
   all work; dating just returns no bounds until verified rules are seeded.
 
+## Clients of this API
+- The gated `/seller-tool` page (below).
+- The **crosslister browser extension** (`extension/`), which posts to `/events` only — it reads
+  listing plans from the *main* API and never touches garments here. It parks events it can't send
+  and replays them, which is why `/events` accepts backdated timestamps.
+
 ## Still to build before a real beta
 - Loosen the `/seller-tool` guard from admin-only to `sellerGuard` when the beta opens.
 - Richer seller UX (§4.6 listing form — needs Teodora's Eden house-copy spec; §4.7 measurement — needs
   the ArUco spike: Peter rigs the marker, Teo photographs garments).
-- Seed the **verified rules** once Teodora's dating-rules doc lands (POST /rules + /rules/{id}/verify).
+- Research the **17 unverified rules** (Teodora's dating-rules doc). They are already in prod and
+  already inert — an unverified rule never affects output — so this is research landing in
+  `DatingRulesSeed.cs`, not a seeding step.
+- **Use it on real stock.** As of 2026-08-17 prod holds 0 garments, 0 evidence records and 0 date
+  estimates: the tool has never been run on a real piece. Brief §10 makes Teodora beta tester zero,
+  and the ten-seller gate is judged on a beta that has not started on its first seller.

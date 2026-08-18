@@ -1,5 +1,7 @@
 using EdenRelics.SellerTool.Data;
+using System.Globalization;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Metadata.Profiles.Exif;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
@@ -32,6 +34,8 @@ public interface ICaptureService
         string contentType,
         long byteSize,
         bool archiveRightsGranted,
+        ImageProvenance provenance = ImageProvenance.LiveCapture,
+        ZipOriginality? zipOriginality = null,
         CancellationToken ct = default);
 
     Task<CaptureCompleteness> GetCompletenessAsync(Guid garmentId, CancellationToken ct = default);
@@ -61,6 +65,8 @@ public sealed class CaptureService(ToolDbContext db, IImageStore images) : ICapt
         string contentType,
         long byteSize,
         bool archiveRightsGranted,
+        ImageProvenance provenance = ImageProvenance.LiveCapture,
+        ZipOriginality? zipOriginality = null,
         CancellationToken ct = default)
     {
         // Rights are recorded per capture, so a capture without them must not reach the archive at
@@ -97,18 +103,27 @@ public sealed class CaptureService(ToolDbContext db, IImageStore images) : ICapt
         int width;
         int height;
         byte[] displayBytes;
+        DateTime? photographedAt;
 
         await ProcessingGate.WaitAsync(ct);
         try
         {
             using Image image = await Image.LoadAsync(buffer, ct);
+            // Before AutoOrient: it rewrites the EXIF orientation tag, and there is no reason to
+            // read metadata from an image we have already started mutating.
+            photographedAt = ReadPhotographedAt(image);
             image.Mutate(x => x.AutoOrient());
             width = image.Width;
             height = image.Height;
 
+            // The standard is for photographs taken TO it. Holding the back catalogue to it would
+            // reject most of the archive we are trying to seed — those photos are already taken and
+            // cannot be retaken, the garments are long gone, and a blurry record of a 1975 care
+            // label is worth incomparably more than no record. They are kept, flagged, and excluded
+            // from anything that needs standard-quality input.
             int longEdge = Math.Max(width, height);
             int required = CaptureStandard.MinimumLongEdge(slot);
-            if (longEdge < required)
+            if (provenance == ImageProvenance.LiveCapture && longEdge < required)
             {
                 return Reject("too_low_resolution",
                     $"A {slot} photo needs at least {required}px on its longest edge; this one is {longEdge}px. "
@@ -158,6 +173,9 @@ public sealed class CaptureService(ToolDbContext db, IImageStore images) : ICapt
             Height = height,
             ByteSize = byteSize,
             ContentType = contentType,
+            Provenance = provenance,
+            PhotographedAtLocal = photographedAt,
+            ZipOriginality = zipOriginality,
             Origin = "capture",
             Confirmation = ConfirmationState.Proposed,
         };
@@ -168,10 +186,47 @@ public sealed class CaptureService(ToolDbContext db, IImageStore images) : ICapt
         return new CaptureOutcome(evidence, null);
     }
 
+    /// <summary>
+    /// The photograph's own date, from EXIF. Null when absent or unreadable, which is common:
+    /// screenshots, re-encodes and anything that has been through a messaging app lose it.
+    ///
+    /// Three tags are tried in descending trustworthiness — when the shutter fired, when it was
+    /// digitised, then the file's own stamp. Returned with Unspecified kind because that is the
+    /// truth: EXIF has no timezone, so this is the camera's wall clock and calling it UTC would be
+    /// inventing an hour or two of precision we do not have.
+    /// </summary>
+    private static DateTime? ReadPhotographedAt(Image image)
+    {
+        ExifProfile? exif = image.Metadata.ExifProfile;
+        if (exif is null)
+        {
+            return null;
+        }
+
+        foreach (ExifTag<string> tag in new[] { ExifTag.DateTimeOriginal, ExifTag.DateTimeDigitized, ExifTag.DateTime })
+        {
+            if (exif.TryGetValue(tag, out IExifValue<string>? value)
+                && !string.IsNullOrWhiteSpace(value?.Value)
+                && DateTime.TryParseExact(
+                    value.Value, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out DateTime parsed))
+            {
+                return DateTime.SpecifyKind(parsed, DateTimeKind.Unspecified);
+            }
+        }
+        return null;
+    }
+
     public async Task<CaptureCompleteness> GetCompletenessAsync(Guid garmentId, CancellationToken ct = default)
     {
         List<EvidenceRecord> captures = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-            .ToListAsync(db.EvidenceRecords.Where(e => e.GarmentId == garmentId && e.ImageKey != null), ct);
+            .ToListAsync(db.EvidenceRecords.Where(e =>
+                e.GarmentId == garmentId
+                && e.ImageKey != null
+                // Completeness means "meets the capture standard", and a back-catalogue photo does
+                // not, by definition. Counting one would report a garment as properly captured on
+                // the strength of an old snapshot that was never held to the standard at all.
+                && e.Provenance == ImageProvenance.LiveCapture), ct);
 
         HashSet<CaptureSlot> present = captures.Select(c => c.Slot).ToHashSet();
         List<CaptureSlot> missingRequired = CaptureStandard.RequiredSlots.Except(present).ToList();

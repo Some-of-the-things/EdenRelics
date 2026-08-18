@@ -83,6 +83,9 @@ public class FinanceService(
     ///   2. Products marked Status=Sold but without a corresponding Order
     ///      (admin manually flipped them sold, sold offsite, etc.) — Reference = product.Id
     /// Safe to re-run.
+    ///
+    /// Reference is NOT unique on its own: a product's stock purchase and its sale are both keyed
+    /// on the product id, so idempotency checks here match Reference AND Category.
     public async Task<BackfillSalesResultDto> BackfillSalesAsync()
     {
         int createdFromOrders = 0;
@@ -115,7 +118,7 @@ public class FinanceService(
                 Date = order.UpdatedAtUtc,
                 Description = description,
                 Amount = order.Total,
-                Category = "Sales",
+                Category = TransactionCategories.Sales,
                 Platform = "Website",
                 Reference = orderRef,
             });
@@ -133,18 +136,27 @@ public class FinanceService(
         {
             if (productIdsCoveredByOrders.Contains(product.Id)) { continue; }
 
+            // Reference AND Category. A product bought with a cost price and a purchase date
+            // already has a "Stock" row keyed on the same id, and matching on Reference alone
+            // treated that as "the sale is already recorded" — so this endpoint, the one you
+            // reach for to repair a missing sale, skipped exactly the products that needed it.
             string productRef = product.Id.ToString();
-            bool exists = await transactions.Query().AnyAsync(t => t.Reference == productRef);
+            bool exists = await transactions.Query()
+                .AnyAsync(t => t.Reference == productRef && t.Category == TransactionCategories.Sales);
             if (exists) { continue; }
 
             decimal amount = product.SalePrice ?? product.Price;
 
             toCreate.Add(new Transaction
             {
-                Date = product.UpdatedAtUtc,
+                // When the piece actually sold, not when its row was last touched. UpdatedAtUtc
+                // moves every time anyone edits the product, so a sale repaired months later would
+                // otherwise land in the month of the edit — and the monthly figures are the ones
+                // being read. SoldAtUtc is null for pieces sold before it was recorded.
+                Date = product.SoldAtUtc ?? product.UpdatedAtUtc,
                 Description = $"Sale: {product.Name}",
                 Amount = amount,
-                Category = "Sales",
+                Category = TransactionCategories.Sales,
                 // Platform unknown for the product-flip path — admin can fill in afterwards.
                 Platform = null,
                 Reference = productRef,
@@ -154,8 +166,9 @@ public class FinanceService(
 
         // Path 3: cost of goods sold → ledger. Every sold dress contributes an
         // expense equal to its cost price, keyed by product so it's idempotent and
-        // independent of which income path recorded the sale. Dated at the sale
-        // (UpdatedAtUtc) so income and COGS land in the same month for profit calc.
+        // independent of which income path recorded the sale. Dated at the sale so income
+        // and COGS land in the same month for profit calc — which only holds if both use
+        // the same date, so this must stay in step with the sale row above.
         foreach (Product product in soldProducts)
         {
             if (product.CostPrice <= 0) { continue; }
@@ -166,10 +179,10 @@ public class FinanceService(
 
             toCreate.Add(new Transaction
             {
-                Date = product.UpdatedAtUtc,
+                Date = product.SoldAtUtc ?? product.UpdatedAtUtc,
                 Description = $"Cost of goods: {product.Name}",
                 Amount = -product.CostPrice,
-                Category = "Stock",
+                Category = TransactionCategories.Stock,
                 Reference = cogsRef,
             });
             createdCogs++;

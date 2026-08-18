@@ -15,7 +15,12 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { ProductStore } from '../../store/product.store';
-import { Product, ProductStatus } from '../../models/product.model';
+import { Product, ProductStatus, PRODUCT_SIZES } from '../../models/product.model';
+import {
+  filterFinanceRows,
+  financeScopeLabel,
+  summariseFinanceRows,
+} from '../../utils/finance-summary';
 import {
   filterAdminProducts,
   productStatusLabel,
@@ -23,6 +28,12 @@ import {
   sortAdminProducts,
   ProductSort,
 } from '../../utils/product-status';
+import {
+  bulkSaleTotals,
+  normaliseDiscountPercent,
+  MAX_BULK_DISCOUNT_PERCENT,
+  MIN_BULK_DISCOUNT_PERCENT,
+} from '../../utils/bulk-pricing';
 import { SeoService } from '../../services/seo.service';
 import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
@@ -40,6 +51,8 @@ import { AdminCalendarComponent } from './admin-calendar.component';
 import { AdminAccountingComponent } from './admin-accounting.component';
 import { AdminCareComponent } from './admin-care.component';
 import { AdminTopPicksComponent } from './admin-top-picks.component';
+import { AdminDatingComponent } from './admin-dating.component';
+import { AdminCrosslistingComponent } from './admin-crosslisting.component';
 
 interface AdminUser {
   id: string;
@@ -387,6 +400,8 @@ interface PageViewStats {
     AdminAccountingComponent,
     AdminCareComponent,
     AdminTopPicksComponent,
+    AdminDatingComponent,
+    AdminCrosslistingComponent,
   ],
   templateUrl: './admin-page.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -401,6 +416,9 @@ export class AdminPageComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly orderService = inject(OrderAdminService);
   readonly store = inject(ProductStore);
+
+  /** Size options for the product form — the same list the shop filter uses. */
+  readonly sizes = PRODUCT_SIZES;
 
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
@@ -426,6 +444,8 @@ export class AdminPageComponent implements OnInit {
     | 'signature'
     | 'care'
     | 'top-picks'
+    | 'dating'
+    | 'cross-listing'
   >('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
@@ -567,6 +587,149 @@ export class AdminPageComponent implements OnInit {
       this.productSort(),
     ),
   );
+
+  // Bulk sale pricing: tick a set of products, apply one percentage off. The discount always
+  // comes off each product's full Price (never off an existing sale price), so re-running a
+  // sale can't compound, and Price itself is left alone so the 28-day reduction history holds.
+  readonly selectedProductIds = signal<ReadonlySet<string>>(new Set());
+  readonly bulkApplying = signal(false);
+  readonly bulkMessage = signal('');
+  readonly bulkError = signal('');
+  // A signal rather than a plain ngModel field because bulkPreview() has to react to typing.
+  readonly bulkDiscountPercent = signal<number | null>(null);
+  bulkNotifyFavourites = false;
+
+  readonly selectedProducts = computed(() => {
+    const ids = this.selectedProductIds();
+    return this.store.products().filter((p) => ids.has(p.id));
+  });
+
+  readonly allFilteredSelected = computed(() => {
+    const filtered = this.filteredProducts();
+    const ids = this.selectedProductIds();
+    return filtered.length > 0 && filtered.every((p) => ids.has(p.id));
+  });
+
+  /** Full-price vs discounted totals for the current selection, so the effect is visible before applying. */
+  readonly bulkPreview = computed(() => {
+    const percent = normaliseDiscountPercent(this.bulkDiscountPercent());
+    const selected = this.selectedProducts();
+    if (percent === null || selected.length === 0) {
+      return null;
+    }
+    return bulkSaleTotals(selected, percent);
+  });
+
+  isProductSelected(id: string): boolean {
+    return this.selectedProductIds().has(id);
+  }
+
+  toggleProductSelection(id: string): void {
+    this.selectedProductIds.update((ids) => {
+      const next = new Set(ids);
+      if (!next.delete(id)) {
+        next.add(id);
+      }
+      return next;
+    });
+    this.clearBulkFeedback();
+  }
+
+  /** Selects every product currently passing the filters, or clears them if they're all already ticked. */
+  toggleSelectAllFiltered(): void {
+    const filtered = this.filteredProducts();
+    const allSelected = this.allFilteredSelected();
+    this.selectedProductIds.update((ids) => {
+      const next = new Set(ids);
+      for (const product of filtered) {
+        if (allSelected) {
+          next.delete(product.id);
+        } else {
+          next.add(product.id);
+        }
+      }
+      return next;
+    });
+    this.clearBulkFeedback();
+  }
+
+  clearProductSelection(): void {
+    this.selectedProductIds.set(new Set());
+    this.clearBulkFeedback();
+  }
+
+  applyBulkDiscount(): void {
+    const percent = normaliseDiscountPercent(this.bulkDiscountPercent());
+    const ids = [...this.selectedProductIds()];
+    this.clearBulkFeedback();
+    if (percent === null) {
+      this.bulkError.set(
+        `Enter a discount between ${MIN_BULK_DISCOUNT_PERCENT}% and ${MAX_BULK_DISCOUNT_PERCENT}%.`,
+      );
+      return;
+    }
+    if (ids.length === 0) {
+      this.bulkError.set('Select at least one product.');
+      return;
+    }
+
+    const emailWarning = this.bulkNotifyFavourites
+      ? '\n\nThis WILL email everyone who favourited these pieces and asked to hear about sales.'
+      : '';
+    if (!confirm(`Put ${ids.length} product(s) on sale at ${percent}% off?${emailWarning}`)) {
+      return;
+    }
+
+    this.bulkApplying.set(true);
+    this.productService.bulkSetSalePrice(ids, percent, this.bulkNotifyFavourites).subscribe({
+      next: (result) => {
+        this.store.mergeProducts(result.products);
+        this.bulkApplying.set(false);
+        if (result.updated === 0 && result.skipped === 0) {
+          this.bulkMessage.set(`Nothing to change — those products are already at ${percent}% off.`);
+          return;
+        }
+        const skipped = result.skipped > 0 ? `, ${result.skipped} skipped` : '';
+        const notified =
+          result.notified > 0 ? `, favourite alerts queued for ${result.notified}` : '';
+        this.bulkMessage.set(`${percent}% off applied to ${result.updated} product(s)${skipped}${notified}.`);
+      },
+      error: (err) => {
+        this.bulkApplying.set(false);
+        this.bulkError.set(err.error?.error ?? 'Failed to apply the bulk discount.');
+      },
+    });
+  }
+
+  clearBulkSale(): void {
+    const ids = [...this.selectedProductIds()];
+    this.clearBulkFeedback();
+    if (ids.length === 0) {
+      this.bulkError.set('Select at least one product.');
+      return;
+    }
+    if (!confirm(`End the sale on ${ids.length} product(s) and restore full price?`)) {
+      return;
+    }
+
+    this.bulkApplying.set(true);
+    this.productService.bulkClearSalePrice(ids).subscribe({
+      next: (result) => {
+        this.store.mergeProducts(result.products);
+        this.bulkApplying.set(false);
+        this.bulkMessage.set(`Sale ended on ${result.updated} product(s).`);
+      },
+      error: (err) => {
+        this.bulkApplying.set(false);
+        this.bulkError.set(err.error?.error ?? 'Failed to clear the sale prices.');
+      },
+    });
+  }
+
+  private clearBulkFeedback(): void {
+    this.bulkMessage.set('');
+    this.bulkError.set('');
+  }
 
   resolveStatus(product: Product): ProductStatus {
     return resolveProductStatus(product);
@@ -1100,6 +1263,27 @@ export class AdminPageComponent implements OnInit {
   readonly financeMonthFilter = signal<string>('all');
   readonly financeSourceFilter = signal<'all' | 'site' | 'external'>('all');
   readonly backfillingSales = signal(false);
+
+  /**
+   * The Finance KPIs, scoped to whatever the month and source filters are set to.
+   *
+   * They used to render straight from the server's all-time summary while the
+   * ledger beneath them was filtered, so narrowing to a month or to site sales
+   * moved the table and left the headline untouched — showing "94 Transactions"
+   * above a single row. Derived from the same filtered list the table uses, so
+   * the two cannot disagree.
+   *
+   * Rounded per figure because summing floats drifts: 0.1 + 0.2 is not 0.3, and
+   * these are pounds and pence on screen.
+   */
+  readonly filteredFinanceSummary = computed(() =>
+    summariseFinanceRows(this.filteredFinanceTransactions),
+  );
+
+  /** What the KPIs above are counting, so the numbers are never ambiguous. */
+  readonly financeScopeLabel = computed(() =>
+    financeScopeLabel(this.financeMonthFilter(), this.financeSourceFilter()),
+  );
   financeForm = {
     date: '',
     description: '',
@@ -1189,7 +1373,9 @@ export class AdminPageComponent implements OnInit {
       | 'reviews'
       | 'signature'
       | 'care'
-      | 'top-picks',
+      | 'top-picks'
+      | 'dating'
+      | 'cross-listing',
   ): void {
     this.mobileMenuOpen.set(false);
     this.activeTab.set(tab);
@@ -2219,6 +2405,12 @@ export class AdminPageComponent implements OnInit {
   remove(id: string): void {
     if (confirm('Delete this product?')) {
       this.store.removeProduct(id);
+      // Don't leave a deleted product ticked in the bulk-sale selection.
+      this.selectedProductIds.update((ids) => {
+        const next = new Set(ids);
+        next.delete(id);
+        return next;
+      });
     }
   }
 
@@ -2478,22 +2670,14 @@ export class AdminPageComponent implements OnInit {
       });
   }
 
+  /** The ledger rows the table shows — and, via filteredFinanceSummary, exactly
+   *  the rows the KPIs above it total. See utils/finance-summary.ts. */
   get filteredFinanceTransactions(): FinanceTransaction[] {
-    const monthFilter = this.financeMonthFilter();
-    const sourceFilter = this.financeSourceFilter();
-    let result = this.financeTransactions();
-    if (monthFilter !== 'all') {
-      result = result.filter((t) => t.date.startsWith(monthFilter));
-    }
-    if (sourceFilter === 'site') {
-      result = result.filter((t) => t.platform === 'Website');
-    } else if (sourceFilter === 'external') {
-      // External = a known non-Website platform (Etsy, Depop, Vinted, eBay, etc.).
-      // Transactions with no platform set are considered Unspecified and excluded
-      // from both Site and External filters so the buckets don't overlap.
-      result = result.filter((t) => !!t.platform && t.platform !== 'Website');
-    }
-    return result;
+    return filterFinanceRows(
+      this.financeTransactions(),
+      this.financeMonthFilter(),
+      this.financeSourceFilter(),
+    );
   }
 
   get selectedMonthSummary(): FinanceSummary['byMonth'][0] | null {

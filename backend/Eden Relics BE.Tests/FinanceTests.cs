@@ -272,4 +272,118 @@ public class FinanceTests : IClassFixture<ApiFactory>
         Assert.Contains(janOnly, t => t.Description == "January item");
         Assert.DoesNotContain(janOnly, t => t.Description == "February item");
     }
+
+    // --- Sale rows must survive the stock-purchase row sharing their Reference ---
+    //
+    // A product carries two ledger rows keyed on its id: the stock purchase written when it is
+    // created with a cost price and a purchase date, and the sale written when it is marked sold.
+    // Both the live path and the backfill used to check Reference alone, find the stock row, and
+    // conclude the sale was already recorded — so a piece booked its expense and never its income.
+    // Found in prod on 2026-08-17: three sold pieces, £96 of income missing from the ledger.
+
+    /// <summary>Creates a product with a cost price and purchase date, so it gets a Stock row.</summary>
+    private static async Task<Guid> CreateProductWithStockPurchase(
+        HttpClient client, string name, decimal price, decimal costPrice)
+    {
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/products", new
+        {
+            name,
+            description = "Desc",
+            price,
+            costPrice,
+            stockPurchaseDate = "2026-05-01T00:00:00Z",
+            era = "1990s",
+            category = "90s",
+            size = "10",
+            condition = "good",
+            imageUrl = "https://example.com/img.jpg",
+            inStock = true,
+        });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        ProductResponse? created = await response.Content.ReadFromJsonAsync<ProductResponse>(JsonOptions);
+        return created!.Id;
+    }
+
+    private static async Task<List<TransactionResponse>> RowsFor(HttpClient client, Guid productId)
+    {
+        List<TransactionResponse>? all =
+            await client.GetFromJsonAsync<List<TransactionResponse>>("/api/finance", JsonOptions);
+        return [.. all!.Where(t => t.Reference == productId.ToString())];
+    }
+
+    [Fact]
+    public async Task MarkingSold_RecordsTheSale_EvenWhenAStockPurchaseSharesTheReference()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "fin-admin-sold-with-stock@test.com");
+
+        Guid id = await CreateProductWithStockPurchase(client, "Sold with stock row", 48m, 12m);
+
+        List<TransactionResponse> beforeSale = await RowsFor(client, id);
+        Assert.Single(beforeSale);
+        Assert.Equal("Stock", beforeSale[0].Category);
+
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+
+        List<TransactionResponse> afterSale = await RowsFor(client, id);
+        TransactionResponse sale = Assert.Single(afterSale, t => t.Category == "Sales");
+        Assert.Equal(48m, sale.Amount);
+    }
+
+    [Fact]
+    public async Task MarkingSold_StillOnlyRecordsTheSaleOnce()
+    {
+        // The fix narrows the idempotency check; it must not weaken it. Flipping to sold, away,
+        // and back must not book the income twice.
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "fin-admin-sold-twice@test.com");
+
+        Guid id = await CreateProductWithStockPurchase(client, "Sold twice", 60m, 15m);
+
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "live" })).EnsureSuccessStatusCode();
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+
+        List<TransactionResponse> rows = await RowsFor(client, id);
+        Assert.Single(rows, t => t.Category == "Sales");
+    }
+
+    [Fact]
+    public async Task BackfillSales_RepairsASoldProductWhoseSaleWasNeverRecorded()
+    {
+        // Backfill is the endpoint you reach for when a sale is missing, and it had the same flaw
+        // — so it skipped exactly the products that needed repairing. This is the recovery path
+        // for the rows already missing in prod, so it has to work on a product that already has a
+        // Stock row and no Sales row.
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "fin-admin-backfill-stock@test.com");
+
+        Guid id = await CreateProductWithStockPurchase(client, "Backfill me", 75m, 20m);
+
+        // Put it in the state prod is in: sold, with a stock row and no sale row.
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+        List<TransactionResponse> rows = await RowsFor(client, id);
+        TransactionResponse sale = Assert.Single(rows, t => t.Category == "Sales");
+        (await client.DeleteAsync($"/api/finance/{sale.Id}")).EnsureSuccessStatusCode();
+        Assert.DoesNotContain(await RowsFor(client, id), t => t.Category == "Sales");
+
+        (await client.PostAsync("/api/finance/backfill-sales", null)).EnsureSuccessStatusCode();
+
+        Assert.Single(await RowsFor(client, id), t => t.Category == "Sales");
+    }
+
+    [Fact]
+    public async Task BackfillSales_IsStillSafeToRunTwice()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "fin-admin-backfill-twice@test.com");
+
+        Guid id = await CreateProductWithStockPurchase(client, "Backfill twice", 90m, 25m);
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+
+        (await client.PostAsync("/api/finance/backfill-sales", null)).EnsureSuccessStatusCode();
+        (await client.PostAsync("/api/finance/backfill-sales", null)).EnsureSuccessStatusCode();
+
+        Assert.Single(await RowsFor(client, id), t => t.Category == "Sales");
+    }
 }

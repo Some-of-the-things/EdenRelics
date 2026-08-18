@@ -1,5 +1,23 @@
 namespace Eden_Relics_BE.Data.Entities;
 
+/// <summary>
+/// The ledger categories the code writes and matches on.
+///
+/// These are strings in the database and free text on the admin form, so this is a convention
+/// rather than a constraint — but the automatic paths must agree on the spelling, because
+/// idempotency checks match on <see cref="Transaction.Category"/> as well as
+/// <see cref="Transaction.Reference"/>.
+///
+/// They have to: one product carries two rows keyed on its id — the stock purchase written when
+/// it is created, and the sale written when it is marked sold. A check on Reference alone finds
+/// the wrong one.
+/// </summary>
+public static class TransactionCategories
+{
+    public const string Sales = "Sales";
+    public const string Stock = "Stock";
+}
+
 public class Transaction : BaseEntity
 {
     public DateTime Date { get; set; }

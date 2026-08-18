@@ -33,6 +33,9 @@
                 point.link.label
               }}</a>
             }
+            @if (point.textAfter) {
+              {{ point.textAfter }}
+            }
           </li>
         }
       </ul>

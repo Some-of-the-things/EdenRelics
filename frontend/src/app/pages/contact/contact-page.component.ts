@@ -31,7 +31,6 @@ export class ContactPageComponent implements OnInit {
       description:
         'Get in touch with Eden Relics — questions about a piece, sizing, sourcing, or partnership enquiries.',
       url: '/contact',
-      hreflang: true,
     });
     this.seo.setJsonLd({
       '@context': 'https://schema.org',

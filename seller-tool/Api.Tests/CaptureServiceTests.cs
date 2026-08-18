@@ -221,4 +221,151 @@ public class CaptureServiceTests
         // Still requested, and still not blocking.
         Assert.Contains(CaptureSlot.BrandLabel, done.MissingRequested);
     }
+// --- Back catalogue: historical uploads (Teodora's v1 reframe) ---
+
+    /// <summary>A JPEG carrying an EXIF DateTimeOriginal, as a real camera photo would.</summary>
+    private static MemoryStream JpegTakenOn(int width, int height, DateTime taken)
+    {
+        using Image<SixLabors.ImageSharp.PixelFormats.Rgba32> img = new(width, height);
+        img.Metadata.ExifProfile = new SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifProfile();
+        img.Metadata.ExifProfile.SetValue(
+            SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.DateTimeOriginal,
+            taken.ToString("yyyy:MM:dd HH:mm:ss"));
+        MemoryStream ms = new();
+        img.Save(ms, new JpegEncoder());
+        ms.Position = 0;
+        return ms;
+    }
+
+    [Fact]
+    public async Task AHistoricalUploadKeepsTheDateThePhotoWasTaken()
+    {
+        // The upload date is meaningless for a back-catalogue photo; the capture date is what
+        // roughly locates when that garment passed through the shop. Cheap to store, impossible to
+        // recover once the file has been re-encoded.
+        (CaptureService svc, ToolDbContext db, _) = Build();
+        Guid id = SeedGarment(db);
+        DateTime taken = new(2026, 3, 14, 9, 41, 0);
+        using MemoryStream jpeg = JpegTakenOn(2000, 1500, taken);
+
+        CaptureOutcome outcome = await svc.CaptureAsync(
+            id, CaptureSlot.CareLabel, EvidenceType.CareLabel, "care.wash-symbol",
+            jpeg, "image/jpeg", jpeg.Length, archiveRightsGranted: true,
+            ImageProvenance.HistoricalUpload);
+
+        Assert.True(outcome.Succeeded);
+        Assert.Equal(taken, outcome.Evidence!.PhotographedAtLocal);
+        // Stored as a wall clock, not an instant — EXIF has no timezone and pretending otherwise
+        // invents precision.
+        Assert.Equal(DateTimeKind.Unspecified, outcome.Evidence.PhotographedAtLocal!.Value.Kind);
+        Assert.NotEqual(outcome.Evidence.PhotographedAtLocal, outcome.Evidence.CreatedAtUtc);
+    }
+
+    [Fact]
+    public async Task APhotoWithNoExifIsStillStored()
+    {
+        // Screenshots, re-encodes and anything through a messaging app lose EXIF. A missing date is
+        // not a reason to refuse the only surviving photograph of a label.
+        (CaptureService svc, ToolDbContext db, _) = Build();
+        Guid id = SeedGarment(db);
+        using MemoryStream jpeg = Jpeg(2000, 1500);
+
+        CaptureOutcome outcome = await svc.CaptureAsync(
+            id, CaptureSlot.CareLabel, EvidenceType.CareLabel, "care.wash-symbol",
+            jpeg, "image/jpeg", jpeg.Length, archiveRightsGranted: true,
+            ImageProvenance.HistoricalUpload);
+
+        Assert.True(outcome.Succeeded);
+        Assert.Null(outcome.Evidence!.PhotographedAtLocal);
+    }
+
+    [Fact]
+    public async Task AnUndersizedHistoricalPhotoIsKept_BecauseItCannotBeRetaken()
+    {
+        // The garment sold months ago. This photo is all there will ever be of that label, and a
+        // blurry record beats no record. Holding the back catalogue to the capture standard would
+        // reject most of the archive this is meant to seed.
+        (CaptureService svc, ToolDbContext db, _) = Build();
+        Guid id = SeedGarment(db);
+        using MemoryStream small = Jpeg(400, 300);
+
+        CaptureOutcome outcome = await svc.CaptureAsync(
+            id, CaptureSlot.CareLabel, EvidenceType.CareLabel, "care.wash-symbol",
+            small, "image/jpeg", small.Length, archiveRightsGranted: true,
+            ImageProvenance.HistoricalUpload);
+
+        Assert.True(outcome.Succeeded);
+        Assert.Equal(ImageProvenance.HistoricalUpload, outcome.Evidence!.Provenance);
+    }
+
+    [Fact]
+    public async Task TheSameUndersizedPhotoIsStillRefusedAsALiveCapture()
+    {
+        // The standard still bites where it can be met. Someone standing over the garment can move
+        // closer and shoot it again; that is the whole difference.
+        (CaptureService svc, ToolDbContext db, _) = Build();
+        Guid id = SeedGarment(db);
+        using MemoryStream small = Jpeg(400, 300);
+
+        CaptureOutcome outcome = await svc.CaptureAsync(
+            id, CaptureSlot.CareLabel, EvidenceType.CareLabel, "care.wash-symbol",
+            small, "image/jpeg", small.Length, archiveRightsGranted: true,
+            ImageProvenance.LiveCapture);
+
+        Assert.False(outcome.Succeeded);
+        Assert.Equal("too_low_resolution", outcome.Rejection!.Code);
+    }
+
+    [Fact]
+    public async Task CaptureDefaultsToLiveCapture_SoProvenanceIsNeverUnknown()
+    {
+        (CaptureService svc, ToolDbContext db, _) = Build();
+        Guid id = SeedGarment(db);
+        using MemoryStream jpeg = Jpeg(2000, 1500);
+
+        CaptureOutcome outcome = await svc.CaptureAsync(
+            id, CaptureSlot.CareLabel, EvidenceType.CareLabel, "care.wash-symbol",
+            jpeg, "image/jpeg", jpeg.Length, archiveRightsGranted: true);
+
+        Assert.Equal(ImageProvenance.LiveCapture, outcome.Evidence!.Provenance);
+    }
+
+    [Fact]
+    public async Task AHistoricalUploadDoesNotCountTowardsMeetingTheStandard()
+    {
+        // Otherwise a garment reports itself properly captured on the strength of an old snapshot
+        // that was never held to the standard — and the flag stops being able to separate the
+        // training-quality set from the rough one, which is its entire purpose.
+        (CaptureService svc, ToolDbContext db, _) = Build();
+        Guid id = SeedGarment(db);
+
+        foreach (CaptureSlot slot in CaptureStandard.RequiredSlots)
+        {
+            using MemoryStream jpeg = Jpeg(2000, 1500);
+            await svc.CaptureAsync(
+                id, slot, EvidenceType.CareLabel, "care.wash-symbol",
+                jpeg, "image/jpeg", jpeg.Length, archiveRightsGranted: true,
+                ImageProvenance.HistoricalUpload);
+        }
+
+        CaptureCompleteness completeness = await svc.GetCompletenessAsync(id);
+        Assert.False(completeness.IsComplete);
+        Assert.NotEmpty(completeness.MissingRequired);
+    }
+
+    [Fact]
+    public async Task AZipCaptureCarriesWhetherItIsTheGarmentsOwn()
+    {
+        (CaptureService svc, ToolDbContext db, _) = Build();
+        Guid id = SeedGarment(db);
+        using MemoryStream jpeg = Jpeg(2000, 1500);
+
+        CaptureOutcome outcome = await svc.CaptureAsync(
+            id, CaptureSlot.Zip, EvidenceType.Zip, "zip.maker-mark",
+            jpeg, "image/jpeg", jpeg.Length, archiveRightsGranted: true,
+            ImageProvenance.LiveCapture, ZipOriginality.Unsure);
+
+        Assert.True(outcome.Succeeded);
+        Assert.Equal(ZipOriginality.Unsure, outcome.Evidence!.ZipOriginality);
+    }
 }

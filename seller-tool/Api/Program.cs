@@ -3,6 +3,7 @@ using EdenRelics.SellerTool.Api;
 using EdenRelics.SellerTool.Data;
 using EdenRelics.SellerTool.Dating;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -36,7 +37,24 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
         };
     });
-builder.Services.AddAuthorization();
+// Who may reach the tool at all.
+//
+// The tool validates the main site's JWT, and an ordinary customer account carries one — so the
+// adminGuard on the Angular /seller-tool route was never the boundary, only the signpost. Anyone
+// with an Eden Relics login and the tool's URL could call it directly. During the closed beta the
+// tool is not for customers, so the gate lives here, where it actually holds.
+//
+// Defaults to CLOSED. Opening the seller beta means setting Tool:AdminOnly=false AND loosening
+// adminGuard -> sellerGuard on the route; the default is admin-only so that forgetting the flag
+// fails safe rather than exposing the tool. Rule management stays admin-only either way — sellers
+// use the rules, they do not edit them.
+builder.Services.AddSingleton<IAuthorizationHandler, ToolAccessHandler>();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(ToolEndpoints.AccessPolicy, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ToolAccessRequirement());
+    });
 
 // CORS — the tool is called from the Angular front-end (a different origin) with a bearer token in
 // the Authorization header, which triggers a preflight. Allow the known front-end origins (overridable
@@ -64,6 +82,11 @@ builder.Services.AddScoped<IDatingEngine, DatingEngine>();
 builder.Services.Configure<R2Options>(builder.Configuration.GetSection(R2Options.SectionName));
 builder.Services.AddScoped<IImageStore, R2ImageStore>();
 builder.Services.AddScoped<ICaptureService, CaptureService>();
+
+// Usage instrumentation (brief §10). Events land in the tool's own database, per-seller and joinable
+// to a garment, because the questions that decide the gate are both of those things.
+builder.Services.AddScoped<IEventRecorder, EventRecorder>();
+builder.Services.AddScoped<IToolMetrics, ToolMetrics>();
 
 WebApplication app = builder.Build();
 

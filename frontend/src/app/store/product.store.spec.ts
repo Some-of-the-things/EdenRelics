@@ -3,7 +3,7 @@ import { PLATFORM_ID } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ProductStore } from './product.store';
-import { Product } from '../models/product.model';
+import { Product, PRODUCT_SIZES } from '../models/product.model';
 import { environment } from '../../environments/environment';
 
 const MOCK_PRODUCTS: Product[] = [
@@ -121,5 +121,79 @@ describe('ProductStore', () => {
     expect(cats).toContain('y2k');
     expect(cats).not.toContain('modern');
     expect(cats.length).toBe(6);
+  });
+
+  describe('failed loads', () => {
+    it('records an error instead of quietly showing an empty shop', () => {
+      store.loadProducts();
+      httpMock
+        .expectOne(`${environment.apiUrl}/api/products`)
+        .flush('upstream is down', { status: 500, statusText: 'Server Error' });
+
+      // The service used to swallow this into of([]), which left error empty and made a
+      // dead API look exactly like a sold-out catalogue.
+      expect(store.error()).toBeTruthy();
+      expect(store.isLoading()).toBe(false);
+    });
+
+    it('can still load after a failure — the error must not kill the rxMethod', () => {
+      store.loadProducts();
+      httpMock
+        .expectOne(`${environment.apiUrl}/api/products`)
+        .flush('nope', { status: 503, statusText: 'Service Unavailable' });
+      expect(store.error()).toBeTruthy();
+
+      // If the error were allowed to reach the outer pipe, this second call would issue no
+      // request at all and the retry button would be dead.
+      store.loadProducts();
+      httpMock.expectOne(`${environment.apiUrl}/api/products`).flush(MOCK_PRODUCTS);
+
+      expect(store.error()).toBe('');
+      expect(store.products().length).toBe(3);
+    });
+
+    it('keeps what it already had when a refresh fails', () => {
+      expect(store.products().length).toBe(3);
+
+      store.loadProducts();
+      httpMock
+        .expectOne(`${environment.apiUrl}/api/products`)
+        .flush('nope', { status: 500, statusText: 'Server Error' });
+
+      // Blanking the rail on a failed refresh would empty a shop that was fine a moment ago.
+      expect(store.products().length).toBe(3);
+    });
+  });
+
+  describe('sizes', () => {
+    it('offers every size the product form can set', () => {
+      // Both the shop filter and the admin dropdown read PRODUCT_SIZES, so a
+      // size that can be assigned is always one that can be filtered for. This
+      // used not to hold: the filter kept its own copy and had dropped 14/16,
+      // leaving anything listed at that size unreachable through the filter.
+      expect(store.sizes()).toEqual(PRODUCT_SIZES);
+      expect(store.sizes()).toContain('14/16');
+      expect(store.sizes()).toContain('16/18');
+      expect(store.sizes()).toContain('18');
+      expect(store.sizes()).toContain('18/20');
+    });
+
+    it('is ascending and free of duplicates — it drives the filter order', () => {
+      const numeric = (s: string): number => Number(s.split('/')[0]);
+      const values = [...PRODUCT_SIZES];
+      expect(new Set(values).size).toBe(values.length);
+      for (let i = 1; i < values.length; i++) {
+        // A slash size sits between its two whole sizes, so compare on the
+        // lower bound and require a non-decreasing run.
+        expect(numeric(values[i])).toBeGreaterThanOrEqual(numeric(values[i - 1]));
+      }
+    });
+
+    it('filters the catalogue by a newly added size', () => {
+      store.setSize('18/20');
+      expect(store.filteredProducts().length).toBe(0);
+      store.setSize('all');
+      expect(store.filteredProducts().length).toBeGreaterThan(0);
+    });
   });
 });

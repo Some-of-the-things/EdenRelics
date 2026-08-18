@@ -1,0 +1,181 @@
+<section class="dating">
+  <header class="dating__intro">
+    <h2 class="dating__title">Dating bench</h2>
+    <p class="dating__lede">
+      Tell the engine what a garment shows and it derives the range that survives. Every bound comes
+      with the source it rests on. Nothing here is saved — this runs the same engine over the same
+      rules as the seller tool, but writes nothing to the evidence archive.
+    </p>
+  </header>
+
+  @if (error()) {
+    <p class="dating__error" role="alert">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="dating__loading">Loading the live rule set…</p>
+  } @else if (features().length > 0) {
+    <p class="dating__ruleinfo">
+      {{ features().length }} features are actionable by the live rule set. Anything still awaiting
+      research contributes nothing and is deliberately absent from this list.
+    </p>
+
+    @if (runnableScenarios().length > 0) {
+      <div class="dating__scenarios">
+        <span class="dating__scenarios-label">Start from a case:</span>
+        @for (s of runnableScenarios(); track s.name) {
+          <button type="button" class="dating__scenario" (click)="loadScenario(s)" [title]="s.what">
+            {{ s.name }}
+          </button>
+        }
+      </div>
+    }
+
+    <div class="dating__grid">
+      <!-- Left: what the garment shows -->
+      <div class="dating__panel">
+        <h3 class="dating__panel-title">What the garment shows</h3>
+
+        <label class="dating__add">
+          <span>Add an observation</span>
+          <select #picker (change)="addFeature(picker.value); picker.value = ''">
+            <option value="">Choose a feature…</option>
+            @for (f of available(); track f.feature) {
+              <option [value]="f.feature">
+                {{ f.feature }}{{ f.specIds.length ? ' (' + f.specIds.join(', ') + ')' : '' }}
+              </option>
+            }
+          </select>
+        </label>
+
+        @if (observations().length === 0) {
+          <p class="dating__empty">Nothing added yet. Pick a feature above, or start from a case.</p>
+        } @else {
+          <ul class="dating__obs">
+            @for (o of observations(); track o.feature; let i = $index) {
+              <li class="dating__ob">
+                <div class="dating__ob-head">
+                  <code>{{ o.feature }}</code>
+                  <button
+                    type="button"
+                    class="dating__remove"
+                    (click)="removeObservation(i)"
+                    [attr.aria-label]="'Remove ' + o.feature"
+                  >
+                    ×
+                  </button>
+                </div>
+                <span class="dating__ob-type">{{ o.type }}</span>
+                @if (o.needsValue) {
+                  <label class="dating__ob-value">
+                    <span>Label text this rule reads</span>
+                    <input
+                      type="text"
+                      [value]="o.rawValue"
+                      (input)="setRawValue(i, $any($event.target).value)"
+                      placeholder="e.g. 01 749 3132"
+                    />
+                  </label>
+                }
+              </li>
+            }
+          </ul>
+        }
+
+        <fieldset class="dating__claim">
+          <legend>Seller's claimed era (optional)</legend>
+          <label>
+            <span>From</span>
+            <input type="number" [(ngModel)]="claimEarliest" name="claimEarliest" min="1900" max="2030" placeholder="1970" />
+          </label>
+          <label>
+            <span>To</span>
+            <input type="number" [(ngModel)]="claimLatest" name="claimLatest" min="1900" max="2030" placeholder="1979" />
+          </label>
+        </fieldset>
+
+        <div class="dating__actions">
+          <button type="button" class="dating__run" (click)="run()" [disabled]="running() || hardCount() === 0">
+            {{ running() ? 'Running…' : 'Date it' }}
+          </button>
+          <button type="button" class="dating__clear" (click)="clear()">Clear</button>
+        </div>
+      </div>
+
+      <!-- Right: what the engine concluded, and why -->
+      <div class="dating__panel">
+        <h3 class="dating__panel-title">What the engine concluded</h3>
+
+        @if (result(); as r) {
+          <div
+            class="dating__verdict"
+            [class.dating__verdict--contradiction]="r.outcome === 'HardContradiction'"
+            [class.dating__verdict--soft]="r.outcome === 'SoftContradiction'"
+            role="status"
+          >
+            <span class="dating__verdict-label">{{ outcomeLabel(r.outcome) }}</span>
+            @if (rangeIsEmpty()) {
+              <span class="dating__range dating__range--empty">no possible range</span>
+            } @else {
+              <span class="dating__range">{{ r.range }}</span>
+            }
+            <p class="dating__verdict-note">{{ outcomeNote(r.outcome) }}</p>
+          </div>
+
+          @if (r.claimFlag) {
+            <p class="dating__flag" [class.dating__flag--hard]="r.claimFlag.strength === 'Hard'" role="alert">
+              <strong>{{ r.claimFlag.strength }} flag:</strong> {{ r.claimFlag.message }}
+            </p>
+          }
+
+          <h4 class="dating__chain-title">Why — every bound, and what it rests on</h4>
+          <ul class="dating__chain">
+            @for (l of appliedLinks(); track trackLink($index, l)) {
+              <li class="dating__link">
+                <div class="dating__link-head">
+                  <span class="dating__bound">{{ l.bound }}</span>
+                  <span class="dating__strength" [class.dating__strength--soft]="l.strength === 'Soft'">
+                    {{ l.strength }}
+                  </span>
+                  @if (l.specId) {
+                    <span class="dating__spec">{{ l.specId }}</span>
+                  }
+                  <span class="dating__prov">{{ l.provenance }}</span>
+                </div>
+                <code class="dating__feature">{{ l.feature }}</code>
+                @if (l.source) {
+                  <p class="dating__source">{{ l.source }}</p>
+                }
+              </li>
+            }
+          </ul>
+
+          @if (setAsideLinks().length > 0) {
+            <h4 class="dating__chain-title">Set aside — kept, because the reason is part of the reasoning</h4>
+            <ul class="dating__chain dating__chain--aside">
+              @for (l of setAsideLinks(); track trackLink($index, l)) {
+                <li class="dating__link dating__link--aside">
+                  <div class="dating__link-head">
+                    <span class="dating__bound">{{ l.bound }}</span>
+                    @if (l.specId) {
+                      <span class="dating__spec">{{ l.specId }}</span>
+                    }
+                  </div>
+                  <code class="dating__feature">{{ l.feature }}</code>
+                  @if (l.exclusionReason) {
+                    <p class="dating__source">{{ l.exclusionReason }}</p>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        } @else {
+          <p class="dating__empty">
+            Add what the garment shows and press <em>Date it</em>. The range, the outcome and every
+            bound behind it appear here.
+          </p>
+        }
+      </div>
+    </div>
+  }
+</section>

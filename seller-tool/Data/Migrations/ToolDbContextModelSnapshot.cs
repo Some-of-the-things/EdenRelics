@@ -126,6 +126,14 @@ namespace EdenRelics.SellerTool.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<DateTime?>("PhotographedAtLocal")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Provenance")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
+
                     b.Property<string>("RawValue")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -146,11 +154,17 @@ namespace EdenRelics.SellerTool.Data.Migrations
                     b.Property<int?>("Width")
                         .HasColumnType("integer");
 
+                    b.Property<string>("ZipOriginality")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Feature");
 
                     b.HasIndex("GarmentId");
+
+                    b.HasIndex("GarmentId", "Provenance");
 
                     b.ToTable("EvidenceRecords");
                 });
@@ -299,6 +313,54 @@ namespace EdenRelics.SellerTool.Data.Migrations
                     b.HasKey("Code");
 
                     b.ToTable("StoredTransitionGroups");
+                });
+
+            modelBuilder.Entity("EdenRelics.SellerTool.Data.ToolEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int?>("DurationMs")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("GarmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Platform")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GarmentId");
+
+                    b.HasIndex("OccurredAtUtc", "Kind");
+
+                    b.HasIndex("OccurredAtUtc", "SellerId");
+
+                    b.ToTable("ToolEvents");
                 });
 
             modelBuilder.Entity("EdenRelics.SellerTool.Data.DateEstimate", b =>

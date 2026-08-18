@@ -8,6 +8,7 @@ using Eden_Relics_BE.Data.Interceptors;
 using Npgsql;
 using Eden_Relics_BE.Repositories;
 using Eden_Relics_BE.Services;
+using Eden_Relics_BE.Services.CrossListing;
 using Fido2NetLib;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
@@ -147,6 +148,16 @@ builder.Services.AddScoped<ICalendarFeedService, CalendarFeedService>();
 builder.Services.AddScoped<ISitemapService, SitemapService>();
 builder.Services.AddScoped<IMerchantFeedService, MerchantFeedService>();
 builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
+
+// Cross-listing. Each platform is an adapter registered into the same collection, so adding a
+// platform is one class and one line here — and Teodora's §6 field research lands as edits to one
+// small adapter rather than anywhere else.
+builder.Services.AddScoped<ICrossListingService, Eden_Relics_BE.Services.CrossListing.CrossListingService>();
+builder.Services.AddScoped<IMarketplaceAdapter, EtsyAdapter>();
+builder.Services.AddScoped<IMarketplaceAdapter, EbayAdapter>();
+builder.Services.AddScoped<IMarketplaceAdapter, VintedAdapter>();
+builder.Services.AddScoped<IMarketplaceAdapter, DepopAdapter>();
+
 builder.Services.AddScoped<ITopPicksService, TopPicksService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
@@ -177,6 +188,10 @@ bool runScheduledJobs = builder.Configuration.GetValue("BackgroundJobs:Enabled",
 // Translation
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddHostedService<TranslationBackgroundService>();
+
+// Sale notifications to favouriters. Ungated for the same reason as translation: it drains a
+// per-process in-memory queue fed by requests handled on this instance.
+builder.Services.AddHostedService<SaleNotificationBackgroundService>();
 
 // SEO rank checking (now backed by GSC position data instead of Custom Search API)
 builder.Services.AddScoped<RankCheckerService>();

@@ -1,0 +1,449 @@
+/* Palette-driven: --bg-card is a real light surface under either palette, so nothing here depends on
+   which branding values are live. */
+
+.xlist {
+  font-family: var(--font-body);
+  color: var(--text-primary);
+}
+
+.xlist__intro {
+  margin-bottom: 1.25rem;
+}
+
+.xlist__title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin: 0 0 0.4rem;
+}
+
+.xlist__lede {
+  color: var(--text-secondary);
+  max-width: 70ch;
+  line-height: 1.6;
+  margin: 0;
+  font-size: 0.925rem;
+}
+
+.xlist__error {
+  border-left: 3px solid var(--accent);
+  background: var(--bg-card);
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.xlist__loading,
+.xlist__empty {
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0.75rem 0;
+}
+
+.xlist__picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 34rem;
+  margin-bottom: 1.25rem;
+
+  span {
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  select {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border-control);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+}
+
+.xlist__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.9rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1.25rem;
+}
+
+.xlist__sku,
+.xlist__price,
+.xlist__ready {
+  font-size: 0.825rem;
+  color: var(--text-secondary);
+}
+
+.xlist__ready {
+  margin-left: auto;
+  font-weight: 500;
+}
+
+/* --- platform cards --- */
+
+.xlist__platforms {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+}
+
+.xplat {
+  border: 1px solid var(--border-color);
+  border-left-width: 3px;
+  background: var(--bg-card);
+  padding: 0.9rem 1rem 1.1rem;
+}
+
+.xplat--ready {
+  border-left-color: var(--accent);
+}
+
+.xplat--blocked {
+  border-left-color: var(--border-dark);
+}
+
+.xplat__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.3rem;
+}
+
+.xplat__name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.xplat__state {
+  font-size: 0.65rem;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--border-control);
+}
+
+.xplat__state--ready {
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  border-color: var(--text-primary);
+}
+
+.xplat__state--blocked {
+  color: var(--text-secondary);
+}
+
+.xplat__tag {
+  font-size: 0.65rem;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: 1px dashed var(--border-control);
+  padding: 0.15rem 0.45rem;
+}
+
+.xplat__transport {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 0.75rem;
+}
+
+.xplat__section {
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin: 0.9rem 0 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.xplat__problems {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.xplat__problem {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--accent);
+}
+
+.xplat__problems--warn .xplat__problem {
+  border-left-color: var(--gold, #b8903c);
+  color: var(--text-secondary);
+}
+
+.xplat__field {
+  display: inline-block;
+  font-size: 0.65rem;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-right: 0.4rem;
+}
+
+.xplat__fix {
+  display: block;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+}
+
+.xplat__fields {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.xplat__field-row {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border-color);
+
+  dt {
+    color: var(--text-muted);
+    word-break: break-all;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+.xplat__copy {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--accent);
+    color: var(--text-inverse);
+  }
+}
+
+.xplat__fallback-why {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+  line-height: 1.45;
+}
+
+.xplat__fallback {
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  padding: 0.6rem 0.7rem;
+}
+
+.xplat__fallback-title {
+  font-weight: 500;
+  margin: 0 0 0.4rem;
+  font-size: 0.875rem;
+}
+
+.xplat__fallback-body {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  margin: 0;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+/* --- relist --- */
+
+.xlist__relist {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.xlist__relist-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 500;
+  margin: 0 0 0.35rem;
+}
+
+.xlist__relist-note {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  max-width: 66ch;
+  line-height: 1.55;
+  margin: 0 0 0.75rem;
+}
+
+.xlist__relist-btn {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 0.55rem 1.2rem;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-control);
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+.xlist__candidates {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.5rem 0.7rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    font-size: 0.85rem;
+  }
+}
+
+.xlist__cand-days {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--accent);
+  min-width: 5rem;
+}
+
+.xlist__cand-meta {
+  margin-left: auto;
+  font-size: 0.775rem;
+  color: var(--text-muted);
+}
+
+/* --- Crosslister extension --- */
+
+.xext {
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--text-muted);
+  border-radius: 3px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--bg-card);
+}
+
+.xext--on {
+  border-left-color: var(--accent);
+}
+
+.xext__state {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.xext__note {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  max-width: 62ch;
+}
+
+.xext__btn {
+  margin-top: 0.65rem;
+  font-family: var(--font-decorative);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 0.5rem 1rem;
+  border-radius: 3px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--text-inverse);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+}
+
+.xplat__send {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0;
+}
+
+.xplat__send-btn {
+  font-family: var(--font-decorative);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 0.45rem 0.9rem;
+  border-radius: 3px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--accent);
+    color: var(--text-inverse);
+  }
+}
+
+.xplat__send-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex: 1 1 16rem;
+}
+
+.xplat__send-state {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}

@@ -1,0 +1,77 @@
+:root {
+  --ink: #17181c;
+  --muted: #5c5c5c;
+  --line: #d8d5cc;
+  --paper: #fdfdfb;
+  --panel: #f3f1ea;
+  --accent: #2c3f78;
+  --warn: #8a6a1f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 3rem 1.5rem 4rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.6 -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+
+main { max-width: 640px; margin: 0 auto; }
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.lead { color: var(--muted); margin: 0 0 2rem; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 1.1rem 1.3rem;
+  margin-bottom: 1.1rem;
+}
+
+.card--warn { border-left-color: var(--warn); }
+
+.card h2 {
+  margin: 0 0 0.5rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.card p { margin: 0 0 0.6rem; }
+.card p:last-child { margin-bottom: 0; }
+
+.rule {
+  margin: 2.25rem 0 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.steps { margin: 0 0 1.5rem; padding-left: 1.3rem; }
+.steps li { margin-bottom: 0.4rem; }
+
+.note {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0 0 0.9rem;
+}

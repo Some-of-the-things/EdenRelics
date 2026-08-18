@@ -14,11 +14,22 @@ namespace EdenRelics.SellerTool.Api;
 /// </summary>
 public static class ToolEndpoints
 {
+    /// <summary>
+    /// Who may reach the tool at all.
+    ///
+    /// The seller-facing endpoints are owner-scoped and built for sellers, but during the closed
+    /// beta the tool is not for customers — and an ordinary customer account carries a token this
+    /// API accepts, so gating the Angular route was never the boundary. The policy is the boundary;
+    /// see <c>Tool:AdminOnly</c> in Program.cs, which is the API mirror of adminGuard -> sellerGuard
+    /// on the /seller-tool route. Both flip when the beta opens.
+    /// </summary>
+    public const string AccessPolicy = "ToolAccess";
+
     public static void MapToolEndpoints(this WebApplication app)
     {
         // --- Garments + evidence (owner-scoped) ---
 
-        app.MapPost("/garments", async (CreateGarmentRequest req, ClaimsPrincipal user, ToolDbContext db) =>
+        app.MapPost("/garments", async (CreateGarmentRequest req, ClaimsPrincipal user, ToolDbContext db, IEventRecorder events) =>
         {
             Garment garment = new()
             {
@@ -28,9 +39,10 @@ public static class ToolEndpoints
                 Reference = req.Reference,
             };
             db.Garments.Add(garment);
+            events.Record(UserId(user), ToolEventKind.GarmentCreated, garment.Id);
             await db.SaveChangesAsync();
             return Results.Created($"/garments/{garment.Id}", new { id = garment.Id });
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         app.MapGet("/garments", async (ClaimsPrincipal user, ToolDbContext db) =>
         {
@@ -44,7 +56,7 @@ public static class ToolEndpoints
                 .OrderByDescending(g => g.CreatedAtUtc)
                 .ToListAsync();
             return Results.Ok(garments.Select(ToSummary).ToList());
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         app.MapGet("/garments/{id:guid}", async (Guid id, ClaimsPrincipal user, ToolDbContext db) =>
         {
@@ -53,7 +65,7 @@ public static class ToolEndpoints
                 .Include(g => g.Estimates)
                 .FirstOrDefaultAsync(g => g.Id == id);
             return garment is null || !CanAccess(garment, user) ? Results.NotFound() : Results.Ok(ToDto(garment));
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         app.MapPost("/garments/{id:guid}/evidence", async (Guid id, AddEvidenceRequest req, ClaimsPrincipal user, ToolDbContext db) =>
         {
@@ -69,6 +81,15 @@ public static class ToolEndpoints
             ConfirmationState confirmation = Enum.TryParse(req.Confirmation, ignoreCase: true, out ConfirmationState c)
                 ? c : ConfirmationState.Proposed;
 
+            ZipOriginality? zipOriginality =
+                Enum.TryParse(req.ZipOriginality, ignoreCase: true, out ZipOriginality z) ? z : null;
+            // Holds here too, not just on the photo path: a zip logged without a photograph is still
+            // a zip in the corpus, and still mis-teaches it if nobody said whether it is original.
+            if (NeedsZipOriginality(type, CaptureSlot.Unspecified, zipOriginality))
+            {
+                return Results.BadRequest(new { code = "zip_originality_required", error = ZipOriginalityRequired });
+            }
+
             EvidenceRecord evidence = new()
             {
                 GarmentId = id,
@@ -77,12 +98,13 @@ public static class ToolEndpoints
                 RawValue = req.RawValue,
                 ImageKey = req.ImageKey,
                 Origin = string.IsNullOrWhiteSpace(req.Origin) ? "machine" : req.Origin,
+                ZipOriginality = zipOriginality,
                 Confirmation = confirmation,
             };
             db.EvidenceRecords.Add(evidence);
             await db.SaveChangesAsync();
             return Results.Created($"/garments/{id}", new { id = evidence.Id });
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         // --- Capture pipeline: upload a label/flat-lay photo -> R2 -> evidence record (the archive) ---
 
@@ -100,7 +122,7 @@ public static class ToolEndpoints
                 minimumLongEdge = CaptureStandard.MinimumLongEdge(s),
                 guidance = CaptureStandard.Guidance(s),
             }),
-        })).RequireAuthorization();
+        })).RequireAuthorization(AccessPolicy);
 
         app.MapPost("/garments/{id:guid}/capture", async (
             Guid id, HttpRequest request, ClaimsPrincipal user, ToolDbContext db, ICaptureService capture) =>
@@ -132,11 +154,19 @@ public static class ToolEndpoints
                 slot = CaptureSlot.Unspecified;
             }
             bool archiveRights = form["archiveRights"].ToString() is "true" or "True" or "1";
+            ImageProvenance provenance = ProvenanceFrom(form);
+            ZipOriginality? zipOriginality = ZipOriginalityFrom(form);
+
+            if (NeedsZipOriginality(type, slot, zipOriginality))
+            {
+                return Results.BadRequest(new { code = "zip_originality_required", error = ZipOriginalityRequired });
+            }
 
             await using Stream stream = file.OpenReadStream();
             CaptureOutcome outcome = await capture.CaptureAsync(
                 id, slot, type, form["feature"].ToString(),
-                stream, file.ContentType ?? "application/octet-stream", file.Length, archiveRights);
+                stream, file.ContentType ?? "application/octet-stream", file.Length, archiveRights,
+                provenance, zipOriginality);
 
             if (!outcome.Succeeded)
             {
@@ -155,7 +185,110 @@ public static class ToolEndpoints
                 width = evidence.Width,
                 height = evidence.Height,
             });
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
+
+// --- Bulk upload from the camera roll (the back catalogue) ---
+        //
+        // Not a convenience wrapper around /capture. It is how the archive gets seeded with every
+        // garment that has ALREADY passed through the shop, and working through months of photos
+        // one at a time is the difference between a task that gets done and one that gets
+        // abandoned.
+        //
+        // Every file is reported on individually and one rejection never fails the batch: a
+        // hundred-photo upload where the ninth is a screenshot must still store the other
+        // ninety-nine. Partial is the normal case here, not an error state.
+        app.MapPost("/garments/{id:guid}/captures", async (
+            Guid id, HttpRequest request, ClaimsPrincipal user, ToolDbContext db, ICaptureService capture) =>
+        {
+            Garment? garment = await db.Garments.FindAsync(id);
+            if (garment is null || !CanAccess(garment, user))
+            {
+                return Results.NotFound();
+            }
+            if (!request.HasFormContentType)
+            {
+                return Results.BadRequest(new { error = "Expected a multipart/form-data upload." });
+            }
+
+            IFormCollection form = await request.ReadFormAsync();
+            IReadOnlyList<IFormFile> files = form.Files.GetFiles("files");
+            if (files.Count == 0)
+            {
+                return Results.BadRequest(new { error = "No files uploaded." });
+            }
+            if (files.Count > MaxFilesPerUpload)
+            {
+                return Results.BadRequest(new { error = $"Upload at most {MaxFilesPerUpload} photos at a time." });
+            }
+            if (!Enum.TryParse(form["type"].ToString(), ignoreCase: true, out EvidenceType type))
+            {
+                return Results.BadRequest(new { error = $"Unknown evidence type '{form["type"]}'." });
+            }
+            if (!Enum.TryParse(form["slot"].ToString(), ignoreCase: true, out CaptureSlot slot))
+            {
+                slot = CaptureSlot.Unspecified;
+            }
+
+            bool archiveRights = form["archiveRights"].ToString() is "true" or "True" or "1";
+            // Bulk upload defaults to HistoricalUpload, the opposite of the single-shot endpoint,
+            // because that is what it is for. Getting this backwards would quietly mark the back
+            // catalogue as standard-quality, which is the one thing the flag exists to prevent.
+            ImageProvenance provenance =
+                Enum.TryParse(form["provenance"].ToString(), ignoreCase: true, out ImageProvenance p)
+                    ? p
+                    : ImageProvenance.HistoricalUpload;
+            ZipOriginality? zipOriginality = ZipOriginalityFrom(form);
+
+            if (NeedsZipOriginality(type, slot, zipOriginality))
+            {
+                return Results.BadRequest(new { code = "zip_originality_required", error = ZipOriginalityRequired });
+            }
+
+            List<object> results = [];
+            int stored = 0;
+            foreach (IFormFile file in files)
+            {
+                if (file.Length == 0)
+                {
+                    results.Add(new { file = file.FileName, stored = false, code = "empty", error = "Empty file." });
+                    continue;
+                }
+
+                await using Stream stream = file.OpenReadStream();
+                CaptureOutcome outcome = await capture.CaptureAsync(
+                    id, slot, type, form["feature"].ToString(),
+                    stream, file.ContentType ?? "application/octet-stream", file.Length, archiveRights,
+                    provenance, zipOriginality);
+
+                if (!outcome.Succeeded)
+                {
+                    results.Add(new
+                    {
+                        file = file.FileName,
+                        stored = false,
+                        code = outcome.Rejection!.Code,
+                        error = outcome.Rejection.Message,
+                    });
+                    continue;
+                }
+
+                stored++;
+                EvidenceRecord e = outcome.Evidence!;
+                results.Add(new
+                {
+                    file = file.FileName,
+                    stored = true,
+                    id = e.Id,
+                    // Echoed back so a bulk import can be sanity-checked at a glance: photos with no
+                    // EXIF date are the ones whose place in the shop's history is now guesswork.
+                    photographedAt = e.PhotographedAtLocal,
+                    slot = e.Slot.ToString(),
+                    provenance = e.Provenance.ToString(),
+                });
+            }
+
+            return Results.Ok(new { uploaded = files.Count, stored, skipped = files.Count - stored, results });
+        }).RequireAuthorization(AccessPolicy);
 
         // What is still missing before this garment meets the standard.
         app.MapGet("/garments/{id:guid}/captures/completeness", async (
@@ -174,11 +307,11 @@ public static class ToolEndpoints
                 missingRequired = c.MissingRequired.Select(s => s.ToString()),
                 missingRequested = c.MissingRequested.Select(s => s.ToString()),
             });
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
 
         // --- Dating: run the engine over the garment's evidence, store a proposed estimate ---
 
-        app.MapPost("/garments/{id:guid}/date", async (Guid id, DateGarmentRequest req, ClaimsPrincipal user, ToolDbContext db, IDatingEngine engine) =>
+        app.MapPost("/garments/{id:guid}/date", async (Guid id, DateGarmentRequest req, ClaimsPrincipal user, ToolDbContext db, IDatingEngine engine, IEventRecorder events) =>
         {
             Garment? garment = await db.Garments.Include(g => g.Evidence).FirstOrDefaultAsync(g => g.Id == id);
             if (garment is null || !CanAccess(garment, user))
@@ -203,6 +336,23 @@ public static class ToolEndpoints
                 Confirmation = ConfirmationState.Proposed,   // machine-produced — proposed until confirmed
                 ComputedAtUtc = DateTime.UtcNow,
             });
+
+            // Recorded here rather than reported by the client, because this is the number that decides
+            // whether the verification thesis holds. A client that forgets to report a flag makes the
+            // headline metric look better than it is, and the headline metric is the one that must not
+            // be flattering. Detail carries the rules that fired, so a rule that flags wrongly can be
+            // traced back rather than merely suspected.
+            if (result.ClaimFlag is not null)
+            {
+                events.Record(
+                    UserId(user), ToolEventKind.DatingFlagRaised, id,
+                    detail: string.Join(',', result.Evidence
+                        .Where(e => e.Applied && !string.IsNullOrEmpty(e.SpecId))
+                        .Select(e => e.SpecId)
+                        .Distinct()
+                        .Take(6)));
+            }
+
             await db.SaveChangesAsync();
 
             return Results.Ok(new DateResultDto(
@@ -211,7 +361,124 @@ public static class ToolEndpoints
                 result.Outcome.ToString(),
                 result.ClaimFlag is null ? null : new ClaimFlagDto(result.ClaimFlag.Strength.ToString(), result.ClaimFlag.Message),
                 result.Evidence.Select(e => new EvidenceChainDto(e.RuleId, e.Feature, e.Bound, e.Strength.ToString(), e.Source)).ToList()));
-        }).RequireAuthorization();
+        }).RequireAuthorization(AccessPolicy);
+
+        // --- Dating preview (admin only): run the engine on ad-hoc evidence, persist nothing ---
+        //
+        // The garment endpoint above is the real workflow, but it needs a garment and it writes a
+        // proposed estimate. Inspecting or demonstrating the engine through it would mean seeding
+        // throwaway garments into the archive, and the archive is the asset — it must not fill up
+        // with test rows. This runs the same engine over the same rules and stores nothing.
+
+        app.MapPost("/dating/preview", (DatingPreviewRequest req, IDatingEngine engine) =>
+        {
+            if (req.Evidence is null || req.Evidence.Count == 0)
+            {
+                return Results.BadRequest(new { error = "Supply at least one observation." });
+            }
+            if (req.Evidence.Count > 40)
+            {
+                return Results.BadRequest(new { error = "Too many observations for one preview." });
+            }
+
+            List<Evidence> observed = [];
+            foreach (PreviewEvidenceRequest e in req.Evidence)
+            {
+                if (string.IsNullOrWhiteSpace(e.Feature))
+                {
+                    return Results.BadRequest(new { error = "Every observation needs a feature code." });
+                }
+                EvidenceType type = Enum.TryParse(e.Type, ignoreCase: true, out EvidenceType t)
+                    ? t
+                    : EvidenceType.Other;
+                observed.Add(new Evidence(e.Feature.Trim(), type,
+                    string.IsNullOrWhiteSpace(e.RawValue) ? null : e.RawValue.Trim()));
+            }
+
+            DateInterval? claim = req.ClaimEarliest is not null || req.ClaimLatest is not null
+                ? new DateInterval(req.ClaimEarliest, req.ClaimLatest)
+                : null;
+
+            DatingResult result = engine.Estimate(observed, claim);
+
+            return Results.Ok(new DatingPreviewDto(
+                result.Range.Earliest,
+                result.Range.Latest,
+                result.Outcome.ToString(),
+                result.Range.ToString(),
+                result.ClaimFlag is null
+                    ? null
+                    : new ClaimFlagDto(result.ClaimFlag.Strength.ToString(), result.ClaimFlag.Message),
+                result.Evidence.Select(e => new PreviewChainDto(
+                    e.RuleId, e.SpecId, e.Feature, e.Bound, e.Strength.ToString(),
+                    e.Provenance.ToString(), e.Applied, e.ExclusionReason, e.Source)).ToList()));
+        }).RequireAuthorization(p => p.RequireRole("Admin"));
+
+        // The features the LIVE rule set can act on, so a UI offers exactly those and no others.
+        app.MapGet("/dating/features", (IRuleStore store) =>
+        {
+            List<DatingFeatureDto> features = store.VerifiedRules()
+                .GroupBy(r => r.Feature, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.Key, StringComparer.Ordinal)
+                .Select(g =>
+                {
+                    DatingRule first = g.First();
+                    return new DatingFeatureDto(
+                        g.Key,
+                        first.Type.ToString(),
+                        first.Match.ToString(),
+                        [.. g.Select(r => r.SpecId).Where(s => !string.IsNullOrEmpty(s)).Distinct().OrderBy(s => s, StringComparer.Ordinal)],
+                        g.Min(r => r.NotBefore),
+                        g.Max(r => r.NotAfter),
+                        g.Any(r => r.Strength == BoundStrength.Hard) ? "Hard" : "Soft",
+                        // Value-matching rules do nothing without the text they match against.
+                        NeedsValue: g.All(r => r.Match != MatchKind.Feature));
+                })
+                .ToList();
+            return Results.Ok(features);
+        }).RequireAuthorization(p => p.RequireRole("Admin"));
+
+        // --- Instrumentation (brief §10) ---
+        //
+        // "Instrument from day one: listings created, time per listing, measurement acceptance rate,
+        // extension failure rate per platform. Retrofitting analytics means losing the first months of
+        // data." The first months are the beta, and the beta is what the go/no-go gate is judged on, so
+        // this ships before there is anything to measure rather than after.
+
+        app.MapPost("/events", async (RecordEventsRequest req, ClaimsPrincipal user, ToolDbContext db, IEventRecorder events) =>
+        {
+            if (req.Events is null || req.Events.Count == 0)
+            {
+                return Results.BadRequest(new { error = "Send at least one event." });
+            }
+            if (req.Events.Count > MaxEventsPerBatch)
+            {
+                return Results.BadRequest(new { error = $"Send at most {MaxEventsPerBatch} events per request." });
+            }
+
+            Guid sellerId = UserId(user);
+            foreach (RecordEventRequest e in req.Events)
+            {
+                if (!Enum.TryParse(e.Kind, ignoreCase: true, out ToolEventKind kind))
+                {
+                    return Results.BadRequest(new { error = $"Unknown event kind '{e.Kind}'." });
+                }
+                // Server-owned kinds are recorded by the endpoints that cause them. Accepting them here
+                // too would double-count the flag rate — and let a client inflate it deliberately.
+                if (ServerOwnedKinds.Contains(kind))
+                {
+                    return Results.BadRequest(new { error = $"'{kind}' is recorded by the server, not reported by a client." });
+                }
+                events.Record(sellerId, kind, e.GarmentId, e.Platform, e.DurationMs, e.Detail, e.OccurredAtUtc);
+            }
+
+            await db.SaveChangesAsync();
+            return Results.Accepted(value: new { recorded = req.Events.Count });
+        }).RequireAuthorization(AccessPolicy);
+
+        app.MapGet("/metrics/summary", async (int? days, IToolMetrics metrics) =>
+            Results.Ok(await metrics.SummariseAsync(days ?? 28)))
+            .RequireAuthorization(p => p.RequireRole("Admin"));
 
         // --- Rules store (admin only) ---
 
@@ -251,6 +518,49 @@ public static class ToolEndpoints
             return Results.Ok(new { id = rule.Id, status = rule.Status.ToString() });
         }).RequireAuthorization(p => p.RequireRole("Admin"));
     }
+
+    /// <summary>Enough for an extension that has been offline for a while, without letting one request
+    /// write an unbounded number of rows.</summary>
+    /// <summary>
+    /// Photos per bulk upload. Generous enough for a real camera-roll session, bounded because each
+    /// file is fully decoded to validate it and the tool runs on a small machine.
+    /// </summary>
+    private const int MaxFilesPerUpload = 60;
+
+    private const int MaxEventsPerBatch = 100;
+
+    /// <summary>Kinds the API records itself, from the endpoint that causes them.</summary>
+    private static readonly HashSet<ToolEventKind> ServerOwnedKinds =
+        [ToolEventKind.GarmentCreated, ToolEventKind.DatingFlagRaised];
+
+/// <summary>
+    /// Read the provenance a capture form is declaring. Defaults to LiveCapture: the single-shot
+    /// endpoint is the camera path, and a caller that means 'back catalogue' says so.
+    /// </summary>
+    private static ImageProvenance ProvenanceFrom(IFormCollection form) =>
+        Enum.TryParse(form["provenance"].ToString(), ignoreCase: true, out ImageProvenance p)
+            ? p
+            : ImageProvenance.LiveCapture;
+
+    private static ZipOriginality? ZipOriginalityFrom(IFormCollection form) =>
+        Enum.TryParse(form["zipOriginality"].ToString(), ignoreCase: true, out ZipOriginality z)
+            ? z
+            : null;
+
+    /// <summary>
+    /// A zip must say whether it is the garment's own.
+    ///
+    /// Refused rather than defaulted, because every default is wrong here: assuming Original
+    /// silently dates repairs as if they were manufacture, and assuming Replaced discards good
+    /// evidence. 'Unsure' is always available and is a perfectly good answer — which is exactly why
+    /// there is no excuse for leaving it blank.
+    /// </summary>
+    private static bool NeedsZipOriginality(EvidenceType type, CaptureSlot slot, ZipOriginality? given) =>
+        (type == EvidenceType.Zip || slot == CaptureSlot.Zip) && given is null;
+
+    private const string ZipOriginalityRequired =
+        "A zip needs to say whether it is original, replaced, or unsure. A replaced zip recorded as "
+        + "original dates the repair, not the garment.";
 
     private static Guid UserId(ClaimsPrincipal user) =>
         Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? user.FindFirstValue("sub"), out Guid id)
