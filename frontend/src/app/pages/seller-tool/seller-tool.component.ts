@@ -1,6 +1,8 @@
 import { Component, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MonoTypeOperatorFunction, retry, timer, throwError } from 'rxjs';
+import { isColdStart } from './cold-start';
 import {
   ToolService, GarmentSummary, GarmentDetail, DateResult, ToolMetrics, BulkUploadResult,
 } from '../../services/tool.service';
@@ -48,6 +50,9 @@ export class SellerToolComponent implements OnInit {
    * broken, and worse, it tells you the archive is empty at the exact moment you cannot see it.
    */
   readonly loadFailed = signal(false);
+
+  /** True while we are waiting out a suspended tool rather than reporting a failure. */
+  readonly waking = signal(false);
 
   readonly garments = signal<GarmentSummary[]>([]);
   readonly selected = signal<GarmentDetail | null>(null);
@@ -98,6 +103,37 @@ export class SellerToolComponent implements OnInit {
   claimEarliest?: number;
   claimLatest?: number;
 
+  /**
+   * How many times to wait out a cold start, and for how long.
+   *
+   * Two attempts over about four seconds. Enough for a Fly machine to resume, short enough that a
+   * genuinely unreachable tool still says so quickly — a spinner that never resolves is a worse
+   * lie than an error.
+   */
+  private static readonly WakeAttempts = 2;
+  private static readonly WakeDelayMs = 1500;
+
+  /**
+   * Wait out a suspended tool, once.
+   *
+   * The tool's machines suspend when idle, so its first request of the day fails and the page
+   * says it cannot be reached. Its only user has already been taught once to believe that
+   * message, by a CSP fault that produced exactly the same screen for a month — so the cheap fix
+   * is to stop showing it for the one cause that resolves itself.
+   */
+  private wakeRetry<T>(): MonoTypeOperatorFunction<T> {
+    return retry<T>({
+      count: SellerToolComponent.WakeAttempts,
+      delay: (error, attempt) => {
+        if (!isColdStart(error)) {
+          // Not a cold start: answer now rather than making them wait for the same answer.
+          return throwError(() => error);
+        }
+        this.waking.set(true);
+        return timer(SellerToolComponent.WakeDelayMs * attempt);
+      },
+    });
+  }
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.loadGarments();
@@ -108,7 +144,7 @@ export class SellerToolComponent implements OnInit {
   private loadMetrics(): void {
     // Admin-only, and this page is reachable by non-admins once the beta opens, so a 403 here is an
     // expected answer rather than a fault: leave the panel off and say nothing.
-    this.tool.metrics(28).subscribe({
+    this.tool.metrics(28).pipe(this.wakeRetry()).subscribe({
       next: (m) => this.metrics.set(m),
       error: () => this.metrics.set(null),
     });
@@ -116,10 +152,11 @@ export class SellerToolComponent implements OnInit {
 
   private loadGarments(): void {
     this.loading.set(true);
-    this.tool.listGarments().subscribe({
+    this.tool.listGarments().pipe(this.wakeRetry()).subscribe({
       next: (list) => {
         this.garments.set(list);
         this.loadFailed.set(false);
+        this.waking.set(false);
         this.loading.set(false);
       },
       error: () => {
@@ -129,6 +166,7 @@ export class SellerToolComponent implements OnInit {
         // reads it looking in the wrong place.
         this.error.set('Could not reach the dating tool. Try reloading; if it keeps happening the tool API may be unreachable from here.');
         this.loadFailed.set(true);
+        this.waking.set(false);
         this.loading.set(false);
       },
     });
