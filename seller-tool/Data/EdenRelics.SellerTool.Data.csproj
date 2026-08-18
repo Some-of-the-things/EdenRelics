@@ -6,6 +6,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+    <!--
+      Declared explicitly because this project USES it: ToolDbContext calls HasColumnType, which is
+      a Relational API, so EdenRelics.SellerTool.Data compiles against Relational 10.0.9 to match
+      EF Core above. Left undeclared it arrives only transitively from Npgsql, which pins 10.0.4:
+      the assembly then published is 10.0.4 while the compiled reference asks for 10.0.9, and the
+      app dies on boot with FileNotFoundException. That is what took the tool down on
+      2026-08-18: it builds and tests clean, and only fails once published and run.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
