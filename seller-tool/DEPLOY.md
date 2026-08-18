@@ -62,12 +62,20 @@ cd Data && dotnet ef database update --project . --startup-project . \
   --connection "Host=localhost;Port=5441;Database=eden_relics_tool;Username=eden_relics_tool;Password=<from attach>;SSL Mode=Disable"
 ```
 
-> **⚠️ Known issue — migrations aren't in the published assembly.** `dotnet ef` finds the InitialCreate
-> migration, but `dotnet publish Api` produces a `Data.dll` without it ("No migrations were found in
-> assembly 'EdenRelics.SellerTool.Data'"), so the app's startup `Migrate()` is a no-op. Root cause not
-> yet pinned (a .NET-10 publish/project-reference quirk). **Workaround: apply migrations out-of-band
-> (step 6) as the deploy step** — which is the recommended prod pattern anyway (no multi-instance
-> startup races). Revisit the build fix if we want startup auto-migrate.
+> **⚠️ Startup auto-migrate DOES run now — and it raced on 2026-08-07.** This note previously said
+> migrations were missing from the published assembly, making startup `Migrate()` a no-op. That is no
+> longer true: the deployed app takes the `__EFMigrationsHistory` lock and applies migrations on boot.
+>
+> Which made step 6 *more* important, not less. `fly.toml` runs **two machines**, both boot the new
+> image at once, and on the 2026-08-07 deploy they raced: one won the migration lock and applied
+> `AddProvenanceMatchingAndTransitionGroups`, the other read a half-migrated schema, threw
+> `column s.Match does not exist` from the rule seeder, and SIGABRTed. It crash-looped for ~18 minutes
+> before a restart landed on the migrated schema and came up clean — so the outage self-healed, but it
+> was a real outage of the tool API, caused purely by deploying.
+>
+> **So: apply migrations out-of-band (step 6) BEFORE `fly deploy`, not after.** With the schema already
+> current, both machines' `Migrate()` calls are no-ops and there is nothing to race. Deploying first and
+> migrating second is what produced the incident.
 
 ## Verify
 - `curl https://eden-relics-tool.fly.dev/healthz` → 200.
