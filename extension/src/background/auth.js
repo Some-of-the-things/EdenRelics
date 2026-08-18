@@ -36,7 +36,7 @@ export function isTrustedOrigin(origin) {
 export function expiryOf(token) {
   try {
     const [, payload] = String(token).split('.');
-    const json = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    const json = JSON.parse(atob(payload.replaceAll('-', '+').replaceAll('_', '/')));
     return typeof json.exp === 'number' ? json.exp * 1000 : null;
   } catch {
     return null;

@@ -28,23 +28,13 @@ import { resolveProductStatus } from '../../utils/product-status';
 import { findDesignerForProduct } from '../../pages/designers/designers.data';
 import { findHubsForProduct, hubPath } from '../../pages/category/category.data';
 import { FocusTrapDirective } from '../../directives/focus-trap.directive';
+import { htmlToText } from '../../utils/html-to-text';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Plain text for meta and JSON-LD, capped the way structured data wants it. */
 function stripHtml(html: string): string {
-  return html
-    .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<\/p>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 300);
+  return htmlToText(html).slice(0, 300);
 }
 
 function schemaCondition(condition: string): string {

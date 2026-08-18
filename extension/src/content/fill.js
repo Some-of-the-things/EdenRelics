@@ -98,7 +98,7 @@ export function findByLabel(root, text) {
 
 export function normaliseLabel(text) {
   return String(text)
-    .replace(/\u00a0/g, ' ')
+    .replaceAll('\u00a0', ' ')
     .replace(/[*:]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()

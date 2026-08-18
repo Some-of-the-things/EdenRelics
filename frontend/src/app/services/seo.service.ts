@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/common';
+import { htmlToText } from '../utils/html-to-text';
 
 /**
  * Locales the backend can translate product name and description into.
@@ -94,18 +95,7 @@ export class SeoService {
 
   private normaliseDescription(raw: string | undefined): string | undefined {
     if (!raw) return undefined;
-    const plain = raw
-      .replace(/<br\s*\/?>/gi, ' ')
-      .replace(/<\/p>/gi, ' ')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/\s+/g, ' ')
-      .trim();
+    const plain = htmlToText(raw);
     return plain.length > 300 ? plain.slice(0, 297).trimEnd() + '…' : plain;
   }
 
