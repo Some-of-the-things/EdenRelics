@@ -9,7 +9,8 @@ namespace Eden_Relics_BE.Services;
 public class FinanceService(
     IRepository<Transaction> transactions,
     IRepository<Order> orders,
-    IRepository<Product> products) : IFinanceService
+    IRepository<Product> products,
+    IRepository<OffsiteSale> offsiteSales) : IFinanceService
 {
     public async Task<List<TransactionDto>> GetAllAsync(int? year, int? month)
     {
@@ -90,6 +91,7 @@ public class FinanceService(
     {
         int createdFromOrders = 0;
         int createdFromProducts = 0;
+        int createdFromOffsite = 0;
         int createdCogs = 0;
         List<Transaction> toCreate = [];
 
@@ -188,7 +190,48 @@ public class FinanceService(
             createdCogs++;
         }
 
-        int totalCreated = createdFromOrders + createdFromProducts + createdCogs;
+        // Path 4: offsite sales (Vinted/Depop/eBay) -> ledger. These are recorded on their own
+        // tab and never had a ledger row, so every one of them was missing from Finance income.
+        // Same two-row shape as a catalogue sale: what it sold for, and what it cost.
+        List<OffsiteSale> allOffsiteSales = await offsiteSales.Query().ToListAsync();
+
+        foreach (OffsiteSale sale in allOffsiteSales)
+        {
+            string incomeRef = OffsiteSaleService.IncomeRef(sale.Id);
+            bool exists = await transactions.Query().AnyAsync(t => t.Reference == incomeRef);
+            if (!exists)
+            {
+                toCreate.Add(new Transaction
+                {
+                    Date = sale.SaleDateUtc,
+                    Description = $"Sale: {sale.DressName}",
+                    Amount = sale.SalePrice,
+                    Category = TransactionCategories.Sales,
+                    Platform = sale.Platform,
+                    Reference = incomeRef,
+                });
+                createdFromOffsite++;
+            }
+
+            if (sale.CostPrice <= 0) { continue; }
+
+            string offsiteCogsRef = OffsiteSaleService.CogsRef(sale.Id);
+            bool cogsExists = await transactions.Query().AnyAsync(t => t.Reference == offsiteCogsRef);
+            if (cogsExists) { continue; }
+
+            toCreate.Add(new Transaction
+            {
+                Date = sale.SaleDateUtc,
+                Description = $"Cost of goods: {sale.DressName}",
+                Amount = -sale.CostPrice,
+                Category = TransactionCategories.Stock,
+                Platform = sale.Platform,
+                Reference = offsiteCogsRef,
+            });
+            createdCogs++;
+        }
+
+        int totalCreated = createdFromOrders + createdFromProducts + createdFromOffsite + createdCogs;
         if (totalCreated > 0)
         {
             await transactions.AddRangeAsync(toCreate);
@@ -198,7 +241,8 @@ public class FinanceService(
             totalCreated,
             paidOrders.Count,
             soldProducts.Count,
-            new BackfillBreakdownDto(createdFromOrders, createdFromProducts, createdCogs));
+            allOffsiteSales.Count,
+            new BackfillBreakdownDto(createdFromOrders, createdFromProducts, createdFromOffsite, createdCogs));
     }
 
     public async Task<FinanceSummaryDto> GetSummaryAsync()

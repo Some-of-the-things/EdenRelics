@@ -33,7 +33,7 @@ public record FinanceMonthDto(
 public record FinanceCategoryDto(string Category, decimal Total, int Count);
 public record FinancePlatformDto(string Platform, decimal Total, int Count);
 
-public record BackfillSalesResultDto(int Backfilled, int TotalPaid, int TotalSoldProducts, BackfillBreakdownDto Breakdown);
-public record BackfillBreakdownDto(int FromOrders, int FromProducts, int Cogs);
+public record BackfillSalesResultDto(int Backfilled, int TotalPaid, int TotalSoldProducts, int TotalOffsiteSales, BackfillBreakdownDto Breakdown);
+public record BackfillBreakdownDto(int FromOrders, int FromProducts, int FromOffsiteSales, int Cogs);
 
 public record FinanceExportFile(byte[] Content, string FileName);

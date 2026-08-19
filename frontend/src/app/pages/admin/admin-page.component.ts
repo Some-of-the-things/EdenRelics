@@ -2628,16 +2628,17 @@ export class AdminPageComponent implements OnInit {
         backfilled: number;
         totalPaid: number;
         totalSoldProducts: number;
-        breakdown: { fromOrders: number; fromProducts: number; cogs: number };
+        totalOffsiteSales: number;
+        breakdown: { fromOrders: number; fromProducts: number; fromOffsiteSales: number; cogs: number };
       }>(`${environment.apiUrl}/api/finance/backfill-sales`, {})
       .subscribe({
         next: (res) => {
           this.backfillingSales.set(false);
-          const totalKnownSales = res.totalPaid + res.totalSoldProducts;
+          const totalKnownSales = res.totalPaid + res.totalSoldProducts + res.totalOffsiteSales;
           if (res.backfilled === 0) {
             this.financeSuccess.set(
               totalKnownSales === 0
-                ? 'No known sales to backfill — nothing in the Orders table and no products marked Sold.'
+                ? 'No known sales to backfill — nothing in the Orders table, no products marked Sold, and no offsite sales recorded.'
                 : `Everything is already in the ledger — ${totalKnownSales} known sale${totalKnownSales === 1 ? '' : 's'} and their cost-of-goods expenses.`,
             );
           } else {
@@ -2650,6 +2651,11 @@ export class AdminPageComponent implements OnInit {
             if (res.breakdown.fromProducts > 0) {
               parts.push(
                 `${res.breakdown.fromProducts} sale${res.breakdown.fromProducts === 1 ? '' : 's'} from products marked Sold`,
+              );
+            }
+            if (res.breakdown.fromOffsiteSales > 0) {
+              parts.push(
+                `${res.breakdown.fromOffsiteSales} offsite sale${res.breakdown.fromOffsiteSales === 1 ? '' : 's'}`,
               );
             }
             if (res.breakdown.cogs > 0) {
