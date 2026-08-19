@@ -144,6 +144,125 @@ public class MarkSoldLedgerTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task AddingASalePriceAfterTheSaleWasLogged_CorrectsTheLedger()
+    {
+        // Teodora's case (2026-08-19): marked sold (or backfilled) before the sale price was set,
+        // so the ledger took the list price and then never moved when the sale price was added.
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "marksold-late-saleprice@test.com");
+
+        Guid id = await CreateProduct(client, "Forgot the discount", 80.00m);
+
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+        Assert.Equal(80.00m, Assert.Single(await RowsFor(client, id), t => t.Category == "Sales").Amount);
+
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { salePrice = 52.00m })).EnsureSuccessStatusCode();
+
+        TransactionResponse sale = Assert.Single(await RowsFor(client, id), t => t.Category == "Sales");
+        Assert.Equal(52.00m, sale.Amount);
+    }
+
+    [Fact]
+    public async Task CorrectingTheSalePriceOnASoldPiece_MovesTheLedgerWithIt()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "marksold-correct-saleprice@test.com");
+
+        Guid id = await CreateProduct(client, "Corrected dress", 90.00m, salePrice: 60.00m);
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { salePrice = 65.00m })).EnsureSuccessStatusCode();
+
+        Assert.Equal(65.00m, Assert.Single(await RowsFor(client, id), t => t.Category == "Sales").Amount);
+    }
+
+    [Fact]
+    public async Task ClearingTheSalePriceOnASoldPiece_FallsBackToTheListPrice()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "marksold-clear-saleprice@test.com");
+
+        Guid id = await CreateProduct(client, "Cleared dress", 75.00m, salePrice: 50.00m);
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+        Assert.Equal(50.00m, Assert.Single(await RowsFor(client, id), t => t.Category == "Sales").Amount);
+
+        // Zero is how the API clears a sale price.
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { salePrice = 0m })).EnsureSuccessStatusCode();
+
+        Assert.Equal(75.00m, Assert.Single(await RowsFor(client, id), t => t.Category == "Sales").Amount);
+    }
+
+    [Fact]
+    public async Task CorrectingTheListPriceOnASoldPieceWithNoSalePrice_MovesTheLedger()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "marksold-correct-listprice@test.com");
+
+        Guid id = await CreateProduct(client, "Typo dress", 45.00m);
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { price = 54.00m })).EnsureSuccessStatusCode();
+
+        Assert.Equal(54.00m, Assert.Single(await RowsFor(client, id), t => t.Category == "Sales").Amount);
+    }
+
+    [Fact]
+    public async Task Backfill_CorrectsASaleRecordedAtTheWrongAmount()
+    {
+        // The repair path for rows already stale in prod: a sale logged before the sale price was
+        // set keeps the list price, and re-running backfill used to skip it because a sale row
+        // existed. Nudging the product price is not something you should have to know to do.
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "marksold-backfill-amount@test.com");
+
+        Guid id = await CreateProduct(client, "Stale amount dress", 100.00m);
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+
+        TransactionResponse sale = Assert.Single(await RowsFor(client, id), t => t.Category == "Sales");
+        Assert.Equal(100.00m, sale.Amount);
+
+        // Set the sale price straight on the row, bypassing the product update that now syncs it,
+        // to recreate a ledger left stale by the old behaviour.
+        (await client.PutAsJsonAsync($"/api/finance/{sale.Id}", new { amount = 100.00m }))
+            .EnsureSuccessStatusCode();
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { salePrice = 70.00m })).EnsureSuccessStatusCode();
+        (await client.PutAsJsonAsync($"/api/finance/{sale.Id}", new { amount = 100.00m }))
+            .EnsureSuccessStatusCode();
+        Assert.Equal(100.00m, Assert.Single(await RowsFor(client, id), t => t.Category == "Sales").Amount);
+
+        (await client.PostAsync("/api/finance/backfill-sales", null)).EnsureSuccessStatusCode();
+
+        Assert.Equal(70.00m, Assert.Single(await RowsFor(client, id), t => t.Category == "Sales").Amount);
+    }
+
+    [Fact]
+    public async Task Backfill_LeavesACorrectAmountAlone()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "marksold-backfill-noop@test.com");
+
+        Guid id = await CreateProduct(client, "Correct amount dress", 60.00m, salePrice: 42.00m);
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { status = "sold" })).EnsureSuccessStatusCode();
+
+        (await client.PostAsync("/api/finance/backfill-sales", null)).EnsureSuccessStatusCode();
+
+        Assert.Equal(42.00m, Assert.Single(await RowsFor(client, id), t => t.Category == "Sales").Amount);
+    }
+
+    [Fact]
+    public async Task ChangingThePriceOfAPieceThatIsNotSold_TouchesNoLedgerRow()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "marksold-unsold-price@test.com");
+
+        Guid id = await CreateProduct(client, "Still for sale", 40.00m);
+
+        (await client.PutAsJsonAsync($"/api/products/{id}", new { salePrice = 30.00m })).EnsureSuccessStatusCode();
+
+        Assert.DoesNotContain(await RowsFor(client, id), t => t.Category == "Sales");
+    }
+
+    [Fact]
     public async Task MarkingSoldOnAMarketplace_MovesTotalIncome()
     {
         HttpClient client = _factory.CreateClient();

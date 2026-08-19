@@ -2628,7 +2628,7 @@ export class AdminPageComponent implements OnInit {
         backfilled: number;
         totalPaid: number;
         totalSoldProducts: number;
-        breakdown: { fromOrders: number; fromProducts: number; cogs: number };
+        breakdown: { fromOrders: number; fromProducts: number; cogs: number; correctedAmounts: number };
       }>(`${environment.apiUrl}/api/finance/backfill-sales`, {})
       .subscribe({
         next: (res) => {
@@ -2657,8 +2657,13 @@ export class AdminPageComponent implements OnInit {
                 `${res.breakdown.cogs} cost-of-goods expense${res.breakdown.cogs === 1 ? '' : 's'}`,
               );
             }
+            if (res.breakdown.correctedAmounts > 0) {
+              parts.push(
+                `${res.breakdown.correctedAmounts} corrected amount${res.breakdown.correctedAmounts === 1 ? '' : 's'}`,
+              );
+            }
             this.financeSuccess.set(
-              `Backfilled ${res.backfilled} ledger entr${res.backfilled === 1 ? 'y' : 'ies'} (${parts.join(', ')}).`,
+              `Updated ${res.backfilled} ledger entr${res.backfilled === 1 ? 'y' : 'ies'} (${parts.join(', ')}).`,
             );
             this.loadFinance();
           }

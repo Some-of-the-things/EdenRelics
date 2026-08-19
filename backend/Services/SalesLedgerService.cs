@@ -14,6 +14,14 @@ public interface ISalesLedgerService
     /// <param name="platform">Where it sold, when the caller knows. Null leaves it Unspecified.</param>
     /// <returns>True if a transaction was written, false if one already existed.</returns>
     Task<bool> RecordSaleAsync(Product product, string? platform);
+
+    /// <summary>
+    /// Brings an already-recorded sale's amount back in line with the product's price, for when
+    /// the price is corrected after the sale was logged. No-op if the product isn't sold or has
+    /// no sale row yet.
+    /// </summary>
+    /// <returns>True if an existing transaction was changed.</returns>
+    Task<bool> SyncSaleAmountAsync(Product product);
 }
 
 /// <summary>
@@ -69,6 +77,44 @@ public class SalesLedgerService(
         {
             // Recording income must never block the sale itself being marked.
             logger.LogWarning(ex, "Failed to record sale transaction for product {ProductId}", product.Id);
+            return false;
+        }
+    }
+
+    public async Task<bool> SyncSaleAmountAsync(Product product)
+    {
+        if (product.Status != ProductStatus.Sold)
+        {
+            return false;
+        }
+
+        try
+        {
+            string productRef = product.Id.ToString();
+            Transaction? sale = await transactions.Query()
+                .FirstOrDefaultAsync(t => t.Reference == productRef && t.Category == TransactionCategories.Sales);
+            if (sale is null)
+            {
+                return false;
+            }
+
+            decimal amount = product.SalePrice ?? product.Price;
+            if (sale.Amount == amount)
+            {
+                return false;
+            }
+
+            // The product's price is treated as the source of truth here, so an amount typed
+            // straight onto the transaction is overwritten if the product's price is edited
+            // afterwards. That is the lesser evil: the alternative is a sale price that visibly
+            // disagrees with the ledger and no way to tell which one the totals used.
+            sale.Amount = amount;
+            await transactions.UpdateAsync(sale);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to sync sale amount for product {ProductId}", product.Id);
             return false;
         }
     }

@@ -352,6 +352,11 @@ public class ProductsController : ControllerBase
             }
         }
         if (dto.Description is not null) { product.Description = dto.Description; }
+        // Captured before the edits below, so we can tell whether the amount a recorded sale was
+        // based on has actually moved.
+        decimal previousPrice = product.Price;
+        decimal? previousSalePrice = product.SalePrice;
+
         if (dto.Price.HasValue && dto.Price.Value != product.Price)
         {
             product.Price = dto.Price.Value;
@@ -422,6 +427,13 @@ public class ProductsController : ControllerBase
         if (product.Status == ProductStatus.Sold && previousStatus != ProductStatus.Sold)
         {
             await _salesLedger.RecordSaleAsync(product, platform: null);
+        }
+        else if (product.Price != previousPrice || product.SalePrice != previousSalePrice)
+        {
+            // The price changed on a piece whose sale is already in the ledger. Forgetting the
+            // sale price until after marking it sold left the ledger holding the list price for
+            // good: nothing re-read it, and backfill skips anything that already has a sale row.
+            await _salesLedger.SyncSaleAmountAsync(product);
         }
 
         if (dto.Name is not null || dto.Description is not null)
