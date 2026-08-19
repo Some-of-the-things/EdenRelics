@@ -147,6 +147,7 @@ builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<ICalendarFeedService, CalendarFeedService>();
 builder.Services.AddScoped<ISitemapService, SitemapService>();
 builder.Services.AddScoped<IMerchantFeedService, MerchantFeedService>();
+builder.Services.AddScoped<ISalesLedgerService, SalesLedgerService>();
 builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
 
 // Cross-listing. Each platform is an adapter registered into the same collection, so adding a
