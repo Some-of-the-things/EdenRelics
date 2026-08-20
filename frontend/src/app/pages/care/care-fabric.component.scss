@@ -128,11 +128,11 @@
 .carepage__shop-price {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #6b4f2a;
+  color: var(--text-primary);
 }
 
 .carepage__shop-sale {
-  color: #b91c1c;
+  color: var(--text-primary);
   margin-right: 0.35rem;
 }
 
