@@ -34,6 +34,6 @@ public record FinanceCategoryDto(string Category, decimal Total, int Count);
 public record FinancePlatformDto(string Platform, decimal Total, int Count);
 
 public record BackfillSalesResultDto(int Backfilled, int TotalPaid, int TotalSoldProducts, BackfillBreakdownDto Breakdown);
-public record BackfillBreakdownDto(int FromOrders, int FromProducts, int Cogs);
+public record BackfillBreakdownDto(int FromOrders, int FromProducts, int Cogs, int CorrectedAmounts);
 
 public record FinanceExportFile(byte[] Content, string FileName);

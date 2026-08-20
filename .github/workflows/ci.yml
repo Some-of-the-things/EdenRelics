@@ -54,6 +54,109 @@ jobs:
           name: backend-test-results
           path: backend/**/results.trx
 
+  # ── Seller tool: build, test, and prove the published app actually boots ──
+  #
+  # The tool was absent from CI entirely until 2026-08-18, so its suite only ever ran on a
+  # developer machine and nothing here built it at all.
+  seller-tool:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: seller-tool
+
+    # A real Postgres, because the boot check below is only worth anything if it exercises the
+    # whole startup path: migrate, seed the dating rules, then serve.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tool
+          POSTGRES_PASSWORD: tool
+          POSTGRES_DB: tool
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore EdenRelics.SellerTool.slnx
+
+      - name: Build
+        run: dotnet build EdenRelics.SellerTool.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test EdenRelics.SellerTool.slnx --no-build -c Release --logger "trx;LogFileName=results.trx"
+
+      # Publishing resolves assemblies differently from building, and this is the only step that
+      # notices when they disagree. A version conflict here is not cosmetic: it is what shipped a
+      # Relational 10.0.4 alongside code compiled against 10.0.9 and crash-looped the tool in prod
+      # on 2026-08-18, while the build was clean and all 96 tests passed.
+      - name: Publish
+        run: |
+          # pipefail, or a failing publish would be masked by tee's exit status and this step
+          # would pass while shipping nothing.
+          set -eo pipefail
+          dotnet publish Api/EdenRelics.SellerTool.Api.csproj -c Release -o ./app -p:UseAppHost=false 2>&1 | tee publish.log
+          if grep -q "MSB3277" publish.log; then
+            echo "::error::Assembly version conflict in the published output (MSB3277)."
+            echo "::error::Declare the conflicting package explicitly in the project that uses it."
+            grep "MSB3277" publish.log | head -5
+            exit 1
+          fi
+
+      # The check that would have caught it. Building and testing never resolve assemblies the way
+      # a published app does, so a green suite sat alongside an app that could not boot. Run the
+      # thing we actually ship, against a real database, and require it to answer.
+      - name: Boot the published app and require a healthy response
+        env:
+          DATABASE_URL: postgres://tool:tool@localhost:5432/tool
+          ASPNETCORE_URLS: http://127.0.0.1:5199
+        run: |
+          dotnet app/EdenRelics.SellerTool.Api.dll > boot.log 2>&1 &
+          pid=$!
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:5199/healthz > /dev/null 2>&1; then
+              echo "Healthy after ${i}s."
+              kill $pid 2>/dev/null || true
+              exit 0
+            fi
+            if ! kill -0 $pid 2>/dev/null; then
+              echo "::error::The published app exited before serving a request."
+              tail -40 boot.log
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "::error::The published app never became healthy."
+          tail -40 boot.log
+          kill $pid 2>/dev/null || true
+          exit 1
+
+      - name: Upload boot log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: seller-tool-boot-log
+          path: seller-tool/boot.log
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: seller-tool-test-results
+          path: seller-tool/**/results.trx
+
   # ── Frontend: build ──────────────────────────────────────────────────
   frontend-build:
     runs-on: ubuntu-latest

@@ -91,6 +91,7 @@ public class FinanceService(
         int createdFromOrders = 0;
         int createdFromProducts = 0;
         int createdCogs = 0;
+        int correctedAmounts = 0;
         List<Transaction> toCreate = [];
 
         // Path 1: paid orders → ledger
@@ -141,11 +142,24 @@ public class FinanceService(
             // treated that as "the sale is already recorded" — so this endpoint, the one you
             // reach for to repair a missing sale, skipped exactly the products that needed it.
             string productRef = product.Id.ToString();
-            bool exists = await transactions.Query()
-                .AnyAsync(t => t.Reference == productRef && t.Category == TransactionCategories.Sales);
-            if (exists) { continue; }
+            Transaction? existingSale = await transactions.Query()
+                .FirstOrDefaultAsync(t => t.Reference == productRef && t.Category == TransactionCategories.Sales);
 
             decimal amount = product.SalePrice ?? product.Price;
+
+            if (existingSale is not null)
+            {
+                // The sale is recorded, but the amount can still be wrong: adding a sale price
+                // after the piece was marked sold used to leave the ledger on the list price.
+                // This is the endpoint you reach for to repair the ledger, so it repairs that too.
+                if (existingSale.Amount != amount)
+                {
+                    existingSale.Amount = amount;
+                    await transactions.UpdateAsync(existingSale);
+                    correctedAmounts++;
+                }
+                continue;
+            }
 
             toCreate.Add(new Transaction
             {
@@ -188,7 +202,7 @@ public class FinanceService(
             createdCogs++;
         }
 
-        int totalCreated = createdFromOrders + createdFromProducts + createdCogs;
+        int totalCreated = createdFromOrders + createdFromProducts + createdCogs + correctedAmounts;
         if (totalCreated > 0)
         {
             await transactions.AddRangeAsync(toCreate);
@@ -198,7 +212,7 @@ public class FinanceService(
             totalCreated,
             paidOrders.Count,
             soldProducts.Count,
-            new BackfillBreakdownDto(createdFromOrders, createdFromProducts, createdCogs));
+            new BackfillBreakdownDto(createdFromOrders, createdFromProducts, createdCogs, correctedAmounts));
     }
 
     public async Task<FinanceSummaryDto> GetSummaryAsync()
