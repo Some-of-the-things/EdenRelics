@@ -28,6 +28,7 @@ public class ProductsController : ControllerBase
     private readonly ImageStorageService _storage;
     private readonly GeoIpService _geoIp;
     private readonly IConfiguration _config;
+    private readonly ISalesLedgerService _salesLedger;
     private readonly ILogger<ProductsController> _logger;
 
     private readonly CartInterestService _cartInterest;
@@ -45,6 +46,7 @@ public class ProductsController : ControllerBase
         GeoIpService geoIp,
         CartInterestService cartInterest,
         IConfiguration config,
+        ISalesLedgerService salesLedger,
         ILogger<ProductsController> logger)
     {
         _repository = repository;
@@ -56,6 +58,7 @@ public class ProductsController : ControllerBase
         _geoIp = geoIp;
         _cartInterest = cartInterest;
         _config = config;
+        _salesLedger = salesLedger;
         _logger = logger;
     }
 
@@ -349,6 +352,11 @@ public class ProductsController : ControllerBase
             }
         }
         if (dto.Description is not null) { product.Description = dto.Description; }
+        // Captured before the edits below, so we can tell whether the amount a recorded sale was
+        // based on has actually moved.
+        decimal previousPrice = product.Price;
+        decimal? previousSalePrice = product.SalePrice;
+
         if (dto.Price.HasValue && dto.Price.Value != product.Price)
         {
             product.Price = dto.Price.Value;
@@ -411,46 +419,21 @@ public class ProductsController : ControllerBase
 
         await _repository.UpdateAsync(product);
 
-        // If an admin just flipped this product to Sold (and it wasn't already Sold),
-        // mirror that into the finance ledger as a Sales transaction. Same idempotency
-        // rule as the Stripe-webhook path and the BackfillSales endpoint —
-        // Reference = product.Id, skip if a matching transaction already exists.
-        // Failure must not break the product update — log and move on.
-        //
-        // The check is on Reference AND Category, because a product carries TWO ledger rows
-        // keyed on its id: the stock purchase written at creation (Category "Stock") and the
-        // sale written here (Category "Sales"). Matching on Reference alone found the stock
-        // row and silently skipped the sale, so every piece bought with a cost price and a
-        // purchase date recorded its expense and never its income (found 2026-08-17: three
-        // sold pieces, £96 of income missing from the ledger).
+        // An admin just flipped this product to Sold (and it was not already Sold), so the sale
+        // becomes money in the ledger. Shared with the marketplace "Mark sold on..." route via
+        // ISalesLedgerService, because keeping this inline is how that route ended up recording
+        // no income at all. Platform is null here: a status-dropdown edit does not say where it
+        // sold, and the admin can fill it in on the transaction afterwards.
         if (product.Status == ProductStatus.Sold && previousStatus != ProductStatus.Sold)
         {
-            try
-            {
-                string productRef = product.Id.ToString();
-                IEnumerable<Transaction> existing = await _transactionRepository.FindAsync(
-                    t => t.Reference == productRef && t.Category == TransactionCategories.Sales);
-                if (!existing.Any())
-                {
-                    await _transactionRepository.AddAsync(new Transaction
-                    {
-                        Date = DateTime.UtcNow,
-                        Description = $"Sale: {product.Name}",
-                        Amount = product.SalePrice ?? product.Price,
-                        Category = TransactionCategories.Sales,
-                        // Platform left null on the manual-flip path — admin can fill in
-                        // (Website / Etsy / Depop / etc.) after the fact via the
-                        // transactions table edit. The Stripe-webhook path sets it to
-                        // "Website" because it actually knows.
-                        Platform = null,
-                        Reference = productRef,
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to create sale transaction for product {ProductId} on manual Sold transition", product.Id);
-            }
+            await _salesLedger.RecordSaleAsync(product, platform: null);
+        }
+        else if (product.Price != previousPrice || product.SalePrice != previousSalePrice)
+        {
+            // The price changed on a piece whose sale is already in the ledger. Forgetting the
+            // sale price until after marking it sold left the ledger holding the list price for
+            // good: nothing re-read it, and backfill skips anything that already has a sale row.
+            await _salesLedger.SyncSaleAmountAsync(product);
         }
 
         if (dto.Name is not null || dto.Description is not null)

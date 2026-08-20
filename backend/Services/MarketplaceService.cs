@@ -14,6 +14,7 @@ public class MarketplaceService(
     IRepository<EtsyToken> etsyTokens,
     IHttpClientFactory httpClientFactory,
     IConfiguration configuration,
+    ISalesLedgerService salesLedger,
     ILogger<MarketplaceService> logger) : IMarketplaceService
 {
     // --- Listing management ---
@@ -94,7 +95,14 @@ public class MarketplaceService(
             return false;
         }
 
+        bool wasAlreadySold = product.Status == ProductStatus.Sold;
         product.Status = ProductStatus.Sold;
+        if (!wasAlreadySold)
+        {
+            // When it sold, not when the row was last touched — the backfill and the monthly
+            // figures both date a sale from this, and it was never being set on this route.
+            product.SoldAtUtc = DateTime.UtcNow;
+        }
 
         foreach (ProductListing listing in product.Listings.Where(l => l.Status == "Active"))
         {
@@ -113,6 +121,14 @@ public class MarketplaceService(
         }
 
         await products.UpdateAsync(product);
+
+        // Marking a piece sold here is a sale like any other, and this route recorded no income
+        // at all until 2026-08-19. Unlike the status-dropdown edit, we know where it sold.
+        if (!wasAlreadySold)
+        {
+            await salesLedger.RecordSaleAsync(product, dto.SoldOn);
+        }
+
         return true;
     }
 
