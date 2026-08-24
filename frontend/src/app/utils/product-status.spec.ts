@@ -22,6 +22,7 @@ describe('resolveProductStatus', () => {
     expect(resolveProductStatus(makeProduct({ status: 'stock' }))).toBe('stock');
     expect(resolveProductStatus(makeProduct({ status: 'live' }))).toBe('live');
     expect(resolveProductStatus(makeProduct({ status: 'sold' }))).toBe('sold');
+    expect(resolveProductStatus(makeProduct({ status: 'write-off' }))).toBe('write-off');
   });
 
   it('falls back to inStock=true -> live when status is undefined', () => {
@@ -38,6 +39,7 @@ describe('productStatusLabel', () => {
     expect(productStatusLabel('stock')).toBe('Stock');
     expect(productStatusLabel('live')).toBe('Live');
     expect(productStatusLabel('sold')).toBe('Sold');
+    expect(productStatusLabel('write-off')).toBe('Written off');
   });
 });
 
@@ -47,16 +49,18 @@ describe('filterAdminProducts', () => {
     makeProduct({ id: '2', name: 'Silk Slip Dress', sku: 'ER-00002', status: 'stock', era: '1990s' }),
     makeProduct({ id: '3', name: 'Power Blazer', sku: 'ER-00003', status: 'sold', era: '1980s' }),
     makeProduct({ id: '4', name: 'Mystery Item', sku: 'CUSTOM-9', status: 'live', era: '1970s' }),
+    makeProduct({ id: '5', name: 'Moth-Eaten Coat', sku: 'ER-00005', status: 'write-off', era: '1960s' }),
   ];
 
   it('returns everything with status=all and empty search', () => {
-    expect(filterAdminProducts(products, '', 'all').length).toBe(4);
+    expect(filterAdminProducts(products, '', 'all').length).toBe(5);
   });
 
   it('filters by status only', () => {
     expect(filterAdminProducts(products, '', 'live').map((p) => p.id)).toEqual(['1', '4']);
     expect(filterAdminProducts(products, '', 'stock').map((p) => p.id)).toEqual(['2']);
     expect(filterAdminProducts(products, '', 'sold').map((p) => p.id)).toEqual(['3']);
+    expect(filterAdminProducts(products, '', 'write-off').map((p) => p.id)).toEqual(['5']);
   });
 
   it('filters by name (case-insensitive)', () => {
@@ -66,7 +70,7 @@ describe('filterAdminProducts', () => {
 
   it('filters by SKU (full or partial)', () => {
     expect(filterAdminProducts(products, 'ER-00002', 'all').map((p) => p.id)).toEqual(['2']);
-    expect(filterAdminProducts(products, 'er-0000', 'all').length).toBe(3);
+    expect(filterAdminProducts(products, 'er-0000', 'all').length).toBe(4);
     expect(filterAdminProducts(products, 'custom', 'all').map((p) => p.id)).toEqual(['4']);
   });
 

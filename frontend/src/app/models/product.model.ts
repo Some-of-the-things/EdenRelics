@@ -1,4 +1,4 @@
-export type ProductStatus = 'stock' | 'live' | 'sold';
+export type ProductStatus = 'stock' | 'live' | 'sold' | 'write-off';
 
 /**
  * Every size we sell, smallest first — the single source of truth.

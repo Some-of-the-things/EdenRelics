@@ -937,6 +937,11 @@
   &--out {
     color: var(--accent-sale);
   }
+
+  &--written-off {
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
 }
 
 /* Orders */
