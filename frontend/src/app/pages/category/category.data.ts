@@ -130,9 +130,9 @@ export const CATEGORY_HUBS: CategoryHub[] = [
     metaTitle: 'Vintage Prairie Dresses — Original 1970s & 1980s',
     metaDescription:
       'Original vintage prairie dresses — bib fronts, high necklines, gathered skirts and lace trim, mostly 1970s and 80s. One-of-a-kind pieces, measured and inspected, with UK shipping.',
-    tagline: 'High necks, bib fronts and gathered skirts — originals, not the revival.',
+    tagline: 'High necks and gathered skirts — original vintage, not modern reproductions.',
     intro:
-      'Genuine vintage prairie dresses, most of them from the 1970s and 80s when the style had its defining revival. Every piece here is an original rather than a modern reproduction: bibbed or yoked bodices, high or ruffled necklines, full gathered skirts, and the lace, pintuck and eyelet detailing the look is built on.',
+      'Vintage prairie dresses, most of them from the 1970s and 80s when the style had its defining revival. Every piece here is a genuine vintage garment rather than a modern reproduction. Expect high or ruffled necklines, full gathered skirts, and the lace, pintuck and eyelet detailing the look leans on; bib and yoke fronts are the most recognisable version of the style, though plenty of prairie dresses have neither.',
     body: [
       'The prairie dress borrows from 19th-century American frontier and English rural dress — pioneer and Victorian country clothing, reinterpreted through a romantic lens. It is worth being clear that the garment itself is a 20th-century invention: the aesthetic looks back to the 1800s, but the dresses were made much later, and the ones most collectors mean date from the late 1960s onwards.',
       'That revival is where most surviving originals come from. A number of labels are closely associated with it, Gunne Sax and Laura Ashley among the best known, though a great many prairie dresses carry no label at all. Home dressmaking was widespread through the 1970s, and an unlabelled dress is not a lesser one — some of the most charming examples were made at home, and construction is often a better guide to age than any tag.',
@@ -140,8 +140,9 @@ export const CATEGORY_HUBS: CategoryHub[] = [
       'Stock changes constantly because every piece is one of a kind. When something sells it is gone, so this page reflects what is genuinely available now rather than a fixed range.',
     ],
     lookFor: [
-      'A bibbed or yoked bodice with a high, ruffled or stand collar, and a full gathered or tiered skirt — the combination is what separates a prairie dress from a general floral maxi.',
-      'Natural fibres, most often cotton or a cotton blend, in small florals, calico-style prints, checks or plain grounds rather than bold graphic patterns.',
+      'Prairie is a cluster of design cues rather than a fixed checklist. Most originals carry several of the features below; few carry all of them.',
+      'A high, ruffled or stand collar, and a full gathered or tiered skirt. A bib or yoke front is the most recognisable prairie feature, but not a requirement — plain fitted bodices, princess seams, shirring and pleating all turn up on period pieces.',
+      'Small florals, calico-style prints, checks or plain grounds rather than bold graphic patterns. Cotton and cotton blends are common, though prairie dresses were made in polyester and other synthetics too, so fibre alone does not settle it.',
       'Period detailing: pintucks, eyelet or broderie anglaise, lace trims at the cuff and yoke, self-covered buttons and a generous hem allowance.',
       {
         text: 'Construction tends to date a piece more reliably than the label, particularly since so many prairie dresses are unlabelled or handmade.',
