@@ -136,11 +136,16 @@ public class AccountsService(
             .ToList();
 
         // Inventory summary — Stock + Live count as "owned" inventory you haven't sold yet.
+        // Sold and written-off pieces are both gone: one left as a sale, the other as a loss,
+        // and neither is stock you could still sell, so neither carries a valuation.
         int totalLive = allProducts.Count(p => p.Status == ProductStatus.Live);
         int totalStock = allProducts.Count(p => p.Status == ProductStatus.Stock);
         int totalSold = allProducts.Count(p => p.Status == ProductStatus.Sold);
-        decimal inventoryRetailValue = allProducts.Where(p => p.Status != ProductStatus.Sold).Sum(p => p.Price);
-        decimal inventoryCostValue = allProducts.Where(p => p.Status != ProductStatus.Sold).Sum(p => p.CostPrice);
+        int totalWrittenOff = allProducts.Count(p => p.Status == ProductStatus.WriteOff);
+        bool IsHeldInventory(Product p) =>
+            p.Status != ProductStatus.Sold && p.Status != ProductStatus.WriteOff;
+        decimal inventoryRetailValue = allProducts.Where(IsHeldInventory).Sum(p => p.Price);
+        decimal inventoryCostValue = allProducts.Where(IsHeldInventory).Sum(p => p.CostPrice);
 
         // Orders by status (all orders, not just paid)
         List<Order> allOrders = await orders.Query().ToListAsync();
@@ -165,6 +170,7 @@ public class AccountsService(
                 totalLive,
                 totalStock,
                 totalSold,
+                totalWrittenOff,
                 Math.Round(inventoryRetailValue, 2),
                 Math.Round(inventoryCostValue, 2)),
             ordersByStatus);

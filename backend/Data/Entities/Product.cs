@@ -7,6 +7,13 @@ public enum ProductStatus
     Stock = 0,
     Live = 1,
     Sold = 2,
+
+    /// <summary>Written off: the piece will never sell (damaged, lost, spoiled in cleaning,
+    /// returned to the supplier). Hidden from the public site exactly like Stock, but unlike
+    /// Stock it is no longer inventory you hold, so it drops out of the inventory valuation
+    /// in the accounts. Its cost already sits in the ledger as the original Stock purchase,
+    /// so writing a piece off books no further transaction.</summary>
+    WriteOff = 3,
 }
 
 /// <summary>
@@ -98,4 +105,7 @@ public class Product : BaseEntity
 
     [NotMapped]
     public bool IsSold => Status == ProductStatus.Sold;
+
+    [NotMapped]
+    public bool IsWrittenOff => Status == ProductStatus.WriteOff;
 }

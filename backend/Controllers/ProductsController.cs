@@ -143,6 +143,13 @@ public class ProductsController : ControllerBase
         {
             return Ok(new ProductResolveDto { Action = "redirect", Name = product.Name, Era = product.Era });
         }
+        if (product.Status == ProductStatus.WriteOff)
+        {
+            // A written-off piece is never coming back, and its URL may well be indexed from
+            // when it was live, so send it on rather than rendering a page the product
+            // endpoint will refuse to serve anyway.
+            return Ok(new ProductResolveDto { Action = "redirect", Name = product.Name, Era = product.Era });
+        }
         if (product.Status == ProductStatus.Sold)
         {
             DateTime soldAt = product.SoldAtUtc ?? product.UpdatedAtUtc;

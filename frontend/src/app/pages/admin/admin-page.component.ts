@@ -118,7 +118,14 @@ interface AccountsSummary {
     itemsSold: number;
   }[];
   revenueByEra: { era: string; revenue: number; cost: number; profit: number; itemsSold: number }[];
-  inventory: { inStock: number; outOfStock: number; retailValue: number; costValue: number };
+  inventory: {
+    inStock: number;
+    stock: number;
+    outOfStock: number;
+    writtenOff: number;
+    retailValue: number;
+    costValue: number;
+  };
   ordersByStatus: { status: string; count: number }[];
 }
 

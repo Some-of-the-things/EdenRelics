@@ -566,4 +566,83 @@ public class ProductSkuAndStatusTests : IClassFixture<ApiFactory>
         Assert.True(stock >= 2, $"Expected at least 2 stock items, saw {stock}");
         Assert.True(live >= 1, $"Expected at least 1 live item, saw {live}");
     }
+
+    [Fact]
+    public async Task WriteOff_IsHiddenFromThePublicButVisibleToAdmin()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-writeoff-visibility@test.com");
+
+        HttpResponseMessage create = await client.PostAsJsonAsync(
+            "/api/products",
+            NewProductPayload(name: "Moth-Eaten Coat", status: "write-off"));
+        create.EnsureSuccessStatusCode();
+        AdminProductResponse? written = await create.Content.ReadFromJsonAsync<AdminProductResponse>(JsonOptions);
+        Assert.Equal("write-off", written!.Status);
+
+        HttpClient anon = _factory.CreateClient();
+        List<PublicProductResponse>? publicList = await anon.GetFromJsonAsync<List<PublicProductResponse>>(
+            "/api/products", JsonOptions);
+        Assert.NotNull(publicList);
+        Assert.DoesNotContain(publicList!, p => p.Id == written.Id);
+
+        HttpResponseMessage publicGet = await anon.GetAsync($"/api/products/{written.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, publicGet.StatusCode);
+
+        List<AdminProductResponse>? adminList = await client.GetFromJsonAsync<List<AdminProductResponse>>(
+            "/api/products", JsonOptions);
+        Assert.NotNull(adminList);
+        Assert.Contains(adminList!, p => p.Id == written.Id && p.Status == "write-off");
+    }
+
+    [Fact]
+    public async Task WriteOff_ExcludedFromSitemapAndResolvesToARedirect()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-writeoff-sitemap@test.com");
+
+        HttpResponseMessage create = await client.PostAsJsonAsync(
+            "/api/products",
+            NewProductPayload(name: "Ruined Rayon Dress", status: "write-off"));
+        AdminProductResponse? written = await create.Content.ReadFromJsonAsync<AdminProductResponse>(JsonOptions);
+
+        HttpClient anon = _factory.CreateClient();
+        HttpResponseMessage sitemap = await anon.GetAsync("/api/sitemap.xml");
+        sitemap.EnsureSuccessStatusCode();
+        string xml = await sitemap.Content.ReadAsStringAsync();
+        Assert.DoesNotContain($"/product/{written!.Slug}", xml);
+
+        // A written-off piece never comes back, so its URL is sent on rather than dead-ending.
+        string resolved = await anon.GetStringAsync($"/api/products/resolve/{written.Slug}");
+        Assert.Contains("redirect", resolved);
+    }
+
+    [Fact]
+    public async Task AccountsSummary_DropsWrittenOffPiecesFromTheInventoryValuation()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-writeoff-accounts@test.com");
+
+        HttpResponseMessage response = await client.GetAsync("/api/accounts/summary");
+        response.EnsureSuccessStatusCode();
+        JsonDocument before = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement beforeInventory = before.RootElement.GetProperty("inventory");
+        decimal retailBefore = beforeInventory.GetProperty("retailValue").GetDecimal();
+        int writtenOffBefore = beforeInventory.GetProperty("writtenOff").GetInt32();
+
+        HttpResponseMessage create = await client.PostAsJsonAsync(
+            "/api/products",
+            NewProductPayload(name: "Spoiled Silk Blouse", status: "write-off"));
+        create.EnsureSuccessStatusCode();
+
+        HttpResponseMessage after = await client.GetAsync("/api/accounts/summary");
+        after.EnsureSuccessStatusCode();
+        JsonElement afterInventory = JsonDocument
+            .Parse(await after.Content.ReadAsStringAsync())
+            .RootElement.GetProperty("inventory");
+
+        // Counted as a write-off, but its £99 does not join the stock you still hold.
+        Assert.Equal(writtenOffBefore + 1, afterInventory.GetProperty("writtenOff").GetInt32());
+        Assert.Equal(retailBefore, afterInventory.GetProperty("retailValue").GetDecimal());
+    }
 }
