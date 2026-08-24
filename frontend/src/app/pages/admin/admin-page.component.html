@@ -336,6 +336,7 @@
                 <option value="stock">Stock (admin only)</option>
                 <option value="live">Live (on sale)</option>
                 <option value="sold">Sold</option>
+                <option value="write-off">Write-off (damaged / lost)</option>
               </select>
             </label>
             <label class="admin__field">
@@ -597,6 +598,7 @@
           <option value="live">Live</option>
           <option value="stock">Stock</option>
           <option value="sold">Sold</option>
+          <option value="write-off">Written off</option>
         </select>
       </label>
       <label class="admin__filter-label">
@@ -700,8 +702,9 @@
               <strong>{{ product.name }}</strong>
               <span
                 class="admin__stock"
-                [class.admin__stock--out]="(product.status ?? (product.inStock ? 'live' : 'sold')) === 'sold'"
-                [class.admin__stock--draft]="(product.status ?? (product.inStock ? 'live' : 'sold')) === 'stock'"
+                [class.admin__stock--out]="resolveStatus(product) === 'sold'"
+                [class.admin__stock--draft]="resolveStatus(product) === 'stock'"
+                [class.admin__stock--written-off]="resolveStatus(product) === 'write-off'"
               >
                 {{ statusLabel(product) }}
               </span>

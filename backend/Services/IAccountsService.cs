@@ -22,5 +22,11 @@ public record AccountsSummaryDto(
 public record MonthRevenueDto(string Month, decimal Revenue, decimal Cost, decimal Profit, int Orders, int ItemsSold);
 public record CategoryRevenueDto(string Category, decimal Revenue, decimal Cost, decimal Profit, int ItemsSold);
 public record EraRevenueDto(string Era, decimal Revenue, decimal Cost, decimal Profit, int ItemsSold);
-public record InventorySummaryDto(int InStock, int Stock, int OutOfStock, decimal RetailValue, decimal CostValue);
+public record InventorySummaryDto(
+    int InStock,
+    int Stock,
+    int OutOfStock,
+    int WrittenOff,
+    decimal RetailValue,
+    decimal CostValue);
 public record OrderStatusCountDto(string Status, int Count);

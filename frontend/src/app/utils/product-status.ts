@@ -9,6 +9,7 @@ export function productStatusLabel(status: ProductStatus): string {
     case 'stock': return 'Stock';
     case 'live': return 'Live';
     case 'sold': return 'Sold';
+    case 'write-off': return 'Written off';
   }
 }
 
