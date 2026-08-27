@@ -52,6 +52,18 @@ export interface CategoryHub {
   include: string[];
   /** Keywords that disqualify a product even if an include matched. */
   exclude?: string[];
+  /**
+   * Explicitly curated members, by product slug. Keyword matching reads the
+   * product NAME alone, so a piece that belongs to a hub but isn't named for it
+   * — a prairie dress listed as a floral cotton maxi — never shows up, and the
+   * page ends up looking like a narrower style than it is. A slug listed here
+   * joins the hub whatever the piece is called, and outranks `exclude`.
+   *
+   * Slug rather than SKU because the public product payload deliberately omits
+   * the SKU (see PublicDto_DoesNotLeakSkuOrStatus), and slugs only change when
+   * an admin sets one by hand.
+   */
+  curatedSlugs?: string[];
   /** Cross-links to related era / designer / other hub pages (internal linking). */
   relatedLinks?: { label: string; path: string }[];
 }
@@ -292,8 +304,15 @@ export function hubPath(hub: CategoryHub): string {
   return hub.kind === 'style' ? `/style/${hub.slug}` : `/dresses/${hub.slug}`;
 }
 
-/** True when a product's name qualifies it for a hub (include hit, no exclude hit). */
-function productMatchesHub(name: string, hub: CategoryHub): boolean {
+/** True when a product is curated into a hub by slug, or its NAME qualifies it (include hit, no exclude hit). */
+function productMatchesHub(product: Pick<Product, 'name' | 'slug'>, hub: CategoryHub): boolean {
+  // A curated slug is a deliberate decision about one specific piece, so it
+  // beats the keyword rules in both directions — including the exclude list.
+  const slug = product.slug?.toLowerCase();
+  if (slug && hub.curatedSlugs?.some((s) => s.toLowerCase() === slug)) {
+    return true;
+  }
+  const name = product.name.toLowerCase();
   if (hub.exclude?.some((x) => name.includes(x.toLowerCase()))) {
     return false;
   }
@@ -301,12 +320,14 @@ function productMatchesHub(name: string, hub: CategoryHub): boolean {
 }
 
 /**
- * Products belonging to a hub: name contains an include keyword and no exclude
- * keyword. Matching on the name (not description) keeps membership precise and
- * predictable. Order is preserved from the caller (typically newest-first).
+ * Products belonging to a hub: curated in by slug, or the name contains an
+ * include keyword and no exclude keyword. Matching on the name (not description)
+ * keeps keyword membership precise and predictable, and `curatedSlugs` covers
+ * the pieces that belong but aren't named for the style. Order is preserved from
+ * the caller (typically newest-first).
  */
 export function matchProductsToHub(products: readonly Product[], hub: CategoryHub): Product[] {
-  return products.filter((p) => productMatchesHub(p.name.toLowerCase(), hub));
+  return products.filter((p) => productMatchesHub(p, hub));
 }
 
 /**
@@ -315,6 +336,5 @@ export function matchProductsToHub(products: readonly Product[], hub: CategoryHu
  * the hubs so they aren't orphaned on the footer alone.
  */
 export function findHubsForProduct(product: Product): CategoryHub[] {
-  const name = product.name.toLowerCase();
-  return CATEGORY_HUBS.filter((hub) => productMatchesHub(name, hub));
+  return CATEGORY_HUBS.filter((hub) => productMatchesHub(product, hub));
 }
