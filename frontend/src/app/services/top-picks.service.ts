@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 /** One curated pick: the product (by globally-unique ID) and whether it shows on the homepage strip. */
@@ -77,5 +77,26 @@ export class TopPicksService {
   /** Admin: replace the whole curated list, in display order. */
   save(items: TopPickItem[]): Observable<TopPicksAdmin> {
     return this.http.put<TopPicksAdmin>(`${environment.apiUrl}/api/top-picks/admin`, { items });
+  }
+
+  /**
+   * Admin: switch the public surfaces on or off. Persisted server-side, so it takes effect for
+   * customers without a redeploy. The cached public signals are updated in step, so the nav link
+   * and any open surface follow the switch without a reload.
+   */
+  setEnabled(enabled: boolean): Observable<TopPicksAdmin> {
+    return this.http
+      .put<TopPicksAdmin>(`${environment.apiUrl}/api/top-picks/admin/enabled`, { enabled })
+      .pipe(tap((res) => this.applyGate(res)));
+  }
+
+  /** Mirrors an admin gate change onto the cached public state this session already fetched. */
+  private applyGate(res: TopPicksAdmin): void {
+    this._enabled.set(res.enabled);
+    const ids = res.enabled ? res.items.map((i) => i.productId) : [];
+    const featured = res.enabled ? res.items.filter((i) => i.featured).map((i) => i.productId) : [];
+    this._productIds.set(ids);
+    this._featuredProductIds.set(featured);
+    this.loadPromise = Promise.resolve(res.enabled);
   }
 }

@@ -4,20 +4,49 @@
     <p class="tp__hint">
       Curate the hand-picked edit shown on the homepage strip and the <code>/top-picks</code> page.
       Order matters — drag positions with the arrows. Tick <strong>Homepage</strong> for the few you
-      want on the homepage strip. Picks are stored by SKU and persist here whether or not the section
-      is switched on, so you can build the list first and go live later.
+      want on the homepage strip. Picks persist here whether or not the section is switched on, so
+      you can build the list first and go live later.
     </p>
 
-    @if (enabled()) {
-      <p class="tp__status tp__status--on" role="status">
-        Top Picks is <strong>live</strong> — these picks are public now.
-      </p>
-    } @else {
-      <p class="tp__status tp__status--off" role="status">
-        Top Picks is currently <strong>switched off</strong>. Curate here, then set
-        <code>TopPicks:Enabled = true</code> in the API config to make it public.
-      </p>
-    }
+    <div class="tp__gate">
+      <button
+        type="button"
+        class="tp__gate-toggle"
+        role="switch"
+        [attr.aria-checked]="enabled()"
+        [disabled]="togglingGate()"
+        (click)="toggleGate()"
+      >
+        <span class="tp__gate-track" [class.tp__gate-track--on]="enabled()" aria-hidden="true">
+          <span class="tp__gate-knob"></span>
+        </span>
+        <span class="tp__gate-label">
+          @if (togglingGate()) {
+            Saving…
+          } @else if (enabled()) {
+            Top Picks is live
+          } @else {
+            Top Picks is switched off
+          }
+        </span>
+      </button>
+
+      @if (enabled()) {
+        <p class="tp__status tp__status--on" role="status">
+          These picks are public now — on the homepage strip and at <code>/top-picks</code>.
+          Switching off hides both straight away and keeps your list.
+        </p>
+      } @else {
+        <p class="tp__status tp__status--off" role="status">
+          The homepage strip, the <code>/top-picks</code> page and the nav link are hidden from
+          customers. Your picks are safe — switch back on whenever you like.
+        </p>
+      }
+
+      @if (gateError(); as ge) {
+        <p class="tp__error" role="alert">{{ ge }}</p>
+      }
+    </div>
   </header>
 
   @if (loading()) {
