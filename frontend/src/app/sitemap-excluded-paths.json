@@ -13,7 +13,6 @@
     "admin/login",
     "admin/sellers",
     "seller",
-    "seller-tool",
-    "top-picks"
+    "seller-tool"
   ]
 }

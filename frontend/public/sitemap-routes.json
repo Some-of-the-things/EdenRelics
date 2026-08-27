@@ -30,6 +30,7 @@
   { "path": "/dresses/maxi", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/dresses/midi", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/style/boho", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/top-picks", "changefreq": "weekly", "priority": "0.8" },
   { "path": "/privacy-policy", "changefreq": "yearly", "priority": "0.3" },
   { "path": "/modern-slavery-policy", "changefreq": "yearly", "priority": "0.3" },
   { "path": "/supply-chain-policy", "changefreq": "yearly", "priority": "0.3" },

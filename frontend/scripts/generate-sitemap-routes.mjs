@@ -103,11 +103,14 @@ const categoryRoutes = [
     changefreq: 'weekly',
     priority: '0.7',
   })),
+  // Live since 2026-08-27, so it returns 200 rather than the 302 that kept it out.
+  // NB this is a build-time list and the gate is now an admin toggle, so if Top Picks is
+  // ever switched off in the admin UI this entry starts advertising a redirect until the
+  // next deploy drops it. Take it out here if the section goes dark for more than a day.
+  { path: '/top-picks', changefreq: 'weekly', priority: '0.8' },
 ];
-// Marketplace-facing static pages. Three are deliberately absent:
+// Marketplace-facing static pages. Two are deliberately absent:
 //
-//   /top-picks   gated behind TopPicks:Enabled and currently 302s, so submitting
-//                it would advertise a redirect.
 //   /seller      authGuard'd dashboard.
 //   /seller-tool admin-only during the beta.
 //

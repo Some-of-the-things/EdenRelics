@@ -25,9 +25,9 @@ interface SitemapEntry {
  *                first IndexNow run submitted the beta tool to Bing, Yandex,
  *                Seznam and Naver. The PUBLIC 'sellers/:slug' profile is
  *                dynamic and unaffected.
- *   top-picks    Flag-gated behind TopPicks:Enabled and currently 302ing, so
- *                submitting it would hand Google a redirect. Move it into
- *                sitemap-routes.json when the flag goes on and it returns 200.
+ *
+ * top-picks was a member until 2026-08-27, while it 302'd behind TopPicks:Enabled.
+ * The gate is on and the page returns 200, so it now belongs in the sitemap.
  */
 const SITEMAP_EXCLUDED_PATHS: ReadonlySet<string> = new Set(excluded.paths);
 
