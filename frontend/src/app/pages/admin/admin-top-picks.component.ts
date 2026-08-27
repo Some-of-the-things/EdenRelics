@@ -34,6 +34,10 @@ export class AdminTopPicksComponent implements OnInit {
   readonly saved = signal(false);
   readonly error = signal<string | null>(null);
 
+  /** In-flight state for the on/off switch, kept apart from the curated-list save. */
+  readonly togglingGate = signal(false);
+  readonly gateError = signal<string | null>(null);
+
   /** Free-text filter for the "add a product" picker. */
   readonly search = signal('');
 
@@ -117,6 +121,34 @@ export class AdminTopPicksComponent implements OnInit {
       return next;
     });
     this.saved.set(false);
+  }
+
+  /**
+   * Flip the public gate. Optimistic so the switch feels immediate, and reverted on failure —
+   * leaving the switch showing "live" when the save never landed would be worse than a brief flicker.
+   */
+  toggleGate(): void {
+    if (this.togglingGate()) {
+      return;
+    }
+    const next = !this.enabled();
+    const previous = this.enabled();
+    this.togglingGate.set(true);
+    this.gateError.set(null);
+    this.enabled.set(next);
+
+    this.topPicks.setEnabled(next).subscribe({
+      next: (res) => {
+        this.togglingGate.set(false);
+        this.enabled.set(res.enabled);
+        this.picks.set(res.items);
+      },
+      error: (err) => {
+        this.togglingGate.set(false);
+        this.enabled.set(previous);
+        this.gateError.set(this.explain(err.status));
+      },
+    });
   }
 
   save(): void {

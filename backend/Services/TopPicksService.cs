@@ -8,20 +8,36 @@ namespace Eden_Relics_BE.Services;
 
 /// <summary>
 /// Curated "Our Top Picks" edit. Persistence is a small, admin-curated list of <see cref="TopPick"/>
-/// rows (product ID + order + featured flag), replaced wholesale on save. The public read is gated by
-/// <see cref="TopPicksOptions.Enabled"/> and fails closed: while the gate is off, callers get an
-/// empty selection so no public surface appears, even though the admin list is still editable.
+/// rows (product ID + order + featured flag), replaced wholesale on save. The public read is gated
+/// and fails closed: while the gate is off, callers get an empty selection so no public surface
+/// appears, even though the admin list is still editable.
 /// Keyed by product ID so picks stay unambiguous across sellers once the marketplace is live.
+///
+/// The gate itself lives in <see cref="TopPicksSetting"/> once an admin has set it, so it can be
+/// flipped from the browser without a redeploy. <see cref="TopPicksOptions.Enabled"/> is the seed
+/// default used only while no row exists — so the deployed configuration keeps governing until
+/// someone actually uses the admin toggle, and from then on the stored choice wins.
 /// </summary>
 public class TopPicksService(
     IRepository<TopPick> picks,
+    IRepository<TopPicksSetting> settings,
     IOptions<TopPicksOptions> options) : ITopPicksService
 {
-    private bool Enabled => options.Value.Enabled;
+    /// <summary>
+    /// The effective gate: the stored admin choice, or the configured seed default while no row
+    /// exists. Reads the oldest row so a duplicate written by a racing save can't flip the meaning.
+    /// </summary>
+    private async Task<bool> IsEnabledAsync()
+    {
+        TopPicksSetting? stored = await settings.Query()
+            .OrderBy(s => s.CreatedAtUtc)
+            .FirstOrDefaultAsync();
+        return stored?.Enabled ?? options.Value.Enabled;
+    }
 
     public async Task<TopPicksPublicDto> GetPublicAsync()
     {
-        if (!Enabled)
+        if (!await IsEnabledAsync())
         {
             return new TopPicksPublicDto(false, [], []);
         }
@@ -35,7 +51,9 @@ public class TopPicksService(
     public async Task<TopPicksAdminDto> GetAdminAsync()
     {
         List<TopPick> ordered = await OrderedAsync();
-        return new TopPicksAdminDto(Enabled, ordered.Select(p => new TopPickItemDto(p.ProductId, p.Featured)).ToList());
+        return new TopPicksAdminDto(
+            await IsEnabledAsync(),
+            ordered.Select(p => new TopPickItemDto(p.ProductId, p.Featured)).ToList());
     }
 
     public async Task<TopPicksAdminDto> ReplaceAsync(IEnumerable<TopPickItemDto> items)
@@ -61,7 +79,27 @@ public class TopPicksService(
             .ToList();
         await picks.AddRangeAsync(fresh);
 
-        return new TopPicksAdminDto(Enabled, clean);
+        return new TopPicksAdminDto(await IsEnabledAsync(), clean);
+    }
+
+    public async Task<TopPicksAdminDto> SetEnabledAsync(bool enabled)
+    {
+        TopPicksSetting? stored = await settings.Query()
+            .OrderBy(s => s.CreatedAtUtc)
+            .FirstOrDefaultAsync();
+
+        if (stored is null)
+        {
+            await settings.AddAsync(new TopPicksSetting { Enabled = enabled });
+        }
+        else
+        {
+            stored.Enabled = enabled;
+            await settings.UpdateAsync(stored);
+        }
+
+        List<TopPick> ordered = await OrderedAsync();
+        return new TopPicksAdminDto(enabled, ordered.Select(p => new TopPickItemDto(p.ProductId, p.Featured)).ToList());
     }
 
     private async Task<List<TopPick>> OrderedAsync() =>

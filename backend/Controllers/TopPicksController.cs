@@ -38,4 +38,12 @@ public class TopPicksController(ITopPicksService topPicks) : ControllerBase
     {
         return Ok(await topPicks.ReplaceAsync(request.Items ?? []));
     }
+
+    /// <summary>Admin: switch the public surfaces on or off. Persisted, so it takes effect without
+    /// a redeploy and survives a restart. Leaves the curated list alone.</summary>
+    [HttpPut("admin/enabled")]
+    public async Task<ActionResult<TopPicksAdminDto>> SetEnabled([FromBody] SetTopPicksEnabledRequest request)
+    {
+        return Ok(await topPicks.SetEnabledAsync(request.Enabled));
+    }
 }

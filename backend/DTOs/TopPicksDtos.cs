@@ -16,3 +16,7 @@ public record TopPicksAdminDto(bool Enabled, List<TopPickItemDto> Items);
 
 /// <summary>Replace the whole curated list, in display order.</summary>
 public record SaveTopPicksRequest(List<TopPickItemDto>? Items);
+
+/// <summary>Switch the public Top Picks surfaces on or off. Separate from saving the curated list,
+/// so going live (or dark) is one deliberate action and never a side effect of re-ordering picks.</summary>
+public record SetTopPicksEnabledRequest(bool Enabled);
