@@ -28,7 +28,7 @@
             loading="eager"
             fetchpriority="high"
             decoding="async"
-          />
+          >
           @if (isSold()) {
             <span class="detail__image-sold">Sold</span>
           }
@@ -121,7 +121,7 @@
           [title]="product.name"
           [description]="productShareDescription()"
           [image]="product.imageUrl"
-        />
+        ></app-share-buttons>
       </div>
     </div>
 
@@ -140,7 +140,7 @@
                   [alt]="piece.name"
                   loading="lazy"
                   decoding="async"
-                />
+                >
                 <span class="detail__related-name">{{ piece.name }}</span>
                 <span class="detail__related-price">{{ (piece.salePrice ?? piece.price) | currency:'GBP' }}</span>
               </a>
