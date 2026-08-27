@@ -1,3 +1,7 @@
 **/bin/
 **/obj/
 **/*.user
+
+# The ArUco measurement spike: a Python venv and sample images, ~207MB, uploaded to the
+# builder on every deploy. The image publishes Api only and never reads any of it.
+measurement/
