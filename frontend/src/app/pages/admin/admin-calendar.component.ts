@@ -354,7 +354,7 @@ export class AdminCalendarComponent implements OnInit {
         title: v.title.trim(),
         dueDate: v.dueDate,
         scheduledFor: v.scheduledFor ? new Date(v.scheduledFor).toISOString() : null,
-        notes: v.notes && v.notes.trim() ? v.notes.trim() : null,
+        notes: v.notes?.trim() ? v.notes.trim() : null,
       };
       const created = await this.calendar.create(body);
       this.obligations.update((all) => [...all, created]);
