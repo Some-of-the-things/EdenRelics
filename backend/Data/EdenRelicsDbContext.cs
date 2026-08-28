@@ -52,6 +52,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<LiabilityObligation> LiabilityObligations => Set<LiabilityObligation>();
     public DbSet<OperatorReminder> OperatorReminders => Set<OperatorReminder>();
     public DbSet<TopPick> TopPicks => Set<TopPick>();
+    public DbSet<TopPicksSetting> TopPicksSettings => Set<TopPicksSetting>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -395,6 +396,11 @@ public class EdenRelicsDbContext : DbContext
         {
             entity.HasQueryFilter(e => !e.IsDeleted);
             entity.HasIndex(p => p.Position);
+        });
+
+        modelBuilder.Entity<TopPicksSetting>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         modelBuilder.Entity<MonzoToken>(entity =>
