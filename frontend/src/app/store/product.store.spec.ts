@@ -111,6 +111,43 @@ describe('ProductStore', () => {
     expect(store.filteredProducts().length).toBe(store.products().length);
   });
 
+  describe('sale filter', () => {
+    const onSale = (overrides: Partial<Product>): Product => ({
+      ...MOCK_PRODUCTS[0],
+      ...overrides,
+      id: `sale-${overrides.id}`,
+    });
+
+    beforeEach(() => {
+      store.loadProducts();
+      httpMock.expectOne(`${environment.apiUrl}/api/products`).flush([
+        ...MOCK_PRODUCTS,
+        onSale({ id: 'shown', category: '80s', salePrice: 150, showReduction: true }),
+        // Reduced, but not yet allowed to advertise the reduction (28-day rule).
+        onSale({ id: 'held', salePrice: 150, showReduction: false }),
+      ]);
+    });
+
+    it('only lists pieces showing a reduction, not every piece with a sale price', () => {
+      store.setSaleOnly(true);
+      expect(store.filteredProducts().map((p) => p.id)).toEqual(['sale-shown']);
+    });
+
+    it('combines with the decade filter', () => {
+      store.setSaleOnly(true);
+      store.setCategory('70s');
+      expect(store.filteredProducts().length).toBe(0);
+      store.setCategory('80s');
+      expect(store.filteredProducts().map((p) => p.id)).toEqual(['sale-shown']);
+    });
+
+    it('shows everything again when switched off', () => {
+      store.setSaleOnly(true);
+      store.setSaleOnly(false);
+      expect(store.filteredProducts().length).toBe(5);
+    });
+  });
+
   it('should provide categories list', () => {
     const cats = store.categories();
     expect(cats).toContain('50s');

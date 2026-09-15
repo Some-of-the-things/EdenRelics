@@ -25,6 +25,8 @@ interface ProductState {
   products: Product[];
   selectedCategory: Product['category'] | 'all';
   selectedSize: Product['size'] | 'all';
+  /** Narrow to pieces showing a reduction — the /shop/sale view. */
+  saleOnly: boolean;
   searchQuery: string;
   currentPage: number;
   pageSize: number;
@@ -36,6 +38,7 @@ const initialState: ProductState = {
   products: [],
   selectedCategory: 'all',
   selectedSize: 'all',
+  saleOnly: false,
   searchQuery: '',
   currentPage: 1,
   pageSize: 12,
@@ -87,6 +90,13 @@ export const ProductStore = signalStore(
       }
       if (size !== 'all') {
         products = products.filter((p) => p.size === size);
+      }
+      if (store.saleOnly()) {
+        // showReduction, not "has a sale price": the API only sets it once a reduction may
+        // lawfully be advertised (28 days at the full price, and not on sale for longer
+        // than that). Listing a piece under "On Sale" advertises a reduction just as a
+        // struck-through price does, so the two must agree.
+        products = products.filter((p) => p.showReduction);
       }
       if (query) {
         products = products.filter(
@@ -155,6 +165,9 @@ export const ProductStore = signalStore(
     },
     setSize(size: Product['size'] | 'all'): void {
       patchState(store, { selectedSize: size, currentPage: 1 });
+    },
+    setSaleOnly(saleOnly: boolean): void {
+      patchState(store, { saleOnly, currentPage: 1 });
     },
     setSearchQuery(query: string): void {
       patchState(store, { searchQuery: query, currentPage: 1 });
