@@ -53,6 +53,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<OperatorReminder> OperatorReminders => Set<OperatorReminder>();
     public DbSet<TopPick> TopPicks => Set<TopPick>();
     public DbSet<TopPicksSetting> TopPicksSettings => Set<TopPicksSetting>();
+    public DbSet<HomeSection> HomeSections => Set<HomeSection>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -401,6 +402,19 @@ public class EdenRelicsDbContext : DbContext
         modelBuilder.Entity<TopPicksSetting>(entity =>
         {
             entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<HomeSection>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(s => s.Kind).HasMaxLength(30);
+            entity.Property(s => s.Eyebrow).HasMaxLength(80);
+            entity.Property(s => s.Title).HasMaxLength(120);
+            entity.Property(s => s.Description).HasMaxLength(500);
+            entity.Property(s => s.ButtonText).HasMaxLength(60);
+            entity.Property(s => s.ButtonLink).HasMaxLength(200);
+            entity.HasIndex(s => s.Position);
+            ConfigureJsonListProperty(entity.Property(s => s.ProductIds));
         });
 
         modelBuilder.Entity<MonzoToken>(entity =>

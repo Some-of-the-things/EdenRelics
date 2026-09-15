@@ -160,6 +160,7 @@ builder.Services.AddScoped<IMarketplaceAdapter, VintedAdapter>();
 builder.Services.AddScoped<IMarketplaceAdapter, DepopAdapter>();
 
 builder.Services.AddScoped<ITopPicksService, TopPicksService>();
+builder.Services.AddScoped<IHomeSectionsService, HomeSectionsService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
 builder.Services.AddScoped<IFinanceService, FinanceService>();
