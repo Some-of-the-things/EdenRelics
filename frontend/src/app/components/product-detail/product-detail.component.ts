@@ -178,6 +178,11 @@ export class ProductDetailComponent {
     return p ? stripHtml(p.description) : '';
   });
 
+  /** Adds a start offset so iOS shows a preview frame, unless the URL already has a fragment. */
+  videoSrc(url: string): string {
+    return url.includes('#') ? url : `${url}#t=0.1`;
+  }
+
   selectImage(url: string): void {
     this.selectedImage.set(url);
   }

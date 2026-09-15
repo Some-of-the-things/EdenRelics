@@ -63,7 +63,8 @@
         @if (product.videoUrls?.length) {
           <div class="detail__videos">
             @for (video of product.videoUrls; track video) {
-              <video [src]="video" controls playsinline preload="metadata" class="detail__video"></video>
+              <!-- #t=0.1 makes iOS Safari draw the first frame; with preload="metadata" alone it shows a black box until played. -->
+              <video [src]="videoSrc(video)" controls playsinline preload="metadata" class="detail__video"></video>
             }
           </div>
         }
