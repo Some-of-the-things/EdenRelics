@@ -28,10 +28,22 @@
             loading="eager"
             fetchpriority="high"
             decoding="async"
+            (click)="openLightbox()"
           />
           @if (isSold()) {
             <span class="detail__image-sold">Sold</span>
           }
+          <button
+            type="button"
+            class="detail__zoom-btn"
+            aria-label="View larger photos"
+            (click)="openLightbox()"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" />
+              <path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6" />
+            </svg>
+          </button>
         </div>
       </div>
       <div class="detail__info">
@@ -148,6 +160,15 @@
           }
         </ul>
       </section>
+    }
+
+    @if (lightboxOpen()) {
+      <app-image-lightbox
+        [images]="allImages()"
+        [alt]="product.name"
+        [(index)]="lightboxIndex"
+        (closed)="closeLightbox()"
+      />
     }
 
     @if (showSalePrompt()) {

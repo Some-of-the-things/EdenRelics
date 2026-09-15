@@ -28,6 +28,7 @@ import { resolveProductStatus } from '../../utils/product-status';
 import { findDesignerForProduct } from '../../pages/designers/designers.data';
 import { findHubsForProduct, hubPath } from '../../pages/category/category.data';
 import { FocusTrapDirective } from '../../directives/focus-trap.directive';
+import { ImageLightboxComponent } from '../image-lightbox/image-lightbox.component';
 import { htmlToText } from '../../utils/html-to-text';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -59,6 +60,7 @@ function schemaCondition(condition: string): string {
     LocalPricePipe,
     ShareButtonsComponent,
     FocusTrapDirective,
+    ImageLightboxComponent,
   ],
   templateUrl: './product-detail.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -84,6 +86,8 @@ export class ProductDetailComponent {
 
   readonly selectedImage = signal<string | null>(null);
   readonly showSalePrompt = signal(false);
+  readonly lightboxOpen = signal(false);
+  readonly lightboxIndex = signal(0);
   /** The published care guide for this product's fabric, if one exists. */
   readonly careGuide = signal<{ slug: string; name: string } | null>(null);
   private lastResolvedMaterial: string | null = null;
@@ -176,6 +180,22 @@ export class ProductDetailComponent {
 
   selectImage(url: string): void {
     this.selectedImage.set(url);
+  }
+
+  /** Opens the full-screen viewer on whichever photo is showing in the main slot. */
+  openLightbox(): void {
+    const start = this.allImages().indexOf(this.currentImage());
+    this.lightboxIndex.set(Math.max(0, start));
+    this.lightboxOpen.set(true);
+  }
+
+  /** Leaves the main slot on the last photo viewed, so closing doesn't jump back. */
+  closeLightbox(): void {
+    const viewed = this.allImages()[this.lightboxIndex()];
+    if (viewed) {
+      this.selectedImage.set(viewed);
+    }
+    this.lightboxOpen.set(false);
   }
 
   toggleFavourite(productId: string): void {
