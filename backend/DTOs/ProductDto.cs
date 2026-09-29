@@ -20,7 +20,8 @@ public record ProductDto(
     List<string> VideoUrls,
     bool InStock,
     DateTime CreatedAtUtc,
-    string? Material = null
+    string? Material = null,
+    DateTime? WentLiveAtUtc = null
 );
 
 public record ProductAdminDto(
@@ -45,7 +46,10 @@ public record ProductAdminDto(
     ProductStatus Status,
     int ViewCount,
     DateTime CreatedAtUtc,
-    string? Material = null
+    string? Material = null,
+    DateTime? WentLiveAtUtc = null,
+    bool ShowReduction = false,
+    int DiscountPercent = 0
 );
 
 public record CreateProductDto(
