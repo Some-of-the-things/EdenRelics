@@ -271,6 +271,7 @@ public class ProductsController : ControllerBase
             AdditionalImageUrls = dto.AdditionalImageUrls ?? [],
             VideoUrls = dto.VideoUrls ?? [],
             Status = status,
+            WentLiveAtUtc = status == ProductStatus.Live ? DateTime.UtcNow : null,
             SalePrice = dto.SalePrice,
             PriceSetAtUtc = dto.BackdatePriceDays.HasValue
                 ? DateTime.UtcNow.AddDays(-dto.BackdatePriceDays.Value)
@@ -406,6 +407,11 @@ public class ProductsController : ControllerBase
         else if (product.Status != ProductStatus.Sold)
         {
             product.SoldAtUtc = null;
+        }
+        // Stamp the go-live date so a piece that sat as Stock jumps to the top of the shop.
+        if (product.Status == ProductStatus.Live && previousStatus != ProductStatus.Live)
+        {
+            product.WentLiveAtUtc = DateTime.UtcNow;
         }
         bool shouldNotifySale = false;
         if (dto.SalePrice.HasValue)
@@ -1188,6 +1194,34 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Whether a reduction may be advertised, and by how much.</summary>
+    /// <remarks>
+    /// UK Pricing Practices Guide compliance:
+    /// 1. Original price must have been the genuine selling price for at least
+    ///    28 consecutive days before a reduction can be advertised
+    /// 2. The reduced price should not run for longer than the product was at
+    ///    the original price — after that, the sale price becomes the new
+    ///    "normal" price and the reduction framing must stop
+    /// Admins get this too: they browse the shop with the admin payload, so without it
+    /// the On Sale page and every struck-through price disappear for them.
+    /// </remarks>
+    private static (bool ShowReduction, int DiscountPercent) GetReduction(Product p)
+    {
+        if (!p.SalePrice.HasValue || p.SalePrice.Value >= p.Price)
+        {
+            return (false, 0);
+        }
+
+        DateTime priceSetAt = p.PriceSetAtUtc ?? p.CreatedAtUtc;
+        TimeSpan timeAtOriginalPrice = (p.SalePriceSetAtUtc ?? DateTime.UtcNow) - priceSetAt;
+        bool meetsMinimumDuration = timeAtOriginalPrice >= TimeSpan.FromDays(28);
+
+        TimeSpan timeOnSale = DateTime.UtcNow - (p.SalePriceSetAtUtc ?? DateTime.UtcNow);
+        bool saleNotExpired = timeOnSale <= timeAtOriginalPrice;
+
+        return (meetsMinimumDuration && saleNotExpired, (int)Math.Round((1 - p.SalePrice.Value / p.Price) * 100));
+    }
+
     private static ProductDto ToDto(Product p, string? locale = null)
     {
         string name = p.Name;
@@ -1204,29 +1238,10 @@ public class ProductsController : ControllerBase
             }
         }
 
-        // UK Pricing Practices Guide compliance:
-        // 1. Original price must have been the genuine selling price for at least
-        //    28 consecutive days before a reduction can be advertised
-        // 2. The reduced price should not run for longer than the product was at
-        //    the original price — after that, the sale price becomes the new
-        //    "normal" price and the reduction framing must stop
-        bool showReduction = false;
-        int discountPercent = 0;
-        if (p.SalePrice.HasValue && p.SalePrice.Value < p.Price)
-        {
-            DateTime priceSetAt = p.PriceSetAtUtc ?? p.CreatedAtUtc;
-            TimeSpan timeAtOriginalPrice = (p.SalePriceSetAtUtc ?? DateTime.UtcNow) - priceSetAt;
-            bool meetsMinimumDuration = timeAtOriginalPrice >= TimeSpan.FromDays(28);
-
-            TimeSpan timeOnSale = DateTime.UtcNow - (p.SalePriceSetAtUtc ?? DateTime.UtcNow);
-            bool saleNotExpired = timeOnSale <= timeAtOriginalPrice;
-
-            showReduction = meetsMinimumDuration && saleNotExpired;
-            discountPercent = (int)Math.Round((1 - p.SalePrice.Value / p.Price) * 100);
-        }
+        (bool showReduction, int discountPercent) = GetReduction(p);
 
         return new(p.Id, name, p.Slug, description, p.Price, p.SalePrice, showReduction, discountPercent, p.Era,
-            p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.CreatedAtUtc, p.Material);
+            p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.CreatedAtUtc, p.Material, p.WentLiveAtUtc);
     }
 
     // JSON date-only values ("2026-05-28") deserialise into DateTime with
@@ -1250,10 +1265,14 @@ public class ProductsController : ControllerBase
         return DateTime.SpecifyKind(v, DateTimeKind.Utc);
     }
 
-    private static ProductAdminDto ToAdminDto(Product p) => new(
-        p.Id, p.Name, p.Slug, p.Sku, p.Description, p.Price, p.SalePrice, p.CostPrice, p.StockPurchaseDate, p.Supplier, p.Era,
-        p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.Status, p.ViewCount,
-        p.CreatedAtUtc, p.Material
-    );
+    private static ProductAdminDto ToAdminDto(Product p)
+    {
+        (bool showReduction, int discountPercent) = GetReduction(p);
+        return new(
+            p.Id, p.Name, p.Slug, p.Sku, p.Description, p.Price, p.SalePrice, p.CostPrice, p.StockPurchaseDate, p.Supplier, p.Era,
+            p.Category, p.Size, p.Condition, p.ImageUrl, p.AdditionalImageUrls, p.VideoUrls, p.IsLive, p.Status, p.ViewCount,
+            p.CreatedAtUtc, p.Material, p.WentLiveAtUtc, showReduction, discountPercent
+        );
+    }
 
 }

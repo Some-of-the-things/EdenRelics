@@ -44,6 +44,8 @@ export interface Product {
   status?: ProductStatus;
   viewCount?: number;
   createdAtUtc?: string;
+  /** When the piece last went live; null for pieces that never have. */
+  wentLiveAtUtc?: string | null;
 }
 
 /** Result of a bulk sale-price change: what moved, what was left alone, what got emailed. */
