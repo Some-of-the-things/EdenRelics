@@ -1,0 +1,152 @@
+.lightbox {
+  position: fixed;
+  inset: 0;
+  // Above the cookie banner (1000), below the discount pop-up (2000).
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 12, 10, 0.92);
+}
+
+.lightbox__bar {
+  position: absolute;
+  top: env(safe-area-inset-top, 0px);
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  z-index: 2;
+}
+
+.lightbox__counter {
+  color: #f3eee8;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.lightbox__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  transition: background var(--transition);
+
+  svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+}
+
+.lightbox__stage {
+  position: relative;
+  z-index: 1;
+  width: min(100vw - 2rem, 1600px);
+  height: calc(100vh - 7rem);
+  height: calc(100dvh - 7rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  // Stop the page scrolling or pinch-zooming underneath a panning finger.
+  &--zoomed {
+    touch-action: none;
+  }
+}
+
+.lightbox__image-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+  overflow: hidden;
+
+  .lightbox__stage--zoomed & {
+    cursor: zoom-out;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+}
+
+.lightbox__image {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 7rem);
+  max-height: calc(100dvh - 7rem);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.lightbox__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+
+  &--prev {
+    left: 1rem;
+  }
+
+  &--next {
+    right: 1rem;
+  }
+}
+
+.lightbox__hint {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+  left: 0;
+  right: 0;
+  margin: 0;
+  z-index: 2;
+  text-align: center;
+  color: rgba(243, 238, 232, 0.75);
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox__image {
+    transition: none;
+  }
+}

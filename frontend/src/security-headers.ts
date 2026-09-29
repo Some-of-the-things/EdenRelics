@@ -16,6 +16,11 @@ export const SECURITY_HEADERS: Record<string, string> = {
     "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.clarity.ms https://accounts.google.com; " +
     "style-src 'self' 'unsafe-inline' https://accounts.google.com; " +
     "img-src 'self' data: https: blob:; " +
+    // Listing videos are served from the upload host (images.edenrelics.co.uk in production, the
+    // storage bucket's own URL elsewhere), the same place as the photos, so this mirrors img-src.
+    // With no media-src the policy fell back to default-src 'self' and the browser refused every
+    // video before requesting it, leaving an empty black player that would not start.
+    "media-src 'self' https: blob:; " +
     // eden-relics-tool.fly.dev is the seller tool's own API, on its own origin. Without it here the
     // gated /seller-tool page cannot make a single call: the browser blocks the request before it is
     // sent, so it surfaces as "Failed to fetch" with no network entry and no server-side trace. That

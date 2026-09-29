@@ -10,6 +10,8 @@ interface ShopView {
   path: string;
   /** Store category to filter by ('all' for the full catalogue). */
   category: Product['category'] | 'all';
+  /** Only pieces showing a reduction. */
+  saleOnly?: boolean;
   /** On-page H1. */
   heading: string;
   /** Intro sentence shown under the heading. */
@@ -81,6 +83,21 @@ const DECADE_VIEWS: Record<string, ShopView> = {
   },
 };
 
+/**
+ * Everything currently reduced, across every decade. Served from /shop/sale by the same
+ * /shop/:slug route as the decades, so it needs no route, server-render or sitemap-allowlist
+ * entries of its own. The decade buttons still work inside it (1980s pieces on sale).
+ */
+const SALE_VIEW: ShopView = {
+  path: '/shop/sale',
+  category: 'all',
+  saleOnly: true,
+  heading: 'On Sale',
+  lede: 'Vintage dresses with money off. Every piece is still one of a kind, so when a reduced dress sells, it is gone.',
+  title: 'Vintage Dresses On Sale',
+  description: 'Authentic vintage dresses from the 1950s to the 1990s, now reduced. Each piece is hand-picked, measured and inspected, with UK shipping.',
+};
+
 const ALL_VIEW: ShopView = {
   path: '/shop',
   category: 'all',
@@ -113,16 +130,18 @@ export class ShopPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
-      const decade = params.get('decade');
-      // Unknown decade slugs shouldn't become thin, duplicate pages — send them
+      const slug = params.get('decade');
+      const view = slug === null ? ALL_VIEW : slug === 'sale' ? SALE_VIEW : DECADE_VIEWS[slug];
+      // Unknown slugs shouldn't become thin, duplicate pages — send them
       // to the canonical /shop rather than rendering an empty filtered view.
-      if (decade !== null && !DECADE_VIEWS[decade]) {
+      if (!view) {
         this.router.navigate(['/shop'], { replaceUrl: true });
         return;
       }
-      const view = decade !== null ? DECADE_VIEWS[decade] : ALL_VIEW;
       this.view.set(view);
       this.productStore.setCategory(view.category);
+      // Always set, so leaving /shop/sale for another shop view clears it.
+      this.productStore.setSaleOnly(view.saleOnly ?? false);
       this.seo.updateTags({
         title: view.title,
         description: view.description,

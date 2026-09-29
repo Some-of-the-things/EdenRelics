@@ -39,6 +39,17 @@ describe('CSP connect-src', () => {
     });
   }
 
+  it('lets listing videos load from the upload host', () => {
+    // Without a media-src the policy falls back to default-src 'self', and every video served
+    // from images.edenrelics.co.uk is refused, leaving a black player that will not start.
+    const mediaSrc = SECURITY_HEADERS['Content-Security-Policy']
+      .split(';')
+      .map((directive) => directive.trim())
+      .find((directive) => directive.startsWith('media-src'));
+    expect(mediaSrc).toBeDefined();
+    expect(mediaSrc).toContain('https:');
+  });
+
   it('covers the seller tool, which is on an origin of its own', () => {
     // Called out separately because it is the one that is easy to forget: it is not an
     // *.edenrelics.co.uk host, so it does not look like part of the site.

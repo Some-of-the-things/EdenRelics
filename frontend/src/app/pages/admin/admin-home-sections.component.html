@@ -1,0 +1,157 @@
+<div class="tp">
+  <header class="tp__head">
+    <h2 class="tp__title">Home Sections</h2>
+    <p class="tp__hint">
+      The product strips on the homepage, top to bottom. Move them with the arrows, change any
+      wording, and add your own sections of hand-picked pieces. A strip with no pieces to show stays
+      hidden automatically. Changes reach the live homepage within about five minutes of saving.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="tp__muted">Loading…</p>
+  } @else {
+    <div class="tp__section-head hs__toolbar">
+      <button type="button" class="hs__add" (click)="addSection()" [disabled]="!canAddSection()">+ Add a section</button>
+      <button type="button" class="tp__save" (click)="save()" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : 'Save sections' }}
+      </button>
+    </div>
+    @if (error(); as e) {
+      <p class="tp__error" role="alert">{{ e }}</p>
+    }
+    @if (saved()) {
+      <p class="tp__saved" role="status">Saved.</p>
+    }
+
+    <ol class="hs__list">
+      @for (section of sections(); track section.key; let i = $index) {
+        <li class="hs__card" [class.hs__card--hidden]="section.kind !== 'top-picks' && !section.visible">
+          <div class="hs__card-head">
+            <div class="tp__order">
+              <button type="button" class="tp__arrow" (click)="move(i, -1)" [disabled]="i === 0" [attr.aria-label]="'Move ' + section.title + ' up'">↑</button>
+              <span class="tp__pos">{{ i + 1 }}</span>
+              <button type="button" class="tp__arrow" (click)="move(i, 1)" [disabled]="i === sections().length - 1" [attr.aria-label]="'Move ' + section.title + ' down'">↓</button>
+            </div>
+            <span class="hs__kind">{{ kindLabel(section) }}</span>
+
+            @if (section.kind === 'top-picks') {
+              <span class="hs__note">Shown or hidden with the switch on the Top Picks tab</span>
+            } @else {
+              <label class="tp__feat">
+                <input type="checkbox" [checked]="section.visible" (change)="update(section.key, { visible: !section.visible })" />
+                Show on homepage
+              </label>
+            }
+            @if (section.kind === 'custom') {
+              <button type="button" class="tp__remove" (click)="removeSection(section.key)">Remove section</button>
+            }
+          </div>
+
+          <div class="hs__fields">
+            <label class="hs__field">
+              <span>Small heading above the title</span>
+              <input type="text" maxlength="80" [ngModel]="section.eyebrow" (ngModelChange)="update(section.key, { eyebrow: $event })" />
+            </label>
+            <label class="hs__field">
+              <span>Title</span>
+              <input type="text" maxlength="120" required [ngModel]="section.title" (ngModelChange)="update(section.key, { title: $event })" />
+            </label>
+            <label class="hs__field hs__field--wide">
+              <span>Description</span>
+              <textarea rows="2" maxlength="500" [ngModel]="section.description" (ngModelChange)="update(section.key, { description: $event })"></textarea>
+            </label>
+            <label class="hs__field">
+              <span>Button text (leave blank for no button)</span>
+              <input type="text" maxlength="60" [ngModel]="section.buttonText" (ngModelChange)="update(section.key, { buttonText: $event })" />
+            </label>
+            <label class="hs__field">
+              <span>Button goes to (a page on this site, e.g. /shop/sale)</span>
+              <input type="text" maxlength="200" placeholder="/shop/sale" [ngModel]="section.buttonLink" (ngModelChange)="update(section.key, { buttonLink: $event })" />
+            </label>
+          </div>
+
+          @if (section.kind === 'custom') {
+            <div class="hs__pieces">
+              <div class="tp__section-head">
+                <h3 class="tp__section-title">Pieces ({{ section.productIds.length }} of {{ maxProducts }})</h3>
+                <button type="button" class="hs__add" (click)="openPicker(section.key)" [attr.aria-expanded]="pickingFor() === section.key">
+                  {{ pickingFor() === section.key ? 'Done adding' : '+ Add pieces' }}
+                </button>
+              </div>
+
+              @if (section.productIds.length === 0) {
+                <p class="tp__muted">No pieces yet. This section stays hidden until it has at least one live piece.</p>
+              } @else {
+                <ul class="tp__list">
+                  @for (id of section.productIds; track id; let j = $index) {
+                    <li class="tp__row" [class.tp__row--warn]="!isLive(product(id))">
+                      <div class="tp__order">
+                        <button type="button" class="tp__arrow" (click)="moveProduct(section.key, j, -1)" [disabled]="j === 0" aria-label="Move piece up">↑</button>
+                        <span class="tp__pos">{{ j + 1 }}</span>
+                        <button type="button" class="tp__arrow" (click)="moveProduct(section.key, j, 1)" [disabled]="j === section.productIds.length - 1" aria-label="Move piece down">↓</button>
+                      </div>
+                      @if (product(id); as p) {
+                        <img class="tp__thumb" [src]="p.imageUrl" [alt]="p.name" loading="lazy" />
+                        <div class="tp__meta">
+                          <span class="tp__name">{{ p.name }}</span>
+                          <span class="tp__sub">
+                            <span class="tp__sku">{{ p.sku }}</span>
+                            @if (!isLive(p)) {
+                              <span class="tp__badge tp__badge--warn">not live, won't show</span>
+                            }
+                          </span>
+                        </div>
+                      } @else {
+                        <div class="tp__thumb tp__thumb--empty" aria-hidden="true"></div>
+                        <div class="tp__meta">
+                          <span class="tp__name tp__name--missing">Unknown product</span>
+                        </div>
+                      }
+                      <button type="button" class="tp__remove" (click)="removeProduct(section.key, id)" aria-label="Remove piece">Remove</button>
+                    </li>
+                  }
+                </ul>
+              }
+
+              @if (pickingFor() === section.key) {
+                <input
+                  type="search"
+                  class="tp__search"
+                  placeholder="Search live products by name or SKU…"
+                  [ngModel]="search()"
+                  (ngModelChange)="search.set($event)"
+                />
+                @if (section.productIds.length >= maxProducts) {
+                  <p class="tp__muted">This section is full. Remove a piece to add another.</p>
+                } @else if (candidates().length === 0) {
+                  <p class="tp__muted">No matching live products.</p>
+                } @else {
+                  <ul class="tp__grid">
+                    @for (p of candidates(); track p.id) {
+                      <li class="tp__card">
+                        <button type="button" class="tp__card-btn" (click)="addProduct(section.key, p.id)">
+                          <img class="tp__card-img" [src]="p.imageUrl" [alt]="p.name" loading="lazy" />
+                          <span class="tp__card-name">{{ p.name }}</span>
+                          <span class="tp__card-sku">{{ p.sku }}</span>
+                          <span class="tp__card-add">+ Add</span>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                }
+              }
+            </div>
+          }
+        </li>
+      }
+    </ol>
+
+    <div class="tp__section-head hs__toolbar">
+      <span></span>
+      <button type="button" class="tp__save" (click)="save()" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : 'Save sections' }}
+      </button>
+    </div>
+  }
+</div>

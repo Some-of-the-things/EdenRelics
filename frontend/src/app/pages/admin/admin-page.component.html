@@ -117,6 +117,13 @@
     </button>
     <button
       class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'home-sections'"
+      (click)="switchTab('home-sections')"
+    >
+      Home Sections
+    </button>
+    <button
+      class="admin__tab"
       [class.admin__tab--active]="activeTab() === 'dating'"
       (click)="switchTab('dating')"
     >
@@ -188,6 +195,10 @@
 
   @if (activeTab() === 'top-picks') {
     <app-admin-top-picks />
+  }
+
+  @if (activeTab() === 'home-sections') {
+    <app-admin-home-sections />
   }
 
   @if (activeTab() === 'signature') {

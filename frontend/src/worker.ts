@@ -257,6 +257,21 @@ async function renderOnce(request: Request): Promise<Response | null> {
 }
 
 /** Edge TTL (seconds) for a cacheable page: long for static content, short otherwise. */
+/**
+ * Cache-Control for an SSR page: short in the browser, longer at the edge.
+ *
+ * Set on edge-cache hits as well as fresh renders. A response read back from the
+ * Cache API came out carrying `max-age=14400` (Cloudflare's four-hour browser TTL)
+ * in place of the `max-age=60` it was stored with, so every visitor after the
+ * first was told to keep the page for four hours. Safari honours that without
+ * revalidating, and on 2026-09-15 an iPhone kept showing a piece at full price
+ * after its sale price was set, while Chrome on the same phone, with no saved
+ * copy, showed the reduction.
+ */
+function pageCacheControl(url: URL): string {
+  return `public, max-age=60, s-maxage=${edgeCacheTtl(url)}, stale-while-revalidate=600`;
+}
+
 function edgeCacheTtl(url: URL): number {
   const path = url.pathname;
   const isStatic = STATIC_PATH_PREFIXES.some(
@@ -639,7 +654,9 @@ export default {
       if (cached) {
         // Still count the view; only the expensive render was skipped.
         sendPageViewBeacon(request, env, ctx, url.pathname);
-        return withSecurityHeaders(cached);
+        const hit = new Response(cached.body, cached);
+        hit.headers.set('Cache-Control', pageCacheControl(url));
+        return withSecurityHeaders(hit);
       }
     }
 
@@ -667,11 +684,7 @@ export default {
 
     if (rendered) {
       if (rendered.status >= 200 && rendered.status < 300) {
-        const ttl = edgeCacheTtl(url);
-        rendered.headers.set(
-          'Cache-Control',
-          `public, max-age=60, s-maxage=${ttl}, stale-while-revalidate=600`,
-        );
+        rendered.headers.set('Cache-Control', pageCacheControl(url));
         // Count this render in our first-party analytics (cookieless, non-blocking).
         sendPageViewBeacon(request, env, ctx, url.pathname);
         if (cacheable) {

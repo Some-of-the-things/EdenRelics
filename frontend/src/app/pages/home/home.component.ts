@@ -11,6 +11,7 @@ import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { collectionFeaturedSlugs, findCollectionBySlug, orderedCollectionProducts, orderedProductsById } from '../collections/collections.data';
 import { TopPicksService } from '../../services/top-picks.service';
+import { HomeSection, HomeSectionsService } from '../../services/home-sections.service';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { environment } from '../../../environments/environment';
 
@@ -38,6 +39,7 @@ export class HomeComponent implements OnInit {
   private readonly reviewsService = inject(ReviewsService);
   readonly cms = inject(ContentService);
   readonly topPicks = inject(TopPicksService);
+  private readonly homeSections = inject(HomeSectionsService);
 
   private reviewSummary: { count: number; overall: number } | null = null;
 
@@ -58,13 +60,40 @@ export class HomeComponent implements OnInit {
   });
 
   /**
-   * The featured pieces from the curated "Our Top Picks" edit, resolved by SKU from the DB-curated
-   * list. The template only shows the section when Top Picks is switched on, so it stays dormant
-   * until the operator flips its switch (independent of the marketplace).
+   * The featured pieces from the curated "Our Top Picks" edit, resolved by product ID from the
+   * DB-curated list. Empty while Top Picks is switched off, so its strip stays dormant until the
+   * operator flips its switch (independent of the marketplace).
    */
   readonly topPickProducts = computed<Product[]>(() =>
-    orderedProductsById(this.productStore.liveOrSoldProducts(), this.topPicks.featuredProductIds()),
+    this.topPicks.enabled()
+      ? orderedProductsById(this.productStore.liveOrSoldProducts(), this.topPicks.featuredProductIds())
+      : [],
   );
+
+  /**
+   * The product strips in the order arranged on the admin Home Sections tab, each with its pieces.
+   * A strip with no pieces to show is left out rather than rendered as an empty heading.
+   */
+  readonly strips = computed(() =>
+    this.homeSections
+      .sections()
+      .filter((section) => section.visible || section.kind === 'top-picks')
+      .map((section, index) => ({ section, index, products: this.productsFor(section) }))
+      .filter((strip) => strip.products.length > 0),
+  );
+
+  private productsFor(section: HomeSection): Product[] {
+    switch (section.kind) {
+      case 'top-picks':
+        return this.topPickProducts();
+      case 'latest-collection':
+        return this.featured();
+      case 'custom':
+        // Live only: a sold hand-pick just drops off. (liveOrSoldProducts would show admins, who
+        // receive the whole catalogue, sold pieces customers never see.)
+        return orderedProductsById(this.productStore.liveProducts(), section.productIds);
+    }
+  }
 
   subscribeToMailingList(): void {
     if (!this.mailingEmail.trim()) {
@@ -80,6 +109,7 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.topPicks.load();
+    this.homeSections.load();
     this.seo.updateTags({
       url: '/',
     });

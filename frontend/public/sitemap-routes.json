@@ -6,6 +6,7 @@
   { "path": "/shop/1970s", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/shop/1980s", "changefreq": "weekly", "priority": "0.7" },
   { "path": "/shop/1990s", "changefreq": "weekly", "priority": "0.7" },
+  { "path": "/shop/sale", "changefreq": "daily", "priority": "0.6" },
   { "path": "/about", "changefreq": "monthly", "priority": "0.7" },
   { "path": "/contact", "changefreq": "monthly", "priority": "0.6" },
   { "path": "/blog", "changefreq": "weekly", "priority": "0.7" },

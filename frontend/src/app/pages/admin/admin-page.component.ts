@@ -51,6 +51,7 @@ import { AdminCalendarComponent } from './admin-calendar.component';
 import { AdminAccountingComponent } from './admin-accounting.component';
 import { AdminCareComponent } from './admin-care.component';
 import { AdminTopPicksComponent } from './admin-top-picks.component';
+import { AdminHomeSectionsComponent } from './admin-home-sections.component';
 import { AdminDatingComponent } from './admin-dating.component';
 import { AdminCrosslistingComponent } from './admin-crosslisting.component';
 
@@ -407,6 +408,7 @@ interface PageViewStats {
     AdminAccountingComponent,
     AdminCareComponent,
     AdminTopPicksComponent,
+    AdminHomeSectionsComponent,
     AdminDatingComponent,
     AdminCrosslistingComponent,
   ],
@@ -451,6 +453,7 @@ export class AdminPageComponent implements OnInit {
     | 'signature'
     | 'care'
     | 'top-picks'
+    | 'home-sections'
     | 'dating'
     | 'cross-listing'
   >('products');
@@ -1381,6 +1384,7 @@ export class AdminPageComponent implements OnInit {
       | 'signature'
       | 'care'
       | 'top-picks'
+      | 'home-sections'
       | 'dating'
       | 'cross-listing',
   ): void {
