@@ -18,9 +18,32 @@
 
   <!-- Product strips, in the order and wording set on the admin Home Sections tab. -->
   @for (strip of strips(); track strip.index) {
+    @if (strip.banner; as banner) {
+      <!-- Campaign banner for the latest collection; its eyebrow moves up here from the strip. -->
+      <section class="home__campaign" [attr.aria-labelledby]="'home-campaign-' + strip.index">
+        <div class="home__campaign-image">
+          <img
+            [src]="banner.image"
+            [srcset]="banner.srcset"
+            sizes="(max-width: 760px) 100vw, 600px"
+            [alt]="banner.alt"
+            width="1400"
+            height="1867"
+          />
+        </div>
+        <div class="home__campaign-panel">
+          @if (strip.section.eyebrow) {
+            <p class="home__campaign-eyebrow">{{ strip.section.eyebrow }}</p>
+          }
+          <h2 [id]="'home-campaign-' + strip.index" class="home__campaign-title">{{ banner.collection.name }}</h2>
+          <p class="home__campaign-tagline">{{ banner.tagline }}</p>
+          <a [routerLink]="['/collections', banner.collection.slug]" class="home__campaign-btn">Shop the collection</a>
+        </div>
+      </section>
+    }
     <section class="home__featured" [attr.aria-labelledby]="'home-section-' + strip.index">
       <header class="home__featured-header">
-        @if (strip.section.eyebrow) {
+        @if (strip.section.eyebrow && !strip.banner) {
           <p class="home__featured-eyebrow">{{ strip.section.eyebrow }}</p>
         }
         <h2 [id]="'home-section-' + strip.index" class="home__featured-title">{{ strip.section.title }}</h2>

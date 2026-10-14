@@ -31,7 +31,7 @@ public class HomeSectionsTests
         await client.PutAsJsonAsync("/api/home-sections/admin", new { sections });
 
     [Fact]
-    public async Task Public_BeforeAnySave_ReturnsTheTwoOriginalSectionsInTheirOriginalOrder()
+    public async Task Public_BeforeAnySave_ReturnsTheBuiltInSections_LatestCollectionFirst()
     {
         using ApiFactory factory = new();
         HttpClient client = factory.CreateClient();
@@ -39,8 +39,9 @@ public class HomeSectionsTests
         List<Section>? sections = await client.GetFromJsonAsync<List<Section>>("/api/home-sections", JsonOptions);
 
         Assert.NotNull(sections);
-        Assert.Equal(["top-picks", "latest-collection"], sections.Select(s => s.Kind));
-        Assert.Equal("The Wildflower Edit", sections[1].Title);
+        Assert.Equal(["latest-collection", "top-picks"], sections.Select(s => s.Kind));
+        Assert.Equal("Noir", sections[0].Title);
+        Assert.Equal("/collections/noir", sections[0].ButtonLink);
     }
 
     [Fact]

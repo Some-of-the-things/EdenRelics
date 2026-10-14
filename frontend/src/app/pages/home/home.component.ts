@@ -9,7 +9,7 @@ import { ContentService } from '../../services/content.service';
 import { ReviewsService } from '../../services/reviews.service';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
-import { collectionFeaturedSlugs, findCollectionBySlug, orderedCollectionProducts, orderedProductsById } from '../collections/collections.data';
+import { CollectionProfile, collectionFeaturedSlugs, findCollectionBySlug, orderedCollectionProducts, orderedProductsById } from '../collections/collections.data';
 import { TopPicksService } from '../../services/top-picks.service';
 import { HomeSection, HomeSectionsService } from '../../services/home-sections.service';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
@@ -50,14 +50,16 @@ export class HomeComponent implements OnInit {
   readonly srcset = imageSrcset;
   readonly srcAt = imageSrcAt;
 
-  /** The 5 featured pieces from The Wildflower Edit, in curated order. */
-  readonly featured = computed<Product[]>(() => {
-    const c = findCollectionBySlug('wildflower-edit');
-    if (!c) {
-      return [];
-    }
-    return orderedCollectionProducts(this.productStore.liveOrSoldProducts(), collectionFeaturedSlugs(c));
-  });
+  /**
+   * The collection the "latest collection" strip features: whichever one its button links to
+   * (/collections/<slug>), so retargeting the link on the admin Home Sections tab swaps the pieces
+   * and the banner along with the wording, and the three can never disagree.
+   */
+  private latestCollection(section: HomeSection): CollectionProfile | undefined {
+    const slug = /^\/collections\/([^/?#]+)/.exec(section.buttonLink)?.[1];
+    const c = slug ? findCollectionBySlug(slug) : undefined;
+    return c?.dynamicMembership ? undefined : c;
+  }
 
   /**
    * The featured pieces from the curated "Our Top Picks" edit, resolved by product ID from the
@@ -78,16 +80,27 @@ export class HomeComponent implements OnInit {
     this.homeSections
       .sections()
       .filter((section) => section.visible || section.kind === 'top-picks')
-      .map((section, index) => ({ section, index, products: this.productsFor(section) }))
+      .map((section, index) => {
+        const collection = section.kind === 'latest-collection' ? this.latestCollection(section) : undefined;
+        return {
+          section,
+          index,
+          products: this.productsFor(section, collection),
+          banner: collection?.banner ? { collection, ...collection.banner } : undefined,
+        };
+      })
       .filter((strip) => strip.products.length > 0),
   );
 
-  private productsFor(section: HomeSection): Product[] {
+  private productsFor(section: HomeSection, collection: CollectionProfile | undefined): Product[] {
     switch (section.kind) {
       case 'top-picks':
         return this.topPickProducts();
       case 'latest-collection':
-        return this.featured();
+        // The featured pieces, in curated order.
+        return collection
+          ? orderedCollectionProducts(this.productStore.liveOrSoldProducts(), collectionFeaturedSlugs(collection))
+          : [];
       case 'custom':
         // Live only: a sold hand-pick just drops off. (liveOrSoldProducts would show admins, who
         // receive the whole catalogue, sold pieces customers never see.)

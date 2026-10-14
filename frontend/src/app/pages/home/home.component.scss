@@ -80,6 +80,127 @@
   border: 0;
 }
 
+/*
+ * Latest-collection campaign banner: the collection's photo beside a dark panel. The panel stays
+ * dark in both themes on purpose (it belongs to the campaign, like the photo), so its colours are
+ * fixed rather than theme tokens. Gold on the panel measures ~7.5:1, cream ~15:1.
+ */
+.home__campaign {
+  --campaign-bg: #1e1713;
+  --campaign-gold: #c9a46a;
+  --campaign-cream: #f5ede0;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 460px;
+  margin-bottom: 3.5rem;
+  background: var(--campaign-bg);
+  overflow: hidden;
+}
+
+.home__campaign-image {
+  position: relative;
+  min-height: 100%;
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    // Keep the face and the collar in frame; the crop takes from the lawn.
+    object-position: center 30%;
+    display: block;
+  }
+}
+
+.home__campaign-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 2.5rem;
+  color: var(--campaign-cream);
+}
+
+.home__campaign-eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--campaign-gold);
+  margin: 0;
+
+  &::after {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 1px;
+    margin: 1.1rem auto 0;
+    background: var(--campaign-gold);
+  }
+}
+
+.home__campaign-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(3.2rem, 7vw, 5.2rem);
+  line-height: 1;
+  margin: 1.5rem 0 1rem;
+  color: var(--campaign-cream);
+}
+
+.home__campaign-tagline {
+  font-family: var(--font-body);
+  font-size: 1.15rem;
+  line-height: 1.55;
+  max-width: 21rem;
+  margin: 0 0 2rem;
+}
+
+.home__campaign-btn {
+  display: inline-block;
+  border: 1px solid var(--campaign-gold);
+  color: var(--campaign-gold);
+  padding: 0.75rem 1.6rem;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+
+  &:hover,
+  &:focus-visible {
+    background: var(--campaign-gold);
+    color: var(--campaign-bg);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--campaign-cream);
+    outline-offset: 3px;
+  }
+}
+
+@media (max-width: 760px) {
+  .home__campaign {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .home__campaign-image {
+    aspect-ratio: 4 / 5;
+  }
+
+  .home__campaign-panel {
+    padding: 2.5rem 1.5rem;
+  }
+}
+
 .home__featured {
   padding-top: 0.5rem;
   padding-bottom: 3rem;
@@ -128,7 +249,7 @@
 }
 
 /*
- * Homepage preview of The Wildflower Edit: five larger cards, laid out as a
+ * Homepage strips (originally The Wildflower Edit's preview): five larger cards, laid out as a
  * centred flex row so they fall 3-on-top / 2-below on wide screens (and wrap
  * down to 2 then 1 as the viewport narrows). Bigger than the default grid so
  * the collection dominates more of the page.
