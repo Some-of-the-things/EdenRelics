@@ -31,9 +31,55 @@ export interface CollectionProfile {
    * collection-page.component + home.component, which resolve the live SKUs by SKU, not slug.
    */
   dynamicMembership?: boolean;
+  /**
+   * Campaign banner shown on the homepage above this collection's strip, while it is the one the
+   * "latest collection" section links to. Collections without one get the plain strip.
+   */
+  banner?: CollectionBanner;
+}
+
+export interface CollectionBanner {
+  /** Fallback src; widths in `srcset` are the same image at other sizes. */
+  image: string;
+  srcset: string;
+  alt: string;
+  /** One line under the collection name on the dark panel. */
+  tagline: string;
 }
 
 export const COLLECTIONS: CollectionProfile[] = [
+  {
+    slug: 'noir',
+    name: 'Noir',
+    metaTitle: 'Noir — Dark Vintage Dresses in Velvet & Silk',
+    metaDescription:
+      'Noir: ten one-of-a-kind vintage pieces in black velvet, silk and crepe, from the 1960s to the 1990s. Polly Peck, Laura Ashley, Jaeger, Louis Féraud and more.',
+    intro:
+      "Noir is ten pieces for the darker half of the year, from a 1960s Polly Peck maxi in gold-printed velvet to a 1990s Jaeger silk dress cut on the bias. Most are black; a couple stray into bottle green and plum. Nearly all of them make something of the sleeve, whether that's a balloon, a bishop, a leg-of-mutton or a ruffle at the wrist, and there is a lot of velvet. Every piece has been dated from its labels and construction and measured properly, and each is the only one we have.",
+    // SKUs are the listings' stable IDs; the slugs are the clean URLs the approve/publish flow
+    // gives them as they go live.
+    items: [
+      { sku: 'ER-00109', slug: '1990s-jaeger-silk-floral-bias-cut-maxi-dress-asymmetric-hem-black-cream' },
+      { sku: 'ER-00124', slug: '1980s-laura-ashley-moire-leg-of-mutton-sleeve-cropped-jacket-black-bronze' },
+      { sku: 'ER-00081', slug: '1970s-susan-small-velvet-stripe-chiffon-maxi-dress-bishop-sleeves-white-collar-black' },
+      { sku: 'ER-00123', slug: '1990s-italian-viscose-utility-shirt-dress-full-skirt-wide-belt-black' },
+      { sku: 'ER-00078', slug: '1970s-susan-small-velvet-midi-dress-clip-dot-chiffon-sleeves-ruffle-neckline-black' },
+      { sku: 'ER-00272', slug: '1970s-louis-feraud-at-rembrandt-velvet-empire-waist-ruffle-sleeve-maxi-dress-black-plum' },
+      { sku: 'ER-00149', slug: '1980s-laura-ashley-velvet-puff-sleeve-basque-waist-maxi-dress-bottle-green' },
+      { sku: 'ER-00207', slug: '1960s-polly-peck-by-sybil-zelker-velvet-gold-print-balloon-sleeve-maxi-dress-black-gold' },
+      { sku: 'ER-00208', slug: '1970s-richard-shops-metallic-balloon-sleeve-empire-waist-maxi-dress-black-silver' },
+      { sku: 'ER-00273', slug: '1970s-annie-gough-at-gemini-wool-blend-crepe-bishop-sleeve-mini-dress-black' },
+    ],
+    // Polly Peck, Louis Féraud, Laura Ashley (bottle green), Jaeger, Annie Gough.
+    featuredSkus: ['ER-00207', 'ER-00272', 'ER-00149', 'ER-00109', 'ER-00273'],
+    banner: {
+      image: '/collections/noir-banner-960.webp',
+      srcset:
+        '/collections/noir-banner-640.webp 640w, /collections/noir-banner-960.webp 960w, /collections/noir-banner-1400.webp 1400w',
+      alt: 'The 1970s Susan Small black velvet-stripe maxi dress, with white collar and cuffs, worn in front of an ivy-covered fence',
+      tagline: 'Ten vintage pieces for the darker half of the year, from the 1960s to the 1990s.',
+    },
+  },
   {
     slug: 'wildflower-edit',
     name: 'The Wildflower Edit',

@@ -104,11 +104,9 @@ const categoryRoutes = [
     changefreq: 'weekly',
     priority: '0.7',
   })),
-  // Live since 2026-08-27, so it returns 200 rather than the 302 that kept it out.
-  // NB this is a build-time list and the gate is now an admin toggle, so if Top Picks is
-  // ever switched off in the admin UI this entry starts advertising a redirect until the
-  // next deploy drops it. Take it out here if the section goes dark for more than a day.
-  { path: '/top-picks', changefreq: 'weekly', priority: '0.8' },
+  // /top-picks was listed 2026-08-27 to 2026-10-13. Top Picks was then switched off in the
+  // admin UI (Noir took its place on the homepage), so the page 302s and is excluded again.
+  // If it is switched back on for good, list it here and drop it from the excluded paths.
 ];
 // Marketplace-facing static pages. Two are deliberately absent:
 //

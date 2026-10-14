@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router';
 import { HomeComponent } from './home.component';
 import { Product } from '../../models/product.model';
 import { HomeSection } from '../../services/home-sections.service';
+import { findCollectionBySlug } from '../collections/collections.data';
 import { environment } from '../../../environments/environment';
 
 const api = environment.apiUrl;
@@ -115,6 +116,41 @@ describe('HomeComponent sections', () => {
 
     // Top Picks is switched off (no picks), so it stays out too.
     expect(headings(fixture)).toEqual(['Shown']);
+  });
+
+  it('features the collection the latest-collection button links to, with its banner', async () => {
+    const noir = findCollectionBySlug('noir')!;
+    const fixture = await render({
+      products: noir.items.map((item) => product(item.sku, { slug: item.slug })),
+      sections: [
+        section('latest-collection', 'Noir', {
+          eyebrow: 'Our Latest Collection',
+          buttonText: 'Browse entire collection',
+          buttonLink: '/collections/noir',
+        }),
+      ],
+    });
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.home__campaign-title')!.textContent!.trim()).toBe('Noir');
+    expect(el.querySelector('.home__campaign-eyebrow')!.textContent!.trim()).toBe('Our Latest Collection');
+    expect(el.querySelector('.home__campaign-btn')!.getAttribute('href')).toBe('/collections/noir');
+    // The eyebrow moves to the banner rather than repeating above the strip.
+    expect(el.querySelector('.home__featured-eyebrow')).toBeNull();
+    // Five featured pieces, in curated order.
+    const names = Array.from(el.querySelectorAll('.home__featured-name')).map((n) => n.textContent!.trim());
+    expect(names).toEqual(noir.featuredSkus.map((sku) => `Dress ${sku}`));
+  });
+
+  it('shows a collection without a banner as a plain strip', async () => {
+    const wildflower = findCollectionBySlug('wildflower-edit')!;
+    const fixture = await render({
+      products: wildflower.items.map((item) => product(item.sku, { slug: item.slug })),
+      sections: [section('latest-collection', 'The Wildflower Edit', { buttonLink: '/collections/wildflower-edit' })],
+    });
+
+    expect(headings(fixture)).toEqual(['The Wildflower Edit']);
+    expect(fixture.nativeElement.querySelector('.home__campaign')).toBeNull();
   });
 
   it('keeps the original Top Picks strip when the sections cannot be loaded', async () => {

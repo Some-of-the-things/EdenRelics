@@ -26,8 +26,8 @@ interface SitemapEntry {
  *                Seznam and Naver. The PUBLIC 'sellers/:slug' profile is
  *                dynamic and unaffected.
  *
- * top-picks was a member until 2026-08-27, while it 302'd behind TopPicks:Enabled.
- * The gate is on and the page returns 200, so it now belongs in the sitemap.
+ *   top-picks    302s while Top Picks is switched off in the admin UI. It was
+ *                in the sitemap 2026-08-27 to 2026-10-13, while switched on.
  */
 const SITEMAP_EXCLUDED_PATHS: ReadonlySet<string> = new Set(excluded.paths);
 

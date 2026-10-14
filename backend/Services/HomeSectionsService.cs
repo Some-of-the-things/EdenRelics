@@ -25,21 +25,21 @@ public class HomeSectionsService(IRepository<HomeSection> sections) : IHomeSecti
     public static IReadOnlyList<HomeSectionDto> Defaults { get; } =
     [
         new(
+            HomeSectionKinds.LatestCollection,
+            "Our Latest Collection",
+            "Noir",
+            "Dark, moody vintage pieces united by dramatic sleeves, from Jaeger and Laura Ashley to Polly Peck and Louis Féraud.",
+            "Browse entire collection",
+            "/collections/noir",
+            true,
+            []),
+        new(
             HomeSectionKinds.TopPicks,
             "Our Top Picks",
             "Our Top Picks",
             "A rotating, hand-chosen selection of standout vintage from across the shop.",
             "See all top picks",
             "/top-picks",
-            true,
-            []),
-        new(
-            HomeSectionKinds.LatestCollection,
-            "Our Latest Collection",
-            "The Wildflower Edit",
-            "Vintage dresses united by romantic florals, graceful silhouettes and thoughtful craftsmanship.",
-            "Browse entire collection",
-            "/collections/wildflower-edit",
             true,
             []),
     ];

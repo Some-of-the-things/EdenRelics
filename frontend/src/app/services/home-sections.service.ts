@@ -22,11 +22,21 @@ export interface HomeSection {
 }
 
 /**
- * The two strips the homepage had before sections became editable, with the same wording and
- * order. Shown until the API answers, and kept if it can't be reached, so the homepage never
- * loses its strips because of a failed request. Mirrors HomeSectionsService.Defaults.
+ * The built-in strips (latest collection, then Top Picks). Shown until the API answers, and kept
+ * if it can't be reached, so the homepage never loses its strips because of a failed request. Mirrors HomeSectionsService.Defaults.
  */
 export const DEFAULT_HOME_SECTIONS: readonly HomeSection[] = [
+  {
+    kind: 'latest-collection',
+    eyebrow: 'Our Latest Collection',
+    title: 'Noir',
+    description:
+      'Dark, moody vintage pieces united by dramatic sleeves, from Jaeger and Laura Ashley to Polly Peck and Louis Féraud.',
+    buttonText: 'Browse entire collection',
+    buttonLink: '/collections/noir',
+    visible: true,
+    productIds: [],
+  },
   {
     kind: 'top-picks',
     eyebrow: 'Our Top Picks',
@@ -34,16 +44,6 @@ export const DEFAULT_HOME_SECTIONS: readonly HomeSection[] = [
     description: 'A rotating, hand-chosen selection of standout vintage from across the shop.',
     buttonText: 'See all top picks',
     buttonLink: '/top-picks',
-    visible: true,
-    productIds: [],
-  },
-  {
-    kind: 'latest-collection',
-    eyebrow: 'Our Latest Collection',
-    title: 'The Wildflower Edit',
-    description: 'Vintage dresses united by romantic florals, graceful silhouettes and thoughtful craftsmanship.',
-    buttonText: 'Browse entire collection',
-    buttonLink: '/collections/wildflower-edit',
     visible: true,
     productIds: [],
   },
