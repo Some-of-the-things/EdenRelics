@@ -107,6 +107,7 @@ public class CollectionsController(
                     product.Slug = item.Slug!;
                 }
                 product.Status = ProductStatus.Live;
+                product.WentLiveAtUtc = DateTime.UtcNow;
                 published++;
                 changed = true;
                 if (!string.IsNullOrWhiteSpace(product.Slug))

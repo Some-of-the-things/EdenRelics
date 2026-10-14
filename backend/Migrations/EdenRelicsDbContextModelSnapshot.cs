@@ -1269,6 +1269,9 @@ namespace Eden_Relics_BE.Migrations
                     b.Property<int>("ViewCount")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("WentLiveAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ModerationStatus");

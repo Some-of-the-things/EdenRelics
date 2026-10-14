@@ -14,11 +14,18 @@ import { Product, PRODUCT_SIZES } from '../models/product.model';
 import { ProductService } from '../services/product.service';
 import { resolveProductStatus } from '../utils/product-status';
 
-/** Sort by date added, newest first. Products without a timestamp sort last. */
+/**
+ * Sort by when the piece went live, newest first, so a piece that sat as stock
+ * still lands at the top of the shop the day it's listed. Falls back to the date
+ * added when there's no go-live date; products with neither sort last.
+ */
 function byNewestFirst(a: Product, b: Product): number {
-  const ta = a.createdAtUtc ? Date.parse(a.createdAtUtc) || 0 : 0;
-  const tb = b.createdAtUtc ? Date.parse(b.createdAtUtc) || 0 : 0;
-  return tb - ta;
+  return listedAt(b) - listedAt(a);
+}
+
+function listedAt(p: Product): number {
+  const stamp = p.wentLiveAtUtc ?? p.createdAtUtc;
+  return stamp ? Date.parse(stamp) || 0 : 0;
 }
 
 interface ProductState {
@@ -106,7 +113,7 @@ export const ProductStore = signalStore(
             p.description.toLowerCase().includes(query)
         );
       }
-      // Display newest first by date added. `products` is always a fresh array
+      // Display newest first by go-live date. `products` is always a fresh array
       // (from .filter above), so sorting in place is safe.
       return products.sort(byNewestFirst);
     }),

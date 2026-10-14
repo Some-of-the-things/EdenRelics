@@ -80,6 +80,11 @@ public class Product : BaseEntity
     /// Set on the Sold transition; cleared if the product is relisted.</summary>
     public DateTime? SoldAtUtc { get; set; }
 
+    /// <summary>When this product last went Live. Pieces are often entered as Stock well before
+    /// they're listed, so the shop orders by this (newest first) rather than CreatedAtUtc.
+    /// Stamped on every transition into Live, including a relist.</summary>
+    public DateTime? WentLiveAtUtc { get; set; }
+
     public decimal? SalePrice { get; set; }
 
     /// <summary>When the current Price was set (for 28-day reduction rule compliance)</summary>

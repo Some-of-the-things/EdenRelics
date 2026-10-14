@@ -148,6 +148,39 @@ describe('ProductStore', () => {
     });
   });
 
+  describe('shop order', () => {
+    const piece = (id: string, createdAtUtc: string, wentLiveAtUtc?: string | null): Product => ({
+      ...MOCK_PRODUCTS[0],
+      id,
+      createdAtUtc,
+      wentLiveAtUtc,
+    });
+
+    it('puts the piece that went live most recently first, even if it was added long ago', () => {
+      store.loadProducts();
+      httpMock.expectOne(`${environment.apiUrl}/api/products`).flush([
+        piece('added-recently', '2026-09-10T10:00:00Z', '2026-09-10T10:00:00Z'),
+        // Entered as stock back in the spring, only listed today.
+        piece('stock-listed-today', '2026-04-01T10:00:00Z', '2026-09-16T09:00:00Z'),
+        piece('older', '2026-08-01T10:00:00Z', '2026-08-01T10:00:00Z'),
+      ]);
+
+      expect(store.filteredProducts().map((p) => p.id)).toEqual(['stock-listed-today', 'added-recently', 'older']);
+      expect(store.liveProducts().map((p) => p.id)).toEqual(['stock-listed-today', 'added-recently', 'older']);
+    });
+
+    it('falls back to the date added when a piece has no go-live date', () => {
+      store.loadProducts();
+      httpMock.expectOne(`${environment.apiUrl}/api/products`).flush([
+        piece('no-live-date-old', '2026-01-01T10:00:00Z', null),
+        piece('live-date', '2026-03-01T10:00:00Z', '2026-03-01T10:00:00Z'),
+        piece('no-live-date-new', '2026-05-01T10:00:00Z'),
+      ]);
+
+      expect(store.filteredProducts().map((p) => p.id)).toEqual(['no-live-date-new', 'live-date', 'no-live-date-old']);
+    });
+  });
+
   it('should provide categories list', () => {
     const cats = store.categories();
     expect(cats).toContain('50s');

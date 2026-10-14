@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Eden_Relics_BE.Data;
@@ -644,5 +644,76 @@ public class ProductSkuAndStatusTests : IClassFixture<ApiFactory>
         // Counted as a write-off, but its £99 does not join the stock you still hold.
         Assert.Equal(writtenOffBefore + 1, afterInventory.GetProperty("writtenOff").GetInt32());
         Assert.Equal(retailBefore, afterInventory.GetProperty("retailValue").GetDecimal());
+    }
+
+    private static async Task<JsonElement> ReadJson(HttpResponseMessage response)
+    {
+        response.EnsureSuccessStatusCode();
+        return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+    }
+
+    [Fact]
+    public async Task GoingLive_StampsWentLiveAt_SoStockListedLaterSortsAsNew()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-went-live@test.com");
+
+        JsonElement created = await ReadJson(await client.PostAsJsonAsync(
+            "/api/products",
+            NewProductPayload(name: "Stock First Dress", status: "stock")));
+        Guid id = created.GetProperty("id").GetGuid();
+        DateTime createdAt = created.GetProperty("createdAtUtc").GetDateTime();
+        Assert.Equal(JsonValueKind.Null, created.GetProperty("wentLiveAtUtc").ValueKind);
+
+        JsonElement promoted = await ReadJson(await client.PutAsJsonAsync($"/api/products/{id}", new { status = "live" }));
+        DateTime wentLiveAt = promoted.GetProperty("wentLiveAtUtc").GetDateTime();
+        Assert.True(wentLiveAt >= createdAt, $"went live {wentLiveAt:o} before it was created {createdAt:o}");
+
+        // Editing a piece that is already live must not bump it back to the top.
+        JsonElement edited = await ReadJson(await client.PutAsJsonAsync($"/api/products/{id}", new { status = "live", name = "Renamed Dress" }));
+        Assert.Equal(wentLiveAt, edited.GetProperty("wentLiveAtUtc").GetDateTime());
+
+        // The shop sorts on this, so the public payload has to carry it.
+        HttpClient anon = _factory.CreateClient();
+        JsonElement publicList = JsonDocument.Parse(await anon.GetStringAsync("/api/products")).RootElement;
+        JsonElement listed = publicList.EnumerateArray().Single(p => p.GetProperty("id").GetGuid() == id);
+        Assert.Equal(wentLiveAt, listed.GetProperty("wentLiveAtUtc").GetDateTime());
+    }
+
+    [Fact]
+    public async Task CreatedLive_StampsWentLiveAtImmediately()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-created-live@test.com");
+
+        JsonElement created = await ReadJson(await client.PostAsJsonAsync(
+            "/api/products",
+            NewProductPayload(name: "Straight To Shop", status: "live")));
+        Assert.Equal(JsonValueKind.String, created.GetProperty("wentLiveAtUtc").ValueKind);
+    }
+
+    [Fact]
+    public async Task AdminPayload_CarriesTheSameReductionAsThePublicOne()
+    {
+        // Admins browse the shop with the admin payload. Without ShowReduction on it, the
+        // On Sale page came up empty and struck-through prices vanished for them.
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-sees-reduction@test.com");
+
+        Dictionary<string, object?> payload = (Dictionary<string, object?>)NewProductPayload(name: "Reduced Dress", status: "live");
+        payload["salePrice"] = 80m;
+        payload["backdatePriceDays"] = 40;
+        Guid id = (await ReadJson(await client.PostAsJsonAsync("/api/products", payload))).GetProperty("id").GetGuid();
+
+        JsonElement adminList = JsonDocument.Parse(await client.GetStringAsync("/api/products")).RootElement;
+        JsonElement asAdmin = adminList.EnumerateArray().Single(p => p.GetProperty("id").GetGuid() == id);
+
+        HttpClient anon = _factory.CreateClient();
+        JsonElement publicList = JsonDocument.Parse(await anon.GetStringAsync("/api/products")).RootElement;
+        JsonElement asPublic = publicList.EnumerateArray().Single(p => p.GetProperty("id").GetGuid() == id);
+
+        Assert.True(asPublic.GetProperty("showReduction").GetBoolean());
+        Assert.True(asAdmin.GetProperty("showReduction").GetBoolean());
+        Assert.Equal(asPublic.GetProperty("discountPercent").GetInt32(), asAdmin.GetProperty("discountPercent").GetInt32());
     }
 }

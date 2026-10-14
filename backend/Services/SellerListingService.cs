@@ -87,6 +87,7 @@ public partial class SellerListingService(
             return null;
         }
         product.Status = ProductStatus.Live;
+        product.WentLiveAtUtc = DateTime.UtcNow;
         product.ModerationStatus = ProductModerationStatus.Approved;
         product.ModerationNote = null;
         await products.UpdateAsync(product);
