@@ -79,6 +79,7 @@ const STATIC_PATH_PREFIXES = [
   '/dresses',
   '/care',
   '/about',
+  '/reviews',
   '/contact',
   '/privacy-policy',
   '/returns-policy',

@@ -1,0 +1,86 @@
+:host {
+  display: block;
+  background: var(--bg-primary, #F5F0E6);
+}
+
+.reviews-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+  color: var(--text-primary, #2E1A0E);
+}
+
+.reviews-page__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.reviews-page__title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.reviews-page__google-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.4rem;
+  background: var(--bg-dark, #1C1510);
+  color: var(--text-inverse, #F5F0E6);
+  border: 1px solid var(--bg-dark, #1C1510);
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+
+  app-review-stars {
+    --accent: var(--text-inverse, #F5F0E6);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: transparent;
+    color: var(--bg-dark, #1C1510);
+
+    app-review-stars {
+      --accent: var(--accent-hover, #7A3A16);
+    }
+  }
+}
+
+.reviews-page__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+// Google reviews take a full row each pair: two across on desktop.
+.reviews-page__item--google {
+  grid-column: span 2;
+}
+
+@media (max-width: 560px) {
+  .reviews-page {
+    padding: 2rem 16px 4rem;
+  }
+
+  .reviews-page__list {
+    grid-template-columns: 1fr;
+  }
+
+  .reviews-page__item--google {
+    grid-column: auto;
+  }
+}

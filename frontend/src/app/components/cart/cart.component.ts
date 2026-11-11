@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { OrderService, OrderAddress } from '../../services/order.service';
 import { ShippingService, ShippingCountry } from '../../services/shipping.service';
 import { LocaleService } from '../../services/locale.service';
+import { ReviewTrustLineComponent } from '../reviews/review-trust-line.component';
 
 interface ShippingOption {
   value: string;
@@ -17,7 +18,7 @@ interface ShippingOption {
 
 @Component({
   selector: 'app-cart',
-  imports: [RouterLink, CurrencyPipe, FormsModule],
+  imports: [RouterLink, CurrencyPipe, FormsModule, ReviewTrustLineComponent],
   templateUrl: './cart.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './cart.component.scss',

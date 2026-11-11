@@ -338,6 +338,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'reviews',
+    loadComponent: () =>
+      import('./pages/reviews/reviews-page.component').then(
+        (m) => m.ReviewsPageComponent
+      ),
+  },
+  {
     path: 'about',
     loadComponent: () =>
       import('./pages/about/about.component').then(

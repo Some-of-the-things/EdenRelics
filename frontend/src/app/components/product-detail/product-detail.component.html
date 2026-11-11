@@ -115,6 +115,7 @@
           <button class="detail__add-btn" (click)="cartStore.addToCart(product)">
             Add to Cart
           </button>
+          <app-review-trust-line [linked]="true" [quoteKey]="product.id" />
           <button
             class="detail__fav-btn"
             [class.detail__fav-btn--active]="isFavourite(product.id)"
