@@ -30,6 +30,7 @@ import { findHubsForProduct, hubPath } from '../../pages/category/category.data'
 import { FocusTrapDirective } from '../../directives/focus-trap.directive';
 import { ImageLightboxComponent } from '../image-lightbox/image-lightbox.component';
 import { htmlToText } from '../../utils/html-to-text';
+import { ReviewTrustLineComponent } from '../reviews/review-trust-line.component';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -61,6 +62,7 @@ function schemaCondition(condition: string): string {
     ShareButtonsComponent,
     FocusTrapDirective,
     ImageLightboxComponent,
+    ReviewTrustLineComponent,
   ],
   templateUrl: './product-detail.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,

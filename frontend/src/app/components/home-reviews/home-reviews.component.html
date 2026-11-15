@@ -1,39 +1,38 @@
-@if (items().length) {
-  <section class="home-reviews">
-    <div class="home-reviews__header">
-      <h2 class="home-reviews__title">What customers say</h2>
-      @if (summary(); as s) {
-        <div class="home-reviews__summary">
-          <div class="home-reviews__summary-stars" aria-hidden="true">
-            @for (n of stars; track n) {
-              <span class="home-reviews__star"
-                    [class.home-reviews__star--filled]="n <= s.overall">★</span>
-            }
-          </div>
-          <span class="home-reviews__summary-text">
-            {{ s.overall | number:'1.1-1' }} out of 5 · {{ s.count }} review{{ s.count === 1 ? '' : 's' }}
-          </span>
-        </div>
-      }
-    </div>
+<section class="home-reviews" aria-labelledby="home-reviews-title">
+  <header class="home-reviews__header">
+    <h2 id="home-reviews-title" class="home-reviews__title">What our customers say</h2>
+    @if (rating) {
+      <a class="home-reviews__google-btn" [href]="profileUrl" target="_blank" rel="noopener noreferrer"
+         [attr.aria-label]="rating + ' out of 5 on Google. See our Google reviews (opens in a new tab)'">
+        <app-review-stars [rating]="+rating" size="15px" />
+        <span>{{ rating }} on Google</span>
+      </a>
+    }
+  </header>
 
-    <ul class="home-reviews__list">
-      @for (r of items(); track r.id) {
-        <li class="home-reviews__item">
-          <div class="home-reviews__item-stars" aria-hidden="true">
-            @for (n of stars; track n) {
-              <span class="home-reviews__star"
-                    [class.home-reviews__star--filled]="n <= overall(r)">★</span>
-            }
-          </div>
-          <span class="sr-only">Rated {{ overall(r) | number:'1.0-1' }} out of 5</span>
-          <p class="home-reviews__comment">{{ r.comment }}</p>
-          <div class="home-reviews__meta">
-            <span class="home-reviews__author">{{ r.authorDisplayName }}</span>
-            <span class="home-reviews__date">{{ r.postedAtUtc | date:'mediumDate' }}</span>
-          </div>
-        </li>
+  <div class="home-reviews__track" #track (scroll)="onScroll()">
+    <ul class="home-reviews__google" role="list">
+      @for (r of google; track r.name) {
+        <li class="home-reviews__card home-reviews__card--google"><app-review-card [review]="r" [large]="true" /></li>
       }
     </ul>
-  </section>
-}
+    <ul class="home-reviews__buyer" role="list">
+      @for (r of buyer; track r.name) {
+        <li class="home-reviews__card"><app-review-card [review]="r" /></li>
+      }
+    </ul>
+  </div>
+
+  <div class="home-reviews__dots">
+    @for (i of dots; track i) {
+      <button type="button" class="home-reviews__dot" [class.home-reviews__dot--active]="active() === i"
+              [attr.aria-label]="'Show review ' + (i + 1) + ' of ' + dots.length"
+              [attr.aria-current]="active() === i ? 'true' : null"
+              (click)="goTo(i)"></button>
+    }
+  </div>
+
+  <div class="home-reviews__cta">
+    <a routerLink="/reviews" class="home-reviews__all-btn">Read all reviews</a>
+  </div>
+</section>

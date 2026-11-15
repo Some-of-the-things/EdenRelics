@@ -1,7 +1,13 @@
+:host {
+  display: block;
+  background: var(--bg-primary, #F5F0E6);
+}
+
 .home-reviews {
   max-width: 1200px;
   margin: 0 auto;
   padding: 4rem 1.5rem;
+  color: var(--text-primary, #2E1A0E);
 }
 
 .home-reviews__header {
@@ -10,81 +16,165 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.75rem;
+  margin-bottom: 2rem;
 }
 
 .home-reviews__title {
   font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: 1.75rem;
   font-weight: 600;
   margin: 0;
 }
 
-.home-reviews__summary {
-  display: flex;
+// Shared button look: dark fill, light text, EB Garamond.
+%review-btn {
+  display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-}
+  padding: 0.7rem 1.4rem;
+  background: var(--bg-dark, #1C1510);
+  color: var(--text-inverse, #F5F0E6);
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  border: 1px solid var(--bg-dark, #1C1510);
+  transition: background 0.2s, color 0.2s;
 
-.home-reviews__summary-stars,
-.home-reviews__item-stars {
-  display: inline-flex;
-  gap: 0.1rem;
-}
-
-.home-reviews__star {
-  color: rgba(0, 0, 0, 0.18);
-  font-size: 1.1rem;
-  line-height: 1;
-
-  &--filled {
-    color: var(--accent);
+  &:hover,
+  &:focus-visible {
+    background: transparent;
+    color: var(--bg-dark, #1C1510);
   }
 }
 
-.home-reviews__summary-text {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+.home-reviews__google-btn {
+  @extend %review-btn;
+
+  // The stars sit on the dark button; switch them to the light text colour so they keep contrast.
+  app-review-stars {
+    --accent: var(--text-inverse, #F5F0E6);
+  }
+
+  &:hover app-review-stars,
+  &:focus-visible app-review-stars {
+    --accent: var(--accent-hover, #7A3A16);
+  }
 }
 
-.home-reviews__list {
+.home-reviews__all-btn {
+  @extend %review-btn;
+}
+
+.home-reviews__google,
+.home-reviews__buyer {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+// Desktop: Google reviews two-up, buyer reviews in an auto-fit grid underneath.
+.home-reviews__google {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.home-reviews__buyer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.25rem;
 }
 
-.home-reviews__item {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  padding: 1.25rem 1.1rem;
+.home-reviews__dots {
+  display: none;
+}
+
+.home-reviews__cta {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 2.25rem;
 }
 
-.home-reviews__item-stars {
-  font-size: 1rem;
-}
+// Phone: one horizontal row of 300px cards, Google first, snapping, with dots underneath.
+@media (max-width: 700px) {
+  .home-reviews {
+    padding: 3rem 16px;
+  }
 
-.home-reviews__comment {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
+  .home-reviews__title {
+    font-size: 1.45rem;
+  }
 
-.home-reviews__meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-top: auto;
-}
+  .home-reviews__track {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    // Let the row run to the screen edge while the first card lines up with the gutter.
+    margin: 0 -16px;
+    padding: 0 16px 0.25rem;
+    scroll-padding: 0 16px;
 
-.home-reviews__author {
-  font-weight: 500;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .home-reviews__google,
+  .home-reviews__buyer {
+    display: contents;
+  }
+
+  .home-reviews__card {
+    flex: 0 0 300px;
+    max-width: calc(100vw - 48px);
+    scroll-snap-align: start;
+  }
+
+  .home-reviews__dots {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.15rem;
+    margin-top: 1rem;
+  }
+
+  // 24px tap target around an 8px dot.
+  .home-reviews__dot {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 1px solid var(--accent, #9B4A1E);
+      background: transparent;
+    }
+
+    &--active::before {
+      background: var(--accent, #9B4A1E);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent, #9B4A1E);
+      outline-offset: 1px;
+    }
+  }
+
+  .home-reviews__cta {
+    margin-top: 1.5rem;
+  }
 }

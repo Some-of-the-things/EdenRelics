@@ -77,6 +77,13 @@
         </div>
       }
     </section>
+    @if ($first) {
+      <!-- Reviews sit after the first row of products, where a first-time visitor is deciding whether to trust us. -->
+      <app-home-reviews />
+    }
+  }
+  @if (strips().length === 0) {
+    <app-home-reviews />
   }
 
   <section class="home__about">
@@ -132,8 +139,6 @@
       </a>
     </section>
   }
-
-  <app-home-reviews />
 
   <section id="newsletter" class="home__mailing">
     @if (!mailingSubscribed()) {

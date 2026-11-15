@@ -34,6 +34,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'blog/:slug', renderMode: RenderMode.Server },
   { path: 'contact', renderMode: RenderMode.Server },
   { path: 'about', renderMode: RenderMode.Server },
+  { path: 'reviews', renderMode: RenderMode.Server },
   { path: 'designers', renderMode: RenderMode.Server },
   { path: 'designers/:slug', renderMode: RenderMode.Server },
   { path: 'style', renderMode: RenderMode.Server },
