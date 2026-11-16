@@ -96,6 +96,58 @@
           </div>
         </section>
 
+        <!-- Gift option -->
+        <section class="checkout__section checkout__gift" aria-labelledby="gift-heading">
+          <h2 class="checkout__heading" id="gift-heading">Gift</h2>
+          <label class="checkout__checkbox checkout__gift-toggle">
+            <input
+              type="checkbox"
+              [(ngModel)]="isGift"
+              name="isGift"
+              aria-describedby="gift-description"
+              aria-controls="gift-fields"
+              [attr.aria-expanded]="isGift"
+            />
+            <span><strong>This is a gift</strong> (free)</span>
+          </label>
+          <p class="checkout__gift-description" id="gift-description">
+            We'll leave out the prices, wrap it in tissue and add a card about the piece: roughly when it was made, how we worked that out from its labels, and what we know about the brand or maker behind it. There's space on the back for your message.
+          </p>
+          <div id="gift-fields">
+            @if (isGift) {
+              <div class="checkout__gift-fields">
+                <label class="checkout__field">
+                  <span>Gift message (optional)</span>
+                  <textarea
+                    [(ngModel)]="giftMessage"
+                    name="giftMessage"
+                    rows="4"
+                    [attr.maxlength]="giftMessageMax"
+                    aria-describedby="gift-message-count"
+                  ></textarea>
+                </label>
+                <p class="checkout__gift-count" id="gift-message-count">
+                  {{ giftMessage.length }} / {{ giftMessageMax }} characters
+                </p>
+                <label class="checkout__field">
+                  <span>To (optional)</span>
+                  <input
+                    type="text"
+                    [(ngModel)]="giftTo"
+                    name="giftTo"
+                    [attr.maxlength]="giftToMax"
+                    autocomplete="off"
+                    placeholder="Their first name"
+                  />
+                </label>
+              </div>
+            }
+          </div>
+          @if (showChristmasReturns) {
+            <p class="checkout__hint checkout__gift-returns">{{ christmasReturnsText }}</p>
+          }
+        </section>
+
         <!-- Shipping method -->
         <section class="checkout__section">
           <h2 class="checkout__heading">Shipping Method</h2>

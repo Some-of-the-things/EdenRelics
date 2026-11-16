@@ -333,6 +333,45 @@
   }
 }
 
+.checkout__gift-toggle {
+  margin-bottom: 0.4rem;
+}
+
+.checkout__gift-description {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+}
+
+.checkout__gift-fields {
+  margin-bottom: 0.5rem;
+
+  textarea {
+    border: 1px solid var(--border-control);
+    padding: 0.6rem 0.65rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 0;
+    resize: vertical;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:focus { border-color: var(--accent); }
+    &:focus:not(:focus-visible) { outline: none; }
+  }
+}
+
+.checkout__gift-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin: -0.5rem 0 0.75rem;
+}
+
 .checkout__hint {
   font-size: 0.8rem;
   color: var(--text-muted);

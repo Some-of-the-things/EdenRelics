@@ -1004,6 +1004,29 @@
   color: var(--text-muted);
 }
 
+.admin__gift {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  border-left: 3px solid var(--accent);
+  font-size: 0.8rem;
+  max-width: 22rem;
+}
+
+.admin__gift-badge {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.admin__gift-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .admin__order-items {
   list-style: none;
   margin: 0;

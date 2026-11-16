@@ -5,7 +5,10 @@ public record CreateOrderDto(
     string? GuestEmail,
     OrderAddressDto? ShippingAddress,
     OrderAddressDto? BillingAddress,
-    string? ShippingMethod
+    string? ShippingMethod,
+    bool IsGift = false,
+    string? GiftMessage = null,
+    string? GiftTo = null
 );
 
 public record OrderAddressDto(
@@ -49,7 +52,10 @@ public record AdminOrderDto(
     DateTime CreatedAtUtc,
     string CustomerEmail,
     string? CustomerName,
-    List<OrderItemDto> Items
+    List<OrderItemDto> Items,
+    bool IsGift = false,
+    string? GiftMessage = null,
+    string? GiftTo = null
 );
 
 public record UpdateOrderStatusDto(

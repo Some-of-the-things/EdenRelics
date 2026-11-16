@@ -238,6 +238,14 @@
   }
 }
 
+.detail__gift-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 34rem;
+}
+
 .detail__sold {
   display: flex;
   flex-direction: column;
