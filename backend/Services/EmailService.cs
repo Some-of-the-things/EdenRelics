@@ -297,6 +297,36 @@ public class EmailService : IEmailService
 
     public async Task SendOwnerSaleNotificationAsync(Order order)
     {
+        (string subject, string html) = BuildOwnerSaleNotification(order, _frontendUrl);
+
+        try
+        {
+            EmailMessage message = new()
+            {
+                From = _fromEmail,
+                To = [_saleNotificationRecipient],
+                Subject = subject,
+                HtmlBody = html
+            };
+            await _resend.EmailSendAsync(message);
+            _logger.LogInformation("Owner sale notification sent for order {OrderId}", order.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send owner sale notification for order {OrderId}", order.Id);
+        }
+    }
+
+    /// <summary>
+    /// HTML-encodes buyer-typed text and keeps its line breaks, so a gift message reads in the
+    /// email exactly as it should be copied onto the card.
+    /// </summary>
+    private static string EncodeMultiline(string text) =>
+        string.Join("<br/>", text.Split('\n').Select(WebUtility.HtmlEncode));
+
+    /// <summary>Builds the owner's "new sale" email. Gift orders get GIFT in the subject and the card details first.</summary>
+    public static (string Subject, string Html) BuildOwnerSaleNotification(Order order, string frontendUrl)
+    {
         string buyerEmail = order.User?.Email ?? order.GuestEmail ?? "Unknown";
         string buyerName = order.User is not null
             ? $"{order.User.FirstName} {order.User.LastName}".Trim()
@@ -327,12 +357,34 @@ public class EmailService : IEmailService
             shippingAddress = "<em>No shipping address captured</em>";
         }
 
-        string adminUrl = $"{_frontendUrl}/admin";
+        string adminUrl = $"{frontendUrl}/admin";
+
+        string giftBlock = "";
+        if (order.IsGift)
+        {
+            string to = string.IsNullOrWhiteSpace(order.GiftTo)
+                ? "<em>No name given</em>"
+                : WebUtility.HtmlEncode(order.GiftTo);
+            string message = string.IsNullOrWhiteSpace(order.GiftMessage)
+                ? "<em>No message given</em>"
+                : EncodeMultiline(order.GiftMessage);
+            giftBlock = $"""
+                <div style="border: 3px solid #b87265; padding: 16px 20px; margin: 1rem 0 1.5rem;">
+                    <p style="font-size: 1.4rem; font-weight: 700; letter-spacing: 3px; margin: 0 0 0.5rem; color: #b87265;">GIFT ORDER</p>
+                    <p style="margin: 0 0 1rem;">No prices in the parcel. Add the card about the piece, with the message on the back.</p>
+                    <p style="margin: 0 0 0.25rem;"><strong>To:</strong></p>
+                    <p style="margin: 0 0 1rem; font-size: 1.1rem;">{to}</p>
+                    <p style="margin: 0 0 0.25rem;"><strong>Message:</strong></p>
+                    <p style="margin: 0; font-size: 1.1rem;">{message}</p>
+                </div>
+                """;
+        }
 
         string html = $"""
             <div style="font-family: Georgia, serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
                 <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">New sale — order paid</h1>
                 <p style="color: #666; font-size: 0.85rem; margin-top: 0;">Order {order.Id}</p>
+                {giftBlock}
 
                 <p><strong>Customer:</strong> {WebUtility.HtmlEncode(buyerName)} ({WebUtility.HtmlEncode(buyerEmail)})</p>
 
@@ -362,22 +414,12 @@ public class EmailService : IEmailService
             </div>
             """;
 
-        try
+        string subject = $"New sale — £{order.Total:F2} — Eden Relics";
+        if (order.IsGift)
         {
-            EmailMessage message = new()
-            {
-                From = _fromEmail,
-                To = [_saleNotificationRecipient],
-                Subject = $"New sale — £{order.Total:F2} — Eden Relics",
-                HtmlBody = html
-            };
-            await _resend.EmailSendAsync(message);
-            _logger.LogInformation("Owner sale notification sent for order {OrderId}", order.Id);
+            subject = $"GIFT — {subject}";
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send owner sale notification for order {OrderId}", order.Id);
-        }
+        return (subject, html);
     }
 
     public async Task SendOrderInvoiceEmailAsync(Order order, string? platform = null)
@@ -433,6 +475,17 @@ public class EmailService : IEmailService
             $"<tr><td style=\"{cellLeft}\">{WebUtility.HtmlEncode(i.ProductName)}{(i.Quantity > 1 ? $" &times; {i.Quantity}" : "")}</td><td align=\"right\" style=\"{cellRight}\">£{(i.UnitPrice * i.Quantity):F2}</td></tr>"));
         string postage = order.ShippingCost <= 0 ? "Free" : $"£{order.ShippingCost:F2}";
         itemRows += $"\n        <tr><td style=\"{cellLeft}\">UK Postage</td><td align=\"right\" style=\"{cellRight}\">{postage}</td></tr>";
+
+        // The buyer's own email keeps its prices; the gift line just confirms what goes in the parcel.
+        string giftLine = order.IsGift
+            ? "\n    <p>Your order is marked as a gift. We'll leave the prices out and include a card about the piece, with your message on the back.</p>"
+            : "";
+
+        // The Christmas window covers website orders only; manual sends naming a marketplace keep the standard line.
+        bool websiteOrder = string.IsNullOrWhiteSpace(platform);
+        string returnsNote = websiteOrder && ChristmasReturns.Covers(order.CreatedAtUtc)
+            ? $"Returns accepted within 14 days. {WebUtility.HtmlEncode(ChristmasReturns.PolicyText)} Please visit edenrelics.co.uk/returns-policy for full details."
+            : "Returns accepted within 14 days. Please visit edenrelics.co.uk/returns-policy for full details.";
 
         // The template below is kept as a literal (no string interpolation) so the CSS
         // braces don't need escaping; dynamic values are swapped in via Replace.
@@ -742,7 +795,7 @@ public class EmailService : IEmailService
     <div class="ornament">· · ✦ · ·</div>
     <p class="greeting">@@GREETING@@</p>
     <p>Your order has been received and is being carefully prepared for dispatch. Every piece that leaves us is packed with as much care as we put into finding it — we hope it brings you real joy to wear.</p>
-    <p>You'll receive a dispatch notification with tracking details shortly.</p>
+    <p>You'll receive a dispatch notification with tracking details shortly.</p>@@GIFT_LINE@@
   </div>
 
   <!-- Invoice -->
@@ -768,7 +821,7 @@ public class EmailService : IEmailService
           <td align="right" style="font-family:'Playfair Display',Georgia,serif;font-size:17px;font-weight:500;color:#3a3530;padding-top:12px;border-top:1px solid #b87265;">£@@TOTAL@@</td>
         </tr>
       </table>
-      <p class="invoice-note">Returns accepted within 14 days. Please visit edenrelics.co.uk/returns-policy for full details.</p>
+      <p class="invoice-note">@@RETURNS_NOTE@@</p>
     </div>
   </div>
 
@@ -854,6 +907,8 @@ public class EmailService : IEmailService
             .Replace("@@DATE@@", orderDate)
             .Replace("@@PLATFORM@@", WebUtility.HtmlEncode(platformLabel))
             .Replace("@@ITEM_ROWS@@", itemRows)
+            .Replace("@@GIFT_LINE@@", giftLine)
+            .Replace("@@RETURNS_NOTE@@", returnsNote)
             .Replace("@@TOTAL@@", order.Total.ToString("F2"))
             .Replace("@@CONTACT_EMAIL@@", _contactRecipient);
 

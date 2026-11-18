@@ -1,5 +1,12 @@
 <div class="policy">
   <h1 class="policy__title">Returns Policy</h1>
   <p class="policy__updated">Last updated: {{ content.get('policy.returns.updated', 'March 2026') }}</p>
+  @if (showChristmasReturns) {
+    <div class="policy__section" id="christmas-returns">
+      <h2>Christmas returns</h2>
+      <p>{{ christmasReturnsText }}</p>
+      <p>This applies to every order placed on edenrelics.co.uk in those dates, whether or not it was marked as a gift, and it's in addition to your 14-day right to cancel set out below. Everything else in this policy still applies. To start a return, email us at edenrelics&#64;dcp-net.com with your order number.</p>
+    </div>
+  }
   <div [innerHTML]="content.get('policy.returns.content')"></div>
 </div>

@@ -8,6 +8,7 @@ import { OrderService, OrderAddress } from '../../services/order.service';
 import { ShippingService, ShippingCountry } from '../../services/shipping.service';
 import { LocaleService } from '../../services/locale.service';
 import { ReviewTrustLineComponent } from '../reviews/review-trust-line.component';
+import { CHRISTMAS_RETURNS_TEXT, christmasReturnsOpenForOrders } from '../../utils/christmas-returns';
 
 interface ShippingOption {
   value: string;
@@ -38,6 +39,15 @@ export class CartComponent implements OnInit {
   guestEmail = '';
   shippingMethod = 'standard';
   billingSameAsShipping = true;
+
+  // Gift option — limits match the backend (Order.GiftMessageMaxLength / GiftToMaxLength).
+  readonly giftMessageMax = 200;
+  readonly giftToMax = 40;
+  isGift = false;
+  giftMessage = '';
+  giftTo = '';
+  readonly christmasReturnsText = CHRISTMAS_RETURNS_TEXT;
+  readonly showChristmasReturns = christmasReturnsOpenForOrders();
 
   shipping: OrderAddress = { addressLine1: '', city: '', postcode: '', country: '' };
   billing: OrderAddress = { addressLine1: '', city: '', postcode: '', country: '' };
@@ -201,6 +211,10 @@ export class CartComponent implements OnInit {
         shippingAddress: this.shipping,
         billingAddress: this.billingSameAsShipping ? this.shipping : this.billing,
         shippingMethod: this.shippingMethod,
+        // Unticking keeps whatever was typed in the (now hidden) fields; only send it for a gift.
+        isGift: this.isGift,
+        giftMessage: this.isGift ? this.giftMessage.trim() || null : null,
+        giftTo: this.isGift ? this.giftTo.trim() || null : null,
       })
       .subscribe({
         next: (res) => {

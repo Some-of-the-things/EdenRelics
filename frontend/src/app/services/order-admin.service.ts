@@ -11,6 +11,9 @@ export interface AdminOrder {
   customerEmail: string;
   customerName: string | null;
   items: AdminOrderItem[];
+  isGift?: boolean;
+  giftMessage?: string | null;
+  giftTo?: string | null;
 }
 
 export interface AdminOrderItem {

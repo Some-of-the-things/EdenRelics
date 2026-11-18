@@ -790,6 +790,13 @@
                       <span class="admin__customer-name">{{ order.customerName }}</span>
                     }
                     <span class="admin__customer-email">{{ order.customerEmail }}</span>
+                    @if (order.isGift) {
+                      <div class="admin__gift">
+                        <span class="admin__gift-badge">Gift · no prices in parcel</span>
+                        <span><strong>To:</strong> {{ order.giftTo || '—' }}</span>
+                        <span class="admin__gift-message"><strong>Message:</strong> {{ order.giftMessage || '—' }}</span>
+                      </div>
+                    }
                   </div>
                 </td>
                 <td>

@@ -28,6 +28,12 @@ public class OrderService(
             return new CreateOrderResult(null, "Order must contain at least one item.");
         }
 
+        GiftDetails gift = NormaliseGift(dto.IsGift, dto.GiftMessage, dto.GiftTo);
+        if (gift.Error is not null)
+        {
+            return new CreateOrderResult(null, gift.Error);
+        }
+
         List<Product> orderProducts = [];
         foreach (CreateOrderItemDto item in dto.Items)
         {
@@ -74,7 +80,10 @@ public class OrderService(
             BillCounty = dto.BillingAddress?.County,
             BillPostcode = dto.BillingAddress?.Postcode,
             BillCountry = dto.BillingAddress?.Country,
-            Items = dto.Items.Select(item =>
+            IsGift = dto.IsGift,
+            GiftMessage = gift.Message,
+            GiftTo = gift.To,
+            Items =dto.Items.Select(item =>
             {
                 Product product = orderProducts.First(p => p.Id == item.ProductId);
                 return new OrderItem
@@ -535,6 +544,63 @@ public class OrderService(
         }
     }
 
+    public record GiftDetails(string? Message, string? To, string? Error);
+
+    /// <summary>
+    /// Cleans the buyer-typed gift fields before they're stored. Unticked → both dropped, so a
+    /// stale message can't ride along on a normal order. Trims, turns blank into null, keeps line
+    /// breaks in the message (it goes on a card) but strips every other control character, and
+    /// enforces the same limits as the checkout form. The text is otherwise stored as typed;
+    /// escaping happens at render time.
+    /// </summary>
+    public static GiftDetails NormaliseGift(bool isGift, string? message, string? to)
+    {
+        if (!isGift)
+        {
+            return new GiftDetails(null, null, null);
+        }
+
+        string? cleanMessage = CleanGiftText(message, keepLineBreaks: true);
+        string? cleanTo = CleanGiftText(to, keepLineBreaks: false);
+
+        if (cleanMessage is not null && cleanMessage.Length > Order.GiftMessageMaxLength)
+        {
+            return new GiftDetails(null, null, $"Gift message must be {Order.GiftMessageMaxLength} characters or fewer.");
+        }
+        if (cleanTo is not null && cleanTo.Length > Order.GiftToMaxLength)
+        {
+            return new GiftDetails(null, null, $"Recipient's name must be {Order.GiftToMaxLength} characters or fewer.");
+        }
+        return new GiftDetails(cleanMessage, cleanTo, null);
+    }
+
+    private static string? CleanGiftText(string? value, bool keepLineBreaks)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+        string normalised = value.Replace("\r\n", "\n").Replace('\r', '\n');
+        System.Text.StringBuilder sb = new(normalised.Length);
+        foreach (char c in normalised)
+        {
+            if (c == '\n')
+            {
+                sb.Append(keepLineBreaks ? '\n' : ' ');
+            }
+            else if (c == '\t')
+            {
+                sb.Append(' ');
+            }
+            else if (!char.IsControl(c))
+            {
+                sb.Append(c);
+            }
+        }
+        string cleaned = sb.ToString().Trim();
+        return cleaned.Length == 0 ? null : cleaned;
+    }
+
     private static OrderDto ToDto(Order o) => new(
         o.Id,
         o.Status,
@@ -554,6 +620,9 @@ public class OrderService(
         o.User is not null ? $"{o.User.FirstName} {o.User.LastName}" : null,
         o.Items.Select(i => new OrderItemDto(
             i.ProductId, i.ProductName, i.UnitPrice, i.Quantity
-        )).ToList()
+        )).ToList(),
+        o.IsGift,
+        o.GiftMessage,
+        o.GiftTo
     );
 }

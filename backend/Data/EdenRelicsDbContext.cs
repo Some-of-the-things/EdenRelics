@@ -131,6 +131,8 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(o => o.BillCounty).HasMaxLength(100);
             entity.Property(o => o.BillPostcode).HasMaxLength(20);
             entity.Property(o => o.BillCountry).HasMaxLength(100);
+            entity.Property(o => o.GiftMessage).HasMaxLength(Order.GiftMessageMaxLength);
+            entity.Property(o => o.GiftTo).HasMaxLength(Order.GiftToMaxLength);
         });
 
         modelBuilder.Entity<OrderItem>(entity =>

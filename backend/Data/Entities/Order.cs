@@ -31,6 +31,17 @@ public class Order : BaseEntity
     public string? BillCountry { get; set; }
 
     public DateTime? ReviewRequestSentAtUtc { get; set; }
+
+    // Gift option (website checkout only). Both text fields are buyer-typed and untrusted:
+    // HTML-encode them wherever they're rendered and never put them in a URL.
+    public bool IsGift { get; set; }
+    /// <summary>Printed on the back of the gift card. Plain text, at most <see cref="GiftMessageMaxLength"/> characters.</summary>
+    public string? GiftMessage { get; set; }
+    /// <summary>The recipient's first name, at most <see cref="GiftToMaxLength"/> characters.</summary>
+    public string? GiftTo { get; set; }
+
+    public const int GiftMessageMaxLength = 200;
+    public const int GiftToMaxLength = 40;
 }
 
 public class OrderItem

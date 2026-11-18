@@ -24,6 +24,9 @@ export interface CheckoutRequest {
   shippingAddress?: OrderAddress;
   billingAddress?: OrderAddress;
   shippingMethod?: string;
+  isGift?: boolean;
+  giftMessage?: string | null;
+  giftTo?: string | null;
 }
 
 export interface OrderItemDto {
