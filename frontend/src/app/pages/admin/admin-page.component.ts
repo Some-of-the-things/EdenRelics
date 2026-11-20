@@ -52,6 +52,9 @@ import { AdminAccountingComponent } from './admin-accounting.component';
 import { AdminCareComponent } from './admin-care.component';
 import { AdminTopPicksComponent } from './admin-top-picks.component';
 import { AdminHomeSectionsComponent } from './admin-home-sections.component';
+import { AdminCategoriesComponent } from './admin-categories.component';
+import { CategoryService } from '../../services/category.service';
+import { AdminProductCategoriesComponent } from './admin-product-categories.component';
 import { AdminDatingComponent } from './admin-dating.component';
 import { AdminCrosslistingComponent } from './admin-crosslisting.component';
 
@@ -409,6 +412,8 @@ interface PageViewStats {
     AdminCareComponent,
     AdminTopPicksComponent,
     AdminHomeSectionsComponent,
+    AdminCategoriesComponent,
+    AdminProductCategoriesComponent,
     AdminDatingComponent,
     AdminCrosslistingComponent,
   ],
@@ -436,6 +441,8 @@ export class AdminPageComponent implements OnInit {
   private readonly sanitizer = inject(DomSanitizer);
 
   @ViewChild('descriptionEditor') descriptionEditor!: ElementRef<HTMLElement>;
+  /** The sub-category ticks inside the product form; saved alongside the product. */
+  @ViewChild(AdminProductCategoriesComponent) productCategories?: AdminProductCategoriesComponent;
   readonly activeTab = signal<
     | 'products'
     | 'orders'
@@ -454,12 +461,19 @@ export class AdminPageComponent implements OnInit {
     | 'care'
     | 'top-picks'
     | 'home-sections'
+    | 'categories'
     | 'dating'
     | 'cross-listing'
   >('products');
   readonly mobileMenuOpen = signal(false);
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
+  /** The saved name of the piece being edited — what sub-category match words are checked against. */
+  readonly editingProductName = computed(() => {
+    const id = this.editingId();
+    return id ? (this.store.products().find((p) => p.id === id)?.name ?? '') : '';
+  });
+  private readonly categoryService = inject(CategoryService);
   readonly imagePreview = signal<string | null>(null);
   readonly uploading = signal(false);
   readonly uploadError = signal('');
@@ -1385,6 +1399,7 @@ export class AdminPageComponent implements OnInit {
       | 'care'
       | 'top-picks'
       | 'home-sections'
+      | 'categories'
       | 'dating'
       | 'cross-listing',
   ): void {
@@ -2407,6 +2422,11 @@ export class AdminPageComponent implements OnInit {
     const id = this.editingId();
     if (id) {
       this.store.updateProduct(id, this.form);
+      // Sub-category ticks are stored separately from the product, so they save in parallel.
+      this.productCategories?.save().subscribe({
+        next: () => this.categoryService.refresh(),
+        error: () => alert('The piece was saved, but its sub-categories could not be. Please open it and try again.'),
+      });
     } else {
       this.store.addProduct(this.form);
     }

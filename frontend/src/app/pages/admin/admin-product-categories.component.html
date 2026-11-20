@@ -1,0 +1,33 @@
+<fieldset class="pcats">
+  <legend class="pcats__legend">Sub-categories</legend>
+  @if (!productId()) {
+    <p class="pcats__hint">Save the piece first, then open it again to choose its sub-categories. Until then it joins any page whose match words are in its name.</p>
+  } @else if (error()) {
+    <p class="pcats__error" role="alert">{{ error() }}</p>
+  } @else if (ticked() === null) {
+    <p class="pcats__hint">Loading…</p>
+  } @else {
+    <p class="pcats__hint">Ticked pages show this piece. "Name matches" ticks come from the piece's name; untick one to keep it off that page. Saved with the piece.</p>
+    @for (key of hubKeys; track key) {
+      <div class="pcats__hub">
+        <span class="pcats__hub-name">{{ hubNames[key] }}</span>
+        <div class="pcats__options">
+          @for (sub of subCategoriesOf(key); track sub.id) {
+            <label class="pcats__option">
+              <input type="checkbox" [checked]="isTicked(sub.id)" (change)="toggle(sub.id)" />
+              {{ sub.name }}
+              @if (matchesName(sub)) {
+                <span class="pcats__match">Name matches</span>
+              }
+              @if (!sub.isVisible) {
+                <span class="pcats__match">Hidden</span>
+              }
+            </label>
+          } @empty {
+            <span class="pcats__hint">None yet.</span>
+          }
+        </div>
+      </div>
+    }
+  }
+</fieldset>

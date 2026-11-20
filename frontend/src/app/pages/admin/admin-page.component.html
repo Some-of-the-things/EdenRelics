@@ -124,6 +124,13 @@
     </button>
     <button
       class="admin__tab"
+      [class.admin__tab--active]="activeTab() === 'categories'"
+      (click)="switchTab('categories')"
+    >
+      Categories
+    </button>
+    <button
+      class="admin__tab"
       [class.admin__tab--active]="activeTab() === 'dating'"
       (click)="switchTab('dating')"
     >
@@ -199,6 +206,10 @@
 
   @if (activeTab() === 'home-sections') {
     <app-admin-home-sections />
+  }
+
+  @if (activeTab() === 'categories') {
+    <app-admin-categories />
   }
 
   @if (activeTab() === 'signature') {
@@ -432,6 +443,7 @@
               <span class="admin__upload-error">{{ videoUploadError() }}</span>
             }
           </div>
+          <app-admin-product-categories [productId]="editingId()" [productName]="editingProductName()" />
           <div class="admin__actions">
             <button type="button" class="admin__cancel-btn" (click)="closeForm()">Cancel</button>
             <button type="submit" class="admin__save-btn">{{ editingId() ? 'Update' : 'Create' }}</button>

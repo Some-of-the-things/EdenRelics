@@ -10,36 +10,44 @@
 
     <header class="cathub__header">
       <h1 class="cathub__title">Vintage {{ h.name }}</h1>
-      <p class="cathub__tagline">{{ h.tagline }}</p>
-      <p class="cathub__intro">{{ h.intro }}</p>
+      @if (h.tagline) {
+        <p class="cathub__tagline">{{ h.tagline }}</p>
+      }
+      @if (h.intro) {
+        <p class="cathub__intro">{{ h.intro }}</p>
+      }
     </header>
 
-    <section class="cathub__section">
-      <div class="cathub__prose">
-        @for (para of h.body; track $index) {
-          <p>{{ para }}</p>
-        }
-      </div>
-    </section>
+    @if (bodyParagraphs().length > 0) {
+      <section class="cathub__section">
+        <div class="cathub__prose">
+          @for (para of bodyParagraphs(); track $index) {
+            <p>{{ para }}</p>
+          }
+        </div>
+      </section>
+    }
 
-    <section class="cathub__section">
-      <h2 class="cathub__section-title">What to look for</h2>
-      <ul class="cathub__lookfor">
-        @for (point of lookForPoints(); track $index) {
-          <li>
-            {{ point.text }}
-            @if (point.link) {
-              <a class="cathub__lookfor-link" [routerLink]="point.link.path">{{
-                point.link.label
-              }}</a>
-            }
-            @if (point.textAfter) {
-              {{ point.textAfter }}
-            }
-          </li>
-        }
-      </ul>
-    </section>
+    @if (lookForPoints().length > 0) {
+      <section class="cathub__section">
+        <h2 class="cathub__section-title">What to look for</h2>
+        <ul class="cathub__lookfor">
+          @for (point of lookForPoints(); track $index) {
+            <li>
+              {{ point.text }}
+              @if (point.link) {
+                <a class="cathub__lookfor-link" [routerLink]="point.link.path">{{
+                  point.link.label
+                }}</a>
+              }
+              @if (point.textAfter) {
+                {{ point.textAfter }}
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
 
     <section class="cathub__section">
       <h2 class="cathub__section-title">
@@ -85,11 +93,11 @@
       }
     </section>
 
-    @if (h.relatedLinks && h.relatedLinks.length > 0) {
+    @if (relatedLinks().length > 0) {
       <section class="cathub__section">
         <h2 class="cathub__section-title">Explore more</h2>
         <ul class="cathub__related">
-          @for (link of h.relatedLinks; track link.path) {
+          @for (link of relatedLinks(); track link.path) {
             <li>
               <a [routerLink]="link.path">{{ link.label }}</a>
             </li>

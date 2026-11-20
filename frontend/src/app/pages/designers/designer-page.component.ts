@@ -6,8 +6,16 @@ import { SeoService } from '../../services/seo.service';
 import { buildFaqPage } from '../../utils/faq-schema';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
-import { DesignerProfile, findDesignerBySlug, matchProductsToDesigner } from './designers.data';
+import { CategoryService, SubCategory } from '../../services/category.service';
+import { followMissingSubCategory, paragraphs } from '../../utils/category-redirect';
+import { DesignerProfile, findDesignerBySlug } from './designers.data';
 
+/**
+ * A designer / label page under /designers. The page itself (name, slug, short text, SEO,
+ * visibility, which pieces) is managed from the admin Categories tab; the longer written sections
+ * of the launch pages (history, how to identify, further reading) are still held in
+ * designers.data.ts and found through the page's contentKey.
+ */
 @Component({
   selector: 'app-designer-page',
   imports: [RouterLink, CurrencyPipe],
@@ -20,6 +28,7 @@ export class DesignerPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly productStore = inject(ProductStore);
+  private readonly categories = inject(CategoryService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   // Present only during server render; null in the browser.
   private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
@@ -29,43 +38,77 @@ export class DesignerPageComponent {
     { initialValue: this.route.snapshot.paramMap },
   );
 
-  readonly designer = computed<DesignerProfile | undefined>(() => {
+  readonly designer = computed<SubCategory | undefined>(() => {
     const s = this.slug().get('slug');
-    return s ? findDesignerBySlug(s) : undefined;
+    return s ? this.categories.find('designers', s) : undefined;
   });
 
-  readonly products = computed<Product[]>(() => {
+  /** Written sections kept in code for the launch pages. */
+  readonly written = computed<DesignerProfile | undefined>(() => {
+    const key = this.designer()?.contentKey;
+    return key ? findDesignerBySlug(key) : undefined;
+  });
+
+  readonly aboutParagraphs = computed<string[]>(() => {
     const d = this.designer();
     if (!d) {
       return [];
     }
-    return matchProductsToDesigner(this.productStore.liveProducts(), d);
+    return d.body ? paragraphs(d.body) : (this.written()?.history ?? []);
+  });
+
+  readonly identification = computed<string[]>(() => this.written()?.identification ?? []);
+
+  readonly identificationHeading = computed(() => {
+    const d = this.designer();
+    return this.written()?.identificationHeading || `How to identify authentic ${d?.name ?? ''}`;
+  });
+
+  readonly relatedPosts = computed(() => this.written()?.relatedPosts ?? []);
+
+  readonly products = computed<Product[]>(() => {
+    const d = this.designer();
+    return d ? this.categories.productsIn(d, this.productStore.liveProducts()) : [];
   });
 
   private readonly seoApplied = signal('');
 
   constructor() {
+    this.categories.load();
     effect(() => {
+      // Decide 404/redirect and set SEO only against the live list, not the built-in fallback.
+      if (!this.categories.loaded()) {
+        return;
+      }
       const d = this.designer();
+      const slug = this.slug().get('slug');
       if (!d) {
-        // Unknown slug. Real visitors get bounced to /designers; crawlers get
-        // a genuine 404 (a soft redirect would otherwise be indexed as 200).
-        if (this.slug().get('slug')) {
-          if (this.isBrowser) {
-            this.router.navigate(['/designers']);
-          } else {
-            this.markNotFound();
-          }
+        if (slug) {
+          this.handleMissing(slug);
         }
         return;
       }
-      // Avoid re-emitting tags for the same designer on every CD cycle.
-      if (this.seoApplied() === d.slug) {
+      const key = `${d.id}:${d.slug}:${d.metaTitle}:${d.metaDescription}`;
+      if (this.seoApplied() === key) {
         return;
       }
-      this.seoApplied.set(d.slug);
+      this.seoApplied.set(key);
       this.applySeo(d);
     });
+  }
+
+  private handleMissing(slug: string): void {
+    // Renamed, deleted or hidden pages go where they now live; anything else is a real 404.
+    if (followMissingSubCategory(this.categories.resolveMissing('designers', slug), this.router, this.responseInit)) {
+      return;
+    }
+    // Real visitors get bounced to /designers; crawlers get a genuine 404
+    // (a soft redirect would otherwise be indexed as 200).
+    if (this.isBrowser) {
+      this.router.navigate(['/designers']);
+    } else {
+      this.markNotFound();
+    }
   }
 
   /** Server-only: emit a 404 status for an unknown designer slug. No-op in the browser. */
@@ -76,21 +119,21 @@ export class DesignerPageComponent {
     this.seo.updateTags({ title: 'Designer not found', noIndex: true });
   }
 
-  private applySeo(d: DesignerProfile): void {
+  private applySeo(d: SubCategory): void {
     this.seo.updateTags({
-      title: d.metaTitle,
-      description: d.metaDescription,
+      title: d.metaTitle || `Vintage ${d.name}`,
+      description: d.metaDescription || d.intro,
       url: `/designers/${d.slug}`,
     });
 
-    const products = matchProductsToDesigner(this.productStore.liveProducts(), d);
+    const products = this.categories.productsIn(d, this.productStore.liveProducts());
     const pageUrl = `https://edenrelics.co.uk/designers/${d.slug}`;
     // FAQ schema from the visible identification section — the answer text is the
     // same tips shown on the page (Google's requirement for FAQPage).
-    const idHeading = d.identificationHeading || `How to identify authentic ${d.name}`;
-    const faqPage = buildFaqPage([
-      { question: `${idHeading}?`, answer: d.identification.join(' ') },
-    ]);
+    const tips = this.identification();
+    const faqPage = tips.length > 0
+      ? buildFaqPage([{ question: `${this.identificationHeading()}?`, answer: tips.join(' ') }])
+      : null;
     this.seo.setJsonLd({
       '@context': 'https://schema.org',
       '@graph': [

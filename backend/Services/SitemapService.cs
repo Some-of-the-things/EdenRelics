@@ -10,6 +10,7 @@ public class SitemapService(
     IRepository<BlogPost> posts,
     IRepository<CareFabric> careFabrics,
     IRepository<CareIssue> careIssues,
+    IRepository<SubCategory> subCategories,
     SitemapRoutesService staticRoutes) : ISitemapService
 {
     private const string BaseUrl = "https://edenrelics.co.uk";
@@ -94,6 +95,23 @@ public class SitemapService(
         foreach (SitemapRoute page in staticPages)
         {
             entries.Add(new SitemapEntry($"{BaseUrl}{page.Path}", null, page.Changefreq, page.Priority, []));
+        }
+
+        // Sub-category pages under /designers, /style and /dresses come from the admin-managed
+        // table, so a new one is in the sitemap the moment it's saved. Older frontend builds also
+        // list them in sitemap-routes.json, hence the de-duplication.
+        HashSet<string> seen = new(entries.Select(e => e.Loc), StringComparer.Ordinal);
+        List<SubCategory> visibleSubs = await subCategories.Query()
+            .Where(s => s.IsVisible)
+            .OrderBy(s => s.HubKey).ThenBy(s => s.DisplayOrder)
+            .ToListAsync();
+        foreach (SubCategory sub in visibleSubs)
+        {
+            string loc = $"{BaseUrl}/{Escape(sub.HubKey)}/{Escape(sub.Slug)}";
+            if (seen.Add(loc))
+            {
+                entries.Add(new SitemapEntry(loc, $"{sub.UpdatedAtUtc:yyyy-MM-dd}", "weekly", "0.7", []));
+            }
         }
 
         foreach (Product product in liveProducts)
