@@ -59,8 +59,9 @@ const NO_CACHE_PREFIXES = [
 
 /**
  * Long edge TTL for pages whose primary content has no live-inventory dependency:
- * blog posts, designer/style/garment hubs, care guides, and static/legal pages.
- * Everything else (home, /shop listings, /product, /collections) stays on the
+ * blog posts, care guides, and static/legal pages.
+ * Everything else (home, /shop listings, /product, /collections, and the
+ * admin-managed /designers, /style and /dresses hubs) stays on the
  * short TTL because those reflect the live catalogue (an add/sale changes them).
  * Once purge-on-inventory-change lands, those can move here too.
  */
@@ -74,9 +75,9 @@ const SSR_STATIC_CACHE_TTL = 3600;
 const SSR_PRODUCT_CACHE_TTL = 1800;
 const STATIC_PATH_PREFIXES = [
   '/blog',
-  '/designers',
-  '/style',
-  '/dresses',
+  // /designers, /style and /dresses are deliberately NOT here: their pages, counts and
+  // memberships are edited from the admin and must show within minutes, so they take the
+  // short SSR_CACHE_TTL like the shop listings.
   '/care',
   '/about',
   '/reviews',

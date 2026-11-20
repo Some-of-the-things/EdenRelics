@@ -25,8 +25,7 @@ import { LocalPricePipe } from '../../pipes/local-price.pipe';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { ShareButtonsComponent } from '../share-buttons/share-buttons.component';
 import { resolveProductStatus } from '../../utils/product-status';
-import { findDesignerForProduct } from '../../pages/designers/designers.data';
-import { findHubsForProduct, hubPath } from '../../pages/category/category.data';
+import { CategoryService, SubCategory, subCategoryPath } from '../../services/category.service';
 import { FocusTrapDirective } from '../../directives/focus-trap.directive';
 import { ImageLightboxComponent } from '../image-lightbox/image-lightbox.component';
 import { htmlToText } from '../../utils/html-to-text';
@@ -71,6 +70,7 @@ function schemaCondition(condition: string): string {
 export class ProductDetailComponent {
   readonly id = input.required<string>();
   private readonly productStore = inject(ProductStore);
+  private readonly categories = inject(CategoryService);
   readonly cartStore = inject(CartStore);
   private readonly seo = inject(SeoService);
   private readonly productService = inject(ProductService);
@@ -122,16 +122,23 @@ export class ProductDetailComponent {
   /** The designer hub this piece belongs to, if its name matches one — cross-linked for every product, not just sold ones. */
   readonly designer = computed(() => {
     const p = this.product();
-    return p ? findDesignerForProduct(p.name) : undefined;
+    return p ? this.designerFor(p) : undefined;
   });
 
   /** Style/garment hubs this piece belongs to — cross-linked to feed authority into the hub pages. */
   readonly hubs = computed(() => {
     const p = this.product();
-    return p ? findHubsForProduct(p) : [];
+    return p
+      ? [...this.categories.subCategoriesFor(p, 'style'), ...this.categories.subCategoriesFor(p, 'dresses')]
+      : [];
   });
 
-  readonly hubPath = hubPath;
+  readonly hubPath = subCategoryPath;
+
+  /** The first designer page a piece sits in (keywords or hand-picked), if any. */
+  private designerFor(p: { id: string; name: string }): SubCategory | undefined {
+    return this.categories.subCategoriesFor(p, 'designers')[0];
+  }
 
   /**
    * Buyable pieces to surface on a sold listing, so the page never dead-ends a
@@ -151,7 +158,7 @@ export class ProductDetailComponent {
     // ordering within each score band (ES2019 guarantees Array.sort stability).
     const scored = live.map((p) => {
       let score = 0;
-      if (currentDesigner && findDesignerForProduct(p.name)?.slug === currentDesigner.slug) {
+      if (currentDesigner && this.designerFor(p)?.slug === currentDesigner.slug) {
         score += 2;
       }
       if (p.era === current.era) {
@@ -246,6 +253,7 @@ export class ProductDetailComponent {
   }
 
   constructor() {
+    this.categories.load();
     if (this.auth.isAuthenticated()) {
       this.favourites.load();
     }
@@ -327,7 +335,7 @@ export class ProductDetailComponent {
           product.showReduction && product.salePrice ? product.salePrice : product.price;
         const productUrl = `https://edenrelics.co.uk${canonicalPath}`;
         const description = stripHtml(product.description);
-        const designer = findDesignerForProduct(product.name);
+        const designer = this.designerFor(product);
         const uploadDate = product.createdAtUtc ?? new Date().toISOString();
         const videos = (product.videoUrls ?? []).map((url, idx) => ({
           '@type': 'VideoObject',

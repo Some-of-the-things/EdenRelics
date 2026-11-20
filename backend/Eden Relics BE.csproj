@@ -18,6 +18,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Launch sub-categories, generated once from the frontend data files; seeded on first startup. -->
+    <Content Remove="Data\SubCategorySeed.json" />
+    <EmbeddedResource Include="Data\SubCategorySeed.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Anthropic.SDK" Version="5.10.0" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.100.2" />
     <PackageReference Include="Fido2" Version="4.0.1" />

@@ -11,7 +11,7 @@
       <li class="designer-card">
         <a [routerLink]="['/designers', card.profile.slug]" class="designer-card__link">
           <h2 class="designer-card__name">{{ card.profile.name }}</h2>
-          <p class="designer-card__origin">{{ card.profile.origin }}</p>
+          <p class="designer-card__origin">{{ card.profile.tagline }}</p>
           <p class="designer-card__intro">{{ card.profile.intro }}</p>
           <p class="designer-card__count">
             @if (card.productCount > 0) {

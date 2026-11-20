@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { SeoService } from '../../services/seo.service';
 import { ProductStore } from '../../store/product.store';
-import { CategoryHub, hubPath, hubsOfKind, matchProductsToHub } from './category.data';
+import { CategoryHub } from './category.data';
+import { CategoryService, HubKey, subCategoryPath } from '../../services/category.service';
 
 interface IndexCopy {
   title: string;
@@ -84,36 +85,46 @@ export class CategoryIndexComponent implements OnInit {
   private readonly seo = inject(SeoService);
   private readonly route = inject(ActivatedRoute);
   private readonly productStore = inject(ProductStore);
+  private readonly categories = inject(CategoryService);
 
   private readonly kind: CategoryHub['kind'] = this.route.snapshot.data['kind'];
   readonly copy = COPY[this.kind];
+  private readonly hubKey: HubKey = this.kind === 'style' ? 'style' : 'dresses';
 
   readonly cards = computed(() => {
     const products = this.productStore.liveProducts();
-    return hubsOfKind(this.kind).map((hub) => ({
+    return this.categories.subCategoriesOf(this.hubKey).map((hub) => ({
       hub,
-      path: hubPath(hub),
-      productCount: matchProductsToHub(products, hub).length,
+      path: subCategoryPath(hub),
+      productCount: this.categories.productsIn(hub, products).length,
     }));
   });
+
+  constructor() {
+    this.categories.load();
+    // The page list comes from the API, so the structured data follows it once it has answered.
+    effect(() => {
+      this.categories.loaded();
+      this.seo.setJsonLd({
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: this.copy.metaTitle,
+        description: this.copy.metaDescription,
+        url: `https://edenrelics.co.uk${this.copy.url}`,
+        hasPart: this.categories.subCategoriesOf(this.hubKey).map((hub) => ({
+          '@type': 'WebPage',
+          name: `Vintage ${hub.name}`,
+          url: `https://edenrelics.co.uk${subCategoryPath(hub)}`,
+        })),
+      });
+    });
+  }
 
   ngOnInit(): void {
     this.seo.updateTags({
       title: this.copy.metaTitle,
       description: this.copy.metaDescription,
       url: this.copy.url,
-    });
-    this.seo.setJsonLd({
-      '@context': 'https://schema.org',
-      '@type': 'CollectionPage',
-      name: this.copy.metaTitle,
-      description: this.copy.metaDescription,
-      url: `https://edenrelics.co.uk${this.copy.url}`,
-      hasPart: hubsOfKind(this.kind).map((hub) => ({
-        '@type': 'WebPage',
-        name: `Vintage ${hub.name}`,
-        url: `https://edenrelics.co.uk${hubPath(hub)}`,
-      })),
     });
   }
 }

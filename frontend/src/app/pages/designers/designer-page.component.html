@@ -10,33 +10,41 @@
 
     <header class="designer-page__header">
       <h1 class="designer-page__title">Vintage {{ d.name }}</h1>
-      <p class="designer-page__origin">{{ d.origin }}</p>
-      <p class="designer-page__intro">{{ d.intro }}</p>
+      @if (d.tagline) {
+        <p class="designer-page__origin">{{ d.tagline }}</p>
+      }
+      @if (d.intro) {
+        <p class="designer-page__intro">{{ d.intro }}</p>
+      }
     </header>
 
-    <section class="designer-page__section">
-      <h2 class="designer-page__section-title">About {{ d.name }}</h2>
-      <div class="designer-page__prose">
-        @for (para of d.history; track $index) {
-          <p>{{ para }}</p>
-        }
-      </div>
-    </section>
+    @if (aboutParagraphs().length > 0) {
+      <section class="designer-page__section">
+        <h2 class="designer-page__section-title">About {{ d.name }}</h2>
+        <div class="designer-page__prose">
+          @for (para of aboutParagraphs(); track $index) {
+            <p>{{ para }}</p>
+          }
+        </div>
+      </section>
+    }
 
-    <section class="designer-page__section">
-      <h2 class="designer-page__section-title">{{ d.identificationHeading || 'How to identify authentic ' + d.name }}</h2>
-      <ul class="designer-page__id-list">
-        @for (tip of d.identification; track $index) {
-          <li>{{ tip }}</li>
-        }
-      </ul>
-    </section>
+    @if (identification().length > 0) {
+      <section class="designer-page__section">
+        <h2 class="designer-page__section-title">{{ identificationHeading() }}</h2>
+        <ul class="designer-page__id-list">
+          @for (tip of identification(); track $index) {
+            <li>{{ tip }}</li>
+          }
+        </ul>
+      </section>
+    }
 
-    @if (d.relatedPosts && d.relatedPosts.length > 0) {
+    @if (relatedPosts().length > 0) {
       <section class="designer-page__section">
         <h2 class="designer-page__section-title">Further reading</h2>
         <ul class="designer-page__reading">
-          @for (post of d.relatedPosts; track post.slug) {
+          @for (post of relatedPosts(); track post.slug) {
             <li>
               <a [routerLink]="['/blog', post.slug]">{{ post.title }}</a>
             </li>

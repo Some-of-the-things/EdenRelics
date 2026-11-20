@@ -1,0 +1,221 @@
+<section class="cats">
+  <div>
+    <h2 class="cats__title">Categories</h2>
+    <p class="cats__hint">
+      The pages under Designers &amp; Labels, Shop by Style and Dress Types. A piece joins a page automatically when its
+      name contains one of the page's match words. You can also add or remove pieces by hand, which always wins over the
+      match words. Counts on the site only include pieces that are live.
+    </p>
+  </div>
+
+  <div class="cats__hubs" role="tablist" aria-label="Category hubs">
+    @for (key of hubKeys; track key) {
+      <button
+        type="button"
+        role="tab"
+        class="cats__hub"
+        [class.cats__hub--active]="activeHub() === key"
+        [attr.aria-selected]="activeHub() === key"
+        (click)="selectHub(key)"
+      >
+        {{ hubNames[key] }}
+      </button>
+    }
+  </div>
+
+  @if (notice()) {
+    <p class="cats__notice" role="status">{{ notice() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="cats__hint">Loading…</p>
+  } @else if (error()) {
+    <p class="cats__error" role="alert">{{ error() }}</p>
+  } @else {
+    <div class="cats__section">
+      <div class="cats__section-head">
+        <h3 class="cats__section-title">{{ hubNames[activeHub()] }} <span class="cats__muted">/{{ activeHub() }}</span></h3>
+        <button type="button" class="cats__btn cats__btn--primary" (click)="startNew()">Add a sub-category</button>
+      </div>
+
+      <ul class="cats__list">
+        @for (sub of subs(); track sub.id; let i = $index; let last = $last) {
+          <li class="cats__row" [class.cats__row--hidden]="!sub.isVisible">
+            <div class="cats__order">
+              <button type="button" class="cats__icon-btn" (click)="move(i, -1)" [disabled]="i === 0" [attr.aria-label]="'Move ' + sub.name + ' up'">↑</button>
+              <button type="button" class="cats__icon-btn" (click)="move(i, 1)" [disabled]="last" [attr.aria-label]="'Move ' + sub.name + ' down'">↓</button>
+            </div>
+            <div class="cats__row-main">
+              <span class="cats__row-name">{{ sub.name }}</span>
+              <span class="cats__muted">
+                @if (sub.isVisible) {
+                  <a [routerLink]="subCategoryPath(sub)" target="_blank" rel="noopener">{{ subCategoryPath(sub) }}</a>
+                } @else {
+                  {{ subCategoryPath(sub) }} · <strong>Hidden</strong>
+                }
+                · {{ liveCount(sub) }} live piece{{ liveCount(sub) === 1 ? '' : 's' }}
+              </span>
+            </div>
+            <div class="cats__row-actions">
+              <button type="button" class="cats__btn" (click)="openPieces(sub)" [attr.aria-expanded]="piecesFor() === sub.id">Pieces</button>
+              <button type="button" class="cats__btn" (click)="startEdit(sub)">Edit</button>
+              <button type="button" class="cats__btn" (click)="toggleVisible(sub)">{{ sub.isVisible ? 'Hide' : 'Show' }}</button>
+              <button type="button" class="cats__btn cats__btn--danger" (click)="remove(sub)">Delete</button>
+            </div>
+
+            @if (piecesFor() === sub.id) {
+              <div class="cats__pieces">
+                <p class="cats__hint">
+                  Match words: <strong>{{ sub.includeKeywords.length ? sub.includeKeywords.join(', ') : 'none' }}</strong>
+                  @if (sub.excludeKeywords.length) {
+                    · never if the name has: <strong>{{ sub.excludeKeywords.join(', ') }}</strong>
+                  }
+                </p>
+                <div class="cats__pieces-tools">
+                  <input
+                    type="search"
+                    class="cats__input"
+                    placeholder="Search by name or SKU"
+                    aria-label="Search pieces"
+                    [ngModel]="pieceSearch()"
+                    (ngModelChange)="pieceSearch.set($event)"
+                  />
+                  <label class="cats__radio">
+                    <input type="radio" name="pieceFilter-{{ sub.id }}" [checked]="pieceFilter() === 'in'" (change)="pieceFilter.set('in')" />
+                    In this page
+                  </label>
+                  <label class="cats__radio">
+                    <input type="radio" name="pieceFilter-{{ sub.id }}" [checked]="pieceFilter() === 'all'" (change)="pieceFilter.set('all')" />
+                    All pieces
+                  </label>
+                </div>
+                <div class="cats__pieces-bulk">
+                  <span class="cats__muted">{{ selected().size }} selected</span>
+                  <button type="button" class="cats__btn" (click)="selectAllShown()">Select all shown</button>
+                  <button type="button" class="cats__btn" (click)="clearSelection()" [disabled]="selected().size === 0">Clear</button>
+                  <button type="button" class="cats__btn cats__btn--primary" (click)="addSelected()" [disabled]="selected().size === 0 || piecesBusy()">Add selected</button>
+                  <button type="button" class="cats__btn" (click)="removeSelected()" [disabled]="selected().size === 0 || piecesBusy()">Remove selected</button>
+                </div>
+
+                @if (pieceRows().length === 0) {
+                  <p class="cats__hint">
+                    {{ pieceFilter() === 'in' ? 'No pieces in this page yet. Choose "All pieces" to add some.' : 'No pieces match that search.' }}
+                  </p>
+                } @else {
+                  <ul class="cats__piece-list">
+                    @for (row of pieceRows(); track row.product.id) {
+                      <li class="cats__piece" [class.cats__piece--out]="!row.member">
+                        <input
+                          type="checkbox"
+                          [checked]="isSelected(row.product.id)"
+                          (change)="toggleSelected(row.product.id)"
+                          [attr.aria-label]="'Select ' + row.product.name"
+                        />
+                        <span class="cats__piece-name">
+                          {{ row.product.name }}
+                          <span class="cats__muted">{{ row.product.sku }} · {{ statusLabel(row.product) }}</span>
+                        </span>
+                        @if (reasonLabel(row.reason)) {
+                          <span class="cats__tag cats__tag--{{ row.reason }}">{{ reasonLabel(row.reason) }}</span>
+                        }
+                        @if (row.member) {
+                          <button type="button" class="cats__btn" (click)="removeOne(row.product.id)" [disabled]="piecesBusy()">Remove</button>
+                        } @else {
+                          <button type="button" class="cats__btn" (click)="addOne(row.product.id)" [disabled]="piecesBusy()">Add</button>
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+          </li>
+        } @empty {
+          <li class="cats__hint">No sub-categories under this hub yet.</li>
+        }
+      </ul>
+    </div>
+
+    @if (editing()) {
+      <form class="cats__section cats__form" (ngSubmit)="save()">
+        <h3 class="cats__section-title">
+          {{ editing() === 'new' ? 'New sub-category under ' + hubNames[activeHub()] : 'Edit ' + (editingSub()?.name ?? '') }}
+        </h3>
+
+        <label class="cats__field">
+          <span>Name</span>
+          <input class="cats__input" type="text" name="name" required maxlength="120" [ngModel]="form.name" (ngModelChange)="onNameChange($event)" />
+        </label>
+
+        <label class="cats__field">
+          <span>URL slug</span>
+          <span class="cats__slug">
+            <span class="cats__muted">edenrelics.co.uk/{{ activeHub() }}/</span>
+            <input class="cats__input" type="text" name="slug" maxlength="80" [ngModel]="form.slug" (ngModelChange)="onSlugChange($event)" />
+          </span>
+          @if (slugChanging()) {
+            <small class="cats__warn">Changing the slug moves the page. The old address /{{ activeHub() }}/{{ editingSub()?.slug }} will redirect to the new one.</small>
+          } @else {
+            <small class="cats__muted">Lower-case letters, numbers and hyphens. Filled in from the name; you can change it.</small>
+          }
+        </label>
+
+        <label class="cats__field">
+          <span>{{ taglineLabel() }}</span>
+          <input class="cats__input" type="text" name="tagline" maxlength="300" [(ngModel)]="form.tagline" />
+        </label>
+
+        <label class="cats__field">
+          <span>Short description (the first paragraph)</span>
+          <textarea class="cats__input" name="intro" rows="3" maxlength="2000" [(ngModel)]="form.intro"></textarea>
+        </label>
+
+        <label class="cats__field">
+          <span>More text (optional; leave a blank line between paragraphs)</span>
+          <textarea class="cats__input" name="body" rows="6" maxlength="20000" [(ngModel)]="form.body"></textarea>
+          @if (editingSub()?.contentKey) {
+            <small class="cats__muted">
+              This page also has longer written sections kept in the site code (history, how to identify, what to look for).
+              Leave this box empty to keep showing them. Anything you write here replaces the main text section. Ask Peter to change the others.
+            </small>
+          }
+        </label>
+
+        <label class="cats__field">
+          <span>SEO title <span class="cats__muted">({{ form.metaTitle.length }}/60 recommended)</span></span>
+          <input class="cats__input" type="text" name="metaTitle" maxlength="200" [(ngModel)]="form.metaTitle" />
+        </label>
+
+        <label class="cats__field">
+          <span>Meta description <span class="cats__muted">({{ form.metaDescription.length }}/155 recommended)</span></span>
+          <textarea class="cats__input" name="metaDescription" rows="2" maxlength="400" [(ngModel)]="form.metaDescription"></textarea>
+        </label>
+
+        <label class="cats__field">
+          <span>Match words (comma-separated)</span>
+          <input class="cats__input" type="text" name="includeWords" [(ngModel)]="form.includeWords" placeholder="e.g. whimsigoth, velvet, celestial" />
+          <small class="cats__muted">A piece joins this page when its name contains any of these. Leave empty to add pieces only by hand.</small>
+        </label>
+
+        <label class="cats__field">
+          <span>Never include if the name contains (optional)</span>
+          <input class="cats__input" type="text" name="excludeWords" [(ngModel)]="form.excludeWords" placeholder="e.g. skirt" />
+        </label>
+
+        <label class="cats__check">
+          <input type="checkbox" name="isVisible" [(ngModel)]="form.isVisible" />
+          Show on the site (when hidden, the page is left out of the hub, menus and sitemap, and its address goes to the hub page)
+        </label>
+
+        @if (formError()) {
+          <p class="cats__error" role="alert">{{ formError() }}</p>
+        }
+
+        <div class="cats__form-actions">
+          <button type="submit" class="cats__btn cats__btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+          <button type="button" class="cats__btn" (click)="closeForm()">Cancel</button>
+        </div>
+      </form>
+    }
+  }
+</section>

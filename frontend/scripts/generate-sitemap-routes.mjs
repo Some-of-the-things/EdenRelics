@@ -1,15 +1,17 @@
 // Generates public/sitemap-routes.json — the single source of truth for the
 // static URLs the backend SitemapController advertises.
 //
-// Designer, collection and category-hub routes are derived from their data
-// files so the sitemap can never fall out of sync with the actual pages (add a
-// designer/collection/hub there and it shows up here automatically on the next
-// build). Runs as the `prebuild` hook.
+// Collection routes are derived from their data file so the sitemap can never
+// fall out of sync with the actual pages. Runs as the `prebuild` hook.
 //
-// The category hubs were missing from this generator until 2026-07-30, so
-// /style, /dresses and every hub beneath them had never been submitted to
-// Google despite existing to rank. app.routes.spec.ts guards against that
-// recurring.
+// Sub-category pages under /designers, /style and /dresses are NOT listed here.
+// Since 2026-11 they are managed from the admin and stored in the database, so
+// the backend SitemapController adds them itself from that table (visible pages
+// only). Listing them here as well would keep a renamed or hidden page in the
+// sitemap until the next frontend deploy.
+//
+// The hub index pages (/designers, /style, /dresses) stay listed here;
+// app.routes.spec.ts fails the build if a public route is missing.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -17,57 +19,14 @@ import { dirname, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const excludedPath = resolve(here, '../src/app/sitemap-excluded-paths.json');
-const designersPath = resolve(here, '../src/app/pages/designers/designers.data.ts');
 const collectionsPath = resolve(here, '../src/app/pages/collections/collections.data.ts');
-const categoriesPath = resolve(here, '../src/app/pages/category/category.data.ts');
 const outPath = resolve(here, '../public/sitemap-routes.json');
 
-// Pull every designer slug, in file order, from the DESIGNERS data. Match only
-// a `slug:` immediately followed by `name:` — that pairing is unique to a
-// DesignerProfile, so unrelated `slug:` keys (e.g. RelatedPost link targets)
-// don't leak in as bogus /designers/* sitemap routes.
-const designersSrc = readFileSync(designersPath, 'utf8');
-const slugs = [...designersSrc.matchAll(/slug:\s*'([^']+)',\s*name:/g)].map((m) => m[1]);
-if (slugs.length === 0) {
-  throw new Error('generate-sitemap-routes: no designer slugs found in designers.data.ts');
-}
-
-// Collection slugs, same `slug:` → `name:` pairing (unique to a CollectionProfile).
+// Collection slugs: a `slug:` immediately followed by `name:` is unique to a CollectionProfile.
 const collectionsSrc = readFileSync(collectionsPath, 'utf8');
 const collectionSlugs = [...collectionsSrc.matchAll(/slug:\s*'([^']+)',\s*name:/g)].map((m) => m[1]);
 if (collectionSlugs.length === 0) {
   throw new Error('generate-sitemap-routes: no collection slugs found in collections.data.ts');
-}
-
-// Category hubs. `kind` decides the URL prefix — 'style' hubs live at /style/:slug
-// and 'garment' hubs at /dresses/:slug — so capture the pair, again anchored on a
-// following `name:` so only real CategoryHub entries match.
-const categoriesSrc = readFileSync(categoriesPath, 'utf8');
-const hubs = [...categoriesSrc.matchAll(/kind:\s*'([^']+)',\s*slug:\s*'([^']+)',\s*name:/g)].map(
-  (m) => ({ kind: m[1], slug: m[2] }),
-);
-if (hubs.length === 0) {
-  throw new Error('generate-sitemap-routes: no category hubs found in category.data.ts');
-}
-// The pattern above needs kind/slug/name adjacent, so a comment inserted between
-// them makes a hub vanish from the sitemap with no error — which is how
-// /style/cottagecore silently dropped out on 2026-08-04. Count the `kind:` keys
-// independently and insist every one of them produced a hub.
-// Trailing comma required, so the CategoryHub interface's own
-// `kind: 'style' | 'garment';` union is not counted as a hub.
-const declaredHubs = (categoriesSrc.match(/^\s*kind:\s*'[^']+',/gm) ?? []).length;
-if (declaredHubs !== hubs.length) {
-  throw new Error(
-    `generate-sitemap-routes: category.data.ts declares ${declaredHubs} hubs but only ${hubs.length} matched ` +
-      `(${hubs.map((h) => h.slug).join(', ')}). The matcher needs kind/slug/name on consecutive lines — ` +
-      'check for a comment or reordered key in the entries that are missing.',
-  );
-}
-const unknownKind = hubs.find((h) => h.kind !== 'style' && h.kind !== 'garment');
-if (unknownKind) {
-  throw new Error(
-    `generate-sitemap-routes: unknown hub kind '${unknownKind.kind}' for slug '${unknownKind.slug}'`,
-  );
 }
 
 const before = [
@@ -86,25 +45,15 @@ const before = [
   { path: '/care', changefreq: 'weekly', priority: '0.7' },
   { path: '/designers', changefreq: 'weekly', priority: '0.8' },
 ];
-const designerRoutes = slugs.map((slug) => ({
-  path: `/designers/${slug}`,
-  changefreq: 'weekly',
-  priority: '0.7',
-}));
 const collectionRoutes = collectionSlugs.map((slug) => ({
   path: `/collections/${slug}`,
   changefreq: 'weekly',
   priority: '0.7',
 }));
-// Hub indexes plus one entry per hub. Same weighting as /designers and its pages.
+// Hub index pages. The sub-category pages beneath them come from the backend.
 const categoryRoutes = [
   { path: '/style', changefreq: 'weekly', priority: '0.8' },
   { path: '/dresses', changefreq: 'weekly', priority: '0.8' },
-  ...hubs.map((h) => ({
-    path: `/${h.kind === 'style' ? 'style' : 'dresses'}/${h.slug}`,
-    changefreq: 'weekly',
-    priority: '0.7',
-  })),
   // /top-picks was listed 2026-08-27 to 2026-10-13. Top Picks was then switched off in the
   // admin UI (Noir took its place on the homepage), so the page 302s and is excluded again.
   // If it is switched back on for good, list it here and drop it from the excluded paths.
@@ -140,7 +89,6 @@ const after = [
 
 const routes = [
   ...before,
-  ...designerRoutes,
   ...collectionRoutes,
   ...categoryRoutes,
   ...sellerRoutes,
@@ -168,4 +116,4 @@ const body = routes
   .join(',\n');
 writeFileSync(outPath, `[\n${body}\n]\n`, 'utf8');
 
-console.log(`generate-sitemap-routes: wrote ${routes.length} routes (${slugs.length} designers, ${collectionSlugs.length} collections, ${hubs.length} category hubs) to public/sitemap-routes.json`);
+console.log(`generate-sitemap-routes: wrote ${routes.length} routes (${collectionSlugs.length} collections; sub-category pages come from the backend) to public/sitemap-routes.json`);

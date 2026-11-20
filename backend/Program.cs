@@ -146,6 +146,7 @@ builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<ICalendarFeedService, CalendarFeedService>();
 builder.Services.AddScoped<ISitemapService, SitemapService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IMerchantFeedService, MerchantFeedService>();
 builder.Services.AddScoped<ISalesLedgerService, SalesLedgerService>();
 builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
@@ -393,6 +394,9 @@ using (IServiceScope scope = app.Services.CreateScope())
 
     // Seed the launch vintage-care entries (idempotent — skips any slug that already exists)
     Eden_Relics_BE.Data.CareSeed.EnsureSeedDataAsync(db).GetAwaiter().GetResult();
+
+    // Seed the category hubs and the 15 launch sub-categories (only into empty tables).
+    Eden_Relics_BE.Data.CategorySeed.EnsureSeedDataAsync(db).GetAwaiter().GetResult();
 
     // Seed the dating rules (idempotent — skips any Code that already exists, never
     // overwrites an edited rule). Unverified seeds are inert until researched.

@@ -54,6 +54,10 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<TopPick> TopPicks => Set<TopPick>();
     public DbSet<TopPicksSetting> TopPicksSettings => Set<TopPicksSetting>();
     public DbSet<HomeSection> HomeSections => Set<HomeSection>();
+    public DbSet<CategoryHub> CategoryHubs => Set<CategoryHub>();
+    public DbSet<SubCategory> SubCategories => Set<SubCategory>();
+    public DbSet<SubCategoryProduct> SubCategoryProducts => Set<SubCategoryProduct>();
+    public DbSet<CategoryRedirect> CategoryRedirects => Set<CategoryRedirect>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -417,6 +421,46 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(s => s.ButtonLink).HasMaxLength(200);
             entity.HasIndex(s => s.Position);
             ConfigureJsonListProperty(entity.Property(s => s.ProductIds));
+        });
+
+        modelBuilder.Entity<CategoryHub>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(h => h.Key).HasMaxLength(40);
+            entity.Property(h => h.Name).HasMaxLength(120);
+            entity.HasIndex(h => h.Key).IsUnique().HasFilter("\"IsDeleted\" = false");
+        });
+
+        modelBuilder.Entity<SubCategory>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(s => s.HubKey).HasMaxLength(40);
+            entity.Property(s => s.Slug).HasMaxLength(80);
+            entity.Property(s => s.Name).HasMaxLength(120);
+            entity.Property(s => s.Tagline).HasMaxLength(300);
+            entity.Property(s => s.Intro).HasMaxLength(2000);
+            entity.Property(s => s.Body).HasMaxLength(20000);
+            entity.Property(s => s.MetaTitle).HasMaxLength(200);
+            entity.Property(s => s.MetaDescription).HasMaxLength(400);
+            entity.Property(s => s.ContentKey).HasMaxLength(80);
+            // Deleted pages keep their row (with a redirect), so only live ones must be unique.
+            entity.HasIndex(s => new { s.HubKey, s.Slug }).IsUnique().HasFilter("\"IsDeleted\" = false");
+            ConfigureJsonListProperty(entity.Property(s => s.IncludeKeywords));
+            ConfigureJsonListProperty(entity.Property(s => s.ExcludeKeywords));
+        });
+
+        modelBuilder.Entity<SubCategoryProduct>(entity =>
+        {
+            entity.HasIndex(p => new { p.SubCategoryId, p.ProductId }).IsUnique();
+            entity.HasIndex(p => p.ProductId);
+        });
+
+        modelBuilder.Entity<CategoryRedirect>(entity =>
+        {
+            entity.Property(r => r.HubKey).HasMaxLength(40);
+            entity.Property(r => r.FromSlug).HasMaxLength(80);
+            entity.Property(r => r.ToPath).HasMaxLength(200);
+            entity.HasIndex(r => new { r.HubKey, r.FromSlug }).IsUnique();
         });
 
         modelBuilder.Entity<MonzoToken>(entity =>
