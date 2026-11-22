@@ -1,0 +1,116 @@
+<section class="arv">
+  <div class="arv__settings">
+    <label class="arv__setting">
+      Email buyers a review link
+      <input type="number" min="1" max="60" [value]="delayDays() ?? 7" #delay aria-label="Days after dispatch" />
+      days after their order is marked Shipped.
+    </label>
+    <button type="button" class="arv__btn arv__btn--ghost" (click)="saveDelay(delay.value)">Save</button>
+    @if (delaySaved()) {
+      <span class="arv__saved" role="status">Saved</span>
+    }
+  </div>
+  <p class="arv__hint">
+    Reviews go live straight away. Ones with a link, an email address, a phone number or abusive words wait under
+    "Held for a check" until you publish them. Only hide a review for one of the four reasons offered: hiding a
+    review because it's negative isn't allowed.
+  </p>
+
+  <div class="arv__filters" role="group" aria-label="Show">
+    <button type="button" [class.arv__filter--on]="filter() === 'all'" (click)="setFilter('all')">All</button>
+    <button type="button" [class.arv__filter--on]="filter() === 'Approved'" (click)="setFilter('Approved')">Published</button>
+    <button type="button" [class.arv__filter--on]="filter() === 'Pending'" (click)="setFilter('Pending')">Held for a check</button>
+    <button type="button" [class.arv__filter--on]="filter() === 'Rejected'" (click)="setFilter('Rejected')">Hidden</button>
+  </div>
+
+  @if (error()) {
+    <p class="arv__error" role="alert">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="arv__hint">Loading…</p>
+  } @else {
+    <ul class="arv__list">
+      @for (r of reviews(); track r.id) {
+        <li class="arv__card">
+          <div class="arv__head">
+            <div>
+              <strong>{{ r.authorDisplayName }}</strong>
+              <span class="arv__email">{{ r.userEmail }}</span>
+            </div>
+            <span class="arv__status arv__status--{{ r.status.toLowerCase() }}">{{ statusLabel(r) }}</span>
+          </div>
+          <p class="arv__stars" [attr.aria-label]="r.rating + ' out of 5 stars'">
+            {{ stars(r.rating).on }}<span class="arv__stars-off">{{ stars(r.rating).off }}</span>
+          </p>
+          <p class="arv__meta">{{ r.productNames.join(', ') }} · {{ r.orderTotal | currency: 'GBP' }} · {{ r.createdAtUtc | date: 'd MMM y, HH:mm' }}</p>
+          <p class="arv__comment">{{ r.comment }}</p>
+          @if (r.photoUrl) {
+            <a [href]="r.photoUrl" target="_blank" rel="noopener noreferrer">
+              <img class="arv__photo" [src]="r.photoUrl" alt="Buyer's photo" />
+            </a>
+          }
+          @if (r.status === 'Pending' && r.holdReason) {
+            <p class="arv__flag">Held: {{ r.holdReason }}</p>
+          }
+          @if (r.status === 'Rejected') {
+            <p class="arv__flag">
+              Hidden: {{ reasonLabel(r.hiddenReason) }}
+              @if (r.moderationNote) {
+                ({{ r.moderationNote }})
+              }
+            </p>
+          }
+          @if (r.reply && replyingId() !== r.id) {
+            <div class="arv__reply">
+              <span class="arv__meta">Your reply</span>
+              <p>{{ r.reply }}</p>
+            </div>
+          }
+
+          @if (replyingId() === r.id) {
+            <div class="arv__form">
+              <label class="arv__label" [for]="'reply-' + r.id">Public reply</label>
+              <textarea [id]="'reply-' + r.id" rows="3" maxlength="2000" [value]="replyText()" (input)="replyText.set($any($event.target).value)"></textarea>
+              <div class="arv__actions">
+                <button type="button" class="arv__btn" (click)="saveReply(r)" [disabled]="working() === r.id || !replyText().trim()">Post reply</button>
+                @if (r.reply) {
+                  <button type="button" class="arv__btn arv__btn--ghost" (click)="removeReply(r)" [disabled]="working() === r.id">Remove reply</button>
+                }
+                <button type="button" class="arv__btn arv__btn--ghost" (click)="replyingId.set(null)">Cancel</button>
+              </div>
+            </div>
+          } @else if (hidingId() === r.id) {
+            <div class="arv__form">
+              <label class="arv__label" [for]="'reason-' + r.id">Why hide it?</label>
+              <select [id]="'reason-' + r.id" (change)="hideReason.set($any($event.target).value)">
+                <option value="" [selected]="hideReason() === ''">Choose a reason…</option>
+                @for (reason of reasons; track reason.value) {
+                  <option [value]="reason.value" [selected]="hideReason() === reason.value">{{ reason.label }}</option>
+                }
+              </select>
+              <label class="arv__label" [for]="'note-' + r.id">Note for the record (optional)</label>
+              <input [id]="'note-' + r.id" type="text" maxlength="500" [value]="hideNote()" (input)="hideNote.set($any($event.target).value)" />
+              <div class="arv__actions">
+                <button type="button" class="arv__btn arv__btn--danger" (click)="confirmHide(r)" [disabled]="working() === r.id">Hide review</button>
+                <button type="button" class="arv__btn arv__btn--ghost" (click)="hidingId.set(null)">Cancel</button>
+              </div>
+            </div>
+          } @else {
+            <div class="arv__actions">
+              <button type="button" class="arv__btn arv__btn--ghost" (click)="startReply(r)">{{ r.reply ? 'Edit reply' : 'Reply' }}</button>
+              @if (r.status !== 'Approved') {
+                <button type="button" class="arv__btn" (click)="publish(r)" [disabled]="working() === r.id">Publish</button>
+              }
+              @if (r.status !== 'Rejected') {
+                <button type="button" class="arv__btn arv__btn--ghost" (click)="startHide(r)">Hide…</button>
+              }
+            </div>
+          }
+        </li>
+      } @empty {
+        <li class="arv__hint">No reviews here yet.</li>
+      }
+    </ul>
+  }
+</section>

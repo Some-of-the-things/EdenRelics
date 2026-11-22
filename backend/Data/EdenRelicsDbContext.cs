@@ -58,6 +58,9 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<SubCategory> SubCategories => Set<SubCategory>();
     public DbSet<SubCategoryProduct> SubCategoryProducts => Set<SubCategoryProduct>();
     public DbSet<CategoryRedirect> CategoryRedirects => Set<CategoryRedirect>();
+    public DbSet<Newsletter> Newsletters => Set<Newsletter>();
+    public DbSet<NewsletterDelivery> NewsletterDeliveries => Set<NewsletterDelivery>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -137,6 +140,9 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(o => o.BillCountry).HasMaxLength(100);
             entity.Property(o => o.GiftMessage).HasMaxLength(Order.GiftMessageMaxLength);
             entity.Property(o => o.GiftTo).HasMaxLength(Order.GiftToMaxLength);
+            entity.Property(o => o.ReviewToken).HasMaxLength(64);
+            entity.HasIndex(o => o.ReviewToken).IsUnique().HasFilter("\"ReviewToken\" IS NOT NULL");
+            entity.HasIndex(o => o.DispatchedAtUtc);
         });
 
         modelBuilder.Entity<OrderItem>(entity =>
@@ -204,6 +210,35 @@ public class EdenRelicsDbContext : DbContext
             entity.HasIndex(m => m.Email).IsUnique();
             entity.Property(m => m.FirstName).HasMaxLength(100);
             entity.Property(m => m.Source).HasMaxLength(30);
+            entity.Property(m => m.UnsubscribeToken).HasMaxLength(64);
+            entity.HasIndex(m => m.UnsubscribeToken).IsUnique().HasFilter("\"UnsubscribeToken\" IS NOT NULL");
+        });
+
+        modelBuilder.Entity<Newsletter>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(n => n.Subject).HasMaxLength(200);
+            entity.Property(n => n.PreviewText).HasMaxLength(200);
+            entity.Property(n => n.EditorMode).HasMaxLength(10);
+            entity.Property(n => n.LastError).HasMaxLength(1000);
+            entity.HasIndex(n => n.Status);
+        });
+
+        modelBuilder.Entity<NewsletterDelivery>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(d => d.Email).HasMaxLength(256);
+            entity.Property(d => d.Error).HasMaxLength(500);
+            entity.HasIndex(d => new { d.NewsletterId, d.SubscriberId }).IsUnique();
+            entity.HasIndex(d => new { d.NewsletterId, d.Status });
+        });
+
+        modelBuilder.Entity<AppSetting>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(a => a.Key).HasMaxLength(100);
+            entity.Property(a => a.Value).HasMaxLength(4000);
+            entity.HasIndex(a => a.Key).IsUnique();
         });
 
         modelBuilder.Entity<SeoHealthSnapshot>(entity =>
@@ -301,8 +336,12 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(r => r.Comment).HasMaxLength(2000);
             entity.Property(r => r.AuthorDisplayName).HasMaxLength(100);
             entity.Property(r => r.ModerationNote).HasMaxLength(500);
+            entity.Property(r => r.PhotoUrl).HasMaxLength(500);
+            entity.Property(r => r.Reply).HasMaxLength(2000);
+            entity.Property(r => r.HoldReason).HasMaxLength(200);
+            entity.Property(r => r.HiddenReason).HasMaxLength(30);
             entity.HasOne(r => r.Order).WithMany().HasForeignKey(r => r.OrderId);
-            entity.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId);
+            entity.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId).IsRequired(false);
             entity.HasIndex(r => r.OrderId).IsUnique();
             entity.HasIndex(r => r.Status);
         });

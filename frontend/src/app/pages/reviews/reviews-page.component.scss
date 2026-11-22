@@ -66,9 +66,48 @@
   gap: 1.25rem;
 }
 
-// Google reviews take a full row each pair: two across on desktop.
-.reviews-page__item--google {
-  grid-column: span 2;
+.reviews-page__section {
+  margin-top: 2.5rem;
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.reviews-page__section--other {
+  padding-top: 2rem;
+  border-top: 1px solid #EAE0CC;
+}
+
+.reviews-page__heading {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.6rem;
+  margin: 0 0 0.35rem;
+}
+
+.reviews-page__note {
+  margin: 0 0 1.25rem;
+  color: var(--text-secondary, #5C3D1E);
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 1.05rem;
+}
+
+.reviews-page__policy {
+  margin-top: 2.5rem;
+  text-align: center;
+  font-family: 'EB Garamond', Georgia, serif;
+  color: var(--text-secondary, #5C3D1E);
+
+  a {
+    color: var(--accent, #9B4A1E);
+  }
+}
+
+// Google reviews: two across on desktop.
+.reviews-page__list--google {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media (max-width: 560px) {
@@ -80,7 +119,7 @@
     grid-template-columns: 1fr;
   }
 
-  .reviews-page__item--google {
-    grid-column: auto;
+  .reviews-page__list--google {
+    grid-template-columns: 1fr;
   }
 }

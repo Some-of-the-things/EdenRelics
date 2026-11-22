@@ -80,7 +80,7 @@
                 <span class="account__reviews-date">{{ r.createdAtUtc | date:'mediumDate' }}</span>
                 <span class="account__reviews-items">{{ r.comment.length > 100 ? r.comment.substring(0, 100) + '…' : r.comment }}</span>
               </div>
-              <span class="account__reviews-status account__reviews-status--{{ r.status.toLowerCase() }}">{{ r.status }}</span>
+              <span class="account__reviews-status account__reviews-status--{{ r.status.toLowerCase() }}">{{ r.status === 'Approved' ? 'Published' : r.status === 'Pending' ? 'Being checked' : 'Not shown' }}</span>
             </li>
           }
         </ul>

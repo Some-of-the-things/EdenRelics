@@ -10,11 +10,46 @@
     }
   </header>
 
-  <ul class="reviews-page__list" role="list">
-    @for (r of reviews(); track $index) {
-      <li class="reviews-page__item" [class.reviews-page__item--google]="r.source === 'google'">
-        <app-review-card [review]="r" [large]="r.source === 'google'" />
-      </li>
-    }
-  </ul>
+  @if (google.length) {
+    <section class="reviews-page__section" aria-labelledby="reviews-google">
+      <h2 class="reviews-page__heading" id="reviews-google">On Google</h2>
+      <ul class="reviews-page__list reviews-page__list--google" role="list">
+        @for (r of google; track $index) {
+          <li class="reviews-page__item">
+            <app-review-card [review]="r" [large]="true" />
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (verified().length) {
+    <section class="reviews-page__section" aria-labelledby="reviews-verified">
+      <h2 class="reviews-page__heading" id="reviews-verified">Verified purchases</h2>
+      <p class="reviews-page__note">From customers who bought from edenrelics.co.uk, newest first.</p>
+      <ul class="reviews-page__list" role="list">
+        @for (r of verified(); track $index) {
+          <li class="reviews-page__item">
+            <app-review-card [review]="r" />
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (otherShops.length) {
+    <section class="reviews-page__section reviews-page__section--other" aria-labelledby="reviews-other">
+      <h2 class="reviews-page__heading" id="reviews-other">Reviews from our other shops</h2>
+      <p class="reviews-page__note">Left by customers who bought from us on other selling sites, in their own words.</p>
+      <ul class="reviews-page__list" role="list">
+        @for (r of otherShops; track $index) {
+          <li class="reviews-page__item">
+            <app-review-card [review]="r" />
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <p class="reviews-page__policy">How we handle reviews: <a routerLink="/review-policy">review policy</a>.</p>
 </article>

@@ -32,6 +32,12 @@ public class Order : BaseEntity
 
     public DateTime? ReviewRequestSentAtUtc { get; set; }
 
+    /// <summary>When the order was first marked Shipped (or Delivered). The review request goes out a set number of days later.</summary>
+    public DateTime? DispatchedAtUtc { get; set; }
+
+    /// <summary>Secret in the review link emailed to the buyer, so they can review without signing in.</summary>
+    public string? ReviewToken { get; set; }
+
     // Gift option (website checkout only). Both text fields are buyer-typed and untrusted:
     // HTML-encode them wherever they're rendered and never put them in a URL.
     public bool IsGift { get; set; }

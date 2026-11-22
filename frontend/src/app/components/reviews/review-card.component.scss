@@ -69,3 +69,45 @@
     color: var(--accent-hover, #7A3A16);
   }
 }
+
+.review-card__piece {
+  margin: 0;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 0.95rem;
+  color: var(--text-secondary, #5C3D1E);
+}
+
+.review-card__photo {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  max-height: 280px;
+  object-fit: cover;
+}
+
+.review-card__tag--verified {
+  color: #33501f;
+  font-weight: 600;
+}
+
+.review-card__reply {
+  margin-top: 0.25rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--bg-primary, #F5F0E6);
+  border-left: 3px solid var(--accent, #9B4A1E);
+
+  p {
+    margin: 0.25rem 0 0;
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+}
+
+.review-card__reply-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #5C3D1E);
+}

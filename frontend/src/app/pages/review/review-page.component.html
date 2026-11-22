@@ -1,106 +1,118 @@
 <div class="review-page">
   @if (loading()) {
     <p class="review-page__hint">Loading…</p>
-  } @else if (submitted(); as r) {
-    <h1 class="review-page__title">Thanks for your review</h1>
-    <p>We've received your review. It'll appear on the site once we've checked it over.</p>
-    <a routerLink="/account" class="review-page__back">Back to your account</a>
-  } @else if (notEligible()) {
-    <h1 class="review-page__title">Review unavailable</h1>
-    <p>This order isn't eligible for review — it may not have been delivered yet, or you've already submitted a review for it.</p>
-    <a routerLink="/account" class="review-page__back">Back to your account</a>
-  } @else if (order(); as o) {
-    <h1 class="review-page__title">Leave a review</h1>
-    <p class="review-page__order">
-      Order placed {{ o.placedAtUtc | date:'mediumDate' }} — {{ o.total | currency:'GBP' }}
-    </p>
-    <p class="review-page__items">
-      @for (name of o.productNames; track name) {
-        <span>{{ name }}</span>
-      }
-    </p>
-
-    <div class="review-page__group">
-      <label class="review-page__label" id="rating-label-transaction">Transaction</label>
-      <div class="review-page__stars" role="radiogroup" aria-labelledby="rating-label-transaction">
-        @for (s of stars; track s) {
-          <button type="button"
-                  role="radio"
-                  class="review-page__star"
-                  [class.review-page__star--filled]="s <= transactionRating()"
-                  [attr.aria-checked]="s === transactionRating()"
-                  [attr.tabindex]="s === (transactionRating() || 1) ? 0 : -1"
-                  (click)="setRating('transaction', s)"
-                  (keydown)="onStarKey('transaction', s, $event)"
-                  [attr.aria-label]="s + (s === 1 ? ' star' : ' stars')">★</button>
-        }
-      </div>
-    </div>
-
-    <div class="review-page__group">
-      <label class="review-page__label" id="rating-label-delivery">Delivery</label>
-      <div class="review-page__stars" role="radiogroup" aria-labelledby="rating-label-delivery">
-        @for (s of stars; track s) {
-          <button type="button"
-                  role="radio"
-                  class="review-page__star"
-                  [class.review-page__star--filled]="s <= deliveryRating()"
-                  [attr.aria-checked]="s === deliveryRating()"
-                  [attr.tabindex]="s === (deliveryRating() || 1) ? 0 : -1"
-                  (click)="setRating('delivery', s)"
-                  (keydown)="onStarKey('delivery', s, $event)"
-                  [attr.aria-label]="s + (s === 1 ? ' star' : ' stars')">★</button>
-        }
-      </div>
-    </div>
-
-    <div class="review-page__group">
-      <label class="review-page__label" id="rating-label-product">Product</label>
-      <div class="review-page__stars" role="radiogroup" aria-labelledby="rating-label-product">
-        @for (s of stars; track s) {
-          <button type="button"
-                  role="radio"
-                  class="review-page__star"
-                  [class.review-page__star--filled]="s <= productRating()"
-                  [attr.aria-checked]="s === productRating()"
-                  [attr.tabindex]="s === (productRating() || 1) ? 0 : -1"
-                  (click)="setRating('product', s)"
-                  (keydown)="onStarKey('product', s, $event)"
-                  [attr.aria-label]="s + (s === 1 ? ' star' : ' stars')">★</button>
-        }
-      </div>
-    </div>
-
-    <div class="review-page__group">
-      <label class="review-page__label" for="review-comment">Your review</label>
-      <textarea id="review-comment"
-                class="review-page__textarea"
-                [ngModel]="comment()"
-                (ngModelChange)="comment.set($event)"
-                placeholder="What did you think of the checkout, the delivery, and the piece itself?"
-                rows="6"
-                maxlength="2000"></textarea>
-    </div>
-
-    <div class="review-page__group">
-      <label class="review-page__label" for="review-name">Display name (optional)</label>
-      <input id="review-name"
-             class="review-page__input"
-             [ngModel]="displayName()"
-             (ngModelChange)="displayName.set($event)"
-             placeholder="How should we credit you? (defaults to first name + initial)"
-             maxlength="100" />
-    </div>
-
-    @if (error(); as e) {
-      <p class="review-page__error">{{ e }}</p>
+  } @else if (result(); as r) {
+    <h1 class="review-page__title">Thank you for your review</h1>
+    @if (r === 'published') {
+      <p>It's now live on our <a routerLink="/reviews" class="review-page__inline-link">reviews page</a>.</p>
+    } @else {
+      <p>It will appear on our <a routerLink="/reviews" class="review-page__inline-link">reviews page</a> after a quick check. We do this when a review contains a link or contact details, to keep spam and personal information off the site.</p>
     }
+    <a routerLink="/shop" class="review-page__back">Back to the shop</a>
+  } @else if (unavailable()) {
+    <h1 class="review-page__title">This review link isn't working</h1>
+    <p>The link may be incomplete, or the order hasn't been sent yet. Try opening it again from the email. If it still doesn't work, <a routerLink="/contact" class="review-page__inline-link">get in touch</a> and we'll help.</p>
+  } @else if (invite(); as o) {
+    @if (o.alreadyReviewed) {
+      <h1 class="review-page__title">You've already reviewed this order</h1>
+      <p>Thank you. You can read it on our <a routerLink="/reviews" class="review-page__inline-link">reviews page</a>.</p>
+    } @else {
+      <h1 class="review-page__title">How was your order?</h1>
+      <p class="review-page__order">Ordered {{ o.placedAtUtc | date: 'd MMMM y' }}</p>
 
-    <button class="review-page__submit"
-            type="button"
-            [disabled]="submitting()"
-            (click)="submit()">
-      {{ submitting() ? 'Submitting…' : 'Submit review' }}
-    </button>
+      <ul class="review-page__pieces">
+        @for (item of o.items; track item.productId) {
+          <li class="review-page__piece">
+            @if (item.imageUrl) {
+              <img [src]="item.imageUrl" alt="" width="64" height="80" />
+            }
+            <span>{{ item.name }}</span>
+          </li>
+        }
+      </ul>
+
+      <div class="review-page__group">
+        <span class="review-page__label" id="rating-label">Your rating</span>
+        <div class="review-page__stars-row">
+          <div class="review-page__stars" role="radiogroup" aria-labelledby="rating-label">
+            @for (s of stars; track s) {
+              <button type="button"
+                      role="radio"
+                      class="review-page__star"
+                      [class.review-page__star--filled]="s <= rating()"
+                      [attr.aria-checked]="s === rating()"
+                      [attr.tabindex]="s === (rating() || 1) ? 0 : -1"
+                      (click)="rating.set(s)"
+                      (keydown)="onStarKey(s, $event)"
+                      [attr.aria-label]="s + (s === 1 ? ' star' : ' stars')">★</button>
+            }
+          </div>
+          @if (rating()) {
+            <span class="review-page__rating-label">{{ ratingLabels[rating()] }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="review-page__group">
+        <label class="review-page__label" for="review-comment">Your review</label>
+        <textarea id="review-comment"
+                  class="review-page__textarea"
+                  [value]="comment()"
+                  (input)="comment.set($any($event.target).value)"
+                  placeholder="How is the piece? How did it fit, and how was the delivery?"
+                  rows="6"
+                  maxlength="2000"></textarea>
+      </div>
+
+      <div class="review-page__group">
+        <span class="review-page__label">A photo of you wearing or styling it (optional)</span>
+        @if (photoUrl(); as url) {
+          <div class="review-page__photo">
+            <img [src]="url" alt="Your photo" />
+            <button type="button" class="review-page__text-btn" (click)="photoUrl.set(null)">Remove photo</button>
+          </div>
+        } @else {
+          <label class="review-page__file">
+            {{ photoUploading() ? 'Uploading…' : 'Choose a photo' }}
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/heic" (change)="choosePhoto($any($event.target))" [disabled]="photoUploading()" />
+          </label>
+        }
+      </div>
+
+      <fieldset class="review-page__group review-page__name">
+        <legend class="review-page__label">How your name shows</legend>
+        <div class="review-page__name-fields">
+          <label>
+            <span class="review-page__sub-label">First name</span>
+            <input class="review-page__input" autocomplete="given-name" maxlength="40" [value]="firstName()" (input)="firstName.set($any($event.target).value)" />
+          </label>
+          <label>
+            <span class="review-page__sub-label">Surname (only the initial is shown)</span>
+            <input class="review-page__input" autocomplete="family-name" maxlength="40" [value]="lastName()" (input)="lastName.set($any($event.target).value)" />
+          </label>
+        </div>
+        <label class="review-page__radio">
+          <input type="radio" name="name-style" [checked]="nameStyle() === 'first-initial'" (change)="nameStyle.set('first-initial')" />
+          {{ nameExamples().firstInitial }}
+        </label>
+        <label class="review-page__radio">
+          <input type="radio" name="name-style" [checked]="nameStyle() === 'first'" (change)="nameStyle.set('first')" />
+          {{ nameExamples().first }}
+        </label>
+        <label class="review-page__radio">
+          <input type="radio" name="name-style" [checked]="nameStyle() === 'anonymous'" (change)="nameStyle.set('anonymous')" />
+          Verified buyer (no name)
+        </label>
+      </fieldset>
+
+      @if (error(); as e) {
+        <p class="review-page__error" role="alert">{{ e }}</p>
+      }
+
+      <button class="review-page__submit" type="button" [disabled]="submitting() || photoUploading()" (click)="submit()">
+        {{ submitting() ? 'Sending…' : 'Post review' }}
+      </button>
+      <p class="review-page__small">Reviews go up straight away, good or bad, unless one needs a quick check for spam or personal details. See our <a routerLink="/review-policy" class="review-page__inline-link">review policy</a>.</p>
+    }
   }
 </div>

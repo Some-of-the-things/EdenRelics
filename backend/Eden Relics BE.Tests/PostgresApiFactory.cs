@@ -88,6 +88,11 @@ public class PostgresApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             }
             services.AddTransient<IEmailService, FakeEmailService>();
 
+            // Newsletters and review requests: record instead of sending.
+            services.RemoveAll<INewsletterMailer>();
+            services.AddSingleton<FakeNewsletterMailer>();
+            services.AddSingleton<INewsletterMailer>(sp => sp.GetRequiredService<FakeNewsletterMailer>());
+
             // Remove background services
             services.RemoveAll(typeof(Microsoft.Extensions.Hosting.IHostedService));
         });

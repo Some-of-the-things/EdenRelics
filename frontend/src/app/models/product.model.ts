@@ -13,7 +13,7 @@ export type ProductStatus = 'stock' | 'live' | 'sold' | 'write-off';
  * never be found through the filter. Derive from this, don't restate it.
  */
 export const PRODUCT_SIZES = [
-  '6', '6/8', '8', '8/10', '10', '10/12', '12', '12/14', '14',
+  '4', '4/6', '6', '6/8', '8', '8/10', '10', '10/12', '12', '12/14', '14',
   '14/16', '16', '16/18', '18', '18/20',
 ] as const;
 

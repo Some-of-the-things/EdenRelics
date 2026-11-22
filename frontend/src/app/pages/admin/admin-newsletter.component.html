@@ -1,0 +1,302 @@
+<section class="nl">
+  <div class="nl__tabs" role="tablist" aria-label="Newsletter">
+    <button type="button" role="tab" class="nl__tab" [class.nl__tab--active]="view() === 'compose'" [attr.aria-selected]="view() === 'compose'" (click)="setView('compose')">Write</button>
+    <button type="button" role="tab" class="nl__tab" [class.nl__tab--active]="view() === 'history'" [attr.aria-selected]="view() === 'history'" (click)="setView('history')">History</button>
+    <button type="button" role="tab" class="nl__tab" [class.nl__tab--active]="view() === 'subscribers'" [attr.aria-selected]="view() === 'subscribers'" (click)="setView('subscribers')">Subscribers</button>
+    @if (audience() !== null) {
+      <span class="nl__audience">{{ audience() }} active subscriber{{ audience() === 1 ? '' : 's' }}</span>
+    }
+  </div>
+
+  @if (message()) {
+    <p class="nl__message" role="status">{{ message() }}</p>
+  }
+  @if (error()) {
+    <p class="nl__error" role="alert">{{ error() }}</p>
+  }
+
+  @if (view() === 'compose') {
+    <div class="nl__compose">
+      <div class="nl__compose-head">
+        <h2 class="nl__title">
+          @if (editingId()) { Editing newsletter } @else { New newsletter }
+          @if (editingStatus() !== 'Draft') {
+            <span class="nl__status nl__status--{{ editingStatus().toLowerCase() }}">{{ editingStatus() }}</span>
+          }
+        </h2>
+        <button type="button" class="nl__btn nl__btn--ghost" (click)="newNewsletter()">Start a new one</button>
+      </div>
+
+      @if (locked()) {
+        <p class="nl__hint">This newsletter has been sent, so it can't be changed. Start a new one to write another.</p>
+      }
+
+      <label class="nl__field">
+        <span class="nl__label">Subject line <span class="nl__count">{{ subjectCount() }}/200</span></span>
+        <input type="text" maxlength="200" [value]="subject()" (input)="onSubject($any($event.target).value)" [disabled]="locked()" placeholder="e.g. Five new 1970s dresses" />
+      </label>
+
+      <label class="nl__field">
+        <span class="nl__label">Preview text <span class="nl__count">{{ previewTextCount() }}/200</span></span>
+        <input type="text" maxlength="200" [value]="previewText()" (input)="onPreviewText($any($event.target).value)" [disabled]="locked()" placeholder="The grey line inboxes show after the subject" />
+      </label>
+
+      <div class="nl__editor-head">
+        <span class="nl__label">Email</span>
+        <div class="nl__mode" role="group" aria-label="Editor">
+          <button type="button" [class.nl__mode--on]="mode() === 'visual'" [attr.aria-pressed]="mode() === 'visual'" (click)="setMode('visual')" [disabled]="busy() || locked()">Simple editor</button>
+          <button type="button" [class.nl__mode--on]="mode() === 'html'" [attr.aria-pressed]="mode() === 'html'" (click)="setMode('html')" [disabled]="busy() || locked()">HTML</button>
+        </div>
+      </div>
+
+      @if (mode() === 'visual') {
+        <div class="nl__toolbar" role="toolbar" aria-label="Formatting">
+          <button type="button" (click)="block('H2')" [disabled]="locked()" title="Heading">Heading</button>
+          <button type="button" (click)="block('H3')" [disabled]="locked()" title="Smaller heading">Subheading</button>
+          <button type="button" (click)="block('P')" [disabled]="locked()" title="Normal text">Text</button>
+          <button type="button" (click)="format('bold')" [disabled]="locked()" title="Bold"><strong>B</strong></button>
+          <button type="button" (click)="format('italic')" [disabled]="locked()" title="Italic"><em>I</em></button>
+          <button type="button" (click)="format('insertUnorderedList')" [disabled]="locked()" title="Bullet list">• List</button>
+          <button type="button" (click)="link()" [disabled]="locked()" title="Link the selected text">Link</button>
+          <label class="nl__toolbar-file" [class.nl__toolbar-file--off]="locked()">
+            Image
+            <input type="file" accept="image/*" (change)="uploadImage($any($event.target))" [disabled]="locked() || busy()" />
+          </label>
+          <button type="button" (click)="pickerOpen.set(!pickerOpen())" [disabled]="locked()">Add pieces</button>
+          <button type="button" (click)="format('removeFormat')" [disabled]="locked()" title="Clear formatting">Clear</button>
+        </div>
+        <div
+          #visualEditor
+          class="nl__visual"
+          [attr.contenteditable]="!locked()"
+          role="textbox"
+          aria-multiline="true"
+          aria-label="Email body"
+          (input)="onVisualInput()"
+        ></div>
+      } @else {
+        <div class="nl__toolbar">
+          <button type="button" (click)="pickerOpen.set(!pickerOpen())" [disabled]="locked()">Add pieces</button>
+        </div>
+        <textarea
+          class="nl__html"
+          spellcheck="false"
+          aria-label="Email HTML"
+          [value]="bodyHtml()"
+          (input)="onHtmlInput($any($event.target).value)"
+          [disabled]="locked()"
+          placeholder="Paste or write HTML. Scripts are removed and the CSS is inlined when it's sent."
+        ></textarea>
+      }
+
+      @if (pickerOpen()) {
+        <div class="nl__picker">
+          <div class="nl__picker-head">
+            <input type="search" placeholder="Search live pieces by name or SKU" [value]="pickerSearch()" (input)="pickerSearch.set($any($event.target).value)" aria-label="Search pieces" />
+            <button type="button" class="nl__btn" (click)="insertPicked()" [disabled]="picked().size === 0">Add {{ picked().size || '' }} to the email</button>
+            <button type="button" class="nl__btn nl__btn--ghost" (click)="pickerOpen.set(false)">Close</button>
+          </div>
+          <ul class="nl__picker-list">
+            @for (p of pickerResults(); track p.id) {
+              <li>
+                <label class="nl__pick" [class.nl__pick--on]="picked().has(p.id)">
+                  <input type="checkbox" [checked]="picked().has(p.id)" (change)="togglePick(p.id)" />
+                  <img [src]="p.imageUrl" alt="" loading="lazy" width="56" height="70" />
+                  <span class="nl__pick-name">{{ p.name }}</span>
+                  <span class="nl__pick-price">{{ priceOf(p) }}</span>
+                </label>
+              </li>
+            } @empty {
+              <li class="nl__hint">No live pieces match.</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <p class="nl__hint">Every email gets the Eden Relics header and a footer with the company name, address and an unsubscribe link.</p>
+
+      <div class="nl__actions">
+        <button type="button" class="nl__btn nl__btn--ghost" (click)="save()" [disabled]="busy() || locked()">Save draft</button>
+        <button type="button" class="nl__btn nl__btn--ghost" (click)="preview()" [disabled]="busy()">Preview</button>
+      </div>
+
+      @if (previewHtml(); as html) {
+        <div class="nl__preview">
+          <div class="nl__preview-head">
+            <span class="nl__label">Preview</span>
+            <div class="nl__mode" role="group" aria-label="Preview width">
+              <button type="button" [class.nl__mode--on]="previewWidth() === 'desktop'" (click)="previewWidth.set('desktop')">Desktop</button>
+              <button type="button" [class.nl__mode--on]="previewWidth() === 'mobile'" (click)="previewWidth.set('mobile')">Mobile</button>
+            </div>
+            <button type="button" class="nl__btn nl__btn--ghost" (click)="previewHtml.set(null)">Close</button>
+          </div>
+          <iframe
+            class="nl__frame"
+            [class.nl__frame--mobile]="previewWidth() === 'mobile'"
+            title="Email preview"
+            sandbox=""
+            [srcdoc]="html"
+          ></iframe>
+        </div>
+      }
+
+      @if (!locked()) {
+        <div class="nl__send">
+          <div class="nl__send-row">
+            <label class="nl__field nl__field--inline">
+              <span class="nl__label">Send a test to</span>
+              <input type="email" [value]="testEmail()" (input)="testEmail.set($any($event.target).value)" placeholder="you@example.com" />
+            </label>
+            <button type="button" class="nl__btn nl__btn--ghost" (click)="sendTest()" [disabled]="busy()">Send test</button>
+          </div>
+
+          <div class="nl__send-row">
+            @if (editingStatus() === 'Scheduled') {
+              <p class="nl__hint">Scheduled for {{ scheduleAt() | date: 'EEEE d MMMM, HH:mm' }}.</p>
+              <button type="button" class="nl__btn nl__btn--ghost" (click)="cancelSchedule()" [disabled]="busy()">Cancel schedule</button>
+            } @else {
+              <label class="nl__field nl__field--inline">
+                <span class="nl__label">Or send later</span>
+                <input type="datetime-local" [value]="scheduleAt()" (input)="scheduleAt.set($any($event.target).value)" />
+              </label>
+              <button type="button" class="nl__btn nl__btn--ghost" (click)="schedule()" [disabled]="busy() || !scheduleAt()">Schedule</button>
+            }
+          </div>
+
+          @if (editingStatus() !== 'Scheduled') {
+            <button type="button" class="nl__btn nl__btn--send" (click)="sendNow()" [disabled]="busy()">
+              Send to {{ audience() ?? '' }} subscriber{{ audience() === 1 ? '' : 's' }} now
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (view() === 'history') {
+    <div class="nl__history">
+      <div class="nl__compose-head">
+        <h2 class="nl__title">Newsletters</h2>
+        <button type="button" class="nl__btn nl__btn--ghost" (click)="refreshList()">Refresh</button>
+      </div>
+      <div class="nl__table-wrap">
+        <table class="nl__table">
+          <thead>
+            <tr>
+              <th scope="col">Subject</th>
+              <th scope="col">Status</th>
+              <th scope="col">Date</th>
+              <th scope="col">Recipients</th>
+              <th scope="col">Sent</th>
+              <th scope="col"><span class="nl__sr">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (n of newsletters(); track n.id) {
+              <tr>
+                <td>{{ n.subject || '(no subject)' }}</td>
+                <td>
+                  <span class="nl__status nl__status--{{ n.status.toLowerCase() }}">{{ n.status }}</span>
+                  @if (n.lastError && n.status !== 'Sent') {
+                    <span class="nl__row-error" [title]="n.lastError">Problem: {{ n.lastError }}</span>
+                  }
+                </td>
+                <td>
+                  @if (n.sentAtUtc) {
+                    {{ n.sentAtUtc | date: 'd MMM y, HH:mm' }}
+                  } @else if (n.scheduledForUtc) {
+                    For {{ n.scheduledForUtc | date: 'd MMM y, HH:mm' }}
+                  } @else {
+                    Edited {{ n.updatedAtUtc | date: 'd MMM y' }}
+                  }
+                </td>
+                <td>{{ n.recipientCount || '—' }}</td>
+                <td>
+                  @if (n.status === 'Sending' || n.status === 'Sent') {
+                    {{ n.sentCount }}
+                    @if (n.failedCount) { <span class="nl__row-error">· {{ n.failedCount }} failed</span> }
+                    @if (n.skippedCount) { <span class="nl__muted">· {{ n.skippedCount }} unsubscribed first</span> }
+                  } @else {
+                    —
+                  }
+                </td>
+                <td class="nl__row-actions">
+                  <button type="button" class="nl__link" (click)="open(n)">{{ n.status === 'Sent' || n.status === 'Sending' ? 'View' : 'Edit' }}</button>
+                  @if (n.status === 'Draft') {
+                    <button type="button" class="nl__link nl__link--danger" (click)="deleteDraft(n)">Delete</button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="nl__muted">No newsletters yet.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (anySending()) {
+        <p class="nl__hint">Sending in batches. This page updates every few seconds.</p>
+      }
+      <p class="nl__hint">Open and click rates aren't tracked yet.</p>
+    </div>
+  }
+
+  @if (view() === 'subscribers') {
+    <div class="nl__subs">
+      <div class="nl__subs-head">
+        <input type="search" placeholder="Search by email, name or source" [value]="subscriberSearch()" (input)="subscriberSearch.set($any($event.target).value)" (keyup.enter)="loadSubscribers()" aria-label="Search subscribers" />
+        <button type="button" class="nl__btn nl__btn--ghost" (click)="loadSubscribers()">Search</button>
+        <div class="nl__mode" role="group" aria-label="Show">
+          <button type="button" [class.nl__mode--on]="subscriberFilter() === 'active'" (click)="setSubscriberFilter('active')">Active</button>
+          <button type="button" [class.nl__mode--on]="subscriberFilter() === 'unsubscribed'" (click)="setSubscriberFilter('unsubscribed')">Unsubscribed</button>
+          <button type="button" [class.nl__mode--on]="subscriberFilter() === 'all'" (click)="setSubscriberFilter('all')">All</button>
+        </div>
+        <button type="button" class="nl__btn nl__btn--ghost" (click)="exportCsv()">Export CSV</button>
+      </div>
+
+      @if (subscribersLoading()) {
+        <p class="nl__hint">Loading…</p>
+      } @else {
+        <p class="nl__muted">{{ subscribers().length }} shown</p>
+        <div class="nl__table-wrap">
+          <table class="nl__table">
+            <thead>
+              <tr>
+                <th scope="col">Email</th>
+                <th scope="col">Name</th>
+                <th scope="col">Signed up</th>
+                <th scope="col">Where</th>
+                <th scope="col">Status</th>
+                <th scope="col"><span class="nl__sr">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of subscribers(); track s.id) {
+                <tr>
+                  <td>{{ s.email }}</td>
+                  <td>{{ s.firstName || '—' }}</td>
+                  <td>{{ s.signedUpAtUtc | date: 'd MMM y, HH:mm' }}</td>
+                  <td>{{ s.source }}</td>
+                  <td>
+                    @if (s.unsubscribed) {
+                      <span class="nl__muted">Unsubscribed{{ s.unsubscribedAtUtc ? ' ' + (s.unsubscribedAtUtc | date: 'd MMM y') : '' }}</span>
+                    } @else {
+                      Active
+                    }
+                  </td>
+                  <td class="nl__row-actions">
+                    @if (!s.unsubscribed) {
+                      <button type="button" class="nl__link" (click)="markUnsubscribed(s)">Unsubscribe</button>
+                    }
+                    <button type="button" class="nl__link nl__link--danger" (click)="remove(s)">Remove</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="nl__muted">No subscribers match.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</section>
