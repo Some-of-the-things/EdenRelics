@@ -68,6 +68,11 @@ public class ApiFactory : WebApplicationFactory<Program>
             }
             services.AddTransient<IEmailService, FakeEmailService>();
 
+            // Newsletters and review requests: record instead of sending.
+            services.RemoveAll<INewsletterMailer>();
+            services.AddSingleton<FakeNewsletterMailer>();
+            services.AddSingleton<INewsletterMailer>(sp => sp.GetRequiredService<FakeNewsletterMailer>());
+
             // Replace Stripe Connect with a fake so onboarding tests don't hit Stripe.
             ServiceDescriptor? connectDescriptor = services.SingleOrDefault(
                 d => d.ServiceType == typeof(IStripeConnectService));
@@ -133,10 +138,49 @@ public class FakeEmailService : IEmailService
         }
         return Task.CompletedTask;
     }
-    public Task SendReviewRequestEmailAsync(string toEmail, string firstName, Guid orderId) => Task.CompletedTask;
     public Task SendDiscountWelcomeEmailAsync(string toEmail, string code) => Task.CompletedTask;
     public Task SendOwnerSaleNotificationAsync(Eden_Relics_BE.Data.Entities.Order order) => Task.CompletedTask;
     public Task SendOrderInvoiceEmailAsync(Eden_Relics_BE.Data.Entities.Order order, string? platform = null) => Task.CompletedTask;
     public string BuildOrderInvoiceHtml(Eden_Relics_BE.Data.Entities.Order order, string? platform = null) => string.Empty;
     public Task SendOperatorReminderEmailAsync(string toEmail, string title, string body) => Task.CompletedTask;
+}
+
+/// <summary>Records newsletter and review-request email. Set <see cref="FailNextBatches"/> to make batch sends throw.</summary>
+public class FakeNewsletterMailer : INewsletterMailer
+{
+    private readonly object _lock = new();
+    public List<OutgoingEmail> Sent { get; } = [];
+    public List<string> BatchKeys { get; } = [];
+    public int FailNextBatches { get; set; }
+
+    public Task SendAsync(OutgoingEmail email, CancellationToken ct = default)
+    {
+        lock (_lock) { Sent.Add(email); }
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<BatchFailure>> SendBatchAsync(string idempotencyKey, IReadOnlyList<OutgoingEmail> emails, CancellationToken ct = default)
+    {
+        lock (_lock)
+        {
+            BatchKeys.Add(idempotencyKey);
+            if (FailNextBatches > 0)
+            {
+                FailNextBatches--;
+                throw new HttpRequestException("provider timed out");
+            }
+            Sent.AddRange(emails);
+        }
+        return Task.FromResult<IReadOnlyList<BatchFailure>>([]);
+    }
+
+    public void Clear()
+    {
+        lock (_lock)
+        {
+            Sent.Clear();
+            BatchKeys.Clear();
+            FailNextBatches = 0;
+        }
+    }
 }

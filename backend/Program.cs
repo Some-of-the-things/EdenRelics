@@ -273,6 +273,18 @@ builder.Services.Configure<Resend.ResendClientOptions>(o =>
 });
 builder.Services.AddTransient<Resend.IResend, Resend.ResendClient>();
 builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddTransient<INewsletterMailer, ResendNewsletterMailer>();
+
+// Newsletters sent from the admin, and review requests a set number of days after dispatch.
+// The queue lives in the database, so the worker is gated like the other scheduled jobs; a
+// "send now" on a web machine is picked up by the worker's next 30-second pass.
+builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
+builder.Services.AddScoped<INewsletterService, NewsletterService>();
+builder.Services.AddScoped<IReviewRequestService, ReviewRequestService>();
+if (runScheduledJobs)
+{
+    builder.Services.AddHostedService<NewsletterBackgroundService>();
+}
 builder.Services.AddHttpClient<GeoIpService>();
 
 // FIDO2 / Passkeys

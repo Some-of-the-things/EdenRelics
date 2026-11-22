@@ -392,38 +392,16 @@ public class OrderService(
             return null;
         }
 
-        string previousStatus = order.Status;
         order.Status = dto.Status;
 
-        bool justDelivered =
-            order.Status == "Delivered"
-            && previousStatus != "Delivered"
-            && order.ReviewRequestSentAtUtc is null
-            && order.UserId is not null
-            && order.User is not null
-            && !string.IsNullOrWhiteSpace(order.User.Email);
-
-        if (justDelivered)
+        // The review request goes out a set number of days after dispatch (ReviewRequestService).
+        // Delivered without passing through Shipped counts as dispatched then too.
+        if (order.DispatchedAtUtc is null && (order.Status == "Shipped" || order.Status == "Delivered"))
         {
-            order.ReviewRequestSentAtUtc = DateTime.UtcNow;
+            order.DispatchedAtUtc = DateTime.UtcNow;
         }
 
         await orders.UpdateAsync(order);
-
-        if (justDelivered)
-        {
-            try
-            {
-                await emailService.SendReviewRequestEmailAsync(
-                    order.User!.Email,
-                    order.User.FirstName ?? "",
-                    order.Id);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to send review request email for order {OrderId}", order.Id);
-            }
-        }
 
         return ToAdminDto(order);
     }

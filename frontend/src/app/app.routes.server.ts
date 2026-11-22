@@ -18,8 +18,10 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'verify-email', renderMode: RenderMode.Client },
   // Private, token-gated collection review page — client-only, never prerendered.
   { path: 'collections/preview/:slug', renderMode: RenderMode.Client },
-  // Auth-gated order review + admin blog preview — user/token state, client-only.
+  // Order review (emailed token or signed-in buyer) + admin blog preview — client-only.
   { path: 'review/:orderId', renderMode: RenderMode.Client },
+  // Newsletter unsubscribe link: acts on the token in the browser, never on a crawler's fetch.
+  { path: 'unsubscribe', renderMode: RenderMode.Client },
   { path: 'blog/preview/:slug', renderMode: RenderMode.Client },
 
   // Public routes — SSR on-demand for SEO. (Prerender would be a perf win for
@@ -51,6 +53,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'modern-slavery-policy', renderMode: RenderMode.Server },
   { path: 'supply-chain-policy', renderMode: RenderMode.Server },
   { path: 'returns-policy', renderMode: RenderMode.Server },
+  { path: 'review-policy', renderMode: RenderMode.Server },
   { path: 'security', renderMode: RenderMode.Server },
   { path: 'terms-conditions', renderMode: RenderMode.Server },
   { path: 'cookie-policy', renderMode: RenderMode.Server },

@@ -77,13 +77,14 @@ const STATIC_PATH_PREFIXES = [
   '/blog',
   // /designers, /style and /dresses are deliberately NOT here: their pages, counts and
   // memberships are edited from the admin and must show within minutes, so they take the
-  // short SSR_CACHE_TTL like the shop listings.
+  // short SSR_CACHE_TTL like the shop listings. /reviews likewise: buyers' reviews go live as
+  // soon as they're posted.
   '/care',
   '/about',
-  '/reviews',
   '/contact',
   '/privacy-policy',
   '/returns-policy',
+  '/review-policy',
   '/security',
   '/terms-conditions',
   '/cookie-policy',

@@ -242,6 +242,8 @@ describe('ProductStore', () => {
       // used not to hold: the filter kept its own copy and had dropped 14/16,
       // leaving anything listed at that size unreachable through the filter.
       expect(store.sizes()).toEqual(PRODUCT_SIZES);
+      expect(store.sizes()).toContain('4');
+      expect(store.sizes()).toContain('4/6');
       expect(store.sizes()).toContain('14/16');
       expect(store.sizes()).toContain('16/18');
       expect(store.sizes()).toContain('18');

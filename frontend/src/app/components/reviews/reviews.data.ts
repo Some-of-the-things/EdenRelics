@@ -7,13 +7,17 @@
  *   may be trimmed; never change or remove words in the middle.
  * - Names as shown on the original, usernames included. No dates on the cards.
  * - Google reviews link to the original, so their text must match Google word for word.
- * - Buyer reviews carry no link and no mention of where they were left.
+ * - Buyer reviews were brought over from another selling site. They carry no link and never name
+ *   the site; they're labelled "Reviews from our other shops" so nobody mistakes them for orders
+ *   placed here (admin brief, 2026-11-19).
+ * - Reviews of orders placed on this site come from the API ("verified"), not from this file.
  * - Every new review goes on the reviews page, including ones below 5 stars (UK rules don't
  *   allow hiding negative reviews).
  * - No Review / AggregateRating structured data for these.
  */
 
-export type ReviewSource = 'google' | 'buyer';
+/** google: on Google. buyer: from our other shops. verified: an order placed on this site. */
+export type ReviewSource = 'google' | 'buyer' | 'verified';
 
 export interface ShopReview {
   /** Name exactly as shown on the original review. */
@@ -26,6 +30,10 @@ export interface ShopReview {
   url?: string;
   showOnHome: boolean;
   showOnProduct: boolean;
+  /** Verified reviews only: the piece(s) bought, the buyer's photo, and the shop's reply. */
+  pieces?: string[];
+  photoUrl?: string | null;
+  reply?: string | null;
 }
 
 /** The Google Business Profile. The "5.0 on Google" button links here. */

@@ -46,13 +46,14 @@ import {
   OffsiteSale,
   CreateOffsiteSale,
 } from '../../services/offsite-sale.service';
-import { AdminReview, ReviewsService } from '../../services/reviews.service';
 import { AdminCalendarComponent } from './admin-calendar.component';
 import { AdminAccountingComponent } from './admin-accounting.component';
 import { AdminCareComponent } from './admin-care.component';
 import { AdminTopPicksComponent } from './admin-top-picks.component';
 import { AdminHomeSectionsComponent } from './admin-home-sections.component';
 import { AdminCategoriesComponent } from './admin-categories.component';
+import { AdminReviewsComponent } from './admin-reviews.component';
+import { AdminNewsletterComponent } from './admin-newsletter.component';
 import { CategoryService } from '../../services/category.service';
 import { AdminProductCategoriesComponent } from './admin-product-categories.component';
 import { AdminDatingComponent } from './admin-dating.component';
@@ -413,6 +414,8 @@ interface PageViewStats {
     AdminTopPicksComponent,
     AdminHomeSectionsComponent,
     AdminCategoriesComponent,
+    AdminReviewsComponent,
+    AdminNewsletterComponent,
     AdminProductCategoriesComponent,
     AdminDatingComponent,
     AdminCrosslistingComponent,
@@ -437,7 +440,6 @@ export class AdminPageComponent implements OnInit {
   private readonly brandingService = inject(BrandingService);
   private readonly contentService = inject(ContentService);
   private readonly offsiteSaleService = inject(OffsiteSaleService);
-  private readonly reviewsService = inject(ReviewsService);
   private readonly sanitizer = inject(DomSanitizer);
 
   @ViewChild('descriptionEditor') descriptionEditor!: ElementRef<HTMLElement>;
@@ -457,6 +459,7 @@ export class AdminPageComponent implements OnInit {
     | 'blog'
     | 'offsite-sales'
     | 'reviews'
+    | 'newsletter'
     | 'signature'
     | 'care'
     | 'top-picks'
@@ -533,61 +536,6 @@ export class AdminPageComponent implements OnInit {
   offsiteForm: CreateOffsiteSale = this.emptyOffsiteForm();
 
   readonly offsitePlatforms = ['Etsy', 'Depop', 'Vinted', 'Instagram', 'In Person', 'Other'];
-
-  // Reviews moderation
-  readonly reviews = signal<AdminReview[]>([]);
-  readonly reviewsLoading = signal(false);
-  readonly reviewsFilter = signal<'Pending' | 'Approved' | 'Rejected' | 'all'>('Pending');
-  readonly reviewsModerating = signal<string | null>(null);
-
-  loadReviews(): void {
-    this.reviewsLoading.set(true);
-    const filter = this.reviewsFilter();
-    const status = filter === 'all' ? undefined : filter;
-    this.reviewsService.getAdmin(status).subscribe({
-      next: (r) => {
-        this.reviews.set(r);
-        this.reviewsLoading.set(false);
-      },
-      error: () => this.reviewsLoading.set(false),
-    });
-  }
-
-  setReviewsFilter(filter: 'Pending' | 'Approved' | 'Rejected' | 'all'): void {
-    this.reviewsFilter.set(filter);
-    this.loadReviews();
-  }
-
-  approveReview(id: string): void {
-    this.reviewsModerating.set(id);
-    this.reviewsService.approve(id).subscribe({
-      next: () => {
-        this.reviews.update((rs) =>
-          rs.filter((r) => r.id !== id || this.reviewsFilter() === 'all'),
-        );
-        this.reviewsModerating.set(null);
-        if (this.reviewsFilter() !== 'all') {
-          this.loadReviews();
-        }
-      },
-      error: () => this.reviewsModerating.set(null),
-    });
-  }
-
-  rejectReview(id: string): void {
-    this.reviewsModerating.set(id);
-    this.reviewsService.reject(id).subscribe({
-      next: () => {
-        this.reviewsModerating.set(null);
-        this.loadReviews();
-      },
-      error: () => this.reviewsModerating.set(null),
-    });
-  }
-
-  reviewOverall(r: AdminReview): number {
-    return Math.round(((r.transactionRating + r.deliveryRating + r.productRating) / 3) * 10) / 10;
-  }
 
   // Product stats
   readonly totalItems = computed(() => this.store.products().length);
@@ -1395,6 +1343,7 @@ export class AdminPageComponent implements OnInit {
       | 'blog'
       | 'offsite-sales'
       | 'reviews'
+      | 'newsletter'
       | 'signature'
       | 'care'
       | 'top-picks'
@@ -1433,9 +1382,6 @@ export class AdminPageComponent implements OnInit {
     }
     if (tab === 'blog') {
       this.loadBlogPosts();
-    }
-    if (tab === 'reviews') {
-      this.loadReviews();
     }
     if (tab === 'offsite-sales' && this.offsiteSales().length === 0) {
       this.loadOffsiteSales();

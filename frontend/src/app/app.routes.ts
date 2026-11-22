@@ -103,8 +103,8 @@ export const routes: Routes = [
       ),
   },
   {
+    // Open without signing in: the emailed link carries a token for the order.
     path: 'review/:orderId',
-    canActivate: [authGuard],
     loadComponent: () =>
       import('./pages/review/review-page.component').then(
         (m) => m.ReviewPageComponent
@@ -141,6 +141,20 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/policies/supply-chain-policy.component').then(
         (m) => m.SupplyChainPolicyComponent
+      ),
+  },
+  {
+    path: 'review-policy',
+    loadComponent: () =>
+      import('./pages/policies/review-policy.component').then(
+        (m) => m.ReviewPolicyComponent
+      ),
+  },
+  {
+    path: 'unsubscribe',
+    loadComponent: () =>
+      import('./pages/unsubscribe/unsubscribe-page.component').then(
+        (m) => m.UnsubscribePageComponent
       ),
   },
   {

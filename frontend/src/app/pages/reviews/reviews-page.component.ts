@@ -1,18 +1,20 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { SeoService } from '../../services/seo.service';
 import { ReviewsService } from '../../services/reviews.service';
 import { ReviewCardComponent } from '../../components/reviews/review-card.component';
 import { ReviewStarsComponent } from '../../components/reviews/review-stars.component';
-import { GOOGLE_PROFILE_URL, ShopReview, allReviews, googleRating } from '../../components/reviews/reviews.data';
+import { GOOGLE_PROFILE_URL, SHOP_REVIEWS, ShopReview, googleRating } from '../../components/reviews/reviews.data';
 
 /**
- * Every customer review, Google first. Reviews left on this site (approved in the admin) are
- * added after the listed ones, whatever their rating: UK rules don't allow hiding negative ones.
- * Deliberately no Review / AggregateRating structured data (see reviews.data.ts).
+ * Every customer review, in three clearly separate groups: Google reviews, verified purchases from
+ * this site (newest first, whatever their rating: UK rules don't allow hiding negative ones), and
+ * reviews from our other shops. Deliberately no Review / AggregateRating structured data (see
+ * reviews.data.ts).
  */
 @Component({
   selector: 'app-reviews-page',
-  imports: [ReviewCardComponent, ReviewStarsComponent],
+  imports: [ReviewCardComponent, ReviewStarsComponent, RouterLink],
   templateUrl: './reviews-page.component.html',
   styleUrl: './reviews-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,9 +26,9 @@ export class ReviewsPageComponent implements OnInit {
   readonly rating = googleRating();
   readonly profileUrl = GOOGLE_PROFILE_URL;
 
-  private readonly listed = allReviews();
-  private readonly onSite = signal<ShopReview[]>([]);
-  readonly reviews = computed(() => [...this.listed, ...this.onSite()]);
+  readonly google = SHOP_REVIEWS.filter((r) => r.source === 'google');
+  readonly otherShops = SHOP_REVIEWS.filter((r) => r.source === 'buyer');
+  readonly verified = signal<ShopReview[]>([]);
 
   ngOnInit(): void {
     this.seo.updateTags({
@@ -45,12 +47,15 @@ export class ReviewsPageComponent implements OnInit {
 
     this.reviewsService.getPublic(100).subscribe({
       next: (rows) =>
-        this.onSite.set(
+        this.verified.set(
           rows.map((r) => ({
             name: r.authorDisplayName,
-            source: 'buyer' as const,
-            rating: Math.round((r.transactionRating + r.deliveryRating + r.productRating) / 3),
+            source: 'verified' as const,
+            rating: r.rating,
             text: r.comment,
+            pieces: r.productNames,
+            photoUrl: r.photoUrl,
+            reply: r.reply,
             showOnHome: false,
             showOnProduct: false,
           })),

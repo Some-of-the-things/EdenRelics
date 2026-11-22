@@ -80,6 +80,7 @@ const after = [
   { path: '/modern-slavery-policy', changefreq: 'yearly', priority: '0.3' },
   { path: '/supply-chain-policy', changefreq: 'yearly', priority: '0.3' },
   { path: '/returns-policy', changefreq: 'yearly', priority: '0.3' },
+  { path: '/review-policy', changefreq: 'yearly', priority: '0.3' },
   { path: '/terms-conditions', changefreq: 'yearly', priority: '0.3' },
   { path: '/cookie-policy', changefreq: 'yearly', priority: '0.3' },
   { path: '/accessibility-report', changefreq: 'yearly', priority: '0.3' },
