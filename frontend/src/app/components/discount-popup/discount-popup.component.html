@@ -9,10 +9,10 @@
     (keydown.escape)="dismiss()"
   >
     @if (!subscribed()) {
-      <h2 id="discount-popup-title" class="discount-popup__title">15% off your first order</h2>
+      <h2 id="discount-popup-title" class="discount-popup__title">{{ offer()?.headline }}</h2>
       <p class="discount-popup__text">
-        Enjoying the browse? Join our newsletter for first look at new one-of-a-kind pieces —
-        and take <strong>15% off</strong> your first order.
+        Enjoying the browse? Join our newsletter for a first look at new one-of-a-kind pieces, and
+        we'll email you a code for your first order.
       </p>
       <form class="discount-popup__form" (ngSubmit)="submit()">
         <label class="discount-popup__label" for="discount-popup-email">Email address</label>
@@ -28,21 +28,19 @@
           [disabled]="submitting()"
         />
         <button type="submit" class="discount-popup__submit" [disabled]="submitting()">
-          {{ submitting() ? 'Signing you up…' : 'Get my 15% off' }}
+          {{ submitting() ? 'Signing you up…' : 'Send me my code' }}
         </button>
         @if (error()) {
-          <p class="discount-popup__error" role="alert">Something went wrong — please try again.</p>
+          <p class="discount-popup__error" role="alert">Something went wrong. Please check the address and try again.</p>
         }
       </form>
-      <p class="discount-popup__fineprint">
-        One code per customer, redeemable at checkout. We’ll email it to you too. Unsubscribe anytime.
-      </p>
+      <p class="discount-popup__fineprint">{{ offer()?.terms }} Unsubscribe any time.</p>
     } @else {
-      <h2 id="discount-popup-title" class="discount-popup__title">You’re in — here’s your 15%</h2>
+      <h2 id="discount-popup-title" class="discount-popup__title">You're in. Check your inbox</h2>
       <p class="discount-popup__text">
-        Enter this code at checkout to take 15% off. We’ve emailed it to you as well.
+        We've emailed your code. Use it at checkout with the same email address. If it hasn't
+        arrived in a few minutes, have a look in your spam folder.
       </p>
-      <p class="discount-popup__code">{{ code }}</p>
       <button type="button" class="discount-popup__submit" (click)="dismiss()">Keep browsing</button>
     }
 

@@ -10,8 +10,16 @@ namespace Eden_Relics_BE.Controllers;
 [Route("api/newsletters")]
 [Authorize(Roles = "Admin")]
 [NewsletterValidationFilter]
-public class NewslettersController(INewsletterService newsletters) : ControllerBase
+public class NewslettersController(INewsletterService newsletters, IEmailImageService emailImages) : ControllerBase
 {
+    /// <summary>A JPEG copy of a product photo for a newsletter (Outlook on Windows can't show WebP).</summary>
+    [HttpPost("email-image")]
+    public async Task<ActionResult<EmailImageResponse>> EmailImage([FromBody] EmailImageRequest request, CancellationToken ct)
+    {
+        string? url = await emailImages.ToEmailJpegAsync(request.Url ?? string.Empty, ct);
+        return url is null ? BadRequest(new { error = "That image can't be used." }) : Ok(new EmailImageResponse(url));
+    }
+
     [HttpGet]
     public async Task<ActionResult<List<NewsletterDto>>> List()
     {

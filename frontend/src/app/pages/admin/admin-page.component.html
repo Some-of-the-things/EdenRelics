@@ -368,6 +368,19 @@
                 <option value="write-off">Write-off (damaged / lost)</option>
               </select>
             </label>
+            <div class="admin__field admin__early-field">
+              <label class="admin__early-toggle">
+                <input type="checkbox" [(ngModel)]="form.earlyAccess" name="earlyAccess" (ngModelChange)="onEarlyAccessToggle($event)" />
+                <span>Early access for subscribers</span>
+              </label>
+              @if (form.earlyAccess) {
+                <label class="admin__early-when">
+                  <span>Public from</span>
+                  <input type="datetime-local" [(ngModel)]="earlyAccessLocal" name="earlyAccessLocal" required />
+                </label>
+                <small>Hidden from the shop, search and the sitemap until then; subscribers can see and buy it. Hold off crosslisting until this time.</small>
+              }
+            </div>
             <label class="admin__field">
               <span>SKU</span>
               <input
@@ -730,6 +743,11 @@
             <img [src]="product.imageUrl" [alt]="product.name" class="admin__card-thumb" />
             <div class="admin__card-title">
               <strong>{{ product.name }}</strong>
+              @if (isEarlyAccess(product)) {
+                <span class="admin__early" [title]="'Hold off crosslisting until ' + (product.earlyAccessUntilUtc | date: 'EEE d MMM, HH:mm')">
+                  Early access · public {{ product.earlyAccessUntilUtc | date: 'EEE d MMM, HH:mm' }}
+                </span>
+              }
               <span
                 class="admin__stock"
                 [class.admin__stock--out]="resolveStatus(product) === 'sold'"

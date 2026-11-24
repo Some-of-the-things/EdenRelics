@@ -46,6 +46,10 @@ export interface Product {
   createdAtUtc?: string;
   /** When the piece last went live; null for pieces that never have. */
   wentLiveAtUtc?: string | null;
+  /** Set while the piece is subscribers-only: when it goes public. */
+  earlyAccessUntilUtc?: string | null;
+  /** Admin form only: put the piece into (or out of) early access when saving. */
+  earlyAccess?: boolean;
 }
 
 /** Result of a bulk sale-price change: what moved, what was left alone, what got emailed. */

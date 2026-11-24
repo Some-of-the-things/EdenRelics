@@ -7,6 +7,9 @@ public record OutgoingEmail(string To, string Subject, string Html, string Text,
 /// <summary>A recipient in a batch the provider refused, by its position in the batch.</summary>
 public record BatchFailure(int Index, string Message);
 
+/// <summary>What happened to a batch: the refused recipients, and the provider's id for each accepted email (by position; null if refused).</summary>
+public record BatchOutcome(IReadOnlyList<BatchFailure> Failures, IReadOnlyList<string?> ProviderIds);
+
 /// <summary>Sends newsletter and review-request email. Separate from <see cref="IEmailService"/> so tests can record what was sent.</summary>
 public interface INewsletterMailer
 {
@@ -17,7 +20,7 @@ public interface INewsletterMailer
     /// same batch, so a batch whose response was lost isn't sent twice. Throws if the whole call
     /// failed; returns the recipients the provider refused individually.
     /// </summary>
-    Task<IReadOnlyList<BatchFailure>> SendBatchAsync(string idempotencyKey, IReadOnlyList<OutgoingEmail> emails, CancellationToken ct = default);
+    Task<BatchOutcome> SendBatchAsync(string idempotencyKey, IReadOnlyList<OutgoingEmail> emails, CancellationToken ct = default);
 }
 
 public class ResendNewsletterMailer(IResend resend, IConfiguration configuration) : INewsletterMailer
@@ -29,7 +32,7 @@ public class ResendNewsletterMailer(IResend resend, IConfiguration configuration
         await resend.EmailSendAsync(ToMessage(email), ct);
     }
 
-    public async Task<IReadOnlyList<BatchFailure>> SendBatchAsync(string idempotencyKey, IReadOnlyList<OutgoingEmail> emails, CancellationToken ct = default)
+    public async Task<BatchOutcome> SendBatchAsync(string idempotencyKey, IReadOnlyList<OutgoingEmail> emails, CancellationToken ct = default)
     {
         var response = await resend.EmailBatchAsync(
             idempotencyKey,
@@ -42,7 +45,18 @@ public class ResendNewsletterMailer(IResend resend, IConfiguration configuration
             throw (Exception?)response.Exception ?? new InvalidOperationException("The email provider refused the batch.");
         }
 
-        return response.Content?.Errors?.Select(e => new BatchFailure(e.Index, e.Message)).ToList() ?? [];
+        List<BatchFailure> failures = response.Content?.Errors?.Select(e => new BatchFailure(e.Index, e.Message)).ToList() ?? [];
+
+        // The receipts list the accepted emails in order, skipping the refused ones.
+        HashSet<int> refused = failures.Select(f => f.Index).ToHashSet();
+        List<string?> ids = [];
+        int next = 0;
+        List<string> receipts = response.Content?.Data?.Select(r => r.Id.ToString()).ToList() ?? [];
+        for (int i = 0; i < emails.Count; i++)
+        {
+            ids.Add(!refused.Contains(i) && next < receipts.Count ? receipts[next++] : null);
+        }
+        return new BatchOutcome(failures, ids);
     }
 
     private EmailMessage ToMessage(OutgoingEmail email)

@@ -8,7 +8,9 @@ public record CreateOrderDto(
     string? ShippingMethod,
     bool IsGift = false,
     string? GiftMessage = null,
-    string? GiftTo = null
+    string? GiftTo = null,
+    string? DiscountCode = null,
+    string? EarlyAccessToken = null
 );
 
 public record OrderAddressDto(

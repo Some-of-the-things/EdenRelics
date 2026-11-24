@@ -10,7 +10,7 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { CurrencyPipe, isPlatformBrowser, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, isPlatformBrowser, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ProductStore } from '../../store/product.store';
@@ -30,6 +30,9 @@ import { FocusTrapDirective } from '../../directives/focus-trap.directive';
 import { ImageLightboxComponent } from '../image-lightbox/image-lightbox.component';
 import { htmlToText } from '../../utils/html-to-text';
 import { ReviewTrustLineComponent } from '../reviews/review-trust-line.component';
+import { ReviewCardComponent } from '../reviews/review-card.component';
+import { ShopReview } from '../reviews/reviews.data';
+import { ReviewsService, toShopReview } from '../../services/reviews.service';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -62,6 +65,8 @@ function schemaCondition(condition: string): string {
     FocusTrapDirective,
     ImageLightboxComponent,
     ReviewTrustLineComponent,
+    ReviewCardComponent,
+    DatePipe,
   ],
   templateUrl: './product-detail.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -85,6 +90,17 @@ export class ProductDetailComponent {
   private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
 
   private readonly http = inject(HttpClient);
+  private readonly reviewsService = inject(ReviewsService);
+
+  /** Verified reviews of this exact piece, shown once it has sold. */
+  readonly pieceReviews = signal<ShopReview[]>([]);
+  private reviewsLoadedFor: string | null = null;
+
+  /** When an early-access piece goes public (only set while it's subscribers-only). */
+  readonly earlyUntil = computed(() => {
+    const until = this.product()?.earlyAccessUntilUtc;
+    return until && new Date(until).getTime() > Date.now() ? until : null;
+  });
 
   readonly selectedImage = signal<string | null>(null);
   readonly showSalePrompt = signal(false);
@@ -276,6 +292,18 @@ export class ProductDetailComponent {
         });
       }
     });
+    // A sold piece shows the review its buyer left, if there is one.
+    effect(() => {
+      const p = this.product();
+      if (!p || !this.isSold() || this.reviewsLoadedFor === p.id) {
+        return;
+      }
+      this.reviewsLoadedFor = p.id;
+      this.reviewsService.getForProduct(p.id).subscribe({
+        next: (rows) => this.pieceReviews.set(rows.map(toShopReview)),
+        error: () => this.pieceReviews.set([]),
+      });
+    });
     // Resolve the fabric's care guide (if published) so we can cross-link to it.
     effect(() => {
       const material = this.product()?.material?.trim();
@@ -315,6 +343,8 @@ export class ProductDetailComponent {
           url: canonicalPath,
           image: product.imageUrl,
           type: 'product',
+          // Subscribers-only for now: keep it out of search until it's public.
+          ...(this.earlyUntil() ? { noIndex: true } : {}),
         });
         this.analytics.viewProduct(product.id, product.name, product.price);
         if (this.isBrowser) {
@@ -331,8 +361,10 @@ export class ProductDetailComponent {
             })
             .subscribe({ error: () => {} });
         }
+        // Sold pieces show their original price on the page, so the structured data matches.
+        const sold = resolveProductStatus(product) === 'sold';
         const activePrice =
-          product.showReduction && product.salePrice ? product.salePrice : product.price;
+          !sold && product.showReduction && product.salePrice ? product.salePrice : product.price;
         const productUrl = `https://edenrelics.co.uk${canonicalPath}`;
         const description = stripHtml(product.description);
         const designer = this.designerFor(product);

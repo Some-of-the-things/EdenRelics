@@ -141,7 +141,7 @@ internal static class RouteAllowList
         "/verify-email", "/admin", "/privacy-policy", "/modern-slavery-policy",
         "/supply-chain-policy", "/returns-policy", "/security", "/terms-conditions",
         "/cookie-policy", "/accessibility-report", "/compliance-report", "/style", "/dresses",
-        "/seller", "/seller-tool", "/top-picks", "/reviews", "/review-policy", "/unsubscribe",
+        "/seller", "/seller-tool", "/top-picks", "/reviews", "/review-policy", "/unsubscribe", "/early-access",
     };
 
     // Parameterised routes, expressed as the fixed leading segments; the path must have

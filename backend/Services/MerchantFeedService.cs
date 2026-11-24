@@ -58,7 +58,7 @@ public partial class MerchantFeedService(IRepository<Product> products) : IMerch
     public async Task<string> BuildFeedXmlAsync()
     {
         List<Product> liveProducts = await products.Query()
-            .Where(p => p.Status == ProductStatus.Live)
+            .Where(p => p.Status == ProductStatus.Live && (p.EarlyAccessUntilUtc == null || p.EarlyAccessUntilUtc <= DateTime.UtcNow))
             .OrderByDescending(p => p.UpdatedAtUtc)
             .ToListAsync();
 

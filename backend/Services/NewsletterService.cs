@@ -42,6 +42,7 @@ public class NewsletterService(
     IRepository<MailingListSubscriber> subscribers,
     IContentService content,
     INewsletterMailer mailer,
+    IEarlyAccessService earlyAccess,
     IConfiguration configuration,
     ILogger<NewsletterService> logger) : INewsletterService
 {
@@ -53,6 +54,9 @@ public class NewsletterService(
 
     private const string TokenPlaceholder = "__ER_UNSUBSCRIBE_TOKEN__";
 
+    /// <summary>Put in early-access links by the admin's "early access drop"; replaced with each subscriber's own signed token.</summary>
+    public const string EarlyAccessPlaceholder = "__ER_EARLY_ACCESS__";
+
     private string FrontendUrl => (configuration["Email:FrontendUrl"] ?? "https://edenrelics.co.uk").TrimEnd('/');
     private string ApiUrl => (configuration["Email:ApiPublicUrl"] ?? "https://api.edenrelics.co.uk").TrimEnd('/');
 
@@ -61,8 +65,26 @@ public class NewsletterService(
         List<Newsletter> rows = await newsletters.Query()
             .OrderByDescending(n => n.SentAtUtc ?? n.ScheduledForUtc ?? n.UpdatedAtUtc)
             .ToListAsync();
+        List<Guid> ids = rows.Select(n => n.Id).ToList();
+        var stats = await deliveries.Query()
+            .Where(d => ids.Contains(d.NewsletterId))
+            .GroupBy(d => d.NewsletterId)
+            .Select(g => new
+            {
+                Id = g.Key,
+                Opened = g.Count(d => d.OpenedAtUtc != null),
+                Clicked = g.Count(d => d.ClickedAtUtc != null),
+                Bounced = g.Count(d => d.BouncedAtUtc != null),
+            })
+            .ToDictionaryAsync(x => x.Id);
         // The list doesn't need the bodies.
-        return rows.Select(n => ToDto(n, includeBody: false)).ToList();
+        return rows.Select(n =>
+        {
+            NewsletterDto dto = ToDto(n, includeBody: false);
+            return stats.TryGetValue(n.Id, out var s)
+                ? dto with { OpenedCount = s.Opened, ClickedCount = s.Clicked, BouncedCount = s.Bounced }
+                : dto;
+        }).ToList();
     }
 
     public async Task<NewsletterDto?> GetAsync(Guid id)
@@ -121,7 +143,10 @@ public class NewsletterService(
             footer,
             FrontendUrl,
             $"{FrontendUrl}/unsubscribe");
-        return new NewsletterPreviewDto(rendered.Html, rendered.Text, body);
+        return new NewsletterPreviewDto(
+            rendered.Html.Replace(EarlyAccessPlaceholder, "preview"),
+            rendered.Text.Replace(EarlyAccessPlaceholder, "preview"),
+            body);
     }
 
     public async Task<bool> SendTestAsync(Guid id, string email)
@@ -136,7 +161,14 @@ public class NewsletterService(
 
         EmailFooterInfo footer = await FooterAsync();
         RenderedEmail rendered = EmailTemplate.Render(n.Subject, n.PreviewText, n.BodyHtml, footer, FrontendUrl, $"{FrontendUrl}/unsubscribe");
-        await mailer.SendAsync(new OutgoingEmail(address, $"[Test] {n.Subject}", rendered.Html, rendered.Text));
+        // Early-access links in a test work only if the test address is itself on the list.
+        Guid? subscriberId = await subscribers.Query().Where(s => s.Email == address && !s.Unsubscribed).Select(s => (Guid?)s.Id).FirstOrDefaultAsync();
+        string ea = subscriberId is Guid sid ? earlyAccess.CreateToken(sid, DateTime.UtcNow.Add(EarlyAccessService.LinkLifetime)) : "preview";
+        await mailer.SendAsync(new OutgoingEmail(
+            address,
+            $"[Test] {n.Subject}",
+            rendered.Html.Replace(EarlyAccessPlaceholder, ea),
+            rendered.Text.Replace(EarlyAccessPlaceholder, ea)));
         return true;
     }
 
@@ -334,8 +366,8 @@ public class NewsletterService(
 
             try
             {
-                IReadOnlyList<BatchFailure> failures = await mailer.SendBatchAsync(key, emails, ct);
-                Dictionary<int, string> failed = failures.ToDictionary(f => f.Index, f => f.Message);
+                BatchOutcome outcome = await mailer.SendBatchAsync(key, emails, ct);
+                Dictionary<int, string> failed = outcome.Failures.ToDictionary(f => f.Index, f => f.Message);
                 DateTime at = DateTime.UtcNow;
                 for (int i = 0; i < batch.Count; i++)
                 {
@@ -348,6 +380,7 @@ public class NewsletterService(
                     {
                         batch[i].Status = NewsletterDeliveryStatus.Sent;
                         batch[i].SentAtUtc = at;
+                        batch[i].ProviderId = i < outcome.ProviderIds.Count ? outcome.ProviderIds[i] : null;
                         sent++;
                     }
                 }
@@ -406,12 +439,15 @@ public class NewsletterService(
             ["List-Unsubscribe"] = $"<{ApiUrl}/api/mailing-list/one-click/{t}>",
             ["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click",
         };
-        return new OutgoingEmail(
-            d.Email,
-            n.Subject,
-            template.Html.Replace(TokenPlaceholder, t),
-            template.Text.Replace(TokenPlaceholder, t),
-            headers);
+        string html = template.Html.Replace(TokenPlaceholder, t);
+        string text = template.Text.Replace(TokenPlaceholder, t);
+        if (html.Contains(EarlyAccessPlaceholder, StringComparison.Ordinal))
+        {
+            string ea = earlyAccess.CreateToken(d.SubscriberId, DateTime.UtcNow.Add(EarlyAccessService.LinkLifetime));
+            html = html.Replace(EarlyAccessPlaceholder, ea);
+            text = text.Replace(EarlyAccessPlaceholder, ea);
+        }
+        return new OutgoingEmail(d.Email, n.Subject, html, text, headers);
     }
 
     private async Task<EmailFooterInfo> FooterAsync()

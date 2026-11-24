@@ -11,9 +11,6 @@ public interface IEmailService
     Task SendContactEmailAsync(string fromName, string fromEmail, string subject, string message);
     Task SendSaleNotificationAsync(string toEmail, string firstName, string productName, decimal originalPrice, decimal salePrice);
 
-    /// <summary>Sends a newsletter welcome email containing a first-order discount code. Non-throwing.</summary>
-    Task SendDiscountWelcomeEmailAsync(string toEmail, string code);
-
     /// <summary>Notifies the site owner that an order has been paid.</summary>
     Task SendOwnerSaleNotificationAsync(Order order);
 
@@ -84,38 +81,6 @@ public class EmailService : IEmailService
         {
             _logger.LogError(ex, "Failed to send verification email to {Email}", toEmail);
             throw;
-        }
-    }
-
-    public async Task SendDiscountWelcomeEmailAsync(string toEmail, string code)
-    {
-        string html = $"""
-            <div style="font-family: Georgia, serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
-                <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Welcome to Eden Relics</h1>
-                <p>Thanks for joining our newsletter — you'll be first to see new one-of-a-kind vintage pieces as they're found.</p>
-                <p>As promised, here's <strong>15% off your first order</strong>. Enter this code at checkout:</p>
-                <p style="font-size: 1.6rem; letter-spacing: 3px; font-weight: 600; text-align: center; padding: 14px; border: 1px dashed #9b4a1e; color: #9b4a1e; margin: 1.5rem 0;">{code}</p>
-                <p style="color: #666; font-size: 0.85rem;">One code per customer, redeemable on your first order. <a href="{_frontendUrl}/shop" style="color: #9b4a1e;">Browse the collection &rarr;</a></p>
-            </div>
-            """;
-
-        try
-        {
-            EmailMessage message = new()
-            {
-                From = _fromEmail,
-                To = [toEmail],
-                Subject = "Your 15% welcome code — Eden Relics",
-                HtmlBody = html
-            };
-            await _resend.EmailSendAsync(message);
-            _logger.LogInformation("Discount welcome email sent to {Email}", toEmail);
-        }
-        catch (Exception ex)
-        {
-            // Non-fatal: the code is also shown in the pop-up, so a failed email must not
-            // fail the subscribe request.
-            _logger.LogError(ex, "Failed to send discount welcome email to {Email}", toEmail);
         }
     }
 
@@ -303,6 +268,9 @@ public class EmailService : IEmailService
             """));
 
         decimal itemsSubtotal = order.Items.Sum(i => i.UnitPrice * i.Quantity);
+        string discountRow = order.DiscountAmount > 0
+            ? $"<tr><td style=\"padding: 6px 12px 6px 0; text-align: right; color: #666;\">Code {WebUtility.HtmlEncode(order.DiscountCode ?? string.Empty)}</td><td style=\"padding: 6px 0; text-align: right; white-space: nowrap;\">-£{order.DiscountAmount:F2}</td></tr>"
+            : string.Empty;
 
         string[] addressLines =
         [
@@ -357,6 +325,7 @@ public class EmailService : IEmailService
                         <td style="padding: 6px 12px 6px 0; text-align: right; color: #666;">Items subtotal</td>
                         <td style="padding: 6px 0; text-align: right; white-space: nowrap;">£{itemsSubtotal:F2}</td>
                     </tr>
+                    {discountRow}
                     <tr>
                         <td style="padding: 6px 12px 6px 0; text-align: right; color: #666;">Shipping ({WebUtility.HtmlEncode(order.ShippingMethod ?? "standard")})</td>
                         <td style="padding: 6px 0; text-align: right; white-space: nowrap;">£{order.ShippingCost:F2}</td>
@@ -437,6 +406,10 @@ public class EmailService : IEmailService
         string itemRows = string.Join("\n        ", order.Items.Select(i =>
             $"<tr><td style=\"{cellLeft}\">{WebUtility.HtmlEncode(i.ProductName)}{(i.Quantity > 1 ? $" &times; {i.Quantity}" : "")}</td><td align=\"right\" style=\"{cellRight}\">£{(i.UnitPrice * i.Quantity):F2}</td></tr>"));
         string postage = order.ShippingCost <= 0 ? "Free" : $"£{order.ShippingCost:F2}";
+        if (order.DiscountAmount > 0)
+        {
+            itemRows += $"\n        <tr><td style=\"{cellLeft}\">Welcome code {WebUtility.HtmlEncode(order.DiscountCode ?? string.Empty)}</td><td align=\"right\" style=\"{cellRight}\">&minus;£{order.DiscountAmount:F2}</td></tr>";
+        }
         itemRows += $"\n        <tr><td style=\"{cellLeft}\">UK Postage</td><td align=\"right\" style=\"{cellRight}\">{postage}</td></tr>";
 
         // The buyer's own email keeps its prices; the gift line just confirms what goes in the parcel.

@@ -34,11 +34,18 @@ export class AdminReviewsComponent implements OnInit {
   readonly hideNote = signal('');
 
   readonly delayDays = signal<number | null>(null);
+  readonly reminderDays = signal<number | null>(null);
   readonly delaySaved = signal(false);
 
   ngOnInit(): void {
     this.load();
-    this.api.getSettings().subscribe({ next: (s) => this.delayDays.set(s.requestDelayDays), error: () => {} });
+    this.api.getSettings().subscribe({
+      next: (s) => {
+        this.delayDays.set(s.requestDelayDays);
+        this.reminderDays.set(s.reminderDays);
+      },
+      error: () => {},
+    });
   }
 
   load(): void {
@@ -110,16 +117,22 @@ export class AdminReviewsComponent implements OnInit {
     this.mutate(r.id, this.api.publish(r.id), () => {});
   }
 
-  saveDelay(value: string): void {
+  saveDelay(value: string, reminderValue: string): void {
     const days = Number(value);
+    const reminder = Number(reminderValue);
     if (!Number.isInteger(days) || days < 1 || days > 60) {
       this.error.set('Choose between 1 and 60 days.');
       return;
     }
+    if (!Number.isInteger(reminder) || reminder < 0 || reminder > 30) {
+      this.error.set('Choose a reminder between 0 (none) and 30 days.');
+      return;
+    }
     this.error.set(null);
-    this.api.saveSettings(days).subscribe({
+    this.api.saveSettings(days, reminder).subscribe({
       next: (s) => {
         this.delayDays.set(s.requestDelayDays);
+        this.reminderDays.set(s.reminderDays);
         this.delaySaved.set(true);
         setTimeout(() => this.delaySaved.set(false), 2500);
       },

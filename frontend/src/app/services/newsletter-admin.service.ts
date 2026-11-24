@@ -23,6 +23,9 @@ export interface Newsletter {
   failedCount: number;
   skippedCount: number;
   lastError: string | null;
+  openedCount?: number;
+  clickedCount?: number;
+  bouncedCount?: number;
 }
 
 export interface SaveNewsletter {
@@ -91,6 +94,11 @@ export class NewsletterAdminService {
 
   cancelSchedule(id: string): Observable<Newsletter> {
     return this.http.post<Newsletter>(`${this.url}/${id}/cancel`, {});
+  }
+
+  /** A JPEG copy of a product photo, for email apps that can't show WebP (Outlook on Windows). */
+  emailImage(url: string): Observable<{ url: string }> {
+    return this.http.post<{ url: string }>(`${this.url}/email-image`, { url });
   }
 
   audience(): Observable<{ activeCount: number }> {

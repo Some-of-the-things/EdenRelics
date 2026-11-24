@@ -16,7 +16,10 @@ public record NewsletterDto(
     int SentCount,
     int FailedCount,
     int SkippedCount,
-    string? LastError);
+    string? LastError,
+    int OpenedCount = 0,
+    int ClickedCount = 0,
+    int BouncedCount = 0);
 
 public record SaveNewsletterRequest(string? Subject, string? PreviewText, string? BodyHtml, string? EditorMode);
 
@@ -42,3 +45,7 @@ public record AdminSubscriberDto(
     DateTime? UnsubscribedAtUtc);
 
 public record UnsubscribeTokenRequest(string? Token);
+
+public record EmailImageRequest(string? Url);
+
+public record EmailImageResponse(string Url);

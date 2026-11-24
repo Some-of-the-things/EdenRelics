@@ -276,7 +276,7 @@ public class CareService(
         }
 
         List<Product> live = await products.Query()
-            .Where(p => p.Status == ProductStatus.Live && p.Material != null && p.Material != "")
+            .Where(p => p.Status == ProductStatus.Live && (p.EarlyAccessUntilUtc == null || p.EarlyAccessUntilUtc <= DateTime.UtcNow) && p.Material != null && p.Material != "")
             .OrderByDescending(p => p.UpdatedAtUtc)
             .ToListAsync();
 

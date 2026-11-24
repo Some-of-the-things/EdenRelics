@@ -43,6 +43,7 @@ public class PostgresApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 ["Jwt:Issuer"] = "TestIssuer",
                 ["Jwt:Audience"] = "TestAudience",
                 ["Stripe:SecretKey"] = "",
+                ["Resend:WebhookSecret"] = "whsec_dGVzdC13ZWJob29rLXNpZ25pbmcta2V5LTEyMzQ1Ng==",
                 ["Stripe:WebhookSecret"] = "",
                 ["Stripe:FrontendUrl"] = "http://localhost:4200",
                 ["Email:ResendApiKey"] = "",

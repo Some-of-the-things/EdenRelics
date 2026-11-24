@@ -12,12 +12,17 @@ public class OrderService(
     IRepository<Order> orders,
     IRepository<Product> products,
     IRepository<Transaction> transactions,
+    IRepository<User> users,
+    ISignupOfferService signupOffer,
+    IEarlyAccessService earlyAccess,
+    IHttpContextAccessor httpContext,
     IConfiguration configuration,
     IEmailService emailService,
     ILogger<OrderService> logger) : IOrderService
 {
     public async Task<CreateOrderResult> CreateAsync(CreateOrderDto dto, Guid? userId)
     {
+        bool? earlyAccessAllowed = null;
         if (userId is null && string.IsNullOrWhiteSpace(dto.GuestEmail))
         {
             return new CreateOrderResult(null, "Guest email is required for anonymous checkout.");
@@ -55,7 +60,39 @@ public class OrderService(
             {
                 return new CreateOrderResult(null, $"Product {item.ProductId} is not available for purchase.");
             }
+            if (product.IsEarlyAccessAt(DateTime.UtcNow))
+            {
+                earlyAccessAllowed ??= httpContext.HttpContext is HttpContext ctx
+                    && await earlyAccess.HasAccessAsync(ctx.User, dto.EarlyAccessToken);
+                if (earlyAccessAllowed != true)
+                {
+                    return new CreateOrderResult(null, $"Product {item.ProductId} is not available for purchase.");
+                }
+            }
             orderProducts.Add(product);
+        }
+
+        // A sign-up code is checked against the address the order is for: the guest email, or
+        // the signed-in account's address.
+        DiscountCode? discountCode = null;
+        decimal discountAmount = 0;
+        if (!string.IsNullOrWhiteSpace(dto.DiscountCode))
+        {
+            string? orderEmail = dto.GuestEmail;
+            if (userId is Guid uid)
+            {
+                orderEmail = (await users.GetByIdAsync(uid))?.Email;
+            }
+            List<DiscountLine> lines = orderProducts
+                .Select(p => new DiscountLine(p.SalePrice ?? p.Price, p.SalePrice != null))
+                .ToList();
+            (DiscountCode? code, DiscountEvaluation evaluation) = await signupOffer.EvaluateAsync(dto.DiscountCode, orderEmail, lines, dto.IsGift);
+            if (code is null || evaluation.Error is not null)
+            {
+                return new CreateOrderResult(null, evaluation.Error ?? "That code can't be used.");
+            }
+            discountCode = code;
+            discountAmount = evaluation.Discount;
         }
 
         // Determine shipping cost based on zone
@@ -83,6 +120,8 @@ public class OrderService(
             IsGift = dto.IsGift,
             GiftMessage = gift.Message,
             GiftTo = gift.To,
+            DiscountCode = discountCode?.Code,
+            DiscountAmount = discountAmount,
             Items =dto.Items.Select(item =>
             {
                 Product product = orderProducts.First(p => p.Id == item.ProductId);
@@ -97,7 +136,7 @@ public class OrderService(
             }).ToList()
         };
 
-        order.Total = order.Items.Sum(i => i.UnitPrice * i.Quantity) + shippingCost;
+        order.Total = order.Items.Sum(i => i.UnitPrice * i.Quantity) - discountAmount + shippingCost;
 
         await orders.AddAsync(order);
 
@@ -141,10 +180,11 @@ public class OrderService(
             PaymentMethodTypes = ["card"],
             LineItems = lineItems,
             Mode = "payment",
-            // Show the promotion-code field on Stripe Checkout so newsletter/discount
-            // codes (e.g. WELCOME15) can be redeemed. Stripe recalculates the total
-            // server-side from the coupon, so the amount charged stays authoritative.
-            AllowPromotionCodes = true,
+            // Without a sign-up code, Stripe Checkout keeps its promotion-code field so codes
+            // issued in Stripe before the sign-up offer moved here (WELCOME15) still work. With
+            // one, the discount is applied below instead; Stripe allows one or the other, which
+            // is also what stops codes being stacked.
+            AllowPromotionCodes = discountCode is null ? true : null,
             SuccessUrl = $"{frontendUrl}/order-confirmation/{order.Id}?session_id={{CHECKOUT_SESSION_ID}}",
             CancelUrl = $"{frontendUrl}/cart",
             Metadata = new Dictionary<string, string>
@@ -189,6 +229,21 @@ public class OrderService(
         if (userId is null)
         {
             sessionOptions.CustomerEmail = dto.GuestEmail!.Trim().ToLowerInvariant();
+        }
+
+        if (discountCode is not null && discountAmount > 0)
+        {
+            // A one-off Stripe coupon for exactly the amount worked out above, so what Stripe
+            // charges matches the order total.
+            Coupon coupon = await new CouponService().CreateAsync(new CouponCreateOptions
+            {
+                AmountOff = (long)Math.Round(discountAmount * 100, MidpointRounding.AwayFromZero),
+                Currency = "gbp",
+                Duration = "once",
+                MaxRedemptions = 1,
+                Name = $"Welcome code {discountCode.Code}",
+            });
+            sessionOptions.Discounts = [new SessionDiscountOptions { Coupon = coupon.Id }];
         }
 
         SessionService service = new();
@@ -292,6 +347,12 @@ public class OrderService(
                                     Reference = cogsRef,
                                 });
                             }
+                        }
+
+                        if (firstDelivery && !string.IsNullOrEmpty(order.DiscountCode)
+                            && !await signupOffer.MarkUsedAsync(order.DiscountCode, order.Id))
+                        {
+                            logger.LogWarning("Order {OrderId} was paid with code {Code}, which another order had already used", order.Id, order.DiscountCode);
                         }
 
                         // Single save commits the Paid status, product/listing changes, and any

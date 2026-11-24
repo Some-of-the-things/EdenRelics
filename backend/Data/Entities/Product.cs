@@ -87,6 +87,17 @@ public class Product : BaseEntity
 
     public decimal? SalePrice { get; set; }
 
+    /// <summary>
+    /// Early access: until this time a Live piece is shown only to newsletter subscribers (via
+    /// their emailed link, or signed in with a subscribed account). It is hidden from the shop,
+    /// category pages, search, the sitemap and the feeds, and goes public by itself at this time.
+    /// Null for an ordinary listing.
+    /// </summary>
+    public DateTime? EarlyAccessUntilUtc { get; set; }
+
+    /// <summary>True while the piece is Live but still in its subscribers-only window.</summary>
+    public bool IsEarlyAccessAt(DateTime utcNow) => Status == ProductStatus.Live && EarlyAccessUntilUtc > utcNow;
+
     /// <summary>When the current Price was set (for 28-day reduction rule compliance)</summary>
     public DateTime? PriceSetAtUtc { get; set; }
 

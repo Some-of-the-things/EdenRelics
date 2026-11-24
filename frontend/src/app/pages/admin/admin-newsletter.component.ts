@@ -9,10 +9,10 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { DatePipe, DOCUMENT } from '@angular/common';
+import { DatePipe, DOCUMENT, PercentPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Observable, map, switchMap } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
 import {
@@ -23,8 +23,12 @@ import {
 } from '../../services/newsletter-admin.service';
 import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
+import { AdminSignupOfferComponent } from './admin-signup-offer.component';
 
-type View = 'compose' | 'history' | 'subscribers';
+type View = 'compose' | 'history' | 'subscribers' | 'offer';
+
+/** Replaced with each subscriber's own early-access token when the email is sent (see NewsletterService). */
+export const EARLY_ACCESS_PLACEHOLDER = '__ER_EARLY_ACCESS__';
 type SubscriberFilter = 'all' | 'active' | 'unsubscribed';
 
 /** Escapes text for an HTML attribute or element. */
@@ -45,9 +49,13 @@ function money(value: number): string {
  * Email-safe cards (image, title, price) for the chosen pieces, two to a row; the template's
  * mobile rule stacks them on phones.
  */
-export function productCardsHtml(products: Pick<Product, 'id' | 'slug' | 'name' | 'price' | 'salePrice' | 'imageUrl'>[], siteUrl: string): string {
+export function productCardsHtml(
+  products: Pick<Product, 'id' | 'slug' | 'name' | 'price' | 'salePrice' | 'imageUrl'>[],
+  siteUrl: string,
+  linkQuery = '',
+): string {
   const cell = (p: (typeof products)[number]): string => {
-    const href = `${siteUrl}/product/${encodeURIComponent(p.slug || p.id)}`;
+    const href = `${siteUrl}/product/${encodeURIComponent(p.slug || p.id)}${linkQuery}`;
     const onSale = p.salePrice != null && p.salePrice < p.price;
     const price = onSale
       ? `${money(p.salePrice!)} <span style="text-decoration:line-through;color:#8a7560;">${money(p.price)}</span>`
@@ -71,7 +79,7 @@ export function productCardsHtml(products: Pick<Product, 'id' | 'slug' | 'name' 
 
 @Component({
   selector: 'app-admin-newsletter',
-  imports: [DatePipe],
+  imports: [DatePipe, PercentPipe, AdminSignupOfferComponent],
   templateUrl: './admin-newsletter.component.html',
   styleUrl: './admin-newsletter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -313,9 +321,70 @@ export class AdminNewsletterComponent implements OnInit {
     if (chosen.length === 0) {
       return;
     }
-    this.insertHtml(productCardsHtml(chosen, this.doc.location.origin));
-    this.picked.set(new Set());
-    this.pickerOpen.set(false);
+    this.withEmailImages(chosen).subscribe((ready) => {
+      this.insertHtml(productCardsHtml(ready, this.doc.location.origin));
+      this.picked.set(new Set());
+      this.pickerOpen.set(false);
+    });
+  }
+
+  /** The pieces currently in early access (subscribers-only until their release time). */
+  readonly earlyPieces = computed(() =>
+    this.store
+      .products()
+      .filter((p) => p.earlyAccessUntilUtc && new Date(p.earlyAccessUntilUtc).getTime() > Date.now()),
+  );
+
+  /**
+   * Starts an "early access drop": a short email with the pieces in early access, each linked
+   * with the subscriber's own early-access token, plus a button to the early-access page.
+   */
+  earlyAccessDrop(): void {
+    const pieces = this.earlyPieces();
+    if (pieces.length === 0) {
+      this.error.set('No pieces are in early access. Tick "Early access" on a piece in Products first.');
+      return;
+    }
+    if (this.bodyHtml().trim() && !confirm('Add the early-access pieces to the end of this email?')) {
+      return;
+    }
+    const origin = this.doc.location.origin;
+    const q = `?ea=${EARLY_ACCESS_PLACEHOLDER}`;
+    const first = pieces.map((p) => new Date(p.earlyAccessUntilUtc!)).sort((x, y) => x.getTime() - y.getTime())[0];
+    const when = first.toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
+    this.withEmailImages(pieces).subscribe((ready) => {
+      const html =
+        `<h2>New pieces, just for you</h2>` +
+        `<p>Before they go in the shop for everyone, here ${ready.length === 1 ? 'is the newest piece' : `are ${ready.length} new pieces`}. As a subscriber you can see and buy ${ready.length === 1 ? 'it' : 'them'} first, until ${esc(when)}.</p>` +
+        productCardsHtml(ready, origin, q) +
+        `<p style="text-align:center;margin:24px 0;"><a href="${esc(`${origin}/early-access${q}`)}" style="display:inline-block;padding:12px 26px;background:#2E1A0E;color:#F5F0E6;text-decoration:none;">See everything in early access</a></p>` +
+        `<p>Each piece is one of a kind, so once it's gone, it's gone. This link is just for you.</p>`;
+      if (!this.subject().trim()) {
+        this.subject.set('Early access: new pieces before anyone else');
+      }
+      if (!this.previewText().trim()) {
+        this.previewText.set('See them first, as a subscriber');
+      }
+      this.insertHtml(html);
+    });
+  }
+
+  /** Swaps each piece's photo for a JPEG copy so it shows in Outlook; keeps the original if that fails. */
+  private withEmailImages<T extends Pick<Product, 'imageUrl'>>(pieces: T[]): Observable<T[]> {
+    this.busy.set(true);
+    return forkJoin(
+      pieces.map((p) =>
+        this.api.emailImage(p.imageUrl).pipe(
+          map((r) => ({ ...p, imageUrl: r.url })),
+          catchError(() => of(p)),
+        ),
+      ),
+    ).pipe(
+      map((ready) => {
+        this.busy.set(false);
+        return ready;
+      }),
+    );
   }
 
   /** Adds HTML at the end of the email (product cards, images). */

@@ -538,3 +538,25 @@
   font-weight: 600;
   color: var(--text-secondary);
 }
+
+.detail__early {
+  margin: 0.25rem 0 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid #9b4a1e;
+  background: #fbf3e8;
+  color: #2e1a0e;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.detail__piece-reviews {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detail__piece-reviews-heading {
+  margin: 0;
+  font-size: 1.1rem;
+}

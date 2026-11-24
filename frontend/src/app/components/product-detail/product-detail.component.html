@@ -49,7 +49,17 @@
       <div class="detail__info">
         <span class="detail__era">{{ product.era }}</span>
         <h1 class="detail__name">{{ product.name }}</h1>
-        @if (product.showReduction) {
+        @if (earlyUntil(); as until) {
+          <p class="detail__early">
+            <strong>Early access for subscribers.</strong>
+            Everyone else can see it from {{ until | date: 'EEEE d MMMM, h:mm a' }}.
+          </p>
+        }
+        @if (isSold()) {
+          <!-- A sold piece shows what it was listed at, not the reduced price it went for. -->
+          <p class="detail__price">{{ product.price | currency:'GBP' }}</p>
+          <p class="detail__local-price">{{ product.price | localPrice }}</p>
+        } @else if (product.showReduction) {
           <div class="detail__price-wrap">
             <span class="detail__price detail__price--original">{{ product.price | currency:'GBP' }}</span>
             <span class="detail__price detail__price--sale">{{ product.salePrice | currency:'GBP' }}</span>
@@ -111,6 +121,14 @@
               <a class="detail__sold-link" routerLink="/">Browse more vintage pieces &rarr;</a>
             }
           </div>
+          @if (pieceReviews().length) {
+            <section class="detail__piece-reviews" aria-labelledby="piece-reviews-heading">
+              <h2 id="piece-reviews-heading" class="detail__piece-reviews-heading">What its new owner said</h2>
+              @for (r of pieceReviews(); track $index) {
+                <app-review-card [review]="r" />
+              }
+            </section>
+          }
         } @else {
           <button class="detail__add-btn" (click)="cartStore.addToCart(product)">
             Add to Cart

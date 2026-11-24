@@ -21,7 +21,8 @@ public record ProductDto(
     bool InStock,
     DateTime CreatedAtUtc,
     string? Material = null,
-    DateTime? WentLiveAtUtc = null
+    DateTime? WentLiveAtUtc = null,
+    DateTime? EarlyAccessUntilUtc = null
 );
 
 public record ProductAdminDto(
@@ -49,7 +50,8 @@ public record ProductAdminDto(
     string? Material = null,
     DateTime? WentLiveAtUtc = null,
     bool ShowReduction = false,
-    int DiscountPercent = 0
+    int DiscountPercent = 0,
+    DateTime? EarlyAccessUntilUtc = null
 );
 
 public record CreateProductDto(
@@ -71,7 +73,9 @@ public record CreateProductDto(
     ProductStatus? Status = null,
     string? Sku = null,
     int? BackdatePriceDays = null,
-    string? Material = null
+    string? Material = null,
+    bool EarlyAccess = false,
+    DateTime? EarlyAccessUntilUtc = null
 );
 
 /// <summary>
@@ -119,5 +123,10 @@ public record UpdateProductDto(
     List<string>? VideoUrls,
     bool? InStock,
     ProductStatus? Status,
-    string? Material = null
+    string? Material = null,
+    bool? EarlyAccess = null,
+    DateTime? EarlyAccessUntilUtc = null
 );
+
+/// <param name="Access">Whether this visitor may see early-access pieces.</param>
+public record EarlyAccessListDto(bool Access, List<ProductDto> Pieces);

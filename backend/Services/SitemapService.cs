@@ -67,7 +67,7 @@ public class SitemapService(
     private async Task<IReadOnlyList<SitemapEntry>> BuildEntriesAsync()
     {
         List<Product> liveProducts = await products.Query()
-            .Where(p => p.Status == ProductStatus.Live)
+            .Where(p => p.Status == ProductStatus.Live && (p.EarlyAccessUntilUtc == null || p.EarlyAccessUntilUtc <= DateTime.UtcNow))
             .OrderByDescending(p => p.UpdatedAtUtc)
             .ToListAsync();
 

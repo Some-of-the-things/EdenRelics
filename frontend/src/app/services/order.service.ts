@@ -27,6 +27,8 @@ export interface CheckoutRequest {
   isGift?: boolean;
   giftMessage?: string | null;
   giftTo?: string | null;
+  discountCode?: string | null;
+  earlyAccessToken?: string | null;
 }
 
 export interface OrderItemDto {

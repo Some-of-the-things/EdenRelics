@@ -16,6 +16,7 @@ public interface IAppSettingsService
 public class AppSettingsService(IRepository<AppSetting> settings) : IAppSettingsService
 {
     public const string ReviewRequestDelayDays = "reviews.requestDelayDays";
+    public const string ReviewReminderDays = "reviews.reminderDays";
 
     public async Task<string?> GetAsync(string key)
     {

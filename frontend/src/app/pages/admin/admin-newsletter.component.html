@@ -3,6 +3,7 @@
     <button type="button" role="tab" class="nl__tab" [class.nl__tab--active]="view() === 'compose'" [attr.aria-selected]="view() === 'compose'" (click)="setView('compose')">Write</button>
     <button type="button" role="tab" class="nl__tab" [class.nl__tab--active]="view() === 'history'" [attr.aria-selected]="view() === 'history'" (click)="setView('history')">History</button>
     <button type="button" role="tab" class="nl__tab" [class.nl__tab--active]="view() === 'subscribers'" [attr.aria-selected]="view() === 'subscribers'" (click)="setView('subscribers')">Subscribers</button>
+    <button type="button" role="tab" class="nl__tab" [class.nl__tab--active]="view() === 'offer'" [attr.aria-selected]="view() === 'offer'" (click)="setView('offer')">Sign-up offer</button>
     @if (audience() !== null) {
       <span class="nl__audience">{{ audience() }} active subscriber{{ audience() === 1 ? '' : 's' }}</span>
     }
@@ -63,6 +64,7 @@
             <input type="file" accept="image/*" (change)="uploadImage($any($event.target))" [disabled]="locked() || busy()" />
           </label>
           <button type="button" (click)="pickerOpen.set(!pickerOpen())" [disabled]="locked()">Add pieces</button>
+          <button type="button" (click)="earlyAccessDrop()" [disabled]="locked() || busy()" title="Add the pieces in early access, with each subscriber's private link">Early access drop{{ earlyPieces().length ? ' (' + earlyPieces().length + ')' : '' }}</button>
           <button type="button" (click)="format('removeFormat')" [disabled]="locked()" title="Clear formatting">Clear</button>
         </div>
         <div
@@ -77,6 +79,7 @@
       } @else {
         <div class="nl__toolbar">
           <button type="button" (click)="pickerOpen.set(!pickerOpen())" [disabled]="locked()">Add pieces</button>
+          <button type="button" (click)="earlyAccessDrop()" [disabled]="locked() || busy()">Early access drop{{ earlyPieces().length ? ' (' + earlyPieces().length + ')' : '' }}</button>
         </div>
         <textarea
           class="nl__html"
@@ -188,6 +191,8 @@
               <th scope="col">Date</th>
               <th scope="col">Recipients</th>
               <th scope="col">Sent</th>
+              <th scope="col">Opened</th>
+              <th scope="col">Clicked</th>
               <th scope="col"><span class="nl__sr">Actions</span></th>
             </tr>
           </thead>
@@ -220,6 +225,17 @@
                     —
                   }
                 </td>
+                <td>
+                  @if (n.status === 'Sent' && n.sentCount) {
+                    {{ n.openedCount ?? 0 }} <span class="nl__muted">({{ ((n.openedCount ?? 0) / n.sentCount) | percent: '1.0-0' }})</span>
+                  } @else { — }
+                </td>
+                <td>
+                  @if (n.status === 'Sent' && n.sentCount) {
+                    {{ n.clickedCount ?? 0 }} <span class="nl__muted">({{ ((n.clickedCount ?? 0) / n.sentCount) | percent: '1.0-0' }})</span>
+                    @if (n.bouncedCount) { <span class="nl__row-error">· {{ n.bouncedCount }} bounced</span> }
+                  } @else { — }
+                </td>
                 <td class="nl__row-actions">
                   <button type="button" class="nl__link" (click)="open(n)">{{ n.status === 'Sent' || n.status === 'Sending' ? 'View' : 'Edit' }}</button>
                   @if (n.status === 'Draft') {
@@ -228,7 +244,7 @@
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="6" class="nl__muted">No newsletters yet.</td></tr>
+              <tr><td colspan="8" class="nl__muted">No newsletters yet.</td></tr>
             }
           </tbody>
         </table>
@@ -236,7 +252,7 @@
       @if (anySending()) {
         <p class="nl__hint">Sending in batches. This page updates every few seconds.</p>
       }
-      <p class="nl__hint">Open and click rates aren't tracked yet.</p>
+      <p class="nl__hint">Opens and clicks come from Resend once tracking is switched on there. Opens are a rough guide: some email apps block the tracking image, and Apple Mail opens everything automatically. Addresses that bounce or mark a newsletter as spam are taken off the list.</p>
     </div>
   }
 
@@ -298,5 +314,8 @@
         </div>
       }
     </div>
+  }
+  @if (view() === 'offer') {
+    <app-admin-signup-offer />
   }
 </section>

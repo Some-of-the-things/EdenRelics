@@ -568,6 +568,72 @@ namespace Eden_Relics_BE.Migrations
                     b.ToTable("CategoryRedirects");
                 });
 
+            modelBuilder.Entity("Eden_Relics_BE.Data.Entities.DiscountCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("ExcludeGiftOrders")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("ExcludeReduced")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("MinOrder")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UsedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("Email");
+
+                    b.ToTable("DiscountCodes");
+                });
+
             modelBuilder.Entity("Eden_Relics_BE.Data.Entities.EtsyToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1040,6 +1106,12 @@ namespace Eden_Relics_BE.Migrations
                     b.Property<int?>("BatchNumber")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("BouncedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ClickedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -1058,6 +1130,13 @@ namespace Eden_Relics_BE.Migrations
                     b.Property<Guid>("NewsletterId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("OpenedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProviderId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTime?>("SentAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -1071,6 +1150,9 @@ namespace Eden_Relics_BE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProviderId")
+                        .HasFilter("\"ProviderId\" IS NOT NULL");
 
                     b.HasIndex("NewsletterId", "Status");
 
@@ -1234,6 +1316,14 @@ namespace Eden_Relics_BE.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("DiscountCode")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<DateTime?>("DispatchedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -1254,6 +1344,9 @@ namespace Eden_Relics_BE.Migrations
 
                     b.Property<bool>("IsGift")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ReviewReminderSentAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("ReviewRequestSentAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -1442,6 +1535,9 @@ namespace Eden_Relics_BE.Migrations
                     b.Property<string>("DescriptionTranslations")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("EarlyAccessUntilUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Era")
                         .IsRequired()

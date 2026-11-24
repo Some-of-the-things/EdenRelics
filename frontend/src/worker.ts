@@ -52,6 +52,8 @@ const NO_CACHE_PREFIXES = [
   '/forgot-password',
   '/reset-password',
   '/verify-email',
+  // Subscribers-only: depends on the visitor's early-access link or account.
+  '/early-access',
   // Admin-only draft previews of unpublished content — must never be cached/served publicly.
   '/blog/preview',
   '/collections/preview',

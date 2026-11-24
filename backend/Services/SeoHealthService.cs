@@ -60,7 +60,7 @@ public partial class SeoHealthService(
 
         // Sitemap — mirror SitemapController exactly: live (non-deleted) products only
         // (NOT sold/stock), published posts, and the static routes the frontend serves.
-        List<Product> liveSitemapProducts = products.Where(p => p.Status == ProductStatus.Live).ToList();
+        List<Product> liveSitemapProducts = products.Where(p => p.Status == ProductStatus.Live && !p.IsEarlyAccessAt(DateTime.UtcNow)).ToList();
         int productSitemapImages = liveSitemapProducts.Sum(p =>
             (string.IsNullOrWhiteSpace(p.ImageUrl) ? 0 : 1) + p.AdditionalImageUrls.Count);
         int blogSitemapImages = blogPosts.Where(b => b.Published)
