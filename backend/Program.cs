@@ -281,6 +281,11 @@ builder.Services.AddTransient<INewsletterMailer, ResendNewsletterMailer>();
 builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<INewsletterService, NewsletterService>();
 builder.Services.AddScoped<IReviewRequestService, ReviewRequestService>();
+builder.Services.AddScoped<ISignupOfferService, SignupOfferService>();
+builder.Services.AddScoped<IEarlyAccessService, EarlyAccessService>();
+builder.Services.AddScoped<IEmailImageService, EmailImageService>();
+builder.Services.AddScoped<INewsletterTrackingService, NewsletterTrackingService>();
+builder.Services.AddHttpContextAccessor();
 if (runScheduledJobs)
 {
     builder.Services.AddHostedService<NewsletterBackgroundService>();

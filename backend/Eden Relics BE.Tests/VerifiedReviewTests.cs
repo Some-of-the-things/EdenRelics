@@ -113,6 +113,54 @@ public class VerifiedReviewTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task OneGentleReminder_GoesOutIfThereIsStillNoReview_AndNeverASecond()
+    {
+        Order order = await SeedGuestOrder("buyer-remind@example.com", "Shipped", DateTime.UtcNow.AddDays(-20), "remind-token-123");
+        Order reviewed = await SeedGuestOrder("buyer-reviewed@example.com", "Shipped", DateTime.UtcNow.AddDays(-20), "reviewed-token-123");
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+            foreach (Order o in await db.Orders.Where(x => x.Id == order.Id || x.Id == reviewed.Id).ToListAsync())
+            {
+                o.ReviewRequestSentAtUtc = DateTime.UtcNow.AddDays(-8);
+            }
+            await db.SaveChangesAsync();
+        }
+        (await _factory.CreateClient().PostAsJsonAsync($"/api/reviews/order/{reviewed.Id}", Review("reviewed-token-123"))).EnsureSuccessStatusCode();
+
+        Mailer.Clear();
+        await SendDueAsync();
+        OutgoingEmail reminder = Assert.Single(Mailer.Sent, e => e.To == "buyer-remind@example.com");
+        Assert.Contains("only one", reminder.Html);
+        Assert.Contains($"/review/{order.Id}?t=remind-token-123", reminder.Html);
+        Assert.DoesNotContain(Mailer.Sent, e => e.To == "buyer-reviewed@example.com");
+
+        await SendDueAsync();
+        Assert.Single(Mailer.Sent, e => e.To == "buyer-remind@example.com");
+    }
+
+    [Fact]
+    public async Task TheReminder_CanBeSwitchedOff()
+    {
+        HttpClient admin = _factory.CreateClient();
+        await RegisterAdmin(admin, _factory, "rv-remind-off@test.com");
+        (await admin.PutAsJsonAsync("/api/reviews/admin/settings", new { requestDelayDays = 7, reminderDays = 0 })).EnsureSuccessStatusCode();
+        Order order = await SeedGuestOrder("buyer-noremind@example.com", "Shipped", DateTime.UtcNow.AddDays(-20), "noremind-token-123");
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+            Order o = await db.Orders.FirstAsync(x => x.Id == order.Id);
+            o.ReviewRequestSentAtUtc = DateTime.UtcNow.AddDays(-8);
+            await db.SaveChangesAsync();
+        }
+        Mailer.Clear();
+        await SendDueAsync();
+        Assert.DoesNotContain(Mailer.Sent, e => e.To == "buyer-noremind@example.com");
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PutAsJsonAsync("/api/reviews/admin/settings", new { requestDelayDays = 7, reminderDays = 31 })).StatusCode);
+        (await admin.PutAsJsonAsync("/api/reviews/admin/settings", new { requestDelayDays = 7, reminderDays = 7 })).EnsureSuccessStatusCode();
+    }
+
+    [Fact]
     public async Task OrdersDispatchedBeforeThisFeature_AreNeverEmailed()
     {
         Order old = await SeedGuestOrder("buyer-old@example.com", status: "Delivered", dispatchedAt: null);

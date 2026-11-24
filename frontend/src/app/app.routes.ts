@@ -151,6 +151,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'early-access',
+    loadComponent: () =>
+      import('./pages/early-access/early-access-page.component').then(
+        (m) => m.EarlyAccessPageComponent
+      ),
+  },
+  {
     path: 'unsubscribe',
     loadComponent: () =>
       import('./pages/unsubscribe/unsubscribe-page.component').then(

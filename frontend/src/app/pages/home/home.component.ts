@@ -14,6 +14,8 @@ import { TopPicksService } from '../../services/top-picks.service';
 import { HomeSection, HomeSectionsService } from '../../services/home-sections.service';
 import { imageSrcAt, imageSrcset } from '../../utils/image-variant-loader';
 import { environment } from '../../../environments/environment';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { SignupOfferService } from '../../services/signup-offer.service';
 
 interface BlogPostSummary {
   id: string;
@@ -45,6 +47,8 @@ export class HomeComponent implements OnInit {
 
   mailingEmail = '';
   readonly mailingSubscribed = signal(false);
+  /** The sign-up offer the admin has set (discount wording, early-access line), if any. */
+  readonly offer = toSignal(inject(SignupOfferService).getOffer(), { initialValue: null });
   readonly latestBlogPost = signal<BlogPostSummary | null>(null);
 
   readonly srcset = imageSrcset;

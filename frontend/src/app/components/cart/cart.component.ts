@@ -9,6 +9,8 @@ import { ShippingService, ShippingCountry } from '../../services/shipping.servic
 import { LocaleService } from '../../services/locale.service';
 import { ReviewTrustLineComponent } from '../reviews/review-trust-line.component';
 import { CHRISTMAS_RETURNS_TEXT, christmasReturnsOpenForOrders } from '../../utils/christmas-returns';
+import { SignupOfferService } from '../../services/signup-offer.service';
+import { EarlyAccessService } from '../../services/early-access.service';
 
 interface ShippingOption {
   value: string;
@@ -31,6 +33,8 @@ export class CartComponent implements OnInit {
   private readonly shippingService = inject(ShippingService);
   private readonly localeService = inject(LocaleService);
   private readonly router = inject(Router);
+  private readonly offers = inject(SignupOfferService);
+  private readonly earlyAccess = inject(EarlyAccessService);
 
   readonly step = signal<'cart' | 'checkout'>('cart');
   readonly processing = signal(false);
@@ -73,7 +77,54 @@ export class CartComponent implements OnInit {
   }
 
   get orderTotal(): number {
-    return this.cartStore.totalPrice() + this.shippingCost;
+    return Math.max(0, this.cartStore.totalPrice() - this.discountAmount()) + this.shippingCost;
+  }
+
+  // Sign-up discount code. Checked here so the saving shows before paying; the server checks it
+  // again when the order is created, which is the check that counts.
+  discountInput = '';
+  readonly appliedCode = signal<string | null>(null);
+  readonly discountAmount = signal(0);
+  readonly discountLabel = signal('');
+  readonly discountMessage = signal('');
+  readonly checkingCode = signal(false);
+
+  applyCode(): void {
+    const code = this.discountInput.trim();
+    if (!code || this.checkingCode()) {
+      return;
+    }
+    const email = this.auth.isAuthenticated() ? null : this.guestEmail.trim();
+    if (!this.auth.isAuthenticated() && !email) {
+      this.discountMessage.set('Enter your email address above first: the code is tied to the address it was sent to.');
+      return;
+    }
+    this.checkingCode.set(true);
+    this.discountMessage.set('');
+    const ids = this.cartStore.items().map((i) => i.product.id);
+    this.offers.check(code, email, ids, this.isGift).subscribe({
+      next: (r) => {
+        this.checkingCode.set(false);
+        if (r.valid && r.code) {
+          this.appliedCode.set(r.code);
+          this.discountAmount.set(r.discount);
+          this.discountLabel.set(r.description ?? 'Discount');
+        } else {
+          this.removeCode();
+          this.discountMessage.set(r.message ?? 'That code can\'t be used.');
+        }
+      },
+      error: () => {
+        this.checkingCode.set(false);
+        this.discountMessage.set('The code could not be checked. Please try again.');
+      },
+    });
+  }
+
+  removeCode(): void {
+    this.appliedCode.set(null);
+    this.discountAmount.set(0);
+    this.discountLabel.set('');
   }
 
   ngOnInit(): void {
@@ -215,14 +266,24 @@ export class CartComponent implements OnInit {
         isGift: this.isGift,
         giftMessage: this.isGift ? this.giftMessage.trim() || null : null,
         giftTo: this.isGift ? this.giftTo.trim() || null : null,
+        discountCode: this.appliedCode(),
+        earlyAccessToken: this.earlyAccess.token(),
       })
       .subscribe({
         next: (res) => {
           this.cartStore.clearCart();
           window.location.href = res.checkoutUrl;
         },
-        error: () => {
+        error: (e) => {
           this.processing.set(false);
+          const message: unknown = e?.error?.message;
+          // Code problems (wrong address, expired, gift order) are worth showing as they are.
+          if (this.appliedCode() && typeof message === 'string' && /code/i.test(message)) {
+            this.removeCode();
+            this.discountMessage.set(message);
+            this.error.set('Your code was removed: ' + message);
+            return;
+          }
           this.error.set('Checkout failed. Please try again.');
         },
       });

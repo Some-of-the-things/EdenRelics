@@ -5,7 +5,12 @@
       <input type="number" min="1" max="60" [value]="delayDays() ?? 7" #delay aria-label="Days after dispatch" />
       days after their order is marked Shipped.
     </label>
-    <button type="button" class="arv__btn arv__btn--ghost" (click)="saveDelay(delay.value)">Save</button>
+    <label class="arv__setting">
+      If there's no review, one reminder
+      <input type="number" min="0" max="30" [value]="reminderDays() ?? 7" #reminder aria-label="Days after the first email for the reminder" />
+      days later (0 for none).
+    </label>
+    <button type="button" class="arv__btn arv__btn--ghost" (click)="saveDelay(delay.value, reminder.value)">Save</button>
     @if (delaySaved()) {
       <span class="arv__saved" role="status">Saved</span>
     }

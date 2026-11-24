@@ -17,16 +17,16 @@
       }
     </ul>
     <ul class="home-reviews__buyer" role="list">
-      @for (r of buyer; track r.name) {
+      @for (r of buyer(); track $index) {
         <li class="home-reviews__card"><app-review-card [review]="r" /></li>
       }
     </ul>
   </div>
 
   <div class="home-reviews__dots">
-    @for (i of dots; track i) {
+    @for (i of dots(); track i) {
       <button type="button" class="home-reviews__dot" [class.home-reviews__dot--active]="active() === i"
-              [attr.aria-label]="'Show review ' + (i + 1) + ' of ' + dots.length"
+              [attr.aria-label]="'Show review ' + (i + 1) + ' of ' + dots().length"
               [attr.aria-current]="active() === i ? 'true' : null"
               (click)="goTo(i)"></button>
     }

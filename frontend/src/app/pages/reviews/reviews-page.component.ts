@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SeoService } from '../../services/seo.service';
-import { ReviewsService } from '../../services/reviews.service';
+import { ReviewsService, toShopReview } from '../../services/reviews.service';
 import { ReviewCardComponent } from '../../components/reviews/review-card.component';
 import { ReviewStarsComponent } from '../../components/reviews/review-stars.component';
 import { GOOGLE_PROFILE_URL, SHOP_REVIEWS, ShopReview, googleRating } from '../../components/reviews/reviews.data';
@@ -46,20 +46,7 @@ export class ReviewsPageComponent implements OnInit {
     });
 
     this.reviewsService.getPublic(100).subscribe({
-      next: (rows) =>
-        this.verified.set(
-          rows.map((r) => ({
-            name: r.authorDisplayName,
-            source: 'verified' as const,
-            rating: r.rating,
-            text: r.comment,
-            pieces: r.productNames,
-            photoUrl: r.photoUrl,
-            reply: r.reply,
-            showOnHome: false,
-            showOnProduct: false,
-          })),
-        ),
+      next: (rows) => this.verified.set(rows.map(toShopReview)),
       error: () => {},
     });
   }

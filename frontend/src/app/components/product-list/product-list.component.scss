@@ -531,3 +531,8 @@
     cursor: default;
   }
 }
+
+// After the base badge rule so it wins on equal specificity.
+.product-card__sale-badge--early {
+  background: #2e1a0e;
+}

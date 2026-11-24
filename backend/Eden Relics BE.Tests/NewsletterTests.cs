@@ -33,6 +33,9 @@ public class NewsletterTests : IClassFixture<ApiFactory>
         db.Newsletters.RemoveRange(db.Newsletters.IgnoreQueryFilters());
         db.MailingListSubscribers.RemoveRange(db.MailingListSubscribers.IgnoreQueryFilters());
         await db.SaveChangesAsync();
+        // These tests count newsletter emails; keep the sign-up welcome code out of the outbox.
+        await scope.ServiceProvider.GetRequiredService<ISignupOfferService>()
+            .SaveSettingsAsync(SignupOfferService.Defaults with { Enabled = false });
         Mailer.Clear();
     }
 

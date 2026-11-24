@@ -4,11 +4,18 @@ import { Observable, of, catchError } from 'rxjs';
 import { BulkSaleResult, Product } from '../models/product.model';
 import { environment } from '../../environments/environment';
 import { LocaleService } from './locale.service';
+import { EarlyAccessService } from './early-access.service';
+
+export interface EarlyAccessList {
+  access: boolean;
+  pieces: Product[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private readonly http = inject(HttpClient);
   private readonly localeService = inject(LocaleService);
+  private readonly earlyAccess = inject(EarlyAccessService);
   private readonly apiUrl = `${environment.apiUrl}/api/products`;
 
   private get localeParam(): string {
@@ -22,11 +29,16 @@ export class ProductService {
    * with no message and no retry. The store turns a failure into an error state.
    */
   getAll(): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.apiUrl}${this.localeParam}`);
+    return this.http.get<Product[]>(`${this.apiUrl}${this.localeParam}`, { headers: this.earlyAccess.headers() });
+  }
+
+  /** Pieces currently in early access, for subscribers. */
+  getEarlyAccess(): Observable<EarlyAccessList> {
+    return this.http.get<EarlyAccessList>(`${this.apiUrl}/early-access${this.localeParam}`, { headers: this.earlyAccess.headers() });
   }
 
   getById(id: string): Observable<Product | undefined> {
-    return this.http.get<Product>(`${this.apiUrl}/${id}${this.localeParam}`).pipe(
+    return this.http.get<Product>(`${this.apiUrl}/${id}${this.localeParam}`, { headers: this.earlyAccess.headers() }).pipe(
       catchError((err) => {
         console.error(`Failed to load product ${id} from API:`, err);
         return of(undefined);
@@ -35,7 +47,7 @@ export class ProductService {
   }
 
   getBySlug(slug: string): Observable<Product | undefined> {
-    return this.http.get<Product>(`${this.apiUrl}/by-slug/${encodeURIComponent(slug)}${this.localeParam}`).pipe(
+    return this.http.get<Product>(`${this.apiUrl}/by-slug/${encodeURIComponent(slug)}${this.localeParam}`, { headers: this.earlyAccess.headers() }).pipe(
       catchError(() => of(undefined))
     );
   }

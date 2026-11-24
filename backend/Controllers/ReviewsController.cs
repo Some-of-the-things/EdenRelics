@@ -159,7 +159,7 @@ public class ReviewsController(
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ReviewSettingsDto>> GetSettings()
     {
-        return Ok(new ReviewSettingsDto(await reviewRequests.GetDelayDaysAsync()));
+        return Ok(new ReviewSettingsDto(await reviewRequests.GetDelayDaysAsync(), await reviewRequests.GetReminderDaysAsync()));
     }
 
     [HttpPut("admin/settings")]
@@ -168,8 +168,13 @@ public class ReviewsController(
     {
         try
         {
+            if (dto.ReminderDays is < 0 or > ReviewRequestService.MaxReminderDays)
+            {
+                return BadRequest(new { error = $"Choose a reminder between 0 (none) and {ReviewRequestService.MaxReminderDays} days." });
+            }
             await reviewRequests.SetDelayDaysAsync(dto.RequestDelayDays);
-            return Ok(new ReviewSettingsDto(await reviewRequests.GetDelayDaysAsync()));
+            await reviewRequests.SetReminderDaysAsync(dto.ReminderDays);
+            return Ok(new ReviewSettingsDto(await reviewRequests.GetDelayDaysAsync(), await reviewRequests.GetReminderDaysAsync()));
         }
         catch (ArgumentOutOfRangeException)
         {

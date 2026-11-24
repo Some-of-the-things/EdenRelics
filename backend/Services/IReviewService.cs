@@ -40,7 +40,8 @@ public record HideReviewDto(string? Reason, string? Note);
 
 public record ReplyReviewDto(string? Reply);
 
-public record ReviewSettingsDto(int RequestDelayDays);
+/// <param name="ReminderDays">Days after the first email to send one reminder; 0 for no reminder.</param>
+public record ReviewSettingsDto(int RequestDelayDays, int ReminderDays = ReviewRequestService.DefaultReminderDays);
 
 public record ReviewInviteItemDto(Guid ProductId, string Name, string? ImageUrl, string? Slug);
 

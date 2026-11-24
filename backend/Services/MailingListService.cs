@@ -7,14 +7,8 @@ namespace Eden_Relics_BE.Services;
 
 public class MailingListService(
     IRepository<MailingListSubscriber> repository,
-    IEmailService email) : IMailingListService
+    ISignupOfferService signupOffer) : IMailingListService
 {
-    /// <summary>Source value set by the shop discount pop-up — these signups get the welcome code.</summary>
-    private const string DiscountPopupSource = "Discount Popup";
-
-    /// <summary>Must stay in sync with the frontend pop-up code and the Stripe promotion code.</summary>
-    private const string WelcomeDiscountCode = "WELCOME15";
-
     public async Task<bool> SubscribeAsync(MailingListSubscribeDto dto)
     {
         string? address = NewsletterService.NormaliseEmail(dto.Email);
@@ -42,30 +36,23 @@ public class MailingListService(
                 existing.Source = source;
                 existing.UnsubscribeToken ??= NewsletterService.NewToken();
                 await repository.UpdateAsync(existing);
-                await MaybeSendWelcomeCodeAsync(source, address);
+                await signupOffer.IssueSignupCodeAsync(address, existing.UnsubscribeToken);
             }
             return true;
         }
 
         string? firstName = dto.FirstName?.Trim();
-        await repository.AddAsync(new MailingListSubscriber
+        MailingListSubscriber created = new()
         {
             Email = address,
             FirstName = string.IsNullOrEmpty(firstName) ? null : firstName[..Math.Min(firstName.Length, 100)],
             Source = source,
             UnsubscribeToken = NewsletterService.NewToken(),
-        });
-        await MaybeSendWelcomeCodeAsync(source, address);
+        };
+        await repository.AddAsync(created);
+        // Sends the sign-up code when the offer is on (and this address never had one).
+        await signupOffer.IssueSignupCodeAsync(address, created.UnsubscribeToken);
         return true;
-    }
-
-    /// <summary>Emails the first-order discount code, but only to discount-pop-up signups.</summary>
-    private async Task MaybeSendWelcomeCodeAsync(string source, string address)
-    {
-        if (source == DiscountPopupSource)
-        {
-            await email.SendDiscountWelcomeEmailAsync(address, WelcomeDiscountCode);
-        }
     }
 
     public async Task UnsubscribeAsync(string email)

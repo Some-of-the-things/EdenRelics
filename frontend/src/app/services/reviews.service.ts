@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { ShopReview } from '../components/reviews/reviews.data';
 
 /** A published review of a website order ("Verified purchase"). */
 export interface PublicReview {
@@ -14,6 +15,27 @@ export interface PublicReview {
   repliedAtUtc: string | null;
   productNames: string[];
   postedAtUtc: string;
+}
+
+/** A verified-purchase review in the shape the review cards take. */
+export function toShopReview(r: PublicReview): ShopReview {
+  return {
+    name: r.authorDisplayName,
+    source: 'verified',
+    rating: r.rating,
+    text: r.comment,
+    pieces: r.productNames,
+    photoUrl: r.photoUrl,
+    reply: r.reply,
+    showOnHome: false,
+    showOnProduct: false,
+  };
+}
+
+/** When the review email goes out, and the one optional reminder (0 = none). */
+export interface ReviewSettings {
+  requestDelayDays: number;
+  reminderDays: number;
 }
 
 export interface ReviewSummary {
@@ -157,11 +179,11 @@ export class ReviewsService {
     return this.http.post<AdminReview>(`${this.url}/admin/${id}/reply`, { reply });
   }
 
-  getSettings(): Observable<{ requestDelayDays: number }> {
-    return this.http.get<{ requestDelayDays: number }>(`${this.url}/admin/settings`);
+  getSettings(): Observable<ReviewSettings> {
+    return this.http.get<ReviewSettings>(`${this.url}/admin/settings`);
   }
 
-  saveSettings(requestDelayDays: number): Observable<{ requestDelayDays: number }> {
-    return this.http.put<{ requestDelayDays: number }>(`${this.url}/admin/settings`, { requestDelayDays });
+  saveSettings(requestDelayDays: number, reminderDays: number): Observable<ReviewSettings> {
+    return this.http.put<ReviewSettings>(`${this.url}/admin/settings`, { requestDelayDays, reminderDays });
   }
 }

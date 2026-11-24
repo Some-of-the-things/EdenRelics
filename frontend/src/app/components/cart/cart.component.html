@@ -219,6 +219,12 @@
           <span>Subtotal</span>
           <span>{{ cartStore.totalPrice() | currency:'GBP' }}</span>
         </div>
+        @if (appliedCode()) {
+          <div class="checkout__summary-line checkout__summary-line--discount">
+            <span>{{ discountLabel() }} <small>({{ appliedCode() }})</small></span>
+            <span>&minus;{{ discountAmount() | currency:'GBP' }}</span>
+          </div>
+        }
         <div class="checkout__summary-line">
           <span>Shipping</span>
           <span>{{ shippingCost === 0 ? 'Free' : (shippingCost | currency:'GBP') }}</span>
@@ -226,6 +232,38 @@
         <div class="checkout__summary-total">
           <span>Total</span>
           <span>{{ orderTotal | currency:'GBP' }}</span>
+        </div>
+
+        <div class="checkout__code">
+          @if (appliedCode()) {
+            <p class="checkout__code-applied" role="status">
+              Code {{ appliedCode() }} applied.
+              <button type="button" class="checkout__code-remove" (click)="removeCode()">Remove</button>
+            </p>
+          } @else {
+            <label class="checkout__field" for="discountCode">
+              <span>Discount code</span>
+            </label>
+            <div class="checkout__code-row">
+              <input
+                id="discountCode"
+                type="text"
+                name="discountCode"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                [(ngModel)]="discountInput"
+                (keydown.enter)="$event.preventDefault(); applyCode()"
+                [attr.aria-describedby]="discountMessage() ? 'discount-message' : null"
+              />
+              <button type="button" class="checkout__code-apply" (click)="applyCode()" [disabled]="checkingCode() || !discountInput.trim()">
+                {{ checkingCode() ? 'Checking…' : 'Apply' }}
+              </button>
+            </div>
+          }
+          @if (discountMessage()) {
+            <p class="checkout__code-message" id="discount-message" role="alert">{{ discountMessage() }}</p>
+          }
         </div>
 
         @if (error()) {

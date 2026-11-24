@@ -29,6 +29,7 @@ public class ApiFactory : WebApplicationFactory<Program>
                 ["Jwt:Issuer"] = "TestIssuer",
                 ["Jwt:Audience"] = "TestAudience",
                 ["Stripe:SecretKey"] = "",
+                ["Resend:WebhookSecret"] = "whsec_dGVzdC13ZWJob29rLXNpZ25pbmcta2V5LTEyMzQ1Ng==",
                 ["Stripe:WebhookSecret"] = "",
                 ["Stripe:FrontendUrl"] = "http://localhost:4200",
                 ["Email:ResendApiKey"] = "",
@@ -138,7 +139,6 @@ public class FakeEmailService : IEmailService
         }
         return Task.CompletedTask;
     }
-    public Task SendDiscountWelcomeEmailAsync(string toEmail, string code) => Task.CompletedTask;
     public Task SendOwnerSaleNotificationAsync(Eden_Relics_BE.Data.Entities.Order order) => Task.CompletedTask;
     public Task SendOrderInvoiceEmailAsync(Eden_Relics_BE.Data.Entities.Order order, string? platform = null) => Task.CompletedTask;
     public string BuildOrderInvoiceHtml(Eden_Relics_BE.Data.Entities.Order order, string? platform = null) => string.Empty;
@@ -153,13 +153,23 @@ public class FakeNewsletterMailer : INewsletterMailer
     public List<string> BatchKeys { get; } = [];
     public int FailNextBatches { get; set; }
 
+    public int FailNextSends { get; set; }
+
     public Task SendAsync(OutgoingEmail email, CancellationToken ct = default)
     {
-        lock (_lock) { Sent.Add(email); }
+        lock (_lock)
+        {
+            if (FailNextSends > 0)
+            {
+                FailNextSends--;
+                throw new HttpRequestException("provider timed out");
+            }
+            Sent.Add(email);
+        }
         return Task.CompletedTask;
     }
 
-    public Task<IReadOnlyList<BatchFailure>> SendBatchAsync(string idempotencyKey, IReadOnlyList<OutgoingEmail> emails, CancellationToken ct = default)
+    public Task<BatchOutcome> SendBatchAsync(string idempotencyKey, IReadOnlyList<OutgoingEmail> emails, CancellationToken ct = default)
     {
         lock (_lock)
         {
@@ -171,7 +181,7 @@ public class FakeNewsletterMailer : INewsletterMailer
             }
             Sent.AddRange(emails);
         }
-        return Task.FromResult<IReadOnlyList<BatchFailure>>([]);
+        return Task.FromResult(new BatchOutcome([], emails.Select(e => (string?)$"fake-{Guid.NewGuid():N}").ToList()));
     }
 
     public void Clear()

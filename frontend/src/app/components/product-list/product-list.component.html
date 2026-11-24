@@ -68,6 +68,8 @@
           <span class="product-card__era">{{ product.era }}</span>
           @if (!product.inStock) {
             <span class="product-card__sold-badge">Sold</span>
+          } @else if (product.earlyAccessUntilUtc) {
+            <span class="product-card__sale-badge product-card__sale-badge--early">Early access</span>
           } @else if (product.showReduction) {
             <span class="product-card__sale-badge">{{ product.discountPercent }}% off</span>
           }

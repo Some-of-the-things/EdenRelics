@@ -1,0 +1,72 @@
+<div class="ea">
+  <header class="ea__header">
+    <p class="ea__eyebrow">For newsletter subscribers</p>
+    <h1 class="ea__title">Early access</h1>
+  </header>
+
+  @if (loading()) {
+    <p class="ea__note">One moment…</p>
+  } @else if (failed()) {
+    <p class="ea__note">This page couldn't load just now. Please try the link again in a minute.</p>
+  } @else if (access()) {
+    @if (pieces().length) {
+      <p class="ea__intro">
+        These pieces are yours to see first. Each one is one of a kind, and goes into the shop for
+        everyone at the time shown.
+      </p>
+      <ul class="ea__grid" role="list">
+        @for (p of pieces(); track p.id) {
+          <li class="ea__card">
+            <a class="ea__image-link" [routerLink]="['/product', p.slug || p.id]">
+              <img class="ea__image" [src]="srcAt(p.imageUrl, 800)" [alt]="p.name" width="400" height="500" loading="lazy" />
+            </a>
+            <div class="ea__body">
+              <h2 class="ea__name"><a [routerLink]="['/product', p.slug || p.id]">{{ p.name }}</a></h2>
+              <p class="ea__meta">{{ p.era }} · Size {{ p.size }}</p>
+              <p class="ea__price">{{ (p.salePrice ?? p.price) | currency: 'GBP' }}</p>
+              @if (p.earlyAccessUntilUtc) {
+                <p class="ea__release">Public from {{ p.earlyAccessUntilUtc | date: 'EEE d MMM, h:mm a' }}</p>
+              }
+              @if (inCart(p.id)) {
+                <a class="ea__btn ea__btn--ghost" routerLink="/cart">In your basket</a>
+              } @else {
+                <button type="button" class="ea__btn" (click)="cart.addToCart(p)">Add to basket</button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="ea__note">
+        There's nothing in early access at the moment. We'll email you when the next pieces are
+        ready. In the meantime, <a routerLink="/shop">browse the shop</a>.
+      </p>
+    }
+  } @else {
+    <p class="ea__intro">
+      Subscribers see new pieces before anyone else, and can buy them first. Since every piece is
+      one of a kind, that's often the only chance.
+    </p>
+    <p class="ea__note">
+      Already subscribed? Open the link in our latest early-access email
+      @if (!auth.isAuthenticated()) {
+        , or <a routerLink="/login" [queryParams]="{ returnUrl: '/early-access' }">sign in</a> with the address you subscribed with
+      }
+      .
+    </p>
+    @if (!subscribed()) {
+      <form class="ea__form" (ngSubmit)="subscribe()">
+        <label class="ea__label" for="ea-email">Email address</label>
+        <div class="ea__form-row">
+          <input id="ea-email" name="email" type="email" required autocomplete="email" [(ngModel)]="email" [disabled]="subscribing()" />
+          <button type="submit" class="ea__btn" [disabled]="subscribing()">{{ subscribing() ? 'Joining…' : 'Join the list' }}</button>
+        </div>
+        @if (subscribeError()) {
+          <p class="ea__error" role="alert">That didn't work. Please check the address and try again.</p>
+        }
+      </form>
+    } @else {
+      <p class="ea__done" role="status">You're on the list. Your link will be in the next early-access email.</p>
+    }
+  }
+</div>

@@ -72,6 +72,12 @@ public class NewsletterDelivery : BaseEntity, IHardDeletable
     public int Attempts { get; set; }
     public DateTime? SentAtUtc { get; set; }
     public string? Error { get; set; }
+
+    /// <summary>The provider's id for this email, so open/click/bounce events can be matched back.</summary>
+    public string? ProviderId { get; set; }
+    public DateTime? OpenedAtUtc { get; set; }
+    public DateTime? ClickedAtUtc { get; set; }
+    public DateTime? BouncedAtUtc { get; set; }
 }
 
 /// <summary>Simple admin-editable settings, one row per key.</summary>

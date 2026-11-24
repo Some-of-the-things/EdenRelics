@@ -61,6 +61,7 @@ public class EdenRelicsDbContext : DbContext
     public DbSet<Newsletter> Newsletters => Set<Newsletter>();
     public DbSet<NewsletterDelivery> NewsletterDeliveries => Set<NewsletterDelivery>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -126,6 +127,7 @@ public class EdenRelicsDbContext : DbContext
             entity.HasMany(o => o.Items).WithOne(i => i.Order).HasForeignKey(i => i.OrderId);
             entity.Property(o => o.ShippingMethod).HasMaxLength(20);
             entity.Property(o => o.ShippingCost).HasPrecision(10, 2);
+            entity.Property(o => o.DiscountAmount).HasPrecision(10, 2);
             entity.Property(o => o.ShipAddressLine1).HasMaxLength(200);
             entity.Property(o => o.ShipAddressLine2).HasMaxLength(200);
             entity.Property(o => o.ShipCity).HasMaxLength(100);
@@ -141,6 +143,7 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(o => o.GiftMessage).HasMaxLength(Order.GiftMessageMaxLength);
             entity.Property(o => o.GiftTo).HasMaxLength(Order.GiftToMaxLength);
             entity.Property(o => o.ReviewToken).HasMaxLength(64);
+            entity.Property(o => o.DiscountCode).HasMaxLength(32);
             entity.HasIndex(o => o.ReviewToken).IsUnique().HasFilter("\"ReviewToken\" IS NOT NULL");
             entity.HasIndex(o => o.DispatchedAtUtc);
         });
@@ -231,6 +234,20 @@ public class EdenRelicsDbContext : DbContext
             entity.Property(d => d.Error).HasMaxLength(500);
             entity.HasIndex(d => new { d.NewsletterId, d.SubscriberId }).IsUnique();
             entity.HasIndex(d => new { d.NewsletterId, d.Status });
+            entity.Property(d => d.ProviderId).HasMaxLength(100);
+            entity.HasIndex(d => d.ProviderId).HasFilter("\"ProviderId\" IS NOT NULL");
+        });
+
+        modelBuilder.Entity<DiscountCode>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(c => c.Code).HasMaxLength(32);
+            entity.Property(c => c.Email).HasMaxLength(256);
+            entity.Property(c => c.Source).HasMaxLength(32);
+            entity.Property(c => c.Amount).HasPrecision(10, 2);
+            entity.Property(c => c.MinOrder).HasPrecision(10, 2);
+            entity.HasIndex(c => c.Code).IsUnique();
+            entity.HasIndex(c => c.Email);
         });
 
         modelBuilder.Entity<AppSetting>(entity =>

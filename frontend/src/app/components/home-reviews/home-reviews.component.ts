@@ -2,7 +2,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  OnInit,
   PLATFORM_ID,
+  computed,
   inject,
   signal,
   viewChild,
@@ -11,11 +13,13 @@ import { isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ReviewCardComponent } from '../reviews/review-card.component';
 import { ReviewStarsComponent } from '../reviews/review-stars.component';
-import { GOOGLE_PROFILE_URL, SHOP_REVIEWS, googleRating } from '../reviews/reviews.data';
+import { GOOGLE_PROFILE_URL, SHOP_REVIEWS, ShopReview, googleRating } from '../reviews/reviews.data';
+import { ReviewsService, toShopReview } from '../../services/reviews.service';
 
 /**
- * The homepage reviews section: the Google reviews as large cards, the short buyer reviews
- * below, and a link through to /reviews. On a phone the cards become one swipeable row
+ * The homepage reviews section: the Google reviews as large cards, the most recent verified
+ * purchases from this site (newest first, whatever their rating), then the short reviews from our
+ * other shops, and a link through to /reviews. On a phone the cards become one swipeable row
  * (Google first) with dots underneath.
  */
 @Component({
@@ -25,13 +29,26 @@ import { GOOGLE_PROFILE_URL, SHOP_REVIEWS, googleRating } from '../reviews/revie
   styleUrl: './home-reviews.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HomeReviewsComponent {
+export class HomeReviewsComponent implements OnInit {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly track = viewChild<ElementRef<HTMLElement>>('track');
+  private readonly reviewsService = inject(ReviewsService);
+
+  /** How many recent verified purchases lead the buyer row. */
+  static readonly RecentVerified = 3;
 
   readonly google = SHOP_REVIEWS.filter((r) => r.showOnHome && r.source === 'google');
-  readonly buyer = SHOP_REVIEWS.filter((r) => r.showOnHome && r.source !== 'google');
-  readonly dots = Array.from({ length: this.google.length + this.buyer.length }, (_, i) => i);
+  private readonly imported = SHOP_REVIEWS.filter((r) => r.showOnHome && r.source !== 'google');
+  private readonly verified = signal<ShopReview[]>([]);
+  readonly buyer = computed(() => [...this.verified(), ...this.imported]);
+  readonly dots = computed(() => Array.from({ length: this.google.length + this.buyer().length }, (_, i) => i));
+
+  ngOnInit(): void {
+    this.reviewsService.getPublic(HomeReviewsComponent.RecentVerified).subscribe({
+      next: (rows) => this.verified.set(rows.map(toShopReview)),
+      error: () => {},
+    });
+  }
   readonly rating = googleRating();
   readonly profileUrl = GOOGLE_PROFILE_URL;
 

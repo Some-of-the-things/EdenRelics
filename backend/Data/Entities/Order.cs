@@ -32,6 +32,15 @@ public class Order : BaseEntity
 
     public DateTime? ReviewRequestSentAtUtc { get; set; }
 
+    /// <summary>When the one gentle reminder to review went out, if it did.</summary>
+    public DateTime? ReviewReminderSentAtUtc { get; set; }
+
+    /// <summary>The sign-up discount code used on this order, if any (see <see cref="DiscountCode"/>).</summary>
+    public string? DiscountCode { get; set; }
+
+    /// <summary>Money taken off the items by <see cref="DiscountCode"/>. <see cref="Total"/> is already net of it.</summary>
+    public decimal DiscountAmount { get; set; }
+
     /// <summary>When the order was first marked Shipped (or Delivered). The review request goes out a set number of days later.</summary>
     public DateTime? DispatchedAtUtc { get; set; }
 

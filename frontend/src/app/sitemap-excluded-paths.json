@@ -12,6 +12,7 @@
     "admin",
     "admin/login",
     "admin/sellers",
+    "early-access",
     "seller",
     "seller-tool",
     "top-picks",

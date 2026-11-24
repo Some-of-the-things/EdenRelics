@@ -61,7 +61,7 @@ public partial class SellerService(
             return [];
         }
         List<Product> rows = await products.Query()
-            .Where(p => p.SellerId == seller.Id && p.Status == ProductStatus.Live)
+            .Where(p => p.SellerId == seller.Id && p.Status == ProductStatus.Live && (p.EarlyAccessUntilUtc == null || p.EarlyAccessUntilUtc <= DateTime.UtcNow))
             .OrderByDescending(p => p.CreatedAtUtc)
             .ToListAsync();
         return rows.Select(p => new SellerProductCardDto(

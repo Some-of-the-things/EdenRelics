@@ -1,0 +1,122 @@
+@if (settings(); as s) {
+  <div class="nl__offer">
+    <h2 class="nl__title">Sign-up offer</h2>
+    <p class="nl__hint">
+      When this is on, everyone who joins the newsletter is emailed their own single-use code, tied
+      to their email address. Turning it off stops new codes; codes already sent keep working until
+      they expire. Changes here never alter codes already sent.
+    </p>
+
+    @if (message()) {
+      <p class="nl__message" role="status">{{ message() }}</p>
+    }
+    @if (error()) {
+      <p class="nl__error" role="alert">{{ error() }}</p>
+    }
+
+    <label class="nl__check">
+      <input type="checkbox" [checked]="s.enabled" (change)="update('enabled', $any($event.target).checked)" />
+      <span><strong>Offer a discount for joining</strong></span>
+    </label>
+
+    <fieldset class="nl__offer-grid" [disabled]="!s.enabled">
+      <legend class="nl__sr">Discount</legend>
+      <label class="nl__field">
+        <span class="nl__label">Type</span>
+        <select [ngModel]="s.kind" (ngModelChange)="update('kind', $event)" name="kind">
+          <option value="percent">% off</option>
+          <option value="fixed">£ off</option>
+        </select>
+      </label>
+      <label class="nl__field">
+        <span class="nl__label">Amount {{ s.kind === 'fixed' ? '(£)' : '(%)' }}</span>
+        <input type="number" min="1" [max]="s.kind === 'fixed' ? 500 : 90" step="0.5" [value]="s.amount" (input)="update('amount', +$any($event.target).value)" />
+      </label>
+      <label class="nl__field">
+        <span class="nl__label">Minimum order (£, optional)</span>
+        <input type="number" min="0" step="1" [value]="s.minOrder ?? ''" (input)="update('minOrder', numberOrNull($any($event.target).value))" placeholder="None" />
+      </label>
+      <label class="nl__field">
+        <span class="nl__label">Code lasts (days after signing up)</span>
+        <input type="number" min="1" max="365" step="1" [value]="s.validDays" (input)="update('validDays', +$any($event.target).value)" />
+      </label>
+    </fieldset>
+
+    <fieldset class="nl__offer-checks" [disabled]="!s.enabled">
+      <legend class="nl__label">Leave out</legend>
+      <label class="nl__check">
+        <input type="checkbox" [checked]="s.excludeReduced" (change)="update('excludeReduced', $any($event.target).checked)" />
+        <span>Pieces already reduced (they don't count towards the discount or the minimum)</span>
+      </label>
+      <label class="nl__check">
+        <input type="checkbox" [checked]="s.excludeGiftOrders" (change)="update('excludeGiftOrders', $any($event.target).checked)" />
+        <span>Gift orders</span>
+      </label>
+    </fieldset>
+
+    <label class="nl__field">
+      <span class="nl__label">Sign-up box wording (optional, up to 120 characters)</span>
+      <input type="text" maxlength="120" [value]="s.signupText ?? ''" (input)="update('signupText', $any($event.target).value)" [disabled]="!s.enabled" placeholder="Leave blank to use the wording below" />
+    </label>
+
+    <label class="nl__check">
+      <input type="checkbox" [checked]="s.showEarlyAccessLine" (change)="update('showEarlyAccessLine', $any($event.target).checked)" />
+      <span>Also say "Subscribers see new pieces first" in the sign-up box (with or without a discount)</span>
+    </label>
+
+    <p class="nl__offer-preview">The sign-up box will say: <strong>{{ headlinePreview() }}</strong></p>
+
+    <button type="button" class="nl__btn" (click)="save()" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save offer' }}</button>
+  </div>
+}
+
+<div class="nl__offer-codes">
+  <div class="nl__compose-head">
+    <h2 class="nl__title">Codes sent</h2>
+    @if (codes(); as c) {
+      <span class="nl__muted">{{ c.issued }} sent · {{ c.used }} used · {{ c.unused }} unused · {{ c.expired }} expired</span>
+    }
+  </div>
+  <div class="nl__mode" role="group" aria-label="Show codes">
+    <button type="button" [class.nl__mode--on]="filter() === 'all'" (click)="setFilter('all')">All</button>
+    <button type="button" [class.nl__mode--on]="filter() === 'unused'" (click)="setFilter('unused')">Unused</button>
+    <button type="button" [class.nl__mode--on]="filter() === 'used'" (click)="setFilter('used')">Used</button>
+    <button type="button" [class.nl__mode--on]="filter() === 'expired'" (click)="setFilter('expired')">Expired</button>
+  </div>
+  <div class="nl__table-wrap">
+    <table class="nl__table">
+      <thead>
+        <tr>
+          <th scope="col">Code</th>
+          <th scope="col">Email</th>
+          <th scope="col">Offer</th>
+          <th scope="col">Sent</th>
+          <th scope="col">Expires</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of codes()?.codes ?? []; track c.id) {
+          <tr>
+            <td><code>{{ c.code }}</code></td>
+            <td>{{ c.email }}</td>
+            <td>{{ c.description }}</td>
+            <td>{{ c.issuedAtUtc | date: 'd MMM y' }}</td>
+            <td>{{ c.expiresAtUtc | date: 'd MMM y' }}</td>
+            <td>
+              @if (c.status === 'used') {
+                Used {{ c.usedAtUtc | date: 'd MMM y' }}
+              } @else if (c.status === 'expired') {
+                <span class="nl__muted">Expired</span>
+              } @else {
+                Unused
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="nl__muted">No codes yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

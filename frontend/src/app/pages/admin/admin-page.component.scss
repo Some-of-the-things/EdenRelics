@@ -2263,3 +2263,38 @@
   margin-top: 0.4rem;
 }
 
+
+.admin__early {
+  display: inline-block;
+  margin: 0.15rem 0;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #2e1a0e;
+  color: #f5f0e6;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.admin__early-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  small {
+    color: #6b5c4a;
+    line-height: 1.4;
+  }
+}
+
+.admin__early-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+}
+
+.admin__early-when {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}

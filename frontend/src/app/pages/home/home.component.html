@@ -142,8 +142,16 @@
 
   <section id="newsletter" class="home__mailing">
     @if (!mailingSubscribed()) {
-      <h2 class="home__mailing-title">New Arrivals, Straight to Your Inbox</h2>
-      <p class="home__mailing-text">Join our mailing list and be the first to see new vintage pieces as they land.</p>
+      @if (offer()?.discountOn) {
+        <h2 class="home__mailing-title">{{ offer()?.headline }}</h2>
+        <p class="home__mailing-text">Join our mailing list to hear about new vintage pieces as they land. We'll email you your code.</p>
+      } @else {
+        <h2 class="home__mailing-title">New Arrivals, Straight to Your Inbox</h2>
+        <p class="home__mailing-text">Join our mailing list and be the first to see new vintage pieces as they land.</p>
+      }
+      @if (offer()?.earlyAccessLine; as line) {
+        <p class="home__mailing-text home__mailing-early">{{ line }}.</p>
+      }
       <form class="home__mailing-form" (ngSubmit)="subscribeToMailingList()">
         <label for="mailingEmail" class="sr-only">Email address</label>
         <input
@@ -157,8 +165,15 @@
         />
         <button type="submit" class="home__mailing-btn">Subscribe</button>
       </form>
+      @if (offer()?.discountOn && offer()?.terms) {
+        <p class="home__mailing-fine">{{ offer()?.terms }} Unsubscribe any time.</p>
+      }
     } @else {
-      <p class="home__mailing-done" role="status" aria-live="polite">You're on the list! We'll let you know when new pieces arrive.</p>
+      @if (offer()?.discountOn) {
+        <p class="home__mailing-done" role="status" aria-live="polite">You're on the list! Check your inbox for your code.</p>
+      } @else {
+        <p class="home__mailing-done" role="status" aria-live="polite">You're on the list! We'll let you know when new pieces arrive.</p>
+      }
     }
   </section>
 </div>

@@ -1,19 +1,16 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { FocusTrapDirective } from '../../directives/focus-trap.directive';
 import { ShopEngagementService } from '../../services/shop-engagement.service';
 import { NewsletterService } from '../../services/newsletter.service';
+import { SignupOfferService } from '../../services/signup-offer.service';
 
 /**
- * Must match the Stripe promotion code (Stripe Dashboard → Coupons) so the code
- * shown/emailed here is actually redeemable at checkout.
- */
-const DISCOUNT_CODE = 'WELCOME15';
-
-/**
- * Newsletter-signup discount pop-up. Rendered once (per app root) and shown when
- * {@link ShopEngagementService} decides the visitor has actively browsed the shop
- * past the threshold. Reuses the app's focus-trap dialog pattern.
+ * Newsletter-signup discount pop-up. Shown when {@link ShopEngagementService} decides the visitor
+ * has actively browsed the shop past the threshold, and only while the admin has the sign-up
+ * offer switched on. The wording comes from that offer. Each subscriber's code is unique and
+ * goes to their inbox, so it isn't shown here.
  */
 @Component({
   selector: 'app-discount-popup',
@@ -25,12 +22,14 @@ const DISCOUNT_CODE = 'WELCOME15';
 export class DiscountPopupComponent {
   private readonly engagement = inject(ShopEngagementService);
   private readonly newsletter = inject(NewsletterService);
+  private readonly offers = inject(SignupOfferService);
 
-  /** Trigger from the engagement tracker (latches true once). */
-  readonly show = this.engagement.showPopup;
-  /** Local close state, so the success view can linger to show the code. */
+  readonly offer = toSignal(this.offers.getOffer(), { initialValue: null });
+
+  /** Trigger from the engagement tracker (latches true once), and only with an offer to make. */
+  readonly show = computed(() => this.engagement.showPopup() && !!this.offer()?.discountOn);
+  /** Local close state, so the success view can linger. */
   readonly closed = signal(false);
-  readonly code = DISCOUNT_CODE;
 
   email = '';
   readonly submitting = signal(false);

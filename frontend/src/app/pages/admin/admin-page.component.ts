@@ -2249,6 +2249,7 @@ export class AdminPageComponent implements OnInit {
     this.imagePreview.set(null);
     this.uploadError.set('');
     this.form = this.emptyForm();
+    this.earlyAccessLocal = '';
     this.showForm.set(true);
     setTimeout(() => {
       if (this.descriptionEditor) {
@@ -2283,7 +2284,9 @@ export class AdminPageComponent implements OnInit {
       videoUrls: [...(product.videoUrls ?? [])],
       inStock: product.inStock,
       status: this.resolveStatus(product),
+      earlyAccess: this.isEarlyAccess(product),
     };
+    this.earlyAccessLocal = this.isEarlyAccess(product) ? this.toLocalInput(product.earlyAccessUntilUtc!) : '';
     this.showForm.set(true);
     setTimeout(() => {
       if (this.descriptionEditor) {
@@ -2364,7 +2367,39 @@ export class AdminPageComponent implements OnInit {
       });
   }
 
+  // ---------- Early access (Task 5) ----------
+
+  /** The release time as a datetime-local value, while the form's early-access box is ticked. */
+  earlyAccessLocal = '';
+
+  isEarlyAccess(p: Product): boolean {
+    return !!p.earlyAccessUntilUtc && new Date(p.earlyAccessUntilUtc).getTime() > Date.now();
+  }
+
+  /** Ticking the box suggests the default: 48 hours from now. */
+  onEarlyAccessToggle(on: boolean): void {
+    if (on && !this.earlyAccessLocal) {
+      this.earlyAccessLocal = this.toLocalInput(new Date(Date.now() + 48 * 3600_000).toISOString());
+    }
+  }
+
+  private toLocalInput(iso: string): string {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   save(): void {
+    if (this.form.earlyAccess) {
+      const when = new Date(this.earlyAccessLocal);
+      if (!this.earlyAccessLocal || Number.isNaN(when.getTime()) || when.getTime() <= Date.now() + 60_000) {
+        alert('Pick a public release time in the future for the early-access piece.');
+        return;
+      }
+      this.form.earlyAccessUntilUtc = when.toISOString();
+    } else {
+      this.form.earlyAccessUntilUtc = null;
+    }
     const id = this.editingId();
     if (id) {
       this.store.updateProduct(id, this.form);
@@ -2420,6 +2455,8 @@ export class AdminPageComponent implements OnInit {
       videoUrls: [] as string[],
       inStock: true,
       status: 'live',
+      earlyAccess: false,
+      earlyAccessUntilUtc: null,
     };
   }
 

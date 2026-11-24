@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { productCardsHtml } from './admin-newsletter.component';
+import { EARLY_ACCESS_PLACEHOLDER, productCardsHtml } from './admin-newsletter.component';
 import { ReviewCardComponent } from '../../components/reviews/review-card.component';
 import { ShopReview } from '../../components/reviews/reviews.data';
 
@@ -26,6 +26,11 @@ describe('newsletter product cards', () => {
     const html = productCardsHtml([piece], 'https://edenrelics.co.uk');
     expect(html).toContain('Laura Ashley &quot;Prairie&quot; Dress &lt;1980s&gt;');
     expect(html).not.toContain('<1980s>');
+  });
+
+  it('adds the early-access token to every link in an early-access drop', () => {
+    const html = productCardsHtml([piece], 'https://edenrelics.co.uk', `?ea=${EARLY_ACCESS_PLACEHOLDER}`);
+    expect(html).toContain(`href="https://edenrelics.co.uk/product/laura-ashley-prairie-dress?ea=${EARLY_ACCESS_PLACEHOLDER}"`);
   });
 
   it('shows a reduced price with the original struck through', () => {

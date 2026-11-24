@@ -22,6 +22,8 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'review/:orderId', renderMode: RenderMode.Client },
   // Newsletter unsubscribe link: acts on the token in the browser, never on a crawler's fetch.
   { path: 'unsubscribe', renderMode: RenderMode.Client },
+  // Subscribers-only list: depends on the visitor's link token or account, never cached or indexed.
+  { path: 'early-access', renderMode: RenderMode.Client },
   { path: 'blog/preview/:slug', renderMode: RenderMode.Client },
 
   // Public routes — SSR on-demand for SEO. (Prerender would be a perf win for
