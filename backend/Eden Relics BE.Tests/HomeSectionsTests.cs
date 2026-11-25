@@ -19,7 +19,34 @@ public class HomeSectionsTests
         string ButtonText,
         string ButtonLink,
         bool Visible,
-        List<Guid> ProductIds);
+        List<Guid> ProductIds,
+        bool CreatePage = false);
+
+    private record Page(string Path, string Eyebrow, string Title, string Description, List<Guid> ProductIds);
+
+    private record Created(Guid Id);
+
+    private static Section Custom(string title, string link, bool createPage, params Guid[] ids) =>
+        new("custom", "Just in", title, "Cosy pieces.", "See them all", link, true, ids.ToList(), createPage);
+
+    private static async Task<Guid> ListLivePiece(HttpClient admin, string name)
+    {
+        HttpResponseMessage r = await admin.PostAsJsonAsync("/api/products", new
+        {
+            name,
+            description = "A lovely piece.",
+            price = 60m,
+            costPrice = 10m,
+            era = "1970s",
+            category = "1970s",
+            size = "10",
+            condition = "Excellent",
+            imageUrl = "https://img.example/x.webp",
+            inStock = true,
+        });
+        Assert.Equal(HttpStatusCode.Created, r.StatusCode);
+        return (await r.Content.ReadFromJsonAsync<Created>(JsonOptions))!.Id;
+    }
 
     private static Section TopPicks(bool visible = true) =>
         new("top-picks", "Our Top Picks", "Our Top Picks", "Hand-chosen.", "See all top picks", "/top-picks", visible, []);
@@ -149,5 +176,92 @@ public class HomeSectionsTests
         HttpResponseMessage response = await Save(client, TopPicks(), Latest());
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreatePage_AtANewAddress_ServesThePageAndListsItInTheSitemap()
+    {
+        using ApiFactory factory = new();
+        HttpClient admin = factory.CreateClient();
+        await RegisterAdmin(admin, factory, "home-sections-page@test.com");
+        Guid piece = await ListLivePiece(admin, "Autumn Cardigan");
+
+        HttpResponseMessage response = await Save(admin, Latest(), TopPicks(), Custom("Autumn Knits", "/Autumn-Knits/", true, piece));
+        response.EnsureSuccessStatusCode();
+        List<Section> saved = (await response.Content.ReadFromJsonAsync<List<Section>>(JsonOptions))!;
+        // The address is tidied to the form the page is served at.
+        Assert.True(saved[2].CreatePage);
+        Assert.Equal("/autumn-knits", saved[2].ButtonLink);
+
+        HttpClient anon = factory.CreateClient();
+        Page? page = await anon.GetFromJsonAsync<Page>("/api/home-sections/page?path=/autumn-knits", JsonOptions);
+        Assert.NotNull(page);
+        Assert.Equal("Autumn Knits", page.Title);
+        Assert.Equal([piece], page.ProductIds);
+
+        string sitemap = await anon.GetStringAsync("/api/sitemap.xml");
+        Assert.Contains("<loc>https://edenrelics.co.uk/autumn-knits</loc>", sitemap);
+    }
+
+    [Fact]
+    public async Task CreatePage_AtAnExistingSiteAddress_JustLinks_AndCreatesNothing()
+    {
+        using ApiFactory factory = new();
+        HttpClient admin = factory.CreateClient();
+        await RegisterAdmin(admin, factory, "home-sections-existing@test.com");
+
+        HttpResponseMessage response = await Save(admin, Latest(), TopPicks(), Custom("On Sale", "/shop/sale", true));
+        response.EnsureSuccessStatusCode();
+        List<Section> saved = (await response.Content.ReadFromJsonAsync<List<Section>>(JsonOptions))!;
+        Assert.False(saved[2].CreatePage);
+        Assert.Equal("/shop/sale", saved[2].ButtonLink);
+
+        HttpClient anon = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.NotFound, (await anon.GetAsync("/api/home-sections/page?path=/shop/sale")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Page_IsGone_WhenTheTickIsTakenOff_AndUnknownAddressesAre404()
+    {
+        using ApiFactory factory = new();
+        HttpClient admin = factory.CreateClient();
+        await RegisterAdmin(admin, factory, "home-sections-untick@test.com");
+        (await Save(admin, Latest(), TopPicks(), Custom("Autumn Knits", "/autumn-knits", true))).EnsureSuccessStatusCode();
+        (await Save(admin, Latest(), TopPicks(), Custom("Autumn Knits", "/autumn-knits", false))).EnsureSuccessStatusCode();
+
+        HttpClient anon = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.NotFound, (await anon.GetAsync("/api/home-sections/page?path=/autumn-knits")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await anon.GetAsync("/api/home-sections/page?path=/never-made")).StatusCode);
+    }
+
+    [Theory]
+    [InlineData("", "needs a")]
+    [InlineData("/autumn_knits", "lowercase letters")]
+    [InlineData("/a/b/c/d", "lowercase letters")]
+    public async Task CreatePage_RejectsAMissingOrUnusableAddress(string link, string expected)
+    {
+        using ApiFactory factory = new();
+        HttpClient admin = factory.CreateClient();
+        await RegisterAdmin(admin, factory, $"home-sections-bad{link.Length}@test.com");
+        Section custom = Custom("Autumn Knits", link, true) with { ButtonText = link.Length == 0 ? "" : "See them all" };
+
+        HttpResponseMessage response = await Save(admin, Latest(), TopPicks(), custom);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains(expected, await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task CreatePage_RefusesTwoSectionsWantingTheSameAddress()
+    {
+        using ApiFactory factory = new();
+        HttpClient admin = factory.CreateClient();
+        await RegisterAdmin(admin, factory, "home-sections-dupe@test.com");
+
+        HttpResponseMessage response = await Save(admin, Latest(), TopPicks(),
+            Custom("Autumn Knits", "/autumn-knits", true), Custom("More Knits", "/autumn-knits", true));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("Two sections", await response.Content.ReadAsStringAsync());
     }
 }

@@ -1,3 +1,4 @@
+using Eden_Relics_BE.DTOs;
 using System.Text;
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.Repositories;
@@ -11,6 +12,7 @@ public class SitemapService(
     IRepository<CareFabric> careFabrics,
     IRepository<CareIssue> careIssues,
     IRepository<SubCategory> subCategories,
+    IHomeSectionsService homeSections,
     SitemapRoutesService staticRoutes) : ISitemapService
 {
     private const string BaseUrl = "https://edenrelics.co.uk";
@@ -111,6 +113,18 @@ public class SitemapService(
             if (seen.Add(loc))
             {
                 entries.Add(new SitemapEntry(loc, $"{sub.UpdatedAtUtc:yyyy-MM-dd}", "weekly", "0.7", []));
+            }
+        }
+
+        // Pages created from homepage sections, while at least one of their pieces is live. An
+        // all-sold page is still served (marked noindex), so it isn't advertised here.
+        HashSet<Guid> liveIds = liveProducts.Select(p => p.Id).ToHashSet();
+        foreach (SectionPageDto page in await homeSections.GetPagesAsync())
+        {
+            string loc = $"{BaseUrl}{Escape(page.Path)}";
+            if (page.ProductIds.Any(liveIds.Contains) && seen.Add(loc))
+            {
+                entries.Add(new SitemapEntry(loc, null, "weekly", "0.6", []));
             }
         }
 

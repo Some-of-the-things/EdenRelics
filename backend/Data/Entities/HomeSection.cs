@@ -29,6 +29,12 @@ public class HomeSection : BaseEntity, IHardDeletable
     /// <summary>Site-relative path the button goes to, e.g. "/shop/sale". Never an external URL.</summary>
     public string ButtonLink { get; set; } = "";
 
+    /// <summary>
+    /// Custom sections only: when set, the site serves a page at <see cref="ButtonLink"/> showing this
+    /// section's pieces, as long as that address isn't one of the site's own pages.
+    /// </summary>
+    public bool CreatePage { get; set; }
+
     /// <summary>Display order on the homepage (0-based). Lower shows first.</summary>
     public int Position { get; set; }
 

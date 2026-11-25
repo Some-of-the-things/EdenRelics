@@ -22,6 +22,19 @@ public class HomeSectionsController(IHomeSectionsService homeSections) : Control
         return Ok(await homeSections.GetPublicAsync());
     }
 
+    /// <summary>Public: the page a custom section created at this address (e.g. ?path=/autumn-knits).</summary>
+    [AllowAnonymous]
+    [HttpGet("page")]
+    public async Task<ActionResult<SectionPageDto>> GetPage([FromQuery] string? path)
+    {
+        SectionPageDto? page = await homeSections.GetPageAsync(path ?? "");
+        if (page is null)
+        {
+            return NotFound();
+        }
+        return Ok(page);
+    }
+
     /// <summary>Admin: every section, hidden ones included.</summary>
     [HttpGet("admin")]
     public async Task<ActionResult<List<HomeSectionDto>>> GetForAdmin()

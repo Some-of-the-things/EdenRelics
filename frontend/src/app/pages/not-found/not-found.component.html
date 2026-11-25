@@ -1,8 +1,58 @@
-<section class="not-found">
-  <h1 class="not-found__title">Page not found</h1>
-  <p class="not-found__text">The page you are looking for might have been moved or no longer exists.</p>
-  <div class="not-found__actions">
-    <a routerLink="/" class="not-found__link not-found__link--primary">Back to shop</a>
-    <a routerLink="/blog" class="not-found__link">Read the blog</a>
-  </div>
-</section>
+@if (page(); as p) {
+  <article class="collection-page">
+    <nav class="collection-page__breadcrumb" aria-label="Breadcrumb">
+      <a routerLink="/">Home</a>
+      <span aria-hidden="true">›</span>
+      <span aria-current="page">{{ p.title }}</span>
+    </nav>
+
+    <header class="collection-page__header">
+      @if (p.eyebrow) {
+        <p class="collection-page__eyebrow">{{ p.eyebrow }}</p>
+      }
+      <h1 class="collection-page__title">{{ p.title }}</h1>
+      @if (p.description) {
+        <p class="collection-page__intro">{{ p.description }}</p>
+      }
+    </header>
+
+    @if (products().length > 0) {
+      <ul class="collection-products">
+        @for (product of products(); track product.id) {
+          <li class="collection-product">
+            <a [routerLink]="['/product', product.slug || product.id]" class="collection-product__link">
+              <div class="collection-product__image-wrap">
+                @if (product.imageUrl) {
+                  <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+                }
+              </div>
+              <div class="collection-product__body">
+                <h2 class="collection-product__name">{{ product.name }}</h2>
+                <span class="collection-product__price">
+                  {{ (product.showReduction && product.salePrice ? product.salePrice : product.price) | currency:'GBP' }}
+                </span>
+              </div>
+            </a>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="collection-page__empty">
+        These pieces have all found new homes. <a routerLink="/shop">Browse the shop</a> for more.
+      </p>
+    }
+
+    <p class="collection-page__back">
+      <a routerLink="/shop">← Back to shop</a>
+    </p>
+  </article>
+} @else if (page() === null) {
+  <section class="not-found">
+    <h1 class="not-found__title">Page not found</h1>
+    <p class="not-found__text">The page you are looking for might have been moved or no longer exists.</p>
+    <div class="not-found__actions">
+      <a routerLink="/" class="not-found__link not-found__link--primary">Back to shop</a>
+      <a routerLink="/blog" class="not-found__link">Read the blog</a>
+    </div>
+  </section>
+}

@@ -5,7 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Eden_Relics_BE.Services;
 
-public class AnalyticsIngestService(IRepository<PageViewDaily> pageViews) : IAnalyticsIngestService
+public class AnalyticsIngestService(
+    IRepository<PageViewDaily> pageViews,
+    IHomeSectionsService homeSections) : IAnalyticsIngestService
 {
     // Hard ceiling on how many *new* (path, isBot, country) buckets we will create in a
     // single day. A real day has at most a few hundred distinct pages; this cap only ever
@@ -22,7 +24,11 @@ public class AnalyticsIngestService(IRepository<PageViewDaily> pageViews) : IAna
         // any 2xx SSR render, and unknown paths hit the Angular "**" (not-found) route
         // which still renders 200 — so without this an unauthenticated caller could mint
         // one new PageViewDaily row per arbitrary path and grow the table without bound.
-        if (!RouteAllowList.IsRecordable(path))
+        // Pages created from homepage sections live at addresses of the admin's choosing, so they
+        // are checked against the saved sections (only for paths shaped like one, so junk paths
+        // never reach the database).
+        if (!RouteAllowList.IsRecordable(path)
+            && !(HomeSectionsService.IsCreatablePagePath(path) && await homeSections.GetPageAsync(path) is not null))
         {
             return;
         }

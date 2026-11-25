@@ -105,3 +105,24 @@
   padding-top: 0.85rem;
   border-top: 1px solid #ebe3d4;
 }
+
+.hs__create {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.hs__create-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #5c5346;
+
+  a {
+    color: #9b4a1e;
+  }
+}
+
+.hs__create-note--warn {
+  color: #9b1c1c;
+}

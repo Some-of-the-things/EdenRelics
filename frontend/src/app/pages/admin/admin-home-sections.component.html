@@ -69,6 +69,38 @@
               <span>Button goes to (a page on this site, e.g. /shop/sale)</span>
               <input type="text" maxlength="200" placeholder="/shop/sale" [ngModel]="section.buttonLink" (ngModelChange)="update(section.key, { buttonLink: $event })" />
             </label>
+            @if (section.kind === 'custom') {
+              <div class="hs__create">
+                <label class="tp__feat">
+                  <input type="checkbox" [checked]="!!section.createPage" (change)="update(section.key, { createPage: !section.createPage })" />
+                  Create this page if it doesn't exist
+                </label>
+                @if (section.createPage) {
+                  @switch (pathState(section)) {
+                    @case ('empty') {
+                      <p class="hs__create-note">Type the page's address in "Button goes to", e.g. /autumn-knits.</p>
+                    }
+                    @case ('existing') {
+                      <p class="hs__create-note">That's already a page on the site, so no new page is needed. The button goes straight to it.</p>
+                    }
+                    @case ('invalid') {
+                      <p class="hs__create-note hs__create-note--warn">
+                        For a new page, use lowercase letters, numbers and hyphens, in up to three parts, e.g. /autumn-knits or /edits/autumn-knits.
+                      </p>
+                    }
+                    @case ('creatable') {
+                      <p class="hs__create-note">
+                        @if (isSavedPage(section)) {
+                          Page is live at <a [href]="normalisedPath(section)" target="_blank" rel="noopener">edenrelics.co.uk{{ normalisedPath(section) }}</a>, showing this section's title, description and pieces.
+                        } @else {
+                          Saving creates a page at edenrelics.co.uk{{ normalisedPath(section) }}, showing this section's title, description and pieces.
+                        }
+                      </p>
+                    }
+                  }
+                }
+              </div>
+            }
           </div>
 
           @if (section.kind === 'custom') {

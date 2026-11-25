@@ -4,6 +4,13 @@ import { ProductStore } from '../../store/product.store';
 import { Product } from '../../models/product.model';
 import { resolveProductStatus } from '../../utils/product-status';
 import { HomeSection, HomeSectionsService } from '../../services/home-sections.service';
+import { routes } from '../../app.routes';
+import {
+  SectionPathState,
+  normaliseSectionPath,
+  reservedFirstSegments,
+  sectionPathState,
+} from '../../utils/section-page-path';
 
 /** A section being edited, with a stable key so the list can be reordered without losing focus. */
 interface EditableSection extends HomeSection {
@@ -44,6 +51,12 @@ export class AdminHomeSectionsComponent implements OnInit {
 
   private nextKey = 0;
 
+  /** First path parts the site's own pages use; a section can't create a page under them. */
+  private readonly reserved = reservedFirstSegments(routes);
+
+  /** Created-page addresses as last loaded or saved, so the hint can say a page is already live. */
+  private readonly savedPages = signal<ReadonlySet<string>>(new Set());
+
   private readonly byId = computed<Map<string, Product>>(
     () => new Map(this.store.products().map((p) => [p.id, p])),
   );
@@ -70,6 +83,7 @@ export class AdminHomeSectionsComponent implements OnInit {
     this.homeSections.getAdmin().subscribe({
       next: (sections) => {
         this.sections.set(sections.map((s) => this.editable(s)));
+        this.rememberPages(sections);
         this.loading.set(false);
       },
       error: (err) => {
@@ -85,6 +99,18 @@ export class AdminHomeSectionsComponent implements OnInit {
 
   isLive(product: Product | undefined): boolean {
     return !!product && resolveProductStatus(product) === 'live';
+  }
+
+  pathState(section: HomeSection): SectionPathState {
+    return sectionPathState(section.buttonLink, this.reserved);
+  }
+
+  normalisedPath(section: HomeSection): string {
+    return normaliseSectionPath(section.buttonLink);
+  }
+
+  isSavedPage(section: HomeSection): boolean {
+    return this.savedPages().has(normaliseSectionPath(section.buttonLink));
   }
 
   kindLabel(section: HomeSection): string {
@@ -194,12 +220,17 @@ export class AdminHomeSectionsComponent implements OnInit {
         this.saved.set(true);
         this.pickingFor.set(null);
         this.sections.set(sections.map((s) => this.editable(s)));
+        this.rememberPages(sections);
       },
       error: (err) => {
         this.saving.set(false);
         this.error.set(this.explain(err));
       },
     });
+  }
+
+  private rememberPages(sections: HomeSection[]): void {
+    this.savedPages.set(new Set(sections.filter((s) => s.createPage).map((s) => s.buttonLink)));
   }
 
   private editable(section: HomeSection): EditableSection {

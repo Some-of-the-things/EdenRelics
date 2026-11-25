@@ -8,6 +8,12 @@ public interface IHomeSectionsService
     /// frontend applies its own switch.</summary>
     Task<List<HomeSectionDto>> GetPublicAsync();
 
+    /// <summary>Public: the page a custom section created at <paramref name="path"/>, or null.</summary>
+    Task<SectionPageDto?> GetPageAsync(string path);
+
+    /// <summary>Every page created from a custom section, for the sitemap.</summary>
+    Task<List<SectionPageDto>> GetPagesAsync();
+
     /// <summary>Admin: every section, hidden ones included, in display order.</summary>
     Task<List<HomeSectionDto>> GetAdminAsync();
 

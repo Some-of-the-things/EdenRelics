@@ -719,6 +719,9 @@ namespace Eden_Relics_BE.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)");
 
+                    b.Property<bool>("CreatePage")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
