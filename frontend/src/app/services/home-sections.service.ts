@@ -19,6 +19,20 @@ export interface HomeSection {
   visible: boolean;
   /** Hand-picked pieces, in order. Custom sections only. */
   productIds: string[];
+  /**
+   * Custom sections only: the site serves a page at buttonLink showing these pieces, unless that
+   * address is already one of the site's own pages (then the button just links to it).
+   */
+  createPage?: boolean;
+}
+
+/** A page created from a custom homepage section, served at its button link. */
+export interface SectionPage {
+  path: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  productIds: string[];
 }
 
 /**
@@ -63,6 +77,11 @@ export class HomeSectionsService {
       next: (sections) => this._sections.set(sections),
       error: () => {},
     });
+  }
+
+  /** The page a section created at this address; errors (404) when there isn't one. */
+  getPage(path: string): Observable<SectionPage> {
+    return this.http.get<SectionPage>(`${this.url}/page`, { params: { path } });
   }
 
   getAdmin(): Observable<HomeSection[]> {

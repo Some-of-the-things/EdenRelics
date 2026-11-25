@@ -13,6 +13,15 @@ public record HomeSectionDto(
     string ButtonText,
     string ButtonLink,
     bool Visible,
+    List<Guid> ProductIds,
+    bool CreatePage = false);
+
+/// <summary>A page created from a custom homepage section, served at its button link.</summary>
+public record SectionPageDto(
+    string Path,
+    string Eyebrow,
+    string Title,
+    string Description,
     List<Guid> ProductIds);
 
 /// <summary>Replace every homepage section, in display order.</summary>

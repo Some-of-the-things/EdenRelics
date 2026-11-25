@@ -1,6 +1,7 @@
 using Eden_Relics_BE.Data.Entities;
 using Eden_Relics_BE.DTOs;
 using Eden_Relics_BE.Repositories;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Eden_Relics_BE.Services;
@@ -21,6 +22,42 @@ public class HomeSectionsService(IRepository<HomeSection> sections) : IHomeSecti
     private const int MaxDescription = 500;
     private const int MaxButtonText = 60;
     private const int MaxButtonLink = 200;
+
+    /// <summary>
+    /// What a created page's address may look like: one to three lowercase words-with-hyphens
+    /// segments, e.g. /autumn-knits or /edits/autumn-knits. No dots, query strings or capitals, so it
+    /// can't collide with files (/sitemap.xml) or worker routes (/__sitemap-routes).
+    /// </summary>
+    private static readonly Regex PagePath = new(
+        "^/[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*){0,2}$",
+        RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// First path segments the site already serves (the routes in frontend app.routes.ts, plus the
+    /// API). A section never creates a page under one of these: the site's own page is there, so the
+    /// button just links to it. Keep in step with app.routes.ts when adding a route.
+    /// </summary>
+    public static readonly IReadOnlySet<string> ReservedFirstSegments = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "shop", "product", "seller", "seller-tool", "admin", "sellers", "cart", "login", "register",
+        "account", "order-confirmation", "review", "privacy-policy", "modern-slavery-policy",
+        "supply-chain-policy", "review-policy", "early-access", "unsubscribe", "returns-policy",
+        "security", "terms-conditions", "cookie-policy", "accessibility-report", "compliance-report",
+        "settings", "forgot-password", "reset-password", "verify-email", "blog", "designers", "style",
+        "dresses", "collections", "top-picks", "care", "contact", "reviews", "about", "api",
+    };
+
+    /// <summary>True when <paramref name="path"/> is an address a section page can be created at.</summary>
+    public static bool IsCreatablePagePath(string path)
+    {
+        if (!PagePath.IsMatch(path))
+        {
+            return false;
+        }
+        return !ReservedFirstSegments.Contains(FirstSegment(path));
+    }
+
+    private static string FirstSegment(string path) => path.Length > 1 ? path[1..].Split('/')[0] : "";
 
     public static IReadOnlyList<HomeSectionDto> Defaults { get; } =
     [
@@ -50,6 +87,34 @@ public class HomeSectionsService(IRepository<HomeSection> sections) : IHomeSecti
         // Top Picks stays in regardless of Visible: its own switch governs it, applied by the frontend.
         return all.Where(s => s.Visible || s.Kind == HomeSectionKinds.TopPicks).ToList();
     }
+
+    public async Task<SectionPageDto?> GetPageAsync(string path)
+    {
+        string wanted = (path ?? "").Trim().TrimEnd('/').ToLowerInvariant();
+        if (!IsCreatablePagePath(wanted))
+        {
+            return null;
+        }
+        HomeSection? section = await sections.Query()
+            .FirstOrDefaultAsync(s => s.CreatePage && s.Kind == HomeSectionKinds.Custom && s.ButtonLink == wanted);
+        if (section is null)
+        {
+            return null;
+        }
+        return ToPage(ToDto(section));
+    }
+
+    public async Task<List<SectionPageDto>> GetPagesAsync()
+    {
+        List<HomeSection> rows = await sections.Query()
+            .Where(s => s.CreatePage && s.Kind == HomeSectionKinds.Custom)
+            .OrderBy(s => s.Position)
+            .ToListAsync();
+        return rows.Select(r => ToPage(ToDto(r))).ToList();
+    }
+
+    private static SectionPageDto ToPage(HomeSectionDto d) =>
+        new(d.ButtonLink, d.Eyebrow, d.Title, d.Description, d.ProductIds);
 
     public async Task<List<HomeSectionDto>> GetAdminAsync()
     {
@@ -82,6 +147,7 @@ public class HomeSectionsService(IRepository<HomeSection> sections) : IHomeSecti
                 Position = index,
                 Visible = s.Visible,
                 ProductIds = s.ProductIds.Select(id => id.ToString()).ToList(),
+                CreatePage = s.CreatePage,
             })
             .ToList();
         await sections.AddRangeAsync(fresh);
@@ -97,6 +163,7 @@ public class HomeSectionsService(IRepository<HomeSection> sections) : IHomeSecti
         }
 
         List<HomeSectionDto> clean = [];
+        HashSet<string> pagePaths = new(StringComparer.Ordinal);
         foreach (HomeSectionDto raw in submitted)
         {
             string kind = (raw.Kind ?? "").Trim().ToLowerInvariant();
@@ -143,6 +210,35 @@ public class HomeSectionsService(IRepository<HomeSection> sections) : IHomeSecti
                 }
             }
 
+            // A page is only created where the site has nothing of its own. At one of the site's
+            // addresses (e.g. /shop/sale) the tick is dropped and the button links to that page.
+            bool createPage = false;
+            if (raw.CreatePage && kind == HomeSectionKinds.Custom)
+            {
+                if (buttonLink.Length == 0)
+                {
+                    throw new HomeSectionValidationException(
+                        $"\"{title}\" needs a \"Button goes to\" address for its page, e.g. /autumn-knits.");
+                }
+                string normalised = buttonLink.TrimEnd('/').ToLowerInvariant();
+                if (normalised.Length > 1 && !ReservedFirstSegments.Contains(FirstSegment(normalised)))
+                {
+                    if (!PagePath.IsMatch(normalised))
+                    {
+                        throw new HomeSectionValidationException(
+                            $"The page address for \"{title}\" can only use lowercase letters, numbers and hyphens, " +
+                            "in up to three parts, e.g. /autumn-knits or /edits/autumn-knits.");
+                    }
+                    if (!pagePaths.Add(normalised))
+                    {
+                        throw new HomeSectionValidationException(
+                            $"Two sections both want to create the page {normalised}. Give one of them a different address.");
+                    }
+                    buttonLink = normalised;
+                    createPage = true;
+                }
+            }
+
             clean.Add(new HomeSectionDto(
                 kind,
                 Trimmed(raw.Eyebrow, MaxEyebrow, "Eyebrow"),
@@ -151,7 +247,8 @@ public class HomeSectionsService(IRepository<HomeSection> sections) : IHomeSecti
                 buttonText,
                 buttonLink,
                 raw.Visible,
-                productIds));
+                productIds,
+                createPage));
         }
 
         // The built-in strips can be hidden, renamed and moved, but not deleted: their pieces come
@@ -190,5 +287,6 @@ public class HomeSectionsService(IRepository<HomeSection> sections) : IHomeSecti
         s.ButtonText,
         s.ButtonLink,
         s.Visible,
-        s.ProductIds.Select(id => Guid.TryParse(id, out Guid g) ? g : Guid.Empty).Where(g => g != Guid.Empty).ToList());
+        s.ProductIds.Select(id => Guid.TryParse(id, out Guid g) ? g : Guid.Empty).Where(g => g != Guid.Empty).ToList(),
+        s.CreatePage);
 }
