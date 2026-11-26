@@ -283,3 +283,29 @@
     }
   }
 }
+
+// Pages created from homepage sections: the same cards, but a part-filled last row is centred
+// rather than left-aligned. Column counts match the grid above (240px minimum, 1.5rem gaps,
+// 1.5rem page padding each side, 1200px page cap).
+.collection-products--centred {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  > .collection-product {
+    flex: 0 0 calc((100% - 4.5rem) / 4);
+    min-width: 0;
+
+    @media (max-width: 1079px) {
+      flex-basis: calc((100% - 3rem) / 3);
+    }
+
+    @media (max-width: 815px) {
+      flex-basis: calc((100% - 1.5rem) / 2);
+    }
+
+    @media (max-width: 551px) {
+      flex-basis: 100%;
+    }
+  }
+}

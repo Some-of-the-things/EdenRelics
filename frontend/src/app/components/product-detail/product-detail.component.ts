@@ -1,3 +1,4 @@
+import { ShownPricePipe } from '../../pipes/shown-price.pipe';
 import {
   Component,
   computed,
@@ -56,7 +57,7 @@ function schemaCondition(condition: string): string {
 
 @Component({
   selector: 'app-product-detail',
-  imports: [
+  imports: [ShownPricePipe, 
     RouterLink,
     CurrencyPipe,
     TitleCasePipe,

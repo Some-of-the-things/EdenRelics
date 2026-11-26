@@ -65,7 +65,7 @@
               </div>
               <div class="home__featured-body">
                 <h3 class="home__featured-name">{{ product.name }}</h3>
-                <span class="home__featured-price">{{ (product.salePrice ?? product.price) | currency:'GBP' }}</span>
+                <span class="home__featured-price">{{ (product | shownPrice) | currency:'GBP' }}</span>
               </div>
             </a>
           </li>

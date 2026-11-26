@@ -1,3 +1,4 @@
+import { ShownPricePipe } from '../../pipes/shown-price.pipe';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, PLATFORM_ID, RESPONSE_INIT } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CurrencyPipe, isPlatformBrowser } from '@angular/common';
@@ -10,7 +11,7 @@ import { TopPicksService } from '../../services/top-picks.service';
 
 @Component({
   selector: 'app-collection-page',
-  imports: [RouterLink, CurrencyPipe],
+  imports: [ShownPricePipe, RouterLink, CurrencyPipe],
   templateUrl: './collection-page.component.html',
   styleUrl: './collections.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

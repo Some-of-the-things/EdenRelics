@@ -1,3 +1,4 @@
+import { ShownPricePipe } from '../../pipes/shown-price.pipe';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, PLATFORM_ID, RESPONSE_INIT } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CurrencyPipe, isPlatformBrowser } from '@angular/common';
@@ -18,7 +19,7 @@ import { DesignerProfile, findDesignerBySlug } from './designers.data';
  */
 @Component({
   selector: 'app-designer-page',
-  imports: [RouterLink, CurrencyPipe],
+  imports: [ShownPricePipe, RouterLink, CurrencyPipe],
   templateUrl: './designer-page.component.html',
   styleUrl: './designers.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

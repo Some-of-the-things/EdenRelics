@@ -1,3 +1,4 @@
+import { ShownPricePipe } from '../../pipes/shown-price.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -26,7 +27,7 @@ import { CategoryHub, LookForPoint, findHub } from './category.data';
  */
 @Component({
   selector: 'app-category-hub',
-  imports: [RouterLink, CurrencyPipe],
+  imports: [ShownPricePipe, RouterLink, CurrencyPipe],
   templateUrl: './category-hub.component.html',
   styleUrl: './category.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

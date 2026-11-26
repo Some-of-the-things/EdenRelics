@@ -175,7 +175,7 @@
                   decoding="async"
                 />
                 <span class="detail__related-name">{{ piece.name }}</span>
-                <span class="detail__related-price">{{ (piece.salePrice ?? piece.price) | currency:'GBP' }}</span>
+                <span class="detail__related-price">{{ (piece | shownPrice) | currency:'GBP' }}</span>
               </a>
             </li>
           }

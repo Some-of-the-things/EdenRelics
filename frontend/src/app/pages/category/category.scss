@@ -385,3 +385,44 @@
     font-weight: 500;
   }
 }
+
+// Hub layout. Narrow screens: the title, tagline and intro, then the pieces, then everything else.
+// Wide screens: all of the text in a left column, the pieces in a right column.
+.cathub__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'head'
+    'products'
+    'more';
+
+  > .cathub__header {
+    grid-area: head;
+  }
+
+  > .cathub__section--products {
+    grid-area: products;
+  }
+
+  > .cathub__more {
+    grid-area: more;
+  }
+
+  @media (min-width: 1000px) {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'head products'
+      'more products';
+    column-gap: 3rem;
+    align-items: start;
+
+    > .cathub__section--products {
+      margin-top: 0;
+    }
+
+    > .cathub__more > .cathub__section:first-child {
+      margin-top: 0;
+    }
+  }
+}

@@ -8,106 +8,111 @@
       <span aria-current="page">{{ h.name }}</span>
     </nav>
 
-    <header class="cathub__header">
-      <h1 class="cathub__title">Vintage {{ h.name }}</h1>
-      @if (h.tagline) {
-        <p class="cathub__tagline">{{ h.tagline }}</p>
-      }
-      @if (h.intro) {
-        <p class="cathub__intro">{{ h.intro }}</p>
-      }
-    </header>
-
-    @if (bodyParagraphs().length > 0) {
-      <section class="cathub__section">
-        <div class="cathub__prose">
-          @for (para of bodyParagraphs(); track $index) {
-            <p>{{ para }}</p>
-          }
-        </div>
-      </section>
-    }
-
-    @if (lookForPoints().length > 0) {
-      <section class="cathub__section">
-        <h2 class="cathub__section-title">What to look for</h2>
-        <ul class="cathub__lookfor">
-          @for (point of lookForPoints(); track $index) {
-            <li>
-              {{ point.text }}
-              @if (point.link) {
-                <a class="cathub__lookfor-link" [routerLink]="point.link.path">{{
-                  point.link.label
-                }}</a>
-              }
-              @if (point.textAfter) {
-                {{ point.textAfter }}
-              }
-            </li>
-          }
-        </ul>
-      </section>
-    }
-
-    <section class="cathub__section">
-      <h2 class="cathub__section-title">
-        {{ h.name }} at Eden Relics
-        @if (products().length > 0) {
-          <span class="cathub__count">({{ products().length }})</span>
+    <div class="cathub__layout">
+      <header class="cathub__header">
+        <h1 class="cathub__title">Vintage {{ h.name }}</h1>
+        @if (h.tagline) {
+          <p class="cathub__tagline">{{ h.tagline }}</p>
         }
-      </h2>
+        @if (h.intro) {
+          <p class="cathub__intro">{{ h.intro }}</p>
+        }
+      </header>
 
-      @if (products().length > 0) {
-        <ul class="cathub__products">
-          @for (product of products(); track product.id) {
-            <li class="cathub-product">
-              <a
-                [routerLink]="['/product', product.slug || product.id]"
-                class="cathub-product__link"
-              >
-                <div class="cathub-product__image-wrap">
-                  @if (product.imageUrl) {
-                    <img
-                      [src]="product.imageUrl"
-                      [alt]="product.name"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  }
-                </div>
-                <div class="cathub-product__body">
-                  <h3 class="cathub-product__name">{{ product.name }}</h3>
-                  <span class="cathub-product__price">
-                    {{ product.salePrice ?? product.price | currency: 'GBP' }}
-                  </span>
-                </div>
-              </a>
-            </li>
+      <section class="cathub__section cathub__section--products">
+        <h2 class="cathub__section-title">
+          {{ h.name }} at Eden Relics
+          @if (products().length > 0) {
+            <span class="cathub__count">({{ products().length }})</span>
           }
-        </ul>
-      } @else {
-        <p class="cathub__empty">
-          None in stock at this exact moment — the rail is one-of-a-kind and moves quickly.
-          <a routerLink="/">Browse all vintage</a> or check back soon.
-        </p>
-      }
-    </section>
+        </h2>
 
-    @if (relatedLinks().length > 0) {
-      <section class="cathub__section">
-        <h2 class="cathub__section-title">Explore more</h2>
-        <ul class="cathub__related">
-          @for (link of relatedLinks(); track link.path) {
-            <li>
-              <a [routerLink]="link.path">{{ link.label }}</a>
-            </li>
-          }
-        </ul>
+        @if (products().length > 0) {
+          <ul class="cathub__products">
+            @for (product of products(); track product.id) {
+              <li class="cathub-product">
+                <a
+                  [routerLink]="['/product', product.slug || product.id]"
+                  class="cathub-product__link"
+                >
+                  <div class="cathub-product__image-wrap">
+                    @if (product.imageUrl) {
+                      <img
+                        [src]="product.imageUrl"
+                        [alt]="product.name"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    }
+                  </div>
+                  <div class="cathub-product__body">
+                    <h3 class="cathub-product__name">{{ product.name }}</h3>
+                    <span class="cathub-product__price">
+                      {{ (product | shownPrice) | currency: 'GBP' }}
+                    </span>
+                  </div>
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="cathub__empty">
+            None in stock at this exact moment — the rail is one-of-a-kind and moves quickly.
+            <a routerLink="/">Browse all vintage</a> or check back soon.
+          </p>
+        }
       </section>
-    }
 
-    <p class="cathub__back">
-      <a [routerLink]="indexPath">← Back to {{ indexLabel }}</a>
-    </p>
+      <div class="cathub__more">
+        @if (bodyParagraphs().length > 0) {
+          <section class="cathub__section">
+            <div class="cathub__prose">
+              @for (para of bodyParagraphs(); track $index) {
+                <p>{{ para }}</p>
+              }
+            </div>
+          </section>
+        }
+
+        @if (lookForPoints().length > 0) {
+          <section class="cathub__section">
+            <h2 class="cathub__section-title">What to look for</h2>
+            <ul class="cathub__lookfor">
+              @for (point of lookForPoints(); track $index) {
+                <li>
+                  {{ point.text }}
+                  @if (point.link) {
+                    <a class="cathub__lookfor-link" [routerLink]="point.link.path">{{
+                      point.link.label
+                    }}</a>
+                  }
+                  @if (point.textAfter) {
+                    {{ point.textAfter }}
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+
+        @if (relatedLinks().length > 0) {
+          <section class="cathub__section">
+            <h2 class="cathub__section-title">Explore more</h2>
+            <ul class="cathub__related">
+              @for (link of relatedLinks(); track link.path) {
+                <li>
+                  <a [routerLink]="link.path">{{ link.label }}</a>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        <p class="cathub__back">
+          <a [routerLink]="indexPath">← Back to {{ indexLabel }}</a>
+        </p>
+      </div>
+    </div>
   </article>
 }
