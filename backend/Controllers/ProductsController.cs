@@ -191,7 +191,9 @@ public class ProductsController : ControllerBase
             // endpoint will refuse to serve anyway.
             return Ok(new ProductResolveDto { Action = "redirect", Name = product.Name, Era = product.Era });
         }
-        if (product.Status == ProductStatus.Sold)
+        // Sold pieces in a curated collection keep their page for good: the collection page still
+        // shows them, marked Sold, and links to it.
+        if (product.Status == ProductStatus.Sold && !product.InCollection)
         {
             DateTime soldAt = product.SoldAtUtc ?? product.UpdatedAtUtc;
             if (soldAt <= DateTime.UtcNow.AddDays(-SoldGraceDays))

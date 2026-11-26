@@ -456,6 +456,35 @@ public class ProductSkuAndStatusTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task SoldCollectionPiece_StaysListedAndViewable_LongAfterTheGraceWindow()
+    {
+        HttpClient client = _factory.CreateClient();
+        await RegisterAdmin(client, _factory, "admin-sold-collection@test.com");
+        HttpResponseMessage create = await client.PostAsJsonAsync("/api/products", NewProductPayload(status: "sold"));
+        AdminProductResponse? p = await create.Content.ReadFromJsonAsync<AdminProductResponse>(JsonOptions);
+        Assert.NotNull(p);
+
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            EdenRelicsDbContext db = scope.ServiceProvider.GetRequiredService<EdenRelicsDbContext>();
+            Product? row = await db.Products.FindAsync(p!.Id);
+            Assert.NotNull(row);
+            row!.InCollection = true;
+            row.SoldAtUtc = DateTime.UtcNow.AddDays(-200);
+            await db.SaveChangesAsync();
+        }
+
+        HttpClient anon = _factory.CreateClient();
+        // On the collection page (the public list) and on its own page, marked Sold...
+        string list = await anon.GetStringAsync("/api/products");
+        Assert.Contains(p!.Id.ToString(), list);
+        Assert.Equal(HttpStatusCode.OK, (await anon.GetAsync($"/api/products/{p.Id}")).StatusCode);
+        // ...and the edge layer renders its page rather than redirecting it away.
+        string resolved = await anon.GetStringAsync($"/api/products/resolve/{p.Slug}");
+        Assert.Contains("render", resolved);
+    }
+
+    [Fact]
     public async Task PublicDto_DoesNotLeakSkuOrStatus()
     {
         HttpClient anon = _factory.CreateClient();
