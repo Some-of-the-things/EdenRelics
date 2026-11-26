@@ -7,6 +7,9 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
+/** Size bands smallest first, for comparing the chest and waist sizes. */
+const SIZE_ORDER = ['4–6', '6–8', '8–10', '10–12', '12–14', '14–16', '16–18', '18–20', '20+'];
+
 interface SizeResult {
   ukSize: string;
   chest: number;
@@ -74,23 +77,28 @@ export class VintageSizeConverterComponent {
     const sizeByChest = this.sizeFromChest(chest);
     const sizeByWaist = this.sizeFromWaist(fullWaist);
 
-    let lengthNote = '';
+    let lengthNote: string;
     if (length >= 50) {
-      lengthNote = ` At ${length}" this is a maxi — check it against your height.`;
-    } else if (length >= 40) {
-      lengthNote = ` At ${length}" this is a midi length.`;
-    } else if (length <= 32) {
+      lengthNote = ` At ${length}" this is ankle to floor length on most people. Check it against your height.`;
+    } else if (length >= 41) {
+      lengthNote = ` At ${length}" this is a midi, roughly mid-calf on someone 5'4".`;
+    } else if (length >= 33) {
+      lengthNote = ` At ${length}" this is around knee length.`;
+    } else {
       lengthNote = ` At ${length}" this is a mini or short dress.`;
     }
 
     const note =
       `Based on a full chest of ${chest.toFixed(1)}" and full waist of ${fullWaist.toFixed(1)}", ` +
       `this piece corresponds to approximately a modern UK ${sizeByChest}. ` +
-      `Allow 1–2" of ease for comfortable wear.${lengthNote}`;
+      `These are garment measurements, so the range already allows for fit: a close fit on the larger size, ` +
+      `with a little room on the smaller one.${lengthNote}`;
 
-    const warning = sizeByChest !== sizeByWaist
-      ? `Chest and waist suggest different sizes (${sizeByChest} by chest, ${sizeByWaist} by waist). ` +
-        'This dress has a defined waist — check both measurements against your own before buying.'
+    // Only a waist smaller than the chest size is a problem. A bigger one is normal for shifts,
+    // blousons and elastic waists.
+    const warning = SIZE_ORDER.indexOf(sizeByWaist) < SIZE_ORDER.indexOf(sizeByChest)
+      ? `The waist (${sizeByWaist}) is smaller than the chest (${sizeByChest}). If the waist is fixed, ` +
+        "check it against your own waist before buying. If it's elasticated or ties, it will have more give."
       : null;
 
     this.result.set({
@@ -103,23 +111,33 @@ export class VintageSizeConverterComponent {
     });
   }
 
-  private sizeFromChest(c: number): string {
-    if (c <= 31) { return '4–6'; }
-    if (c <= 33) { return '6–8'; }
-    if (c <= 35) { return '8–10'; }
-    if (c <= 37) { return '10–12'; }
-    if (c <= 39) { return '12–14'; }
-    if (c <= 42) { return '14–16'; }
-    return '16+';
+  /**
+   * Full chest (pit to pit × 2) read against the Marks & Spencer body chart (bust: UK6 30.75,
+   * UK8 32.25, UK10 34.25, UK12 36.25, UK14 38, UK16 40.25, UK18 42.5, UK20 45), giving that size
+   * and the one below, as listings are sized.
+   */
+  sizeFromChest(c: number): string {
+    if (c <= 31.5) { return '4–6'; }
+    if (c <= 33.5) { return '6–8'; }
+    if (c <= 35.5) { return '8–10'; }
+    if (c <= 37.5) { return '10–12'; }
+    if (c <= 39.5) { return '12–14'; }
+    if (c <= 41.5) { return '14–16'; }
+    if (c <= 44.5) { return '16–18'; }
+    if (c <= 46) { return '18–20'; }
+    return '20+';
   }
 
-  private sizeFromWaist(w: number): string {
-    if (w <= 23) { return '4–6'; }
-    if (w <= 25) { return '6–8'; }
-    if (w <= 27) { return '8–10'; }
-    if (w <= 29) { return '10–12'; }
-    if (w <= 31) { return '12–14'; }
-    if (w <= 34) { return '14–16'; }
-    return '16+';
+  /** Full waist (flat waist × 2) against the M&S waist chart. */
+  sizeFromWaist(w: number): string {
+    if (w <= 24.75) { return '4–6'; }
+    if (w <= 26.5) { return '6–8'; }
+    if (w <= 28.5) { return '8–10'; }
+    if (w <= 30.5) { return '10–12'; }
+    if (w <= 32.75) { return '12–14'; }
+    if (w <= 35) { return '14–16'; }
+    if (w <= 37.25) { return '16–18'; }
+    if (w <= 39.5) { return '18–20'; }
+    return '20+';
   }
 }

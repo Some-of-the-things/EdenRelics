@@ -17,7 +17,7 @@
     </header>
 
     @if (products().length > 0) {
-      <ul class="collection-products">
+      <ul class="collection-products collection-products--centred">
         @for (product of products(); track product.id) {
           <li class="collection-product">
             <a [routerLink]="['/product', product.slug || product.id]" class="collection-product__link">

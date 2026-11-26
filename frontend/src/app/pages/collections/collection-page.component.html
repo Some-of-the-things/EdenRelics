@@ -28,7 +28,7 @@
               <div class="collection-product__body">
                 <h2 class="collection-product__name">{{ product.name }}</h2>
                 <span class="collection-product__price">
-                  {{ (product.salePrice ?? product.price) | currency:'GBP' }}
+                  {{ (product | shownPrice) | currency:'GBP' }}
                 </span>
               </div>
             </a>

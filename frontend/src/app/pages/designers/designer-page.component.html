@@ -8,92 +8,97 @@
       <span aria-current="page">{{ d.name }}</span>
     </nav>
 
-    <header class="designer-page__header">
-      <h1 class="designer-page__title">Vintage {{ d.name }}</h1>
-      @if (d.tagline) {
-        <p class="designer-page__origin">{{ d.tagline }}</p>
-      }
-      @if (d.intro) {
-        <p class="designer-page__intro">{{ d.intro }}</p>
-      }
-    </header>
-
-    @if (aboutParagraphs().length > 0) {
-      <section class="designer-page__section">
-        <h2 class="designer-page__section-title">About {{ d.name }}</h2>
-        <div class="designer-page__prose">
-          @for (para of aboutParagraphs(); track $index) {
-            <p>{{ para }}</p>
-          }
-        </div>
-      </section>
-    }
-
-    @if (identification().length > 0) {
-      <section class="designer-page__section">
-        <h2 class="designer-page__section-title">{{ identificationHeading() }}</h2>
-        <ul class="designer-page__id-list">
-          @for (tip of identification(); track $index) {
-            <li>{{ tip }}</li>
-          }
-        </ul>
-      </section>
-    }
-
-    @if (relatedPosts().length > 0) {
-      <section class="designer-page__section">
-        <h2 class="designer-page__section-title">Further reading</h2>
-        <ul class="designer-page__reading">
-          @for (post of relatedPosts(); track post.slug) {
-            <li>
-              <a [routerLink]="['/blog', post.slug]">{{ post.title }}</a>
-            </li>
-          }
-        </ul>
-      </section>
-    }
-
-    <section class="designer-page__section">
-      <h2 class="designer-page__section-title">
-        {{ d.name }} at Eden Relics
-        @if (products().length > 0) {
-          <span class="designer-page__count">({{ products().length }})</span>
+    <div class="designer-page__layout">
+      <header class="designer-page__header">
+        <h1 class="designer-page__title">Vintage {{ d.name }}</h1>
+        @if (d.tagline) {
+          <p class="designer-page__origin">{{ d.tagline }}</p>
         }
-      </h2>
+        @if (d.intro) {
+          <p class="designer-page__intro">{{ d.intro }}</p>
+        }
+      </header>
 
-      @if (products().length > 0) {
-        <ul class="designer-products designer-page__products">
-          @for (product of products(); track product.id) {
-            <li class="designer-product">
-              <a [routerLink]="['/product', product.slug || product.id]" class="designer-product__link">
-                <div class="designer-product__image-wrap">
-                  @if (product.imageUrl) {
-                    <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
-                  }
-                </div>
-                <div class="designer-product__body">
-                  <h3 class="designer-product__name">{{ product.name }}</h3>
-                  <span class="designer-product__price">
-                    {{ (product.salePrice ?? product.price) | currency:'GBP' }}
-                    @if (!product.inStock) {
-                      <span class="designer-product__sold">Sold</span>
-                    }
-                  </span>
-                </div>
-              </a>
-            </li>
+      <section class="designer-page__section designer-page__section--products">
+        <h2 class="designer-page__section-title">
+          {{ d.name }} at Eden Relics
+          @if (products().length > 0) {
+            <span class="designer-page__count">({{ products().length }})</span>
           }
-        </ul>
-      } @else {
-        <p class="designer-page__empty">
-          Eden Relics is currently between {{ d.name }} pieces. Join the mailing list from the homepage to hear first when a new one lands, or
-          <a routerLink="/designers">browse other designers</a>.
-        </p>
-      }
-    </section>
+        </h2>
 
-    <p class="designer-page__back">
-      <a routerLink="/designers">← Back to all designers</a>
-    </p>
+        @if (products().length > 0) {
+          <ul class="designer-products designer-page__products">
+            @for (product of products(); track product.id) {
+              <li class="designer-product">
+                <a [routerLink]="['/product', product.slug || product.id]" class="designer-product__link">
+                  <div class="designer-product__image-wrap">
+                    @if (product.imageUrl) {
+                      <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+                    }
+                  </div>
+                  <div class="designer-product__body">
+                    <h3 class="designer-product__name">{{ product.name }}</h3>
+                    <span class="designer-product__price">
+                      {{ (product | shownPrice) | currency:'GBP' }}
+                      @if (!product.inStock) {
+                        <span class="designer-product__sold">Sold</span>
+                      }
+                    </span>
+                  </div>
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="designer-page__empty">
+            Eden Relics is currently between {{ d.name }} pieces. Join the mailing list from the homepage to hear first when a new one lands, or
+            <a routerLink="/designers">browse other designers</a>.
+          </p>
+        }
+      </section>
+
+      <div class="designer-page__more">
+        @if (aboutParagraphs().length > 0) {
+          <section class="designer-page__section">
+            <h2 class="designer-page__section-title">About {{ d.name }}</h2>
+            <div class="designer-page__prose">
+              @for (para of aboutParagraphs(); track $index) {
+                <p>{{ para }}</p>
+              }
+            </div>
+          </section>
+        }
+
+        @if (identification().length > 0) {
+          <section class="designer-page__section">
+            <h2 class="designer-page__section-title">{{ identificationHeading() }}</h2>
+            <ul class="designer-page__id-list">
+              @for (tip of identification(); track $index) {
+                <li>{{ tip }}</li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (relatedPosts().length > 0) {
+          <section class="designer-page__section">
+            <h2 class="designer-page__section-title">Further reading</h2>
+            <ul class="designer-page__reading">
+              @for (post of relatedPosts(); track post.slug) {
+                <li>
+                  <a [routerLink]="['/blog', post.slug]">{{ post.title }}</a>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+
+        <p class="designer-page__back">
+          <a routerLink="/designers">← Back to all designers</a>
+        </p>
+      </div>
+    </div>
   </article>
 }

@@ -1,3 +1,4 @@
+import { ShownPricePipe } from '../../pipes/shown-price.pipe';
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -29,7 +30,7 @@ interface BlogPostSummary {
 
 @Component({
   selector: 'app-home',
-  imports: [HomeReviewsComponent, FormsModule, RouterLink, CurrencyPipe],
+  imports: [ShownPricePipe, HomeReviewsComponent, FormsModule, RouterLink, CurrencyPipe],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
